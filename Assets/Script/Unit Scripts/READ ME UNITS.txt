@@ -1,0 +1,29 @@
+THE UNIT SYSTEM BASICS
+
+Requirements: 
+4 Scripts (1 Singleton)
+2 Layers
+
+UC = UNIT CLICK - SYSTEM SCRIPT
+UD = UNIT DRAG - SYSTEM  SCRIPT
+US = UNIT SELECTION - SYSTEM  SCRIPT
+
+U = UNIT SCRIPT
+
+
+When you click you use the UC Script
+When you drag you use the UD Script 
+
+If you want anything to be selected when you click or drag. 
+
+Then those system MUST do it. 
+
+IF ITS NOT SELECTED THE PROBLEM LIES IN THOSE SCRIPTS.
+
+When you Select Anything then your automaticlly using the Selection System.
+
+Meaning that if you can't select for some reason ( Bugs ) 
+then it's not the Selection Systems fault 99.99% of the time.
+
+
+

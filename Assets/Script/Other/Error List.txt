@@ -1,0 +1,16 @@
+
+// Errors List
+  
+   // Open
+      // Open: UC#2 ERROR: Ground Marker isn't Active?
+      // Open: UC#2.1 ERROR: Ground Marker's Graphic Child doesn't Active OnClick?
+       
+       -> Transform.Position is correct but the 
+            Active states are not for some reason
+
+         -> Parent is active but Child isn't active, techniclly 
+
+   // Done
+      // Done: UC#1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
+      // Done: US#1 ERROR: Sometimes you can't deselect? ->  Seems to be fixed by this.DeselectAll(); - Fixed by fr_peach
+      // Done: US#2 ERROR: Parents Child's children get selected causing glitches -> Set parents children to correct selection layer

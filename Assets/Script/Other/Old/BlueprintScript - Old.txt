@@ -1,0 +1,130 @@
+﻿using System.Collections; 
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BlueprintScript : MonoBehaviour
+{
+
+    RaycastHit hit; //Creates a hit varible
+	public Material red;
+	public Material blue;
+	public float BuildHeight = 1f; // Height Debug
+	public bool CanBuild = false; // Building Checker
+								  //GameObject[] arrayOfGameObjects = new GameObject[3];
+
+	public GameObject currentlySelected; // Object that will be placed
+	// or
+	// int currentlySelectedIndex;
+
+	public GameObject[] hotbar = new GameObject[9];
+
+	public void SetSelected(int index)
+	{
+		currentlySelected = hotbar[index];
+	}
+
+	//[SerializeField] private LayerMask layerMask; //On the top of you code. SerializeField make your variable visible in the inspector
+
+	void Start()
+	{
+		SelectionSystem.placing = true;
+	}
+
+/*	void OnTriggerStay(Collider other)
+	{
+		Debug.Log("Collider Entered");
+		if (other.tag == "notStackable")
+		{
+			CanBuild = false;
+			gameObject.GetComponent<MeshRenderer>().material = red;
+
+			Debug.Log("Build Area Blocked");
+		}
+		else
+		{
+			CanBuild = true;
+			gameObject.GetComponent<MeshRenderer>().material = blue;
+
+			Debug.Log("Build Area Open");
+		}
+	}
+*/
+
+	void Update() // Update is called once per frame
+    {
+
+		for (int i = 0; i < 9; i++)
+		{
+			if (Input.GetKeyDown(KeyCode.Alpha1 + i)) // can use GetKey/GetKeyUp/etc
+			{
+				// use i to figure out which key is pressed -- use i as your index
+				currentlySelected = hotbar[i];
+				// or
+				SetSelected(i); // use-case of method below
+			}
+		}
+
+		Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); // Ray
+
+        if (Physics.Raycast(ray, out hit))	
+        {	
+
+			gameObject.transform.position = hit.point;
+			Vector3 position = transform.position;
+			position.y += BuildHeight;
+			transform.position = position;
+
+			Debug.Log(hit.transform.gameObject.tag);
+			
+			if(hit.transform.gameObject.tag == "notStackable")
+			{
+				gameObject.GetComponent<MeshRenderer>().material = red;
+				
+			}
+			
+			if(hit.transform.gameObject.tag != "notStackable")
+				
+			{
+				gameObject.GetComponent<MeshRenderer>().material = blue;	
+				
+				
+				if (Input.GetMouseButton(0) && CanBuild == true) // Click Event
+				{   
+			
+	                if(currentlySelected.GetComponent<BuildingCost>().GetValue()<=Bank.stone) // Cost Checker
+					{
+			            
+							Bank.stone = Bank.stone - currentlySelected.GetComponent<BuildingCost>().GetValue(); // Transaction
+							
+							Instantiate(currentlySelected, transform.position, transform.rotation); // (GameObject, Spawn Location, Spawn Rotation)
+                        
+							Destroy(gameObject);
+			            
+							SelectionSystem.placing = false;
+			
+		                  }
+			        else
+			              {
+				            Debug.Log("not enaugh resources");  // Console: Error Message
+							gameObject.GetComponent<MeshRenderer>().material = red;
+
+					}
+				}	
+			}
+			else
+			{
+				gameObject.GetComponent<MeshRenderer>().material = red;
+				
+			}
+
+         //   gameObject.transform.position = hit.point;
+        }
+		
+		if (Input.GetMouseButton(1))
+		{
+			Destroy(gameObject);
+			SelectionSystem.placing = false;
+			
+		}
+	}
+}
