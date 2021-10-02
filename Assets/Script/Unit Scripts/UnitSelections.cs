@@ -32,7 +32,7 @@ public class UnitSelections : MonoBehaviour
 
     // When Clicked on Unit Then...
     public void ClickSelect(GameObject unitToAdd) 
-    {
+    {   
         this.DeselectAll();
         unitsSelected.Add(unitToAdd);
         unitToAdd.transform.GetChild(0).gameObject.SetActive(true);

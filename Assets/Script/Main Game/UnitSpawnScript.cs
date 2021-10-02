@@ -5,7 +5,8 @@ using UnityEngine;
 public class UnitSpawnScript : MonoBehaviour
 {
     public GameObject Unit_Model;
-    private Vector3 Spawn;
+    public GameObject SpawningLocation;
+    public Vector3 Spawn;
 
     //transform.position = Spawn;
 

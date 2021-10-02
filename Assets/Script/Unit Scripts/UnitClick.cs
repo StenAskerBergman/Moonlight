@@ -12,7 +12,7 @@ public class UnitClick : MonoBehaviour
     // Done: #1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
     // Open: #2 ERROR: Ground Marker isn't Active? -> Transform.Position is correct but the Active states are not
     // Done: #3 ERROR: Sometimes you can't deselect? ->  Seems to be fixed by Asserting This.
-
+    public bool ClickMarkerVisable = false;
     private Camera myCam;
     public GameObject groundMarker;
     //public GameObject GroundMarkerGraphics;
@@ -105,6 +105,7 @@ public class UnitClick : MonoBehaviour
         groundMarker.SetActive(true);
 
         yield return new WaitForSeconds(0.2f);
+        //groundMarker.SetActive(false);
         groundMarker.transform.GetChild(0).gameObject.SetActive(false);
     }
 }

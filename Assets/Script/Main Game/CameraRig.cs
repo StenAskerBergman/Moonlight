@@ -14,6 +14,8 @@ public class CameraRig : MonoBehaviour
     public float zoomTime = 5f;      // IMPORTANT: The Higher the Value the Faster the Zoom
     public float rotationAmount;    // Amount of Rotation Per Time Unit
 
+    public Vector3 zoomBonus;
+
     public Vector3 zoomAmount;
     public Vector3 newZoom;
     public Vector3 newPosition;
@@ -41,7 +43,7 @@ public class CameraRig : MonoBehaviour
     {
         if(Input.mouseScrollDelta.y != 0)
         {
-            newZoom += Input.mouseScrollDelta.y * zoomAmount;
+            newZoom += Input.mouseScrollDelta.y * (zoomAmount + zoomBonus);
         }
 
         /* if (Input.GetMouseButtonDown(0))

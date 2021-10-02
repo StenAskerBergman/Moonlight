@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{1703FB6E-9752-CB08-681B-EDB818E5D0C2}</ProjectGuid>
+    <ProjectGuid>{C74DBC43-071B-2582-FE19-FEE13D88DE12}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -109,7 +109,7 @@
     <Compile Include="Assets\Script\Other\Debug\OverlapBoxExample.cs" />
     <Compile Include="Assets\Script\Other\Referance\KeyEvent.cs" />
     <Compile Include="Assets\Script\Main Game\BuilderScript.cs" />
-    <Compile Include="Assets\Script\Debug SimpleAnimator.cs" />
+    <Compile Include="Assets\Script\DebugSimpleAnimator.cs" />
     <Compile Include="Assets\Script\BlueprintScript.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
     <Compile Include="Assets\Script\Unit Scripts\UnitController.cs" />
@@ -117,11 +117,13 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\DropdownSample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_PhoneNumberValidator.cs" />
     <Compile Include="Assets\Script\Main Game\BuildingDetectionSystem.cs" />
+    <Compile Include="Assets\DebugLoggerScript.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMPro_InstructionOverlay.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexColorCycler.cs" />
     <Compile Include="Assets\Script\Other\Referance\StepSoundCycle.cs" />
     <Compile Include="Assets\Script\HotkeyInput.cs" />
     <Compile Include="Assets\Script\Other\Referance\GameVariables.cs" />
+    <Compile Include="Assets\ClickMarker.cs" />
     <Compile Include="Assets\Script\Other\Old\OldMovementScript.cs" />
     <Compile Include="Assets\Script\Main Game\NormalGameSession.cs" />
     <Compile Include="Assets\RTS_Camera\Demo\DemoScene.cs" />
@@ -144,8 +146,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
     <Compile Include="Assets\Script\Main Game\BuildingCost.cs" />
-    <Compile Include="Assets\DebugLoggerScript.cs" />
-    <Compile Include="Assets\ClickMarker.cs" />
+    <Compile Include="Assets\King.cs" />
   </ItemGroup>
   <ItemGroup>
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -754,31 +755,31 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Unity.VSCode.Editor.csproj">
-      <Project>{E10283F6-E489-CA0C-6CD8-927ABD7A0803}</Project>
+      <Project>{907E1CFD-4C22-4249-1881-5781EA5E4513}</Project>
       <Name>Unity.VSCode.Editor</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.TextMeshPro.Editor.csproj">
-      <Project>{4ECBF35F-3C9F-745B-8E7F-C9B22D131270}</Project>
+      <Project>{6FAE3321-4284-60F0-2FF4-81D9FA3EB170}</Project>
       <Name>Unity.TextMeshPro.Editor</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.VisualStudio.Editor.csproj">
-      <Project>{3244E4B5-9110-8346-BE44-7AFDE18BD9B7}</Project>
+      <Project>{4834ABBB-A7A8-AE79-60B4-1CBD9C5C0537}</Project>
       <Name>Unity.VisualStudio.Editor</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.Timeline.Editor.csproj">
-      <Project>{14FB4ED2-0793-CBD4-7C0E-60F0CB42D272}</Project>
+      <Project>{7B4565BF-C806-0593-0D13-9549CC7D8581}</Project>
       <Name>Unity.Timeline.Editor</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.Timeline.csproj">
-      <Project>{30E1F08A-5E36-F127-F0E1-BCB7757A7425}</Project>
+      <Project>{8120129B-983E-D8FE-6861-107E2E92D8F4}</Project>
       <Name>Unity.Timeline</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.TextMeshPro.csproj">
-      <Project>{9327DCD0-3465-9A5D-1997-1E1BD62EC03C}</Project>
+      <Project>{61EE3CBB-7BB9-B0A2-F489-A9D084F2826B}</Project>
       <Name>Unity.TextMeshPro</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.Rider.Editor.csproj">
-      <Project>{8133551B-2E5D-9395-49CD-AE4DCF1B6EB8}</Project>
+      <Project>{44E8AEFE-429C-EFF2-9777-E4C8535076E2}</Project>
       <Name>Unity.Rider.Editor</Name>
     </ProjectReference>
   </ItemGroup>

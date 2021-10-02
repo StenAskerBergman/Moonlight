@@ -6,7 +6,7 @@ public class ActivationScript : MonoBehaviour
 {
 
     public GameObject objectToDisable1;
-    public GameObject objectToDisable2;
+    //public GameObject objectToDisable2;
     public static bool disabled = false;
 
     /*
@@ -16,7 +16,7 @@ public class ActivationScript : MonoBehaviour
     private void Awake()
     {
       objectToDisable1.SetActive(true);
-      objectToDisable2.SetActive(true);
+      //objectToDisable2.SetActive(true);
 
     }
 
