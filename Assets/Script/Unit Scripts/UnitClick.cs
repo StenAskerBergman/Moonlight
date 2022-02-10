@@ -8,6 +8,8 @@ public class UnitClick : MonoBehaviour
     // If Clicking Units Isn't working then this is where the fault should always lie!
     // All this script does is unit clicking
 
+    // Q: What about clicking interactions? 
+
     // Errors List
     // Done: #1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
     // Open: #2 ERROR: Ground Marker isn't Active? -> Transform.Position is correct but the Active states are not
@@ -15,6 +17,7 @@ public class UnitClick : MonoBehaviour
 
     private Camera myCam;
     public GameObject groundMarker;
+    public bool Blinked;
     //public GameObject GroundMarkerGraphics;
 
     private const float SelectionRange = 50.0f;
@@ -36,7 +39,8 @@ public class UnitClick : MonoBehaviour
             // When you click 
             RaycastHit hit;
             Ray ray = myCam.ScreenPointToRay(Input.mousePosition);
-            
+            // Shoot ray from the Camera to the mouse position
+
             //if(Physics.Raycast(ray, out hit, Mathf.Infinity, clickable))
 
             if (Physics.Raycast(ray, out hit, SelectionRange, clickable))
@@ -73,16 +77,18 @@ public class UnitClick : MonoBehaviour
         {
             RaycastHit hit;
             Ray ray = myCam.ScreenPointToRay(Input.mousePosition);
+            
 
             //if (Physics.Raycast(ray, out hit, Mathf.Infinity, ground))
+
+            // If Ray hits anything then...
             if (Physics.Raycast(ray, out hit, SelectionRange, ground))
             {
-
+                // Moves the Ground Marker Target
                 groundMarker.transform.position = hit.point;
-                BlinkCoroutine();
+                StartCoroutine(BlinkCoroutine());
 
-                
-
+                //Debug.Log("Hit.point Location: " + hit.point);
 
 
 
@@ -103,8 +109,9 @@ public class UnitClick : MonoBehaviour
     IEnumerator BlinkCoroutine()
     {
         groundMarker.SetActive(true);
-
+        Debug.Log("Blink!");
         yield return new WaitForSeconds(0.2f);
-        groundMarker.transform.GetChild(0).gameObject.SetActive(false);
+        groundMarker.SetActive(false);
+        //groundMarker.transform.GetChild(0).gameObject.SetActive(false);
     }
 }

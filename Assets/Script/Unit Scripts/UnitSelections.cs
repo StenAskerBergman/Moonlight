@@ -34,9 +34,9 @@ public class UnitSelections : MonoBehaviour
     public void ClickSelect(GameObject unitToAdd) 
     {
         this.DeselectAll();
-        unitsSelected.Add(unitToAdd);
-        unitToAdd.transform.GetChild(0).gameObject.SetActive(true);
-        unitToAdd.GetComponent<UnitMovement>().enabled = true;
+        unitsSelected.Add(unitToAdd); 
+        unitToAdd.transform.GetChild(0).gameObject.SetActive(true); // Enables the Selection Child Game Object
+        unitToAdd.GetComponent<UnitMovement>().enabled = true; 
     }
     #endregion
 

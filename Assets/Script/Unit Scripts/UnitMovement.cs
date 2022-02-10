@@ -32,6 +32,7 @@ public class UnitMovement : MonoBehaviour
 
                 //Debug.Log("UnitMovement: " + hit.point);
             }
+
             //Vector3 UnitPosition = transform.position;
         }
     }
