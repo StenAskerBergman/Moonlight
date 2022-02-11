@@ -14,10 +14,11 @@ public class UnitClick : MonoBehaviour
     // Done: #1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
     // Open: #2 ERROR: Ground Marker isn't Active? -> Transform.Position is correct but the Active states are not
     // Done: #3 ERROR: Sometimes you can't deselect? ->  Seems to be fixed by Asserting This.
+    // Done: #4 ERROR: Fixed the Coroutine() Start Bug
 
     private Camera myCam;
     public GameObject groundMarker;
-    public bool Blinked;
+    //public bool Blinked;
     //public GameObject GroundMarkerGraphics;
 
     private const float SelectionRange = 50.0f;
@@ -49,12 +50,12 @@ public class UnitClick : MonoBehaviour
                 if(Input.GetKey(KeyCode.LeftShift))
                 {
                     //Shift Clicked
-                    UnitSelections.Instance.ShiftClickSelect(hit.collider.gameObject);
+                    UnitSelections.Instance.ShiftClickSelect(hit.collider.GetComponent<Unit>());
                 }
                 else
                 {
                     //Normal Click
-                    UnitSelections.Instance.ShiftClickSelect(hit.collider.gameObject);
+                    UnitSelections.Instance.ShiftClickSelect(hit.collider.GetComponent<Unit>());
                 }
             }
             else
@@ -109,7 +110,7 @@ public class UnitClick : MonoBehaviour
     IEnumerator BlinkCoroutine()
     {
         groundMarker.SetActive(true);
-        Debug.Log("Blink!");
+        //Debug.Log("Blink!");
         yield return new WaitForSeconds(0.2f);
         groundMarker.SetActive(false);
         //groundMarker.transform.GetChild(0).gameObject.SetActive(false);

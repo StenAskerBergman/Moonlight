@@ -2,8 +2,10 @@
 // Errors List
   
    // Open
-      // Open: UC#2 ERROR: Ground Marker isn't Active?
-      // Open: UC#2.1 ERROR: Ground Marker's Graphic Child doesn't Active OnClick?
+      // Open: Menu System ERROR: The Menu isn't showing the correct options according to what I've selected
+      // Open: GUI System ERROR: Clicking on options in the selections menu de-selects the intended target and removes the menu 
+      
+      
        
        -> Transform.Position is correct but the 
             Active states are not for some reason
@@ -12,5 +14,9 @@
 
    // Done
       // Done: UC#1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
+      // Done: UC#2 ERROR: Ground Marker isn't Active? -> I made it so it blinks notifying the user the feedback information. 
+      // Done: UC#2.1 ERROR: Ground Marker's Graphic Child doesn't Active OnClick? -> I change the way it reacts to clicking
+
       // Done: US#1 ERROR: Sometimes you can't deselect? ->  Seems to be fixed by this.DeselectAll(); - Fixed by fr_peach
       // Done: US#2 ERROR: Parents Child's children get selected causing glitches -> Set parents children to correct selection layer
+    

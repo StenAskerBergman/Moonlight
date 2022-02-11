@@ -96,7 +96,7 @@ public class UnitDrag : MonoBehaviour
 
     void SelectUnits()
     {
-        //loop thru all the untis
+        //loop thru all the units
         foreach (var unit in UnitSelections.Instance.unitList)
         {
             if (selectionBox.Contains(myCam.WorldToScreenPoint(unit.transform.position)))
