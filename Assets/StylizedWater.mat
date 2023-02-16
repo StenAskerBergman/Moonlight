@@ -74,9 +74,9 @@ Material:
     - Vector1_7903ddfc4bbd4f49a019defad1756c14: 1
     - Vector1_8e6ff0695009485a9edcdebcaabfad79: 10
     - Vector1_a62d7642d3cd461f9bb464d531824901: 1
-    - Vector1_ad6d391aeb9e47b69a2ec2a7e0da7e01: 0.5
-    - Vector1_b78caed7c0c84edd84304e0d00016339: 2
-    - Vector1_ea26ae461bdd4748b038616e9db86d5f: 1000
+    - Vector1_ad6d391aeb9e47b69a2ec2a7e0da7e01: 1
+    - Vector1_b78caed7c0c84edd84304e0d00016339: 1
+    - Vector1_ea26ae461bdd4748b038616e9db86d5f: 200
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1

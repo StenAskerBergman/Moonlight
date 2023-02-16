@@ -49,8 +49,10 @@
   <ItemGroup>
      <Compile Include="Assets\RTS_Camera\Scripts\Editor\RTS_CameraEditor.cs" />
      <Compile Include="Assets\RTS_Camera\Scripts\Editor\LayoutHelpers.cs" />
+     <Compile Include="Assets\Editor\MapGeneratorEditor.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Editor\FogOfWarManagerEditor.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Editor\VisionBlockComponentEditor.cs" />
+     <Compile Include="Assets\Editor\UpdatableDataEditor.cs" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2020.3.25f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>
@@ -660,6 +662,9 @@
  <Reference Include="Unity.VSCode.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
  </Reference>
+ <Reference Include="Unity.2D.Tilemap.Editor">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.2D.Tilemap.Editor.dll</HintPath>
+ </Reference>
  <Reference Include="Unity.RenderPipelines.Universal.Shaders">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Shaders.dll</HintPath>
  </Reference>
@@ -719,12 +724,6 @@
  </Reference>
  <Reference Include="Unity.Mathematics.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.Mathematics.Editor.dll</HintPath>
- </Reference>
- <Reference Include="Unity.AI.Navigation.Editor">
- <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.AI.Navigation.Editor.dll</HintPath>
- </Reference>
- <Reference Include="Unity.AI.Navigation">
- <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.AI.Navigation.dll</HintPath>
  </Reference>
  <Reference Include="Unity.RenderPipelines.Core.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.dll</HintPath>

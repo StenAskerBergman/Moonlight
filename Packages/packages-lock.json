@@ -1,13 +1,10 @@
 {
   "dependencies": {
-    "com.unity.ai.navigation": {
-      "version": "1.0.0-exp.4",
+    "com.unity.2d.tilemap": {
+      "version": "1.0.0",
       "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.ai": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
+      "source": "builtin",
+      "dependencies": {}
     },
     "com.unity.collab-proxy": {
       "version": "1.15.4",
@@ -87,6 +84,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.scriptablebuildpipeline": {
+      "version": "1.19.6",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.searcher": {
       "version": "4.3.2",
       "depth": 2,
@@ -153,6 +157,16 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "com.unity.visualeffectgraph": {
+      "version": "10.7.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.shadergraph": "10.7.0",
+        "com.unity.render-pipelines.core": "10.7.0"
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

@@ -7,17 +7,19 @@ using UnityEngine.UI;
 public class GetResourceData : MonoBehaviour
 {
 	//public TextMesh label;
-	private string strStone;
+  private int Player = 0;
+
+	private string strBM;
     private void Awake()
     {
-        strStone = Bank.stone.ToString();
-        GetComponent<UnityEngine.UI.Text>().text = "Stone : " + strStone;
+        strBM = Bank.BM.ToString();
+        GetComponent<UnityEngine.UI.Text>().text = strBM;
     }
     
     void Update()
     {
-		strStone = Bank.stone.ToString();
-		GetComponent<UnityEngine.UI.Text>().text = "Stone : " + strStone; 
+		strBM = Bank.BM.ToString();
+		GetComponent<UnityEngine.UI.Text>().text = "" + strBM + ""; 
     
     }
 }
