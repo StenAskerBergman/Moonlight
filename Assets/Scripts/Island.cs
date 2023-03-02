@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 public class Island : MonoBehaviour
 {
+
+
+    // Variables
     public int id;
     public Bounds bounds;
     public Enums.IslandType islandType;

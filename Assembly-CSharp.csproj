@@ -222,6 +222,8 @@
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
      <Compile Include="Assets\CodeMonkey\CMDebug.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\FunctionPeriodic.cs" />
+     <Compile Include="Assets\Scripts\Events\Listners\IslandListener.cs" />
+     <Compile Include="Assets\Scripts\Events\Publishers\IslandEnterDetector.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
      <None Include="Assets\RTS_Camera\Demo\Projectors\Shaders\ProjectorLight.shader" />

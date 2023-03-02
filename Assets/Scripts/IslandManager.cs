@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,7 @@ public class IslandManager : MonoBehaviour
 
     public static IslandManager instance;
 
+
     private void Awake()
     {
         if (instance == null)
@@ -21,7 +23,6 @@ public class IslandManager : MonoBehaviour
             Destroy(this);
         }
     }
-
 
     private void Start()
     {
@@ -45,9 +46,6 @@ public class IslandManager : MonoBehaviour
         islands.Add(island);
     }
 
-
-
-
     public void RemoveIsland(Island island)
     {
         islands.Remove(island);
@@ -64,6 +62,7 @@ public class IslandManager : MonoBehaviour
     {
         return islands.Find(island => island.id == id);
     }
+
     public Island GetIslandByID(int id)
     {
         return islands.Find(island => island.id == id);
@@ -81,6 +80,7 @@ public class IslandManager : MonoBehaviour
 
         return null;
     }
+
     public Enums.IslandType GetCurrentIslandType(Vector3 playerPosition)
     {
         foreach (Island island in islands)
@@ -97,5 +97,17 @@ public class IslandManager : MonoBehaviour
     private int GetNextIslandID()
     {
         return nextIslandID++;
+    }
+
+
+// Event Section in IslandManager.cs 
+
+    // Add event for player entering island
+    public event Action<Island> OnPlayerEnterIsland;
+
+    // Raise event when player enters island
+    public void InvokeOnPlayerEnterIsland(Island island)
+    {
+        OnPlayerEnterIsland?.Invoke(island);
     }
 }

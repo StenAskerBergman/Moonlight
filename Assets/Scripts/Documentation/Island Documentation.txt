@@ -37,7 +37,7 @@
     uses IslandData to create new islands, and creates game objects for each island using 
     an islandPrefab.
 
-    On the other hand, IslandManager is responsible for managing a list of existing islands. 
+    IslandManager on the other hand is responsible for managing a list of existing islands. 
     It has methods to add and remove islands from the list, and to get islands by name, ID, 
     or position. IslandManager also has a variable to store the next ID number to be assigned 
     to a new island.
