@@ -1,0 +1,47 @@
+
+Island script:
+
+	Publisher: 
+
+	Triggers the OnIslandSelected event and passes 
+	information about its local resources, the Resource
+	Manager, and the current player as parameters.
+
+
+	Subscribers: 
+	
+	subscribes to the GlobalResourceManager script as a 
+	listener to receive updates about the global resource 
+	levels and to allocate resources from the global pool.
+
+
+ResourceManager script:
+
+	Publisher: 
+	Provides updates about the resource levels to the Island 
+	script and the InteractionController script.
+	
+	Subscribers: 
+	subscribes to allocation requests from the Island script 
+	and the UIInteractionController script.
+
+
+InteractionController script:
+	
+	Publisher: none.
+	
+	Subscribers: 
+	subscribes to the OnIslandSelected event triggered by the 
+	Island script and receives the information about the selected 
+	island and the current player. Subscribes to the Resource 
+	Manager script as a listener to receive updates about the 
+	resource levels and to allocate resources from the global pool.
+
+
+UIManager script:
+	
+	Publisher: none.
+
+	Subscribers: subscribes to the OnIslandSelected event triggered 
+	by the Island script and updates the visual display of the UI 
+	based on the information provided.
