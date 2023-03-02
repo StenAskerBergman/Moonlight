@@ -659,6 +659,9 @@
  <Reference Include="UnityEditor.TestRunner">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/UnityEditor.TestRunner.dll</HintPath>
  </Reference>
+ <Reference Include="Unity.VisualEffectGraph.Editor">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.VisualEffectGraph.Editor.dll</HintPath>
+ </Reference>
  <Reference Include="Unity.VSCode.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
  </Reference>
@@ -671,11 +674,17 @@
  <Reference Include="Unity.RenderPipelines.Universal.Runtime">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
  </Reference>
+ <Reference Include="UnityEditor.CacheServer">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/UnityEditor.CacheServer.dll</HintPath>
+ </Reference>
  <Reference Include="Unity.TextMeshPro.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
  </Reference>
  <Reference Include="Unity.VisualStudio.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.VisualStudio.Editor.dll</HintPath>
+ </Reference>
+ <Reference Include="Unity.VisualEffectGraph.Runtime">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.VisualEffectGraph.Runtime.dll</HintPath>
  </Reference>
  <Reference Include="Unity.Timeline">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
@@ -725,6 +734,12 @@
  <Reference Include="Unity.Mathematics.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.Mathematics.Editor.dll</HintPath>
  </Reference>
+ <Reference Include="Unity.ScriptableBuildPipeline">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.ScriptableBuildPipeline.dll</HintPath>
+ </Reference>
+ <Reference Include="Unity.ScriptableBuildPipeline.Editor">
+ <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.ScriptableBuildPipeline.Editor.dll</HintPath>
+ </Reference>
  <Reference Include="Unity.RenderPipelines.Core.Editor">
  <HintPath>C:/Users/stena/Documents/GitHub/Moonlight/Library/ScriptAssemblies/Unity.RenderPipelines.Core.Editor.dll</HintPath>
  </Reference>
@@ -733,6 +748,16 @@
     <ProjectReference Include="Assembly-CSharp.csproj">
       <Project>{C74DBC43-071B-2582-FE19-FEE13D88DE12}</Project>
       <Name>Assembly-CSharp</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="VFXGraph.OutputEventHandlers.csproj">
+      <Project>{55733F54-C896-52A1-B7B3-3805AC7056E4}</Project>
+      <Name>VFXGraph.OutputEventHandlers</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="VFXGraph.OutputEventHandlers.Editor.csproj">
+      <Project>{A8F30A46-F034-AE67-E5D0-6F5B6072B34A}</Project>
+      <Name>VFXGraph.OutputEventHandlers.Editor</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

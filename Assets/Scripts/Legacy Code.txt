@@ -1,0 +1,93 @@
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+Game Manager 
+
+    public void OnCurrentIslandChanged(Island island)
+    {
+        // Get the IslandResourceManager for the current island
+        IslandResourceManager islandResourceManager = GameManager.instance.GetIslandResourceManager(island.id);
+        if (islandResourceManager == null)
+        {
+            Debug.LogError("GameManager: Could not get IslandResourceManager for current island.");
+            return;
+        }
+
+        // Unsubscribe from the OnResourceCountChanged event for the previous island.
+        if (previousIsland != null)
+        {
+            IslandResourceManager previousIslandResourceManager = GameManager.instance.GetIslandResourceManager(previousIsland.id);
+            if (previousIslandResourceManager != null)
+            {
+                previousIslandResourceManager.OnResourceCountChanged -= OnResourceCountChanged;
+            }
+        }
+
+        // Subscribe to the OnResourceCountChanged event for the current island.
+        islandResourceManager.OnResourceCountChanged += OnResourceCountChanged;
+
+        // Update the UI with the current island's resource counts
+        UpdateResourceText(Enums.Resource.Resource1, resource1CountText, GameManager.instance.playerResourceManager, islandResourceManager);
+        UpdateResourceText(Enums.Resource.Resource2, resource2CountText, GameManager.instance.playerResourceManager, islandResourceManager);
+        UpdateResourceText(Enums.Resource.Resource3, resource3CountText, GameManager.instance.playerResourceManager, islandResourceManager);
+
+        // Set the current island as the previous island
+        previousIsland = currentIsland;
+
+        // Set the current island
+        currentIsland = island;
+    }
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+UI Manager
+
+    private void Start()
+    {
+        GameManager gameManager = GameManager.instance;
+        if (gameManager != null)
+        {
+            playerResourceManager = gameManager.playerResourceManager;
+            gameManager.OnCurrentIslandChanged += OnCurrentIslandChanged;
+            OnCurrentIslandChanged(gameManager.GetCurrentIsland());
+
+
+
+            // Subscribe to the OnResourceCountChanged event for the current island.
+            Island currentIsland = gameManager.GetCurrentIsland();
+            if (currentIsland != null)
+            {
+                islandResourceManager = gameManager.GetIslandResourceManager(currentIsland.id);
+                if (islandResourceManager != null)
+                {
+                    islandResourceManager.OnResourceCountChanged += OnResourceCountChanged;
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("Could not find GameManager instance.");
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        GameManager gameManager = GameManager.instance;
+        if (gameManager != null)
+        {
+            gameManager.OnCurrentIslandChanged -= OnCurrentIslandChanged;
+
+            if (islandResourceManager != null)
+            {
+                islandResourceManager.OnResourceCountChanged -= OnResourceCountChanged;
+            }
+        }
+    }
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
