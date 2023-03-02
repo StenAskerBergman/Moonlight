@@ -98,7 +98,7 @@ public class IslandStorage : MonoBehaviour
             Resource.Add(resource, amount);
             return true;
         }
-        return false;
+        //return false;
     }
     // add a material to the islandStorage
     public bool AddMaterial(Enums.Material material, int amount)
