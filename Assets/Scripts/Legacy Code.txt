@@ -82,6 +82,141 @@ UI Manager
     }
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
+
+public class UIManager : MonoBehaviour
+{
+    public Text islandNameText;
+    public Text resource1CountText;
+    public Text resource2CountText;
+    public Text resource3CountText;
+    private PlayerMaterialManager playerMaterialManager;
+    private IslandResourceManager islandResourceManager;
+    private IslandManager islandManager;
+    private Enums.Resource resource;
+
+    private void Start()
+    {
+        // Subscribe to event for the current island.
+        playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
+        IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribes on Destruction
+        IslandManager.instance.OnPlayerEnterIsland -= OnCurrentIslandChanged;
+
+    }
+
+    private void OnCurrentIslandChanged(Island island)
+    {
+        
+        if (island == null)
+        {
+            Debug.Log("Island Null");
+            return;
+        }
+
+        islandNameText.text = island.name.ToString();
+        islandResourceManager = island.GetComponent<IslandResourceManager>(); 
+        // Use -> islandResourceManager  
+        // Not -> IslandResourceManager
+        Debug.Log(islandResourceManager + "Resources: " + Resource.Resource1);
+        //Debug.Log("Amount of Resource1 on island: " + island.Resource[Enums.Resource.Resource1]);
+         if (island.Resource == null)
+        {
+            Debug.Log("Resource Null");
+            
+            return;
+        } else if (island.Resource.ContainsKey(Enums.Resource.Resource1))
+        {
+            Debug.Log("Amount of Resource1 on island: " + island.Resource[Enums.Resource.Resource1]);
+        }
+        else
+        {
+            Debug.Log("Resource1 not found on island. But Wasn't null ");
+        }
+        //Debug.Log(GetResourceCount(island.id, Enums.Resource.Resource1, 0));
+    }
+
+    public int GetResourceCount(int islandID, Enums.Resource resource, int newCount)
+    {
+        // Find the IslandResourceManager for the specified islandID
+        IslandResourceManager islandResourceManager = GameManager.instance.GetIslandResourceManager(islandID);
+        if (islandResourceManager != null)
+        {
+            // Get the resource dictionary for the island
+            Dictionary<Enums.Resource, int> resourceDict = islandResourceManager.island.Resource;
+            
+            // Check if the specified resource type exists in the dictionary
+            if (resourceDict.ContainsKey(resource))
+            {
+                // Update the resource count for the specified resource type
+                resourceDict[resource] = newCount;
+            }
+        }
+
+        return newCount;
+    }
+    // Not implmented Yet
+    public int GetMaterialCount(int islandID, Enums.Material material, int newCount)
+    {
+        // Find the IslandResourceManager for the specified islandID
+        IslandResourceManager islandResourceManager = GameManager.instance.GetIslandResourceManager(islandID);
+        if (islandResourceManager != null)
+        {
+            // Get the resource dictionary for the island
+            Dictionary<Enums.Material, int> materialDict = islandResourceManager.island.Material;
+            
+            // Check if the specified resource type exists in the dictionary
+            if (materialDict.ContainsKey(material))
+            {
+                // Update the resource count for the specified resource type
+                materialDict[material] = newCount;
+            }
+        }
+
+        return newCount;
+    }
+    private void OnResourceCountChanged(Enums.Resource resource, int count)
+    {
+        if (resource == Enums.Resource.Resource1)
+        {
+            resource1CountText.text = count.ToString();
+        }
+        else if (resource == Enums.Resource.Resource2)
+        {
+            resource2CountText.text = count.ToString();
+        }
+        else if (resource == Enums.Resource.Resource3)
+        {
+            resource3CountText.text = count.ToString();
+        }
+    }
+
+    private void UpdateResourceText(Enums.Resource resource, Text textObj, IslandResourceManager islandResourceManager)
+    {
+        int count = GetResourceCount(islandResourceManager.island.id, resource, 0);
+        textObj.text = $"{resource.ToString()}: {count}";
+    }
+    private void UpdateResourceText(Enums.Material material, Text textObj, PlayerMaterialManager playerMaterialManager)
+    {
+        int count = GetMaterialCount(islandResourceManager.island.id, material, 0);
+        textObj.text = $"{material.ToString()}: {count}";
+    }
+
+    private void UpdateCostText(Enums.Resource resource, Text textObj, PlayerMaterialManager playerMaterialManager, IslandResourceManager islandResourceManager)
+    {
+        // Doesn't Exist Yet
+        //int costCount = GetCostCount(islandResourceManager.island.id, resource, 0);
+        //textObj.text = $"{resource.ToString()}: {costCount}";
+    }
+}
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 

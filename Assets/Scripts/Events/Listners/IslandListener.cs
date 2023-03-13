@@ -4,8 +4,17 @@ using UnityEngine;
 
 public class IslandListener : MonoBehaviour
 {
+    public static IslandListener instance;
     private Island currentIsland;
+    private void Awake()
+    {
+        if (instance != null && instance != this) {
+            Destroy(this.gameObject);
+            return;
+        }
 
+        instance = this;
+    }
     private void Start()
     {
         // Subscribe to the event in the IslandManager that detects when the player is looking at an island
@@ -25,7 +34,7 @@ public class IslandListener : MonoBehaviour
             
 
         // Update any relevant UI or gameplay elements based on the current island
-        Debug.Log("Player entered island: " + currentIsland.name);
-        Debug.Log("Player entered island: " + island.name);
+        //Debug.Log("Player entered island: " + currentIsland.name);
+        //Debug.Log("Player entered island: " + island.id);
     }
 }

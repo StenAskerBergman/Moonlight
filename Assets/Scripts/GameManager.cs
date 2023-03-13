@@ -7,10 +7,10 @@ public class GameManager : MonoBehaviour
     public static GameManager instance;
     public int currentIslandID;
     public MapManager mapManager;
-    public PlayerResourceManager playerResourceManager;
+    public PlayerMaterialManager playerMaterialManager;
     private IslandManager islandManager;
     private UIManager uiManager;
-    private Island currentIsland;
+    public Island currentIsland;
     private Dictionary<int, GameObject> islandObjects = new Dictionary<int, GameObject>(); // Added dictionary for island game objects
     private Island previousIsland;
 
@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour
         }
 
         instance = this;
-        playerResourceManager = FindObjectOfType<PlayerResourceManager>();
+        playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
         islandManager = FindObjectOfType<IslandManager>();
     }
 

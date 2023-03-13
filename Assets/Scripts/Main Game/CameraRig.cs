@@ -7,43 +7,98 @@ public class CameraRig : MonoBehaviour
     public Transform cameraTransform;
 
     // Camera Speed Value
-    public float normalSpeed = 0.5f;
-    public float fastSpeed = 3f;
-    public float movementSpeed = 1f;
-    public float movementTime = 5f;   // IMPORTANT: The Higher the Value the Snappier the Camera Move
-    public float zoomTime = 5f;      // IMPORTANT: The Higher the Value the Faster the Zoom
-    public float rotationAmount;    // Amount of Rotation Per Time Unit
+    public float normalSpeed = 0.5f;    // Camera Speed Rate
+    public float fastSpeed = 3f;        // Fast Camera Speed
+    public float movementSpeed = 1f;    // Default Camera Speed 
+    public float movementTime = 5f;     // IMPORTANT: The Higher the Value the Snappier the Camera Move
+    public float zoomTime = 5f;         // IMPORTANT: The Higher the Value the Faster the Zoom
+    public float rotationAmount;        // IMPORTANT: Amount of Rotation Per Time Unit
+    public float maxZoomDistance = 10f;       // IMPORTANT: Zoom Range
+    public float minZoomDistance = 1f;       // IMPORTANT: Zoom Range
+    
+    // Note: Should be based off the current Map Size
+    public Vector2 _range = new Vector2(100,100);   // IMPORTANT: Map Boarder
 
-    public Vector3 zoomAmount;
+    public Vector3 zoomAmount; 
     public Vector3 newZoom;
     public Vector3 newPosition;
     public Quaternion newRotation;
-    //public Vector3 dragStartPosition;
-    //public Vector3 dragCurrentPosition;
     public Vector3 rotateStartPosition;
     public Vector3 rotateCurrentPosition;
-
-    // Start is called before the first frame update
-    void Start()
+    //public BlueprintScript blueprintScript;
+    //public Vector3 dragStartPosition;
+    //public Vector3 dragCurrentPosition;
+    bool rotationMode;
+    void Awake()
     {
+        BlueprintScript blueprintScript = FindObjectOfType<BlueprintScript>(); // Find Solution Tmr
+        // Debug.Log(blueprintScript.RotationMode);
+        // Debug.Log(rotationMode);
+    }
+    void Start(){
+        
         newPosition = transform.position;
         newRotation = transform.rotation;
         newZoom = cameraTransform.localPosition;
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        
         HandleMouseInput();
         HandleMovementInput();
     }
+    
     void HandleMouseInput()
-    {
-        if(Input.mouseScrollDelta.y != 0)
+    {   
+        #region Scrolling 
+
+            // Ref to BlueprintScript
+            BlueprintScript blueprintScript = FindObjectOfType<BlueprintScript>();
+            
+            if(blueprintScript != null) 
+            {
+                // Do Nothing
+            } 
+            else 
+            {
+                if (Input.mouseScrollDelta.y != 0)
+                {
+                    newZoom += Input.mouseScrollDelta.y * zoomAmount;
+
+                    float distance = Vector3.Distance(Vector3.zero, newZoom);
+
+                    if (distance > maxZoomDistance)
+                    {
+                        newZoom = newZoom.normalized * maxZoomDistance;
+                    }
+                    else if (distance < minZoomDistance)
+                    {
+                        newZoom = newZoom.normalized * minZoomDistance;
+                    }
+                }
+            }
+
+        #endregion
+
+        if (Input.GetMouseButtonDown(2))
         {
-            newZoom += Input.mouseScrollDelta.y * zoomAmount;
+            rotateStartPosition = Input.mousePosition;
         }
 
+        if (Input.GetMouseButton(2))
+        {
+            rotateCurrentPosition = Input.mousePosition;
+
+            Vector3 difference = rotateStartPosition - rotateCurrentPosition;
+
+            rotateStartPosition = rotateCurrentPosition;
+
+            newRotation *= Quaternion.Euler(Vector3.up * (-difference.x / 5f));
+        }
+        
         /* if (Input.GetMouseButtonDown(0))
          {
              Plane plane = new Plane(Vector3.up, Vector3.zero);
@@ -74,78 +129,103 @@ public class CameraRig : MonoBehaviour
              }
          }*/
 
-        if (Input.GetMouseButtonDown(2))
-        {
-            rotateStartPosition = Input.mousePosition;
-        }
 
-        if (Input.GetMouseButton(2))
-        {
-            rotateCurrentPosition = Input.mousePosition;
-
-            Vector3 difference = rotateStartPosition - rotateCurrentPosition;
-
-            rotateStartPosition = rotateCurrentPosition;
-
-            newRotation *= Quaternion.Euler(Vector3.up * (-difference.x / 5f));
-        }
 
     }
+    private bool IsInBounds(Vector3 position)
+    {
+        return position.x > -_range.x &&
+            position.x < _range.x &&
+            position.z > -_range.y &&
+            position.z < _range.y;
+    }
 
+    private Vector3 GetNearestPointOnBounds(Vector3 position)
+    {
+        position.x = Mathf.Clamp(position.x, -_range.x, _range.x);
+        position.z = Mathf.Clamp(position.z, -_range.y, _range.y);
+        return position;
+    }
+    
     void HandleMovementInput() 
     { 
-        // Shift input
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            movementSpeed = fastSpeed;
-        }
-        else
-        {
-            movementSpeed = normalSpeed;
-        }
+        #region Shift input
 
-        // Move input
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                movementSpeed = fastSpeed;
+            }
+            else
+            {
+                movementSpeed = normalSpeed;
+            }
+
+        #endregion
+
+        #region Move input
+
+        Vector3 direction = Vector3.zero;
         if (Input.GetKey(KeyCode.W)|| Input.GetKey(KeyCode.UpArrow))
         {
-            newPosition += (transform.forward * movementSpeed);
+            direction += (transform.forward * movementSpeed);
         }
         if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
         {
-            newPosition += (transform.forward * -movementSpeed);
+            direction += (transform.forward * -movementSpeed);
         }
         if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
         {
-            newPosition += (transform.right * movementSpeed);
+            direction += (transform.right * movementSpeed);
         }
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
         {
-            newPosition += (transform.right * -movementSpeed);
+            direction += (transform.right * -movementSpeed);
         }
 
-        // Rotate Input
-        if (Input.GetKey(KeyCode.Q))
+        newPosition += direction;
+
+        if (!IsInBounds(newPosition))
         {
-            newRotation *= Quaternion.Euler(Vector3.up * rotationAmount);
+            // Set newPosition to the nearest point on the bounds
+            newPosition = GetNearestPointOnBounds(newPosition);
         }
-        if (Input.GetKey(KeyCode.E))
-        {
-            newRotation *= Quaternion.Euler(Vector3.up * -rotationAmount);
-        }
+
+        #endregion
+
+        #region Rotate Input
+
+            if (Input.GetKey(KeyCode.Q))
+            {
+                newRotation *= Quaternion.Euler(Vector3.up * rotationAmount);
+            }
+            if (Input.GetKey(KeyCode.E))
+            {
+                newRotation *= Quaternion.Euler(Vector3.up * -rotationAmount);
+            }
+
+        #endregion
+
+        #region Zoom Input
         
-        // Zoom Input
-        if (Input.GetKey(KeyCode.R))
-        {
-            newZoom += zoomAmount;
-        }
-        if (Input.GetKey(KeyCode.F))
-        {
-            newZoom -= zoomAmount;
-        }
+            if (Input.GetKey(KeyCode.R))
+            {
+                newZoom += zoomAmount;
+            }
+            
+            if (Input.GetKey(KeyCode.F))
+            {
+                newZoom -= zoomAmount;
+            }
 
-    #region Larping Section
-        transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * movementTime);
-        cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * zoomTime);
-    #endregion
+        #endregion
+
+        #region Larping Section
+
+            transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
+            transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * movementTime);
+            cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * zoomTime);
+
+        #endregion
     }
+    
 }

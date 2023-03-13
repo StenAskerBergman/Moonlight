@@ -13,12 +13,16 @@ GameObject:
   - component: {fileID: 8999548730694194732}
   - component: {fileID: 8999548730694194733}
   - component: {fileID: 8999548730694194730}
-  - component: {fileID: 8999548730694194729}
+  - component: {fileID: -552376267020024411}
   - component: {fileID: -9030132306054211866}
   - component: {fileID: 3455861561373475410}
+  - component: {fileID: -6547287152294140777}
+  - component: {fileID: -1735661172497315272}
+  - component: {fileID: 4771324521750715228}
+  - component: {fileID: -960064353575088697}
   m_Layer: 0
   m_Name: IslandPrefab
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -112,7 +116,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83cb0669bfa35984f9a02782777f1a55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &8999548730694194729
+--- !u!114 &-552376267020024411
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -124,8 +128,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d05abb28c02e9d4c8c163d953379546, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerResourceManager: {fileID: 0}
+  playerMaterialManager: {fileID: 0}
   buildings: []
+  resourceTypes: 
   resources: 
   island: {fileID: 0}
   islandID: 0
@@ -162,3 +167,68 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &-6547287152294140777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8999548730694194735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b575f1b9cb4daa47b70f10c58647341, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StartAmount: 0
+  resource1Amount: 100
+  resource2Amount: 100
+  resource3Amount: 100
+--- !u!114 &-1735661172497315272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8999548730694194735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22a8bf083823af64e8309979beb2f9fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Settled: 1
+  PowerSpent: 0
+  PowerOutput: 0
+  CurrentPower: 0
+  TotalPower: 0
+--- !u!114 &4771324521750715228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8999548730694194735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e6289ebbdce60b478d2b64ec47ab403, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  NegEco: 0
+  PosEco: 0
+  EcoValue: 0
+  DefaultEcoValue: 10
+--- !u!114 &-960064353575088697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8999548730694194735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6738e662e1c665d4e958a07bb251f952, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridSize: 10
+  cellSize: 1
+  islandGameObject: {fileID: 0}
+  islandPlane: {fileID: 0}

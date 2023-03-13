@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 public class Island : MonoBehaviour
 {
-
-
+    
     // Variables
     public int id;
     public Bounds bounds;
     public Enums.IslandType islandType;
     public string islandName;
+    IslandResourceManager islandResourceManager;
+    MapManager mapManager;
     public GameObject islandObject { get; set; }
     //public GameObject gameObject { get; set; }
+    public void Start(){
 
+        //this.transform.SetParent(mapManager.transform);
+    }
     public Island(Enums.IslandType type)
     {
         // Initialize the required fields
@@ -21,7 +25,9 @@ public class Island : MonoBehaviour
         Resource = new Dictionary<Enums.Resource, int>();
         Material = new Dictionary<Enums.Material, int>();
         Good = new Dictionary<Enums.Good, int>();
+        
     }
+
     // list of buildings on the island
     public List<Building> buildings = new List<Building>();
 

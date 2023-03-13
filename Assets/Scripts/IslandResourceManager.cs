@@ -25,10 +25,14 @@ public class IslandResourceManager : MonoBehaviour
     public event ResourceCountChangedHandler OnResourceCountChanged;
 
     // variables
-    public PlayerResourceManager playerResourceManager; // A reference to the PlayerResourceManager script.
+    public PlayerMaterialManager playerMaterialManager; // A reference to the PlayerMaterialManager script.
+    
     public Building[] buildings; // An array of Building objects.
-    public Enums.ResourceType[] resources; // An array of Enums.Resource values.
+    public Enums.ResourceType[] resourceTypes; // An array of Enums.Resource values.
+    public Enums.Resource[] resources; // An array of Enums.Resource values.
+
     public Island island; // The Island object associated with this script.
+    private Island currentIsland;
     public int islandID; // The ID number of the associated Island.
 
     // Section 1
@@ -40,20 +44,25 @@ public class IslandResourceManager : MonoBehaviour
         public void SetIsland(Island island)
         {
             this.island = island; // Assign the given Island to the local Island variable.
+            this.island = currentIsland;
         }
     
-    // Awake Method
+    // Awake Method - IslandResourceManager
         private void Awake()
         {
-            playerResourceManager = GameObject.FindObjectOfType<PlayerResourceManager>(); // Find and assign the PlayerResourceManager script.
-            island = GetComponentInParent<Island>();
+            playerMaterialManager = GameObject.FindObjectOfType<PlayerMaterialManager>(); // Find and assign the PlayerMaterialManager script.
+            island = GetComponentInParent<Island>(); // Prefab Ref
+            currentIsland = GetComponent<Island>(); // Current Ref - somehow this works not sure why
         }
 
-    // Start Method
+    //  Start Method - IslandResourceManager
         void Start()
         {
 
             islandID = island.id; // Assign the ID number of the associated Island to the local islandID variable.
+            //Debug.Log("island.id: "+ island.id + " islandID: "+ islandID + " currentIsland.id: "+ currentIsland.id);
+            currentIsland.id = island.id;
+            
 
             island = transform.root.gameObject.GetComponent<Island>();
             if (island == null)
@@ -62,7 +71,7 @@ public class IslandResourceManager : MonoBehaviour
                 return;
             }
 
-            playerResourceManager = FindObjectOfType<PlayerResourceManager>();
+            playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
             
             GameManager gameManager = GameManager.instance; // Get the instance of the GameManager.
             if (gameManager == null)
@@ -72,33 +81,18 @@ public class IslandResourceManager : MonoBehaviour
             }
         }
 
-    // Section 2 GetResourceCount
-
-        public void UpdateResourceCount(Enums.Resource resource, int count)
-        {
-            // Update the resource count in the resource manager.
-            playerResourceManager.GetResourceCount(islandID, resource, count);
-
-            // Update the resource count in the island.
-            if (island.Resource.ContainsKey(resource))
-            {
-                island.Resource[resource] = count;
-            }
-
-            // Invoke the OnResourceCountChanged event.
-            OnResourceCountChanged?.Invoke(resource, count);
-        }
 
 
-        public void SetResourceCount(Enums.Resource resource, int count)
-        {
-            Dictionary<Enums.Resource, int> resourceDict = island.Resource;
-            if (resourceDict.ContainsKey(resource))
-            {
-                resourceDict[resource] = count;
-                OnResourceCountChanged?.Invoke(resource, count); // call event to notify listeners of the change
-            }
-        }
+
+    // public void SetResourceCount(Enums.Resource resource, int count)
+    // {
+    //     Dictionary<Enums.Resource, int> resourceDict = island.Resource;
+    //     if (resourceDict.ContainsKey(resource))
+    //     {
+    //         resourceDict[resource] = count;
+    //         OnResourceCountChanged?.Invoke(resource, count); // call event to notify listeners of the change
+    //     }
+    // }
 
 
     // public int GetResourceCount(int islandId, Enums.Resource resource)

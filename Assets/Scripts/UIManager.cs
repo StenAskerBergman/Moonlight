@@ -1,70 +1,126 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    public Text resource1CountText;
-    public Text resource2CountText;
-    public Text resource3CountText;
-    private PlayerResourceManager playerResourceManager;
-    private IslandResourceManager islandResourceManager;
+    // Player Set Variables
+        public Text islandNameText;
+        public bool IslandSettled = false;
 
+    // Power Related
+        public Text CurrentPowerText;
+        public Text TotalPowerText;
+        public Text SpentPowerText;
+
+    // Eco Related
+        public Text EcoValueText;
+        public Text EcoPosText;
+        public Text EcoNegText;
+
+    // Money Related
+        public Text MoneyText;
+    
+    // Resource Related
+        public Text resource1Text;
+        public Text resource2Text;
+        public Text resource3Text;
+        
+    // Refs 1
+        public IslandResource islandResource;
+        public IslandPower islandPower;
+        public IslandEcology islandEcology;
+
+    // Refs 2
+        private PlayerMaterialManager playerMaterialManager;
+        private IslandResourceManager islandResourceManager;
+        private Island currentIsland;
+        
     private void Start()
     {
         // Subscribe to event for the current island.
+        playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
+        IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
     }
 
     private void OnDestroy()
     {
         // Unsubscribes on Destruction
+        IslandManager.instance.OnPlayerEnterIsland -= OnCurrentIslandChanged;
+
     }
 
     private void OnCurrentIslandChanged(Island island)
     {
-        // Unsubscribe from the OnResourceCountChanged event for the previous island.
-        if (islandResourceManager != null)
+        
+        if (island == null)
         {
-            islandResourceManager.OnResourceCountChanged -= OnResourceCountChanged;
-        }
-
-        // Get the IslandResourceManager for the current island
-        islandResourceManager = GameManager.instance.GetIslandResourceManager(island.id);
-        if (islandResourceManager == null)
-        {
-            Debug.LogError("UIManager: Could not get IslandResourceManager for current island.");
+            Debug.Log("Island = Null");
             return;
         }
-
-        // Subscribe to the OnResourceCountChanged event for the current island.
-        islandResourceManager.OnResourceCountChanged += OnResourceCountChanged;
-
-        UpdateResourceText(Enums.Resource.Resource1, resource1CountText, playerResourceManager, islandResourceManager);
-        UpdateResourceText(Enums.Resource.Resource2, resource2CountText, playerResourceManager, islandResourceManager);
-        UpdateResourceText(Enums.Resource.Resource3, resource3CountText, playerResourceManager, islandResourceManager);
+        currentIsland = island;
+        islandResource = island.GetComponent<IslandResource>();
+        islandPower = island.GetComponent<IslandPower>();
+        islandEcology = island.GetComponent<IslandEcology>();
+        islandNameText.text = island.name.ToString();
+        islandResourceManager = island.GetComponent<IslandResourceManager>(); 
     }
-
-    private void OnResourceCountChanged(Enums.Resource resource, int count)
+    
+    // Update is called once per frame
+    void Update()
     {
-        if (resource == Enums.Resource.Resource1)
-        {
-            resource1CountText.text = count.ToString();
-        }
-        else if (resource == Enums.Resource.Resource2)
-        {
-            resource2CountText.text = count.ToString();
-        }
-        else if (resource == Enums.Resource.Resource3)
-        {
-            resource3CountText.text = count.ToString();
-        }
-    }
+        if (currentIsland != null) {
+            islandResource = currentIsland.GetComponent<IslandResource>();
+            islandPower = currentIsland.GetComponent<IslandPower>();
+            islandEcology = currentIsland.GetComponent<IslandEcology>();
+            islandNameText.text = currentIsland.name.ToString();
+            islandResourceManager = currentIsland.GetComponent<IslandResourceManager>(); 
+            
+            if (islandResource == null)
+            {
+                Debug.Log("islandResource = Null");
+                return;
+            } else {
 
-    private void UpdateResourceText(Enums.Resource resource, Text textObj, PlayerResourceManager playerResourceManager, IslandResourceManager islandResourceManager)
-    {
-        int count = playerResourceManager.GetResourceCount(islandResourceManager.island.id, resource, 0);
-        textObj.text = $"{resource.ToString()}: {count}";
+                // Display the amount of each resource in the UI
+                resource1Text.text = ""+islandResource.GetResourceAmount(Enums.Resource.Resource1); // Selects a Resource of type #
+                resource2Text.text = ""+islandResource.GetResourceAmount(Enums.Resource.Resource2); // Sends the Resource# Amounts back
+                resource3Text.text = ""+islandResource.GetResourceAmount(Enums.Resource.Resource3); // Displays the Resource# Amount
+            }
+
+            
+
+                if (islandPower == null)
+                {
+                    Debug.Log("islandPower = Null");
+                    IslandSettled = false;
+                    return;
+
+                } else {
+                    
+                    if(islandPower.Settled == true) 
+                    {
+                        IslandSettled = islandPower.Settled;
+                        // Display the amount of Power in the UI
+                        CurrentPowerText.text = ""+islandPower.GetCurrentPower();   // Current Power
+                        SpentPowerText.text = ""+islandPower.GetPowerSpent();       // Spent Power
+                        TotalPowerText.text = ""+islandPower.GetTotalPower();       // Total Power
+                    }
+                }
+
+            if (islandEcology == null)
+            {
+                Debug.Log("islandEcology = Null");
+                return;
+
+            } else {
+                // Display the amount of Power in the UI
+                EcoValueText.text = ""+islandEcology.GetCurrentEco();       // Current Eco Value
+                EcoPosText.text = ""+islandEcology.GetNegativeEco();        // Negative Eco Value
+                EcoNegText.text = ""+islandEcology.GetPositiveEco();        // Positive Eco Value
+
+            }
+        }
     }
 }

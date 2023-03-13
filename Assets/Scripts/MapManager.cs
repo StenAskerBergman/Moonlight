@@ -30,7 +30,7 @@ public class MapManager : MonoBehaviour
         islands = new List<Island>();
         nextIslandID = 1;
         gameManager = FindObjectOfType<GameManager>();
-
+        
         for (int i = 0; i < numberOfIslands; i++)
         {
             // Generate a new island
@@ -65,14 +65,14 @@ public class MapManager : MonoBehaviour
             }
         }
         island.Resource = resourceDictionary;
-
         island.bounds = data.bounds;
         island.id = GetNextIslandID(); // set the id of the island
-
+        
         // Create new game object for the island
         GameObject islandGO = Instantiate(islandPrefab);
         islandGO.transform.position = island.bounds.center;
         islandGO.name = data.name;
+        
 
         // Set the GameObject reference in the Island class
         island.islandObject = islandGO;
@@ -82,12 +82,14 @@ public class MapManager : MonoBehaviour
         if (islandResourceManager != null) 
         {
             islandResourceManager.SetIsland(island);
+            islandResourceManager.island.id = data.id; // Sets ID
+            
         }
         else 
         {
             Debug.LogError("IslandResourceManager component not found on islandPrefab.");
         }
-
+        
         islands.Add(island); // add the island to the list after the ID has been assigned
     }
 
