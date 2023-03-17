@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
      <Compile Include="Assets\Prefabs\Buildings\BuildHeight.cs" />
-     <Compile Include="Assets\Scripts\BuildingManager.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingManager.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Shaders\LerpTextureComputeHandler.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\Button_UI.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\Target.cs" />
@@ -59,13 +59,13 @@
      <Compile Include="Assets\CodeMonkey\MonoBehaviours\CameraFollow.cs" />
      <Compile Include="Assets\Scripts\ResourceInventoryManager.cs" />
      <Compile Include="Assets\Scripts\Main Game\CountDown.cs" />
+     <Compile Include="Assets\Scripts\EnableOnAwake.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\VisionHandler.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\World_Bar.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\KeyEvent.cs" />
      <Compile Include="Assets\Scripts\Main Game\BuilderScript.cs" />
-     <Compile Include="Assets\Scripts\BuildZone.cs" />
-     <Compile Include="Assets\Scripts\BlueprintScript.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildZone.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
      <Compile Include="Assets\Scripts\Main Game\Bank.cs" />
      <Compile Include="Assets\Scripts\MapManager.cs" />
@@ -79,8 +79,9 @@
      <Compile Include="Assets\Scripts\TargetController.cs" />
      <Compile Include="Assets\Scripts\Enums.cs" />
      <Compile Include="Assets\Scripts\World Generation\Noise.cs" />
-     <Compile Include="Assets\Scripts\Building.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\Building.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeA.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\Placement\BuildingRotator.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark04.cs" />
      <Compile Include="Assets\Scripts\ControlPoint.cs" />
      <Compile Include="Assets\Scripts\UIManager.cs" />
@@ -102,7 +103,6 @@
      <Compile Include="Assets\Scripts\Unit Scripts\UnitMovement.cs" />
      <Compile Include="Assets\Scripts\Main Game\CameraRig.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeB.cs" />
-     <Compile Include="Assets\Scripts\Other\OldSelectionSystem.cs" />
      <Compile Include="Assets\Scripts\Grid System\OnLand_Grid.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\WallRunScript.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\DockedScript.cs" />
@@ -115,11 +115,12 @@
      <Compile Include="Assets\Scripts\World Generation\MapDisplay.cs" />
      <Compile Include="Assets\Scripts\Other\ReverseBool.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\CameraController.cs" />
+     <Compile Include="Assets\Scripts\GridSystem.cs" />
      <Compile Include="Assets\Scripts\ResourceInitializer.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Shaders\FogOfWarCheckComputeHandler.cs" />
      <Compile Include="Assets\Prefabs\Buildings\Civilan\SimpleAnimator.cs" />
      <Compile Include="Assets\Scripts\Grid.cs" />
-     <Compile Include="Assets\Scripts\BuildingData.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingData.cs" />
      <Compile Include="Assets\Scripts\ResourceManager.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\UI_Sprite.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\VisionPoint.cs" />
@@ -131,13 +132,14 @@
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextConsoleSimulator.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ObjectSpin.cs" />
      <Compile Include="Assets\Scripts\Other\Debug\UnitScript.cs" />
-     <Compile Include="Assets\Scripts\BuildingProduction.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingProduction.cs" />
+     <Compile Include="Assets\Scripts\EnableAllComponents.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextInfoDebugTool.cs" />
      <Compile Include="Assets\Scripts\Events\IGEventStart.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Shaders\FogOfWarComputeHandler.cs" />
      <Compile Include="Assets\Extensions\GameObjectExtensions.cs" />
-     <Compile Include="Assets\Scripts\BuildingCost.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingCost.cs" />
      <Compile Include="Assets\Scripts\Events\Publishers\IslandEnterDetector.cs" />
      <Compile Include="Assets\Scripts\Other\Debug\BoxcastScript.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ShaderPropAnimator.cs" />
@@ -145,6 +147,7 @@
      <Compile Include="Assets\RTS_Camera\Demo\TargetSelector.cs" />
      <Compile Include="Assets\Scripts\GridBuildingSystem.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\FogHideComponent.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingProperties.cs" />
      <Compile Include="Assets\Scripts\Island Gen\IslandNoise.cs" />
      <Compile Include="Assets\Scripts\World Generation\MapGenerator.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
@@ -161,6 +164,7 @@
      <Compile Include="Assets\Scripts\Other\ResourceFolderLogLister.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\VisionBlockComponent.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\Gun.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\Placement\BuildingPreview.cs" />
      <Compile Include="Assets\Scripts\State.cs" />
      <Compile Include="Assets\RTS_Camera\Scripts\RTS_Camera.cs" />
      <Compile Include="Assets\Scripts\IslandStorage.cs" />
@@ -181,11 +185,12 @@
      <Compile Include="Assets\Scripts\onStartActivate.cs" />
      <Compile Include="Assets\Scripts\ClickMarker.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark03.cs" />
-     <Compile Include="Assets\Scripts\BuildingPlacer.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\Placement\BuildingPlacer.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\ToggleLight.cs" />
      <Compile Include="Assets\Scripts\Blit.cs" />
      <Compile Include="Assets\Scripts\Other\Debug\Debug Raycasting Script.cs" />
      <Compile Include="Assets\Scripts\HideOnPlay.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\Placement\BuildingMaterials.cs" />
      <Compile Include="Assets\Scripts\IslandResourceManager.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_FrameRateCounter.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Shaders\ShaderReferencesScriptableObject.cs" />
@@ -196,10 +201,11 @@
      <Compile Include="Assets\Scripts\Other\Referance\Turret.cs" />
      <Compile Include="Assets\Scripts\IslandResource.cs" />
      <Compile Include="Assets\FogOfWar\Scripts\Shaders\UpscaleFogComputeHandler.cs" />
+     <Compile Include="Assets\Scripts\Events\Publishers\IslandGridDetector.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventHandler.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\UI_Bar.cs" />
      <Compile Include="Assets\Scripts\Unit Scripts\Unit.cs" />
-     <Compile Include="Assets\Scripts\SelectionBar.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\SelectionBar.cs" />
      <Compile Include="Assets\Scripts\IslandData.cs" />
      <Compile Include="Assets\Scripts\Other\Referance\Checklist.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_B.cs" />
@@ -222,16 +228,13 @@
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TeleType.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
      <Compile Include="Assets\Scripts\InitializeIslands.cs" />
-     <Compile Include="Assets\Scripts\Main Game\HouseBuilderScript.cs" />
+     <Compile Include="Assets\Scripts\Main Game\Building Code\BuildingSelector.cs" />
      <Compile Include="Assets\Scripts\Main Game\UnitSpawnScript.cs" />
      <Compile Include="Assets\Scripts\World Generation\EndlessTerrain.cs" />
      <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
      <Compile Include="Assets\CodeMonkey\CMDebug.cs" />
      <Compile Include="Assets\CodeMonkey\Utils\FunctionPeriodic.cs" />
-     <Compile Include="Assets\Scripts\EnableOnAwake.cs" />
-     <Compile Include="Assets\Scripts\EnableAllComponents.cs" />
-     <Compile Include="Assets\Scripts\GridSystem.cs" />
-     <Compile Include="Assets\Scripts\BuildingProperties.cs" />
+     <Compile Include="Assets\BuildingButton.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
      <None Include="Assets\RTS_Camera\Demo\Projectors\Shaders\ProjectorLight.shader" />

@@ -36,45 +36,50 @@ public class GridSystem : MonoBehaviour
                 if (Physics.Raycast(cellPos + Vector3.up * 100f, Vector3.down, out hit, Mathf.Infinity))
                 {
                     // Align the cell position with the terrain and snap it to the nearest grid point
-                    cellPos = hit.point;
-                    cellPos.x = Mathf.Round(cellPos.x / cellSize) * cellSize;
-                    cellPos.z = Mathf.Round(cellPos.z / cellSize) * cellSize;
+                        cellPos = hit.point;
+                        cellPos.x = Mathf.Round(cellPos.x / cellSize) * cellSize;
+                        cellPos.z = Mathf.Round(cellPos.z / cellSize) * cellSize;
 
-                    // Create a new cell at the position and add it to the grid
-                    Cell cell = new Cell(cellPos, null, false);
-                    grid[x, z] = cell;
-                    
+                        // Create a new cell at the position and add it to the grid
+                        Cell cell = new Cell(cellPos, null, false);
+                        grid[x, z] = cell;
+                        
+                    // Can't Draw Gizmos Outside a Gizmos Function
+                        // Draw a wire cube at the cell position
+                        // Gizmos.DrawWireCube(cellPos + cellSizeVec * 0.5f, cellSizeVec);
+                            
                     // Draw the grid cell
-                    //GameObject cellObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                    //cellObject.transform.position = cellPos;
-                    //cellObject.transform.localScale = cellSizeVec;
+                        //GameObject cellObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                        //cellObject.transform.position = cellPos;
+                        //cellObject.transform.localScale = cellSizeVec;
                 }
             }
         }
     }
-    private void OnDrawGizmos()
-    {
-        // Determine the size of each grid cell based on the desired cell size
-        Vector3 cellSizeVec = new Vector3(cellSize, 0f, cellSize);
+    
 
-        // Loop over each cell in the grid and determine its position in the game world
-        for (int x = 0; x < gridSize; x++)
-        {
-            for (int z = 0; z < gridSize; z++)
-            {
-                Vector3 cellPos = islandPlane.position + new Vector3(x * cellSize, 0f, z * cellSize);
-
-                // Draw a wire cube at the cell position
-                Gizmos.DrawWireCube(cellPos + cellSizeVec * 0.5f, cellSizeVec);
-            }
-        }
-    }
 
 
     public Vector3 SnapToGrid(Vector3 pos)
     {
         Vector3 snappedPos = new Vector3(Mathf.Round(pos.x / cellSize) * cellSize, pos.y, Mathf.Round(pos.z / cellSize) * cellSize);
         return snappedPos;
+    }
+    
+    public Vector3 GetNearestPointOnGrid(Vector3 position)
+    {
+        // Snap the position to the grid
+        Vector3 snappedPos = SnapToGrid(position);
+
+        // Check if the position is within the grid bounds
+        if (GetCellAtPosition(snappedPos) != null)
+        {
+            return snappedPos;
+        }
+        else
+        {
+            return Vector3.zero; // Return a default value if the position is out of bounds
+        }
     }
 
     public Cell GetCellAtPosition(Vector3 position)

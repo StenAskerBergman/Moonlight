@@ -31,10 +31,12 @@ public class IslandListener : MonoBehaviour
     {
         // Store a reference to the current island
         currentIsland = island;
-            
-
-        // Update any relevant UI or gameplay elements based on the current island
-        //Debug.Log("Player entered island: " + currentIsland.name);
-        //Debug.Log("Player entered island: " + island.id);
     }
 }
+
+
+        // Update any relevant UI or gameplay elements based on the current island
+        
+        // Debugger
+        // Debug.Log("Player entered island: " + currentIsland.name);
+        // Debug.Log("Player entered island: " + island.id);

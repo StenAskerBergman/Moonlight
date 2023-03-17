@@ -7,9 +7,11 @@ using UnityEngine;
 
 public class IslandManager : MonoBehaviour
 {
+    private GridSystem currentGridSystem;
     public Island islandPrefab;
     public List<Island> islands { get; private set; }
     private int nextIslandID;
+    public Camera playerCamera;
 
     public static IslandManager instance;
 
@@ -31,6 +33,7 @@ public class IslandManager : MonoBehaviour
         islands = new List<Island>();
         nextIslandID = 1;
     }
+
     #endregion
 
     #region Island +/- Methods 
@@ -60,6 +63,28 @@ public class IslandManager : MonoBehaviour
 
     #region GetIsland Methods 
 
+        // By Camera
+        private Island GetIslandInFrontOfCamera(Camera playerCamera)
+        {
+            Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            RaycastHit hit;
+            float maxDistance = 1000f; // Adjust this value based on the maximum distance you want to detect islands from
+            LayerMask islandLayer = LayerMask.GetMask("Island"); // Replace "Island" with the name of your island layer
+
+            if (Physics.Raycast(ray, out hit, maxDistance, islandLayer))
+            {
+                Island hitIsland = hit.collider.GetComponent<Island>();
+
+                if (hitIsland != null)
+                {
+                    return hitIsland;
+                }
+            }
+
+            return null;
+        }
+
+
         // By Name
         public Island GetIslandByName(string name)
         {
@@ -71,7 +96,7 @@ public class IslandManager : MonoBehaviour
         {
             return islands.Find(island => island.id == id);
         }
-
+        // By ID
         public Island GetIslandByID(int id)
         {
             return islands.Find(island => island.id == id);
@@ -117,11 +142,51 @@ public class IslandManager : MonoBehaviour
     
         // Add event for player entering island
         public event Action<Island> OnPlayerEnterIsland;
+        public delegate void GridSystemDetectedEventHandler(GridSystem gridSystem);
+        public event GridSystemDetectedEventHandler OnGridSystemDetected;
 
         // Raise event when player enters island
-        public void InvokeOnPlayerEnterIsland(Island island)
+        
+            public void InvokeOnPlayerEnterIsland(Island island)
+            {
+                OnPlayerEnterIsland?.Invoke(island);
+            }
+
+            public void InvokeOnGridSystemDetected(GridSystem gridSystem)
+            {
+                currentGridSystem = gridSystem;
+                OnGridSystemDetected?.Invoke(gridSystem);
+            }
+
+            public GridSystem GetCurrentGridSystem()
+            {
+                return currentGridSystem;
+            }
+            
+    #endregion
+
+    #region Initial IEnumerators 
+    private IEnumerator DetectInitialIsland(Camera playerCamera)
+    {
+        // Wait for a short time to let other systems initialize
+        yield return new WaitForSeconds(0.1f);
+
+        // Call the InvokeOnGridSystemDetected method here to detect the initial island and grid system
+        Island initialIsland = GetIslandInFrontOfCamera(playerCamera);
+        if (initialIsland != null)
         {
-            OnPlayerEnterIsland?.Invoke(island);
+            GridSystem gridSystem = initialIsland.GetComponentInChildren<GridSystem>();
+            if (gridSystem != null)
+            {
+                InvokeOnGridSystemDetected(gridSystem);
+            }
+
+            // Invoke the OnPlayerEnterIsland event
+            InvokeOnPlayerEnterIsland(initialIsland);
+            Debug.Log(initialIsland);
         }
+    }
+
+
     #endregion
 }

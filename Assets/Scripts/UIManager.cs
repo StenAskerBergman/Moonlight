@@ -42,6 +42,7 @@ public class UIManager : MonoBehaviour
         // Subscribe to event for the current island.
         playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
         IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
+        
     }
 
     private void OnDestroy()
@@ -109,18 +110,18 @@ public class UIManager : MonoBehaviour
                     }
                 }
 
-            if (islandEcology == null)
-            {
-                Debug.Log("islandEcology = Null");
-                return;
+                if (islandEcology == null)
+                {
+                    Debug.Log("islandEcology = Null");
+                    return;
 
-            } else {
-                // Display the amount of Power in the UI
-                EcoValueText.text = ""+islandEcology.GetCurrentEco();       // Current Eco Value
-                EcoPosText.text = ""+islandEcology.GetNegativeEco();        // Negative Eco Value
-                EcoNegText.text = ""+islandEcology.GetPositiveEco();        // Positive Eco Value
+                } else {
+                    // Display the amount of Power in the UI
+                    EcoValueText.text = ""+islandEcology.GetCurrentEco();       // Current Eco Value
+                    EcoPosText.text = ""+islandEcology.GetNegativeEco();        // Negative Eco Value
+                    EcoNegText.text = ""+islandEcology.GetPositiveEco();        // Positive Eco Value
 
-            }
+                }
         }
     }
 }

@@ -31,7 +31,7 @@ public class CameraRig : MonoBehaviour
     bool rotationMode;
     void Awake()
     {
-        BlueprintScript blueprintScript = FindObjectOfType<BlueprintScript>(); // Find Solution Tmr
+        BuildingPreview buildingPreview = FindObjectOfType<BuildingPreview>(); // Find Solution Tmr
         // Debug.Log(blueprintScript.RotationMode);
         // Debug.Log(rotationMode);
     }
@@ -56,14 +56,15 @@ public class CameraRig : MonoBehaviour
         #region Scrolling 
 
             // Ref to BlueprintScript
-            BlueprintScript blueprintScript = FindObjectOfType<BlueprintScript>();
+            BuildingPreview buildingPreview = FindObjectOfType<BuildingPreview>();
             
-            if(blueprintScript != null) 
+            if(buildingPreview == null) 
             {
                 // Do Nothing
             } 
             else 
-            {
+            {   
+                Debug.Log("Building...");
                 if (Input.mouseScrollDelta.y != 0)
                 {
                     newZoom += Input.mouseScrollDelta.y * zoomAmount;

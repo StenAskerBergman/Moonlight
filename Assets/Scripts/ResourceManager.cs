@@ -13,9 +13,6 @@ public class ResourceManager : MonoBehaviour
     private Dictionary<int, GameObject> islandObjects = new Dictionary<int, GameObject>();
 
     private bool isInitialized = false;
-    //public bool shouldLogResourceAmounts = false;
-    //public bool shouldLogForEachIsland = false;
-    //public bool shouldLog = true;
 
     void Update()
     {
@@ -23,41 +20,6 @@ public class ResourceManager : MonoBehaviour
         {
             return;
         }
-
-        /*if (shouldLog)
-        {
-            if (shouldLogForEachIsland) // B: One Line Option
-            {
-                // Log resource amounts for each island separately
-                foreach (int islandId in Enum.GetValues(typeof(int)))
-                {
-                    if (islandResources.TryGetValue(islandId, out IslandStorage islandStorage))
-                    {
-                        string logMessage = islandId.ToString();
-                        foreach (Enums.Resource resource in Enum.GetValues(typeof(Enums.Resource)))
-                        {
-                            int count = islandStorage.GetResourceCount(resource);
-                            logMessage += ", " + resource.ToString() + ": " + count;
-                        }
-                        Debug.Log(logMessage);
-                    }
-                }
-            }
-            else // C: One Island Line Option
-            {
-                // Log resource amounts on each island
-                string logString = "Resource amounts: ";
-                foreach (int islandId in islandResources.Keys)
-                {
-                    logString += $"{islandId.ToString()} ";
-                    foreach (Enums.Resource resource in Enum.GetValues(typeof(Enums.Resource)))
-                    {
-                        logString += $"{resource.ToString()}: {islandResources[islandId].GetResourceCount(resource)} ";
-                    }
-                }
-                Debug.Log(logString);
-            }
-        }*/
     }
 
     private void Start()
