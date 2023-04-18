@@ -4,6 +4,54 @@ using UnityEngine;
 
 public class IslandResource : MonoBehaviour
 {
+
+    /*
+        Add Enum for resource start amounts
+        Create a Randomizer Function that
+        decideds what value a island gets
+        once it's added.
+
+        If its a player island randomize
+        differently than the others. And
+        based it of pre-defined settings.
+
+        add options to manipulate and ctrl
+        the randomness in favour for what
+        we want it to produce.
+
+        > Create More resoureful options - Easy
+        > Create Less resoureful options - Normal
+        > Create None resoureful options - Hard
+        
+    */
+    
+    /*  Resourcefulness Enum Name Options 
+
+        -Empty	
+        -Little	
+        -Some	
+        -Okay	
+        -Decent	
+        -Good	
+        -Lots	
+        -High	
+        -Giga	
+        -Unreal
+          
+          or
+
+        Barren Atoll
+        Rocky Outcropping
+        Arid Plateau
+        Resource-Poor Island
+        Sparse Terrain
+        Low-Yield Peninsula
+        Meager Coastline
+        Modestly Abundant Isle
+        Fertile Grounds
+        Resource-Rich Archipelago
+    */
+
     // Starting Amount
     public int StartAmount = 10000;
 

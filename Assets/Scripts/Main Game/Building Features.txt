@@ -1,0 +1,81 @@
+Unlock Status: 
+
+	Unlock & Visability Status: 
+	
+	isUnknown, 
+		Cant see UI, 
+		Cant be Selected
+
+	isKnown, 
+		Can see UI, 
+		Can be Selected 
+
+				isSelected,
+
+					IsLocked: 
+
+
+						Show Locked Icon	
+						Show Unlock Requirements & description
+						Cant be preview, Cant be placed
+	
+					IsUnlocked: 
+
+						Show Unlocked Icon
+						Show Cost, Price, Build Requirements & description
+						Can be preview, Can be placed
+
+Construction state: Buildings Construct into states, 
+Construction time: Buildings take time to construct from one state to another state, and become usable. 
+		
+	InstaConstruction = 0 seconds;
+	
+	BuildTime = Custom Value;
+
+Construction cost: Buildings require resources to construct.
+		
+	Local Cost: the Local Island Price During Construction
+	
+	Global Cost: the Global Money & Licence Price During Construction
+Construction price: The Price to construct the Building. 
+
+	Local Price: Island Price
+	
+	Global Price: Money & Licence Price
+
+Construction Requires: Buildings Condition to construct.
+
+
+
+Upgrade system: Buildings can be upgraded to improve their functionality 
+or increase their resource production.
+
+Health and damage: Buildings can have health points and can take damage 
+from attacks.
+
+Defensive capabilities: Buildings can have defensive capabilities such 
+as turrets or walls to protect against attacks.
+
+Production capabilities: Buildings can produce resources such as food, 
+wood, stone, or metal.
+
+Research capabilities: Buildings can provide research options to unlock 
+new technologies or upgrades.
+
+Unit production: Buildings can produce military or civilian units such 
+as soldiers or workers.
+
+Influence radius: Buildings can have an influence radius that affects 
+the surrounding area in various ways, such as increasing production or 
+providing a defensive bonus.
+
+Unique abilities: Buildings can have unique abilities or bonuses that 
+affect gameplay in different ways, such as revealing hidden areas of 
+the map or increasing the speed of unit production.
+
+Capacity limit: Buildings can have a capacity limit for resources, goods,
+materials, or units, which requires players to manage their production and 
+usage of resources and units.
+
+Maintenance cost: Buildings require periodic maintenance and repair, which 
+requires additional resources or workers.

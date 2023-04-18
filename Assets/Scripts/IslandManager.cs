@@ -15,6 +15,12 @@ public class IslandManager : MonoBehaviour
 
     public static IslandManager instance;
 
+    public void NotifyGridSystemDetected(GridSystem gridSystem)
+    {
+        Debug.Log("Invoking OnGridSystemDetected event."); // Add this debug log
+        OnGridSystemDetected?.Invoke(gridSystem);
+    }
+
     #region Awake + Start Methods (Instance Setting)
     private void Awake()
     {
@@ -32,6 +38,34 @@ public class IslandManager : MonoBehaviour
     {
         islands = new List<Island>();
         nextIslandID = 1;
+        StartCoroutine(DetectInitialIsland(playerCamera));
+
+        if (BuildingChecker.instance != null)
+        {
+            OnGridSystemDetected += BuildingChecker.instance.UpdateGridSystem;
+        }
+    }
+
+
+    private void Update(){
+        
+        Island hoveredIsland = GetHoveredIsland();
+        if (hoveredIsland != null && hoveredIsland.GetComponentInChildren<GridSystem>() != currentGridSystem)
+        {
+            ChangeActiveIsland(hoveredIsland);
+            OnPlayerHoverIsland?.Invoke(hoveredIsland);
+
+            //Debug.Log(hoveredIsland);
+        }
+        
+        if (Input.GetMouseButtonDown(0))
+        {
+            Island clickedIsland = GetClickedIsland();
+            if (clickedIsland != null)
+            {
+                OnPlayerHitIsland?.Invoke(clickedIsland);
+            }
+        }
     }
 
     #endregion
@@ -41,7 +75,7 @@ public class IslandManager : MonoBehaviour
         public void AddIsland(IslandData data)
         {
             Island island = new Island(Enums.IslandType.None);
-            island.buildings = data.buildings;
+            //island.buildings = data.buildings;
             island.bounds = data.bounds;
             island.id = GetNextIslandID(); // set the id of the island
 
@@ -59,22 +93,39 @@ public class IslandManager : MonoBehaviour
         {
             islands.Remove(island);
         }
+        
     #endregion
 
     #region GetIsland Methods 
 
-        // By Camera
-        private Island GetIslandInFrontOfCamera(Camera playerCamera)
+        // By Hover
+        public Island GetHoveredIsland()
         {
-            Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             RaycastHit hit;
-            float maxDistance = 1000f; // Adjust this value based on the maximum distance you want to detect islands from
-            LayerMask islandLayer = LayerMask.GetMask("Island"); // Replace "Island" with the name of your island layer
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            if (Physics.Raycast(ray, out hit, maxDistance, islandLayer))
+            if (Physics.Raycast(ray, out hit, 1000f))
             {
-                Island hitIsland = hit.collider.GetComponent<Island>();
+                Island hoveredIsland = hit.collider.GetComponent<Island>();
+                if (hoveredIsland != null)
+                {
+                    return hoveredIsland;
+                }
+            }
 
+            return null;
+        }
+
+        // By Camera
+        public Island GetIslandInFrontOfCamera(Camera playerCamera)
+        {
+            
+            RaycastHit hit;
+            float maxDistance = 500f; // You can adjust this value as needed
+            if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, maxDistance))
+            {
+                
+                Island hitIsland = hit.collider.GetComponentInParent<Island>();
                 if (hitIsland != null)
                 {
                     return hitIsland;
@@ -83,7 +134,6 @@ public class IslandManager : MonoBehaviour
 
             return null;
         }
-
 
         // By Name
         public Island GetIslandByName(string name)
@@ -136,12 +186,14 @@ public class IslandManager : MonoBehaviour
 
     #endregion
 
-    #region Events Section 
+    #region Events Section + Initial IEnumerators 
     
     // Event Section in IslandManager.cs
-    
+        #region Event Refs + Basic Events
         // Add event for player entering island
         public event Action<Island> OnPlayerEnterIsland;
+        public event Action<Island> OnPlayerHitIsland;
+        public event Action<Island> OnPlayerHoverIsland;
         public delegate void GridSystemDetectedEventHandler(GridSystem gridSystem);
         public event GridSystemDetectedEventHandler OnGridSystemDetected;
 
@@ -157,36 +209,82 @@ public class IslandManager : MonoBehaviour
                 currentGridSystem = gridSystem;
                 OnGridSystemDetected?.Invoke(gridSystem);
             }
+    
+        #endregion
 
-            public GridSystem GetCurrentGridSystem()
-            {
-                return currentGridSystem;
-            }
-            
-    #endregion
-
-    #region Initial IEnumerators 
-    private IEnumerator DetectInitialIsland(Camera playerCamera)
-    {
-        // Wait for a short time to let other systems initialize
-        yield return new WaitForSeconds(0.1f);
-
-        // Call the InvokeOnGridSystemDetected method here to detect the initial island and grid system
-        Island initialIsland = GetIslandInFrontOfCamera(playerCamera);
-        if (initialIsland != null)
+    
+        #region Detection Events
+        public GridSystem GetCurrentGridSystem()
         {
-            GridSystem gridSystem = initialIsland.GetComponentInChildren<GridSystem>();
+            return currentGridSystem;
+        }
+                
+        public void ChangeActiveIsland(Island newActiveIsland)
+        {
+            GridSystem gridSystem = newActiveIsland.GetComponentInChildren<GridSystem>();
             if (gridSystem != null)
             {
                 InvokeOnGridSystemDetected(gridSystem);
             }
-
-            // Invoke the OnPlayerEnterIsland event
-            InvokeOnPlayerEnterIsland(initialIsland);
-            Debug.Log(initialIsland);
         }
-    }
+
+        public Island GetClickedIsland()
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                return GetHoveredIsland();
+            }
+
+            return null;
+        }
+
+        public Island GetIslandForBuildingPreview(BuildingPreview buildingPreview)
+        {
+            if (buildingPreview != null)
+            {
+                RaycastHit hit;
+                Ray ray = new Ray(buildingPreview.transform.position, Vector3.down);
+
+                if (Physics.Raycast(ray, out hit, 1000f))
+                {
+                    Island islandForBuildingPreview = hit.collider.GetComponent<Island>();
+                    if (islandForBuildingPreview != null)
+                    {
+                        return islandForBuildingPreview;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+
+        private IEnumerator DetectInitialIsland(Camera playerCamera)
+        {
+            
+            // Wait for a short time to let other systems initialize
+            yield return new WaitForSeconds(0.1f);
+
+            // Call the InvokeOnGridSystemDetected method here to detect the initial island and grid system
+            Island initialIsland = GetIslandInFrontOfCamera(playerCamera);
+            if (initialIsland != null)
+            {
+                GridSystem gridSystem = initialIsland.GetComponentInChildren<GridSystem>();
+                if (gridSystem != null)
+                {
+                    InvokeOnGridSystemDetected(gridSystem);
+                }
+
+                // Invoke the OnPlayerEnterIsland event
+                InvokeOnPlayerEnterIsland(initialIsland);
+                
+            }
+        }
+        
+        #endregion
+
 
 
     #endregion
+
 }

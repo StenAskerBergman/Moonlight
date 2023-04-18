@@ -20,7 +20,6 @@ public class IslandResourceManager : MonoBehaviour
 {
 
     // Events
-
     public delegate void ResourceCountChangedHandler(Enums.Resource resource, int count);
     public event ResourceCountChangedHandler OnResourceCountChanged;
 

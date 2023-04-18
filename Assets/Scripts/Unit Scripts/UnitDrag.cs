@@ -35,6 +35,7 @@ public class UnitDrag : MonoBehaviour
             startPosition = Input.mousePosition;
             selectionBox = new Rect();
             
+            
         }
 
         //when dragging

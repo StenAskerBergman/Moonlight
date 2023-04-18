@@ -91,8 +91,6 @@ public class UnitClick : MonoBehaviour
 
                 //Debug.Log("Hit.point Location: " + hit.point);
 
-
-
                 //groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint = true;
                 //Debug.Log("ClickMarker.unit_waypoint =" + groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint);
 

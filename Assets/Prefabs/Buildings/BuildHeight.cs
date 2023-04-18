@@ -8,7 +8,7 @@ public class BuildHeight : MonoBehaviour
     // private float BuildHeightDebug = 1.5f; // Height Debug
 
     // Build Height with Terrain Collider
-    private float BuildHeightDebug = 0.75f; // Height Debug
+    private float BuildHeightDebug = 0.50f; // Height Debug
 
 
     // Start is called before the first frame update

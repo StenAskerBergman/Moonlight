@@ -30,7 +30,7 @@ public class IslandGridDetector : MonoBehaviour
 
                 if (gridSystem != null)
                 {
-                    Debug.Log($"GridSystem detected on island: {gridSystem.name}");
+                    // Debug.Log($"GridSystem detected on island: {gridSystem.name}");
                     // Invoke the OnGridSystemDetected event with the detected GridSystem
                     OnGridSystemDetected?.Invoke(gridSystem);
                 }

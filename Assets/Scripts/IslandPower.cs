@@ -57,5 +57,8 @@ public class IslandPower : MonoBehaviour
             {
                 return TotalPower;
             }
-        // More Methods
+            public int GetMadePower()
+            {
+                return PowerOutput;
+            }
 }

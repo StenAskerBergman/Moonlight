@@ -1,0 +1,421 @@
+
+BuildingButton.cs
+
+BuildingButton.cs sits on every building button ingame and hold the prefab reference 
+for what building the player is currently trying to place. It should contain a method 
+to tell BuildingSelector.cs what building is currently being selected by the player 
+to be placed by referencing the buildings prefab which will be used by the building 
+selector as reference for the building preview. 
+
+    public class BuildingButton : MonoBehaviour
+    {
+        [SerializeField] private GameObject buildingPrefab;
+        [SerializeField] private BuildingSelector buildingSelector;
+
+        private void Start()
+        {
+            GetComponent<Button>().onClick.AddListener(OnButtonClick);
+        }
+
+        private void OnButtonClick()
+        {
+            if(buildingPrefab!=null)
+            {
+                // Tells the BuildingSelector What Building Is Selected
+                buildingSelector.SpawnPreview(buildingPrefab);
+            } 
+            
+            return;
+
+        }
+    }
+
+
+
+BuildingSelector.cs
+
+BuildingSelector.cs handles the current selected building using its prefab. This script 
+determines using on click events what the player wants to place. Thats why it should 
+contain a method to obtain what building button prefab it recieved based on the player's 
+input. And why it is the node that will determine if the player "cancels building", That 
+way we don't overcomplicate later steps and can simply set some value based on current 
+or future inputs that cancels building preview if requested or need be.
+
+    public class BuildingSelector : MonoBehaviour
+    {
+        [SerializeField] private BuildingMover buildingMover;
+
+        // [SerializeField] private BuildingManager buildingManager;
+        [SerializeField] private GameObject buildingPreview;
+
+        // Spawns building
+        public void SpawnPreview(GameObject buildingPrefab) // Building Prefab = Selected Building
+        {
+            //  Spawn & Set "previewObject" to Spawn "building"
+                GameObject previewObject = Instantiate(buildingPrefab);
+
+            // Building Preview 
+                // Get & Set "BuildingPreview" from "previewObject" to "bp" 
+                BuildingPreview bp = previewObject.GetComponent<BuildingPreview>();
+                    
+                    // Set "bp" new building (in BuildingPreview) -- Used
+                    bp.SetBuildingPrefab(buildingPrefab);
+                
+            // Building Placer
+                // Call "StartPlacingBuilding" in "BuildingMover" -- Used
+                buildingMover.StartPlacingBuilding(previewObject); 
+            
+            // Building Manager
+                // Get & Set "BuildingManager" from "previewObject" to "bm" 
+                BuildingManager bm = previewObject.GetComponent<BuildingManager>();
+
+                    // Set "bm" new building (in BuildingManager) -- Not Used Yet
+                    //bm.SetBuildingPrefab(buildingPrefab);
+
+                    // Set "bm" preview mode (in BuildingManager) -- Not Used Yet
+                    // bm.SetPreviewMode(previewObject, true);  
+                        
+        }
+    }
+
+BuildingPreview.cs
+
+BuildingPreview.cs handles the creation and movement of the building preview object 
+that represents the building the player wants to place ( in accordance to each island 
+gridsystems). It should contain a method for setting the building prefab based on the 
+building type or prefab selected in BuildingSelector.cs and the building preview 
+movement is based on the players mouse input. 
+
+    public class BuildingPreview : MonoBehaviour
+    {
+        [SerializeField] private GameObject buildingPrefab;
+
+        public GameObject GetBuildingPrefab()
+        {
+            // returns building Prefab on Request
+            return buildingPrefab;
+        }
+
+        public void SetBuildingPrefab(GameObject newBuildingPrefab)
+        {
+            // Set the preview object with the new building prefab
+            buildingPrefab = newBuildingPrefab;
+        }
+    }
+
+()
+        {
+            ConfirmPlacement -= buildingPlacer.PlaceBuildingAtPosition;
+        }
+        
+        void Update()
+        {
+            if (buildingPreview != null)
+            {BuildingMover.cs
+
+BuildingMover.cs handles the movement of the building preview object based on the 
+player's mouse position. It should contain a method for setting the preview object 
+that it needs to move.
+
+    public class BuildingMover : MonoBehaviour
+    {
+        [SerializeField] private LayerMask groundLayer; // Island Layer
+        [SerializeField] public GameObject buildingPreview; // Preview Prefab
+        [SerializeField] private BuildingPlacer buildingPlacer;
+        [SerializeField] private PreviewUndo previewUndo;
+
+        public delegate void OnConfirmPlacement(Vector3 position);
+        public event OnConfirmPlacement ConfirmPlacement;
+
+        void Start()
+        {
+            if (buildingPlacer != null)
+            {
+                ConfirmPlacement += buildingPlacer.PlaceBuildingAtPosition;
+            }
+            else
+            {
+                Debug.LogError("BuildingPlacer reference not assigned in BuildingMover script.");
+            }
+        }
+
+        void OnDestroy
+                UpdateBuildingPreviewPosition();
+                Debug.Log(buildingPreview);
+
+                if (Input.GetMouseButtonDown(0))
+                {
+                    Debug.Log("Left Click :D");
+                    ConfirmPlacement?.Invoke(buildingPreview.transform.position);
+                }
+
+                if (Input.GetMouseButtonDown(1)) // Right-click to cancel
+                {
+                    Debug.Log("Right Click :D");
+                    CancelBuilding();
+                }
+            }
+        }
+        
+        public void StartPlacingBuilding(GameObject buildingPreview)
+        {
+            if (buildingPreview != null)
+            {
+                Debug.Log($"Destroying: {buildingPreview.name} - Is asset? {buildingPreview.scene.rootCount == 0}");
+                Destroy(buildingPreview);
+            }
+            // if (buildingPreview == clone) => (destroy(buildingPreview))
+            //previewUndo.UndoPreview(previewObject);
+
+            buildingPreview = previewObject;
+
+            // Disable collisions on the preview object
+            Collider[] colliders = buildingPreview.GetComponentsInChildren<Collider>();
+            foreach (Collider collider in colliders)
+            {
+                collider.enabled = false;
+            }
+        }
+
+        private void UpdateBuildingPreviewPosition()
+        {
+            Debug.Log("UpdateBuildingPreviewPosition is Method Running...");
+            
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            
+            //Debug.Log("Input.mousePosition: " + Input.mousePosition);
+
+            if (Physics.Raycast(ray, out hit, 1000f, groundLayer))
+            {
+                Debug.Log("Your Hitting: " + hit);
+                Vector3 newPos = hit.point;
+                buildingPreview.transform.position = newPos;
+            }
+        }
+
+        private void CancelBuilding()
+        {   
+            Debug.Log("Cancel");
+            if (buildingPreview != null)
+            {
+                Destroy(buildingPreview);
+                buildingPreview = null;
+            }
+        }    
+    }
+
+BuildingPlacer.cs
+
+BuildingPlacer.cs handles checking the placement conditions and requirements for the 
+actual building using the building previews current location when asked. It should 
+contain a method for checking the building for placement and instantiate the actual 
+final building onto the correct parent in the hierarchy. After placing a building the 
+building will need to have the correct properties this is a check that needs to be 
+performed before one can say that the building system is completely done.
+
+    /* Script Note:
+
+        BuildingPlacer: This script will be 
+        responsible for placing buildings on 
+        the grid. 
+
+        It will handle the following tasks:
+
+            > Get the GridSystem from the IslandManager
+
+            > Calculate the nearest grid point
+
+            > Check if the grid point is available
+
+            > Place a building on the grid point
+
+    */
+
+    public class BuildingPlacer : MonoBehaviour
+    {
+        [SerializeField] private IslandManager islandManager;
+        [SerializeField] private BuildingMover buildingMover;
+
+        public void PlaceBuildingAtPosition(Vector3 position)
+        {
+            Camera mainCamera = Camera.main;
+            Island currentIsland = islandManager.GetIslandInFrontOfCamera(mainCamera);
+            if (currentIsland == null)
+            {
+                Debug.LogWarning("No island found in front of the camera.");
+                return;
+            }
+
+            Transform islandTransform = currentIsland.transform;
+            PlaceBuilding(buildingMover.buildingPreview, islandTransform);
+            Debug.Log("place building...");
+        }
+
+        public void PlaceBuilding(GameObject previewObject, Transform islandTransform)
+        {
+            BuildingManager buildingManager = previewObject.GetComponent<BuildingManager>();
+            //buildingManager.SetPreviewMode(previewObject, false); legacy
+            Debug.Log("placing building...");
+
+            Vector3 targetPosition = previewObject.transform.position;
+            GameObject buildingInstance = Instantiate(previewObject, targetPosition, Quaternion.identity, islandTransform);
+            Debug.Log("building placed...");
+        }
+    }
+
+
+BuildingManager.cs
+
+BuildingManager.cs handles all the buildings various potential interactions, like on 
+click menus, events, conditions or other states that a building can possess. On top of 
+that it's a dynamic script which will be active during run time to manage the buildings 
+various other building functionalities.
+
+    public class BuildingManager : MonoBehaviour
+    {
+        public Material previewMaterial; // Preview Materials
+        public GameObject Building; // "Intended" Building Model
+        public GameObject currentBuilding; // Current Building Model
+        
+        [SerializeField] private GameObject building;   // Perma Building Transform
+        [SerializeField] private bool Selected;         // Building selectionality
+        [SerializeField] private bool Functional;       // Building Functionality
+        [SerializeField] private bool Requirements;     // Building Requirements
+        [SerializeField] private bool Needs;            // Building Needs
+    }
+
+    public class BuildingMaterials : MonoBehaviour
+    {
+        // Building Manager Holds Building Material class for optimal access structure
+        public List<Material> originalMaterials;
+    }
+
+BuildingProperties.cs
+
+BuildingProperties.cs handles all the buildings various properties, building stats and 
+current building stats which all needs to be maintained and tracked for the various in 
+game systems in order for the game to properly function. 
+
+    public class BuildingProperties : MonoBehaviour
+    {    
+        // Grid Refs
+            public GridSystem gridSystem;
+            public BuildingProperties buildingProperties;
+            
+        // Size of building in grid cells
+            public int width = 1;
+            public int length = 1;
+
+        // Whether or not the building can be placed outside of the grid
+            public bool canBePlacedOutsideGrid = false;
+
+            public Vector3 size; // Size of the building
+            public bool canBuildOutsideGrid = true; // Whether the building can be placed outside of the grid
+
+        public void Start(){
+            
+            buildingProperties = GetComponent<BuildingProperties>();
+            gridSystem = FindObjectOfType<GridSystem>();
+
+        }
+        public bool IsEmptyAtPosition(Vector3 position, GameObject islandGameObject)
+        {
+            // Check if the position is within the bounds of the grid
+            if (!canBuildOutsideGrid)
+            {
+                float minX = gridSystem.transform.position.x - gridSystem.gridSize / 2f;
+                float maxX = gridSystem.transform.position.x + gridSystem.gridSize / 2f;
+                float minZ = gridSystem.transform.position.z - gridSystem.gridSize / 2f;
+                float maxZ = gridSystem.transform.position.z + gridSystem.gridSize / 2f;
+
+                if (position.x < minX || position.x > maxX || position.z < minZ || position.z > maxZ)
+                {
+                    return false;
+                }
+            }
+
+            if (!buildingProperties.canBePlacedOutsideGrid)
+            {
+                float minX = gridSystem.transform.position.x - (gridSystem.cellSize * width) / 2f;
+                float maxX = gridSystem.transform.position.x + (gridSystem.cellSize * width) / 2f;
+                float minZ = gridSystem.transform.position.z - (gridSystem.cellSize * length) / 2f;
+                float maxZ = gridSystem.transform.position.z + (gridSystem.cellSize * length) / 2f;
+
+                if (position.x < minX || position.x > maxX || position.z < minZ || position.z > maxZ)
+                {
+                    return false;
+                }
+            }
+
+            // Check if the position is too close to the edge of the island
+            float borderDistance = 2f; // Adjust as needed
+            Vector2 position2D = new Vector2(position.x, position.z);
+            Vector2 islandCenter2D = new Vector2(islandGameObject.transform.position.x, islandGameObject.transform.position.z);
+            float distanceFromCenter = Vector2.Distance(position2D, islandCenter2D);
+
+            // Determine the border of the island by adding the border distance to the radius of the island
+            float islandRadius = islandGameObject.transform.localScale.x / 2f;
+            float borderRadius = islandRadius + borderDistance;
+
+            // Check if the position is inside the island's border
+            if (distanceFromCenter < borderRadius)
+            {
+                return false;
+            }
+
+            // Cast a sphere at the position with a radius of 0.1 units
+            Collider[] colliders = Physics.OverlapSphere(position, 0.1f);
+
+            // Check if any of the colliders are tagged as "Building"
+            foreach (Collider collider in colliders)
+            {
+                if (collider.gameObject.CompareTag("Building"))
+                {
+                    return false;
+                }
+            }
+
+            // If no colliders are found or if the colliders found are not tagged as "Building", return true
+            return true;
+        }
+    }
+
+BuildingRotator.cs 
+
+BuildingRotator.cs handle the rotation of the preview building object which is the 
+default orientation which the BuildingPlacer will place using. 
+
+    public class BuildingRotator : MonoBehaviour
+    {
+        [SerializeField] private int rotationAngleAmount = 90;
+        [SerializeField] public static bool rotationMode = true; // Determines Rotation Mode
+        private float placementRotation; // Building Placement Rotation
+
+        private void Update()
+        {
+            RotateBuilding();
+        }
+
+        private void RotateBuilding()
+        {
+            // Rotational System -- Flat Based: Quadral 90° - Newer
+            float scrollDirection = Input.GetAxis("Mouse ScrollWheel") * 10.0f; // Scaling factor
+
+            if (scrollDirection > 0)
+            {
+                placementRotation += Mathf.FloorToInt(scrollDirection) * rotationAngleAmount;
+            }
+            else if (scrollDirection < 0)
+            {
+                placementRotation -= Mathf.FloorToInt(Mathf.Abs(scrollDirection)) * rotationAngleAmount;
+            }
+
+            transform.rotation = Quaternion.AngleAxis(placementRotation, Vector3.down);
+        }
+    }
+
+
+Any Prefabs Mentioned:
+> Select Building (Loose Substitute Term for every building selectable)
+> Preview Building (Generic GameObject with the intended function)

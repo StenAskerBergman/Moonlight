@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class EnableOnAwake : MonoBehaviour
 {
-    public GameObject thisObject;
+    [Tooltip("Reminder This Auto Selects itself!")]
+    [SerializeField] private GameObject thisObject;
 
     private void Awake()
     {
-        thisObject = gameObject;
+        thisObject = this.gameObject;
         thisObject.SetActive(true);
     }
 }

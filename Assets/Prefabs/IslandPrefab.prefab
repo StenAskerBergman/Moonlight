@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: -1735661172497315272}
   - component: {fileID: 4771324521750715228}
   - component: {fileID: -960064353575088697}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: IslandPrefab
   m_TagString: Ground
   m_Icon: {fileID: 0}
@@ -147,11 +147,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   id: 0
+  islandName: 
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 10, y: 0, z: 10}
   islandType: 0
-  islandName: 
   buildings: []
 --- !u!64 &3455861561373475410
 MeshCollider:
@@ -228,7 +228,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6738e662e1c665d4e958a07bb251f952, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mapManager: {fileID: 0}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
   gridSize: 10
   cellSize: 1
-  islandGameObject: {fileID: 0}
-  islandPlane: {fileID: 0}
+  gridPosition: {x: 0, y: 0, z: 0}
+  offset: {x: 0, y: 0, z: 0}
+  bank: {fileID: 0}
+  buildingChecker: {fileID: 0}
+  localBuildings: []
+  globalBuildings: []

@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class IslandEcology : MonoBehaviour
 {
+
+    // current issue, eco changes instantly and not over time
+    
     // Ints
         public int NegEco, PosEco, EcoValue;  
         public int DefaultEcoValue;

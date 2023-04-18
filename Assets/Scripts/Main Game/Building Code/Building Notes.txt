@@ -1,0 +1,76 @@
+
+BuildingButton.cs
+
+BuildingButton.cs sits on every building button ingame and hold the prefab reference 
+for what building the player is currently trying to place. It should contain a method 
+to tell BuildingSelector.cs what building is currently being selected by the player 
+to be placed by referencing the buildings prefab which will be used by the building 
+selector as reference for the building preview. 
+
+
+
+BuildingSelector.cs
+
+BuildingSelector.cs handles the current selected building using its prefab. This script 
+determines using on click events what the player wants to place. Thats why it should 
+contain a method to obtain what building button prefab it recieved based on the player's 
+input. And why it is the node that will determine if the player "cancels building", That 
+way we don't overcomplicate later steps and can simply set some value based on current 
+or future inputs that cancels building preview if requested or need be.
+
+
+
+BuildingPreview.cs
+
+BuildingPreview.cs handles the creation and movement of the building preview object 
+that represents the building the player wants to place ( in accordance to each island 
+gridsystems). It should contain a method for setting the building prefab based on the 
+building type or prefab selected in BuildingSelector.cs and the building preview 
+movement is based on the players mouse input. 
+
+
+
+BuildingMover.cs
+
+BuildingMover.cs handles the movement of the building preview object based on the 
+player's mouse position. It should contain a method for setting the preview object 
+that it needs to move.
+
+
+
+BuildingPlacer.cs
+
+BuildingPlacer.cs handles checking the placement conditions and requirements for the 
+actual building using the building previews current location when asked. It should 
+contain a method for checking the building for placement and instantiate the actual 
+final building onto the correct parent in the hierarchy. After placing a building the 
+building will need to have the correct properties this is a check that needs to be 
+performed before one can say that the building system is completely done.
+
+
+
+BuildingManager.cs
+
+BuildingManager.cs handles all the buildings various potential interactions, like on 
+click menus, events, conditions or other states that a building can possess. On top of 
+that it's a dynamic script which will be active during run time to manage the buildings 
+various other building functionalities.
+
+
+
+BuildingProperties.cs
+
+BuildingProperties.cs handles all the buildings various properties, building stats and 
+current building stats which all needs to be maintained and tracked for the various in 
+game systems in order for the game to properly function. 
+
+
+
+BuildingRotator.cs 
+
+BuildingRotator.cs handle the rotation of the preview building object which is the 
+default orientation which the BuildingPlacer will place using. 
+
+Prefabs:
+> Select Building (Loose Substitute Term for every building selectable)
+> Preview Building (Generic GameObject with the intended function)

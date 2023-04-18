@@ -34,7 +34,8 @@ public class BuildingProduction : MonoBehaviour
 
     private void DeliverChunk()
     {
-        Bank.BM = Bank.BM + 20; // Add 20 units of building material to the player's bank
+		// Legacy Model
+        // Bank.BM = Bank.BM + 20; // Add 20 units of building material to the player's bank
     }
 
     void FixedUpdate()

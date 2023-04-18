@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3223194967645690455}
   - component: {fileID: 5824425321365421737}
   - component: {fileID: 629476356237783435}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Selection
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -107,8 +107,8 @@ GameObject:
   - component: {fileID: 3528817766231398414}
   - component: {fileID: 5643897388997947555}
   - component: {fileID: 4394739500636561651}
-  m_Layer: 0
-  m_Name: Cube
+  m_Layer: 8
+  m_Name: Roof Cube
   m_TagString: notStackable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -202,14 +202,15 @@ GameObject:
   - component: {fileID: 3612558453707244379}
   - component: {fileID: 6950890835264479459}
   - component: {fileID: 3684741612522789969}
-  - component: {fileID: 4210604896779423849}
-  - component: {fileID: -8370421509928072239}
   - component: {fileID: 8818251297315058771}
+  - component: {fileID: 7576262501051654153}
   - component: {fileID: 2224744386100207605}
   - component: {fileID: 7225067114912099725}
   - component: {fileID: 423845494325529269}
   - component: {fileID: -4907743413093319222}
-  m_Layer: 0
+  - component: {fileID: 971140939423499999}
+  - component: {fileID: 4021450057484334881}
+  m_Layer: 8
   m_Name: House
   m_TagString: notStackable
   m_Icon: {fileID: 0}
@@ -294,21 +295,20 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 0.1, z: 1}
   m_Center: {x: 0, y: -0.5, z: 0}
---- !u!114 &4210604896779423849
-MonoBehaviour:
+--- !u!65 &8818251297315058771
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7177132677807010483}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cost: 0
-  resourceType: 0
---- !u!114 &-8370421509928072239
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  serializedVersion: 2
+  m_Size: {x: 3, y: 0.1, z: 3}
+  m_Center: {x: 0, y: -0.5, z: 0}
+--- !u!114 &7576262501051654153
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -320,19 +320,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13025ea066bea1f49a97caaea1ac2021, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!65 &8818251297315058771
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7177132677807010483}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 3, y: 0.1, z: 3}
-  m_Center: {x: 0, y: -0.5, z: 0}
 --- !u!208 &2224744386100207605
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -387,10 +374,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
   gridSystem: {fileID: 0}
   buildingProperties: {fileID: -4907743413093319222}
-  width: 1
-  length: 1
-  canBePlacedOutsideGrid: 1
-  size: {x: 0, y: 0, z: 0}
-  canBuildOutsideGrid: 1
+  buildingSize: {x: 2, y: 2, z: 2}
+--- !u!114 &971140939423499999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7177132677807010483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4021450057484334881
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7177132677807010483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingName: Residential House
+  price: 20
+  cost: 5
+  expense: 5
+  resourceType: 0
