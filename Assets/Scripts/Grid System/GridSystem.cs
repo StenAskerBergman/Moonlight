@@ -274,8 +274,8 @@ public class GridSystem : MonoBehaviour
 
             // Assigns X & Z Cordinates based on position values and CellSize
 
-                int x = Mathf.RoundToInt(position.x / cellSize);
-                int z = Mathf.RoundToInt(position.z / cellSize);
+                int x = Mathf.FloorToInt(position.x / cellSize);
+                int z = Mathf.FloorToInt(position.z / cellSize);
 
                 if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
                 {
@@ -284,7 +284,7 @@ public class GridSystem : MonoBehaviour
 
                     //Debug.LogFormat("<color=red>Invalid Position - {0}</color>", position); // Red
                     buildingChecker.canPlace = false;
-                    //Debug.Log($"Invalid grid position: ({x}, {z})");
+                    Debug.Log($"Invalid grid position: ({x}, {z})");
                     return null;
                 }
 
