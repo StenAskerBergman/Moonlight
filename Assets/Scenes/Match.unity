@@ -178,6 +178,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &12219982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -351,6 +353,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &13900907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -524,6 +528,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &19137800
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1307,6 +1313,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &36442625
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2245,6 +2253,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &54394901
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3824,6 +3834,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &87012806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3996,6 +4008,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &87221838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4509,6 +4523,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &92652406
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5096,6 +5112,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &106814345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5901,6 +5919,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &133284576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6212,6 +6232,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &138701087
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8056,6 +8078,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &182730475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8367,6 +8391,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &184679753
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8540,6 +8566,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &185001270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9443,6 +9471,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &211520502
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9996,6 +10026,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &221745097
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10169,6 +10201,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &223063522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10480,6 +10514,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &230533960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11503,6 +11539,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &252321919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12224,6 +12262,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &268722744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12535,6 +12575,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &277558532
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13319,6 +13361,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &291576155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13607,6 +13651,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &296912954
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14361,6 +14407,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &322960636
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14944,6 +14992,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &340005179
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15295,6 +15345,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &346498451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15744,6 +15796,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &349835072
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15917,6 +15971,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &350461638
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17426,6 +17482,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &383935301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17599,6 +17657,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &385078663
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17772,6 +17832,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &385840575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18381,6 +18443,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &393040135
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18554,6 +18618,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &399347266
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18727,6 +18793,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &403209306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18900,6 +18968,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &404128038
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19211,6 +19281,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &407391411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19936,6 +20008,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &421858857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20404,6 +20478,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &425916251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20701,6 +20777,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &432566177
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20874,6 +20952,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &437370009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21047,6 +21127,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &440214812
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21220,6 +21302,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &441819841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21807,6 +21891,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &448492565
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21980,6 +22066,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &450150127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22745,6 +22833,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &466460658
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22918,6 +23008,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &466469426
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23091,6 +23183,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &467283603
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23264,6 +23358,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &467661150
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24218,6 +24314,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &481570918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24529,6 +24627,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &484695415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24840,6 +24940,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &489155768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25013,6 +25115,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &490302151
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25340,6 +25444,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &497340229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25513,6 +25619,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &501138154
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26132,6 +26240,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &506907576
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26581,6 +26691,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &508753103
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27030,6 +27142,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &521378719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27381,6 +27495,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &526215029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27554,6 +27670,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &528105582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28407,6 +28525,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &538550724
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29187,6 +29307,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &551077686
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29636,6 +29758,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &558429323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30436,6 +30560,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &578834791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31161,6 +31287,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &587569072
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31472,6 +31600,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &590832347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31645,6 +31775,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &591626961
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31818,6 +31950,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &591782083
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32129,6 +32263,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &599025157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32854,6 +32990,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &610379131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33027,6 +33165,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &612434969
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33200,6 +33340,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &613627635
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33373,6 +33515,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &613755140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34098,6 +34242,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &636573768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34547,6 +34693,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &643092876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34720,6 +34868,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &647300209
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35623,6 +35773,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &661419144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35836,6 +35988,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &663714657
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36147,6 +36301,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &670465868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36458,6 +36614,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &675322933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -37735,6 +37893,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &692516468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38500,6 +38660,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &699920806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39075,6 +39237,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &710486875
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39271,6 +39435,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &711465492
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40238,6 +40404,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &730071350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40549,6 +40717,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &732200854
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41274,6 +41444,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &739272801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42177,6 +42349,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &751630342
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42622,6 +42796,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &752293291
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42795,6 +42971,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &753160195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -43106,6 +43284,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &754688907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -43555,6 +43735,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &756910416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44585,6 +44767,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &777540900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44896,6 +45080,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &779961254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45621,6 +45807,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &792907424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46068,6 +46256,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &803498482
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46484,6 +46674,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &815340341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47312,6 +47504,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &823504481
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47623,6 +47817,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &825530193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48370,6 +48566,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &840774861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48543,6 +48741,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &842704044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48854,6 +49054,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &850709426
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49328,6 +49530,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &856763303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49777,6 +49981,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &875200303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50363,6 +50569,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &886238681
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51901,6 +52109,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &917250278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53486,6 +53696,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &960560747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54625,6 +54837,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &980867843
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -55004,6 +55218,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &985937060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -55217,6 +55433,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &987439471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -55860,6 +56078,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &999409650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56325,6 +56545,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1004744747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58249,6 +58471,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1032110158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58696,6 +58920,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1038076918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -60054,6 +60280,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1053004221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -60819,6 +61047,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1069148738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61091,6 +61321,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1072207820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61390,6 +61622,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1078298561
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61919,6 +62153,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1080862032
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62092,6 +62328,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1082926774
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63094,6 +63332,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1104127419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63405,6 +63645,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1109250552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63664,6 +63906,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1121372625
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63995,6 +64239,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1130160935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64444,6 +64690,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1130968666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64617,6 +64865,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1139381591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64790,6 +65040,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1140475295
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65279,6 +65531,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1147358526
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65452,6 +65706,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1149160756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66311,6 +66567,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1168198207
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66847,6 +67105,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1182713836
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67020,6 +67280,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1183263956
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67912,6 +68174,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1202459018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -68362,6 +68626,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1203856241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -68535,6 +68801,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1210038008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69006,6 +69274,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1211765807
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69509,6 +69779,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1217458372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70396,6 +70668,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1243745360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70569,6 +70843,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1255143735
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71018,6 +71294,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1263725405
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71627,6 +71905,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1271987259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71938,6 +72218,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1277025486
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72565,6 +72847,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1287621037
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74209,6 +74493,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1334652692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74796,6 +75082,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1344307372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75683,6 +75971,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1373366336
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76657,6 +76947,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 401fd649954b3334faf6ac23e6373fec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentGridSystem: {fileID: 0}
   islandPrefab: {fileID: 6789088782631935491}
   playerCamera: {fileID: 2015511166972398484}
 --- !u!114 &1382327108
@@ -77290,6 +77581,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1392274810
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77739,6 +78032,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1397269375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79067,6 +79362,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1411519894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79402,6 +79699,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1411867415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79852,6 +80151,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1416767324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80025,6 +80326,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1420535762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80198,6 +80501,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1421972650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80371,6 +80676,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1425511293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80668,6 +80975,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1432926234
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80979,6 +81288,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1436875143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -81290,6 +81601,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1442431534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -81877,6 +82190,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1447450535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82188,6 +82503,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1450932926
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82931,6 +83248,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1483346569
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84346,6 +84665,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1509629223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84657,6 +84978,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1513566819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84830,6 +85153,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1514324819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -85003,6 +85328,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1516710691
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -85590,6 +85917,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1530820608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86079,6 +86408,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1540218046
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86745,6 +87076,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1549634761
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86918,6 +87251,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1549987762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87367,6 +87702,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1560521973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87608,6 +87945,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1569795992
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87919,6 +88258,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1580744390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88626,6 +88967,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1598052214
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88937,6 +89280,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1600031321
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -89422,6 +89767,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1606769246
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -89911,6 +90258,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1609513110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90084,6 +90433,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1610293361
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90693,6 +91044,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1612701971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91542,6 +91895,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1623553855
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91715,6 +92070,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1624731400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91928,6 +92285,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1629382867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93352,6 +93711,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1653362638
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93650,6 +94011,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1655503040
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93823,6 +94186,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1655956523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94410,6 +94775,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1671876076
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94575,6 +94942,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1676679571
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94594,6 +94963,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 32
   canPlace: 1
+  canPlace2: 0
   IC: 0
   currentBuildingPreview: {fileID: 0}
   buildingPlacer: {fileID: 1676679572}
@@ -96000,6 +96370,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1699198958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -96465,6 +96837,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1712839727
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -96638,6 +97012,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1716239728
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -97081,6 +97457,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1721434661
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -98122,6 +98500,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1741534352
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -98295,6 +98675,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1744402684
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99058,6 +99440,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1753842327
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99507,6 +99891,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1764438625
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -100645,6 +101031,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1784351213
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101272,6 +101660,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1793200941
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101894,6 +102284,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1796643853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102422,6 +102814,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1808191562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103147,6 +103541,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1828812812
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103308,6 +103704,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1830355135
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103619,6 +104017,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1832431060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103791,6 +104191,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1839127272
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103988,6 +104390,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1839452408
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -104570,6 +104974,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1848379375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105784,6 +106190,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1866836984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106095,6 +106503,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1871362769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106367,6 +106777,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1872935757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106816,6 +107228,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1880181114
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106989,6 +107403,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1882402543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107300,6 +107716,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1884044290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107472,6 +107890,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1884648019
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108340,6 +108760,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1909495919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108611,6 +109033,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1913097103
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109124,6 +109548,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1926196818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109374,6 +109800,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1929216143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109547,6 +109975,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1930345230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109797,6 +110227,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1938208542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110246,6 +110678,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1949074564
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110769,6 +111203,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1957744248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110942,6 +111378,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1964354348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111269,6 +111707,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1964606010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112033,6 +112473,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1976265456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113056,6 +113498,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2005406745
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113229,6 +113673,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2007106898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113911,6 +114357,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2031344676
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -114716,6 +115164,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2057832427
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -114889,6 +115339,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2060956909
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -115199,6 +115651,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2062622838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116179,6 +116633,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2075119299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116845,6 +117301,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2095131245
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117096,6 +117554,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2098778489
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117334,6 +117794,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2101015303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117685,6 +118147,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2107466658
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117996,6 +118460,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2109857073
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118268,6 +118734,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2115411093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118993,6 +119461,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2138203503
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119473,6 +119943,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &2146333878
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -122021,6 +122493,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildingChecker: {fileID: 0}
   buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!1 &5729732004868413896
 GameObject:
   m_ObjectHideFlags: 0

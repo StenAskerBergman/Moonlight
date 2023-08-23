@@ -5,6 +5,7 @@ public class BuildingPreview : MonoBehaviour
     // Inspector Settings and Adjustments 
     // And all the variable used in the code
 
+    [SerializeField] private bool localCanPlace;
     [SerializeField] private LayerMask groundLayer;
     public GameObject buildingPrefab;
     public Island currentIsland;
@@ -16,26 +17,6 @@ public class BuildingPreview : MonoBehaviour
     public float size = 1f;
     [SerializeField] private Material truePlacement;
     [SerializeField] private Material falsePlacement;
-
-
-    // public Vector3 GetNearestPointOnGrid(Vector3 position)
-    // {
-    //     position -= offset;
-
-    //     int xCount = Mathf.RoundToInt(position.x / size);
-    //     int yCount = Mathf.RoundToInt(position.y / size);
-    //     int zCount = Mathf.RoundToInt(position.z / size);
-
-    //     Vector3 result = new Vector3(
-    //         (float)xCount * size,
-    //         (float)yCount * size,
-    //         (float)zCount * size);
-
-    //     result += offset;
-    //     result.y += offsetY; // Set the Y value of the result to offsetY
-
-    //     return result;
-    // }
 
     public enum SnapMode
     {
@@ -63,39 +44,32 @@ public class BuildingPreview : MonoBehaviour
         gridSystem = detectedGridSystem;
     }
 
-    // Preview Color & Render Methods
-    
-    public void SetPreviewMaterial(bool canPlace)
-    {
-        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        Material targetMaterial = canPlace ? falsePlacement : truePlacement;
+    #region Color & Render
+
+        // Preview Color & Render Methods
+        public void SetPreviewMaterial(bool canPlace)
+        {
+            localCanPlace = canPlace;
+            MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
+            Material targetMaterial = canPlace ? truePlacement : falsePlacement;
 
         foreach (MeshRenderer renderer in renderers)
-        {
-            renderer.material = targetMaterial;
+            {
+                renderer.material = targetMaterial;
+            }
         }
-    }
-    public void SetRendererColor(Color color)
-    {
-        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer renderer in renderers)
-        {
-            renderer.material.color = color;
-        }
-    }
-    // Guide: How to implement SetRendererColor Method
-    // Color previewColor = canPlace ? Color.green : Color.red; // Old
-    // currentBuildingPreview.SetRendererColor(previewColor);
 
-    //public void SetRendererColorByBool(bool canPlace, Color color)
-    //{
-    //    Color previewColor = canPlace ? Color.green : Color.red;
-    //    MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-    //    foreach (MeshRenderer renderer in renderers)
-    //    {
-    //        renderer.material.color = color;
-    //    }
-    //}
+        public void SetRendererColor(Color color)
+        {
+            MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
+            foreach (MeshRenderer renderer in renderers)
+            {
+                renderer.material.color = color;
+            }
+        }
+
+    #endregion
+
 
     public void SetRendererEnabled(bool isEnabled)
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 public class GridSystem : MonoBehaviour
-{   
+{
     [SerializeField] private MapManager mapManager;
     [SerializeField] private LayerMask buildings; // = LayerMask.GetMask("Ground", "Building");
 
@@ -14,111 +14,122 @@ public class GridSystem : MonoBehaviour
     public int gridSize = 10;
     public float cellSize = 1f;
     public Vector3 gridPosition;
-    public Vector3 offset = new Vector3(-5, 0, -5);
+    public Vector3 offset = new Vector3(0, 0, 0);
     private Cell[,] grid;
     public Bank bank;
     public BuildingChecker buildingChecker;
     private int gridCount;
-    
+
     // Local List Method
-        public List<Bank.Building> localBuildings; // NEW: A list of Building objects.
-        public void AddLocalBuilding(Bank.Building building)
-        {
-            localBuildings.Add(building);
-        }
+    public List<Bank.Building> localBuildings; // NEW: A list of Building objects.
+    public void AddLocalBuilding(Bank.Building building)
+    {
+        localBuildings.Add(building);
+    }
 
 
     // Global List Methods
-        [HideInInspector] public List<Building> globalBuildings; // NEW: A list of Building objects.
-        private void AddBuilding(BuildingCost buildingCost)
+    [HideInInspector] public List<Building> globalBuildings; // NEW: A list of Building objects.
+    private void AddBuilding(BuildingCost buildingCost)
+    {
+        Building building = buildingCost.GetComponent<Building>();
+        if (building != null && !globalBuildings.Contains(building))
         {
-            Building building = buildingCost.GetComponent<Building>();
-            if (building != null && !globalBuildings.Contains(building))
-            {
-                globalBuildings.Add(building);
-                //Debug.Log("Global Building List added: " + building.name); // Success
-            }
-            else
-            {
-                Debug.LogWarning("Failed to add building: " + buildingCost.name); // Fail
-            }
+            globalBuildings.Add(building);
+            //Debug.Log("Global Building List added: " + building.name); // Success
         }
+        else
+        {
+            Debug.LogWarning("Failed to add building: " + buildingCost.name); // Fail
+        }
+    }
 
     #endregion
 
-        public Vector3Int WorldToCell(Vector3 position)
-        {
-            int x = Mathf.FloorToInt((position.x - gridPosition.x) / cellSize);
-            int y = Mathf.FloorToInt((position.y - gridPosition.y) / cellSize);
-            int z = Mathf.FloorToInt((position.z - gridPosition.z) / cellSize);
+    public Vector3Int WorldToCell(Vector3 position)
+    {
+        int x = Mathf.FloorToInt((position.x - gridPosition.x) / cellSize);
+        int y = Mathf.FloorToInt((position.y - gridPosition.y) / cellSize);
+        int z = Mathf.FloorToInt((position.z - gridPosition.z) / cellSize);
 
-            return new Vector3Int(x, y, z);
+        return new Vector3Int(x, y, z);
+    }
+
+    //  Empty Cell Check 
+    public bool IsCellEmpty(Vector3 position)
+    {
+        Cell cell = GetCellAtWorldPosition(position);
+        if (cell == null || cell.isOccupied)
+        {
+            Debug.Log("Cell Position Occupied");
+            return false;
         }
 
-        //  Empty Cell Check 
-        public bool IsCellEmpty(Vector3 position)
+        Debug.Log("Cell Position Not Occupied");
+        return true;
+    }
+
+    // Fill Cell Post
+    public void MarkCellAsOccupied(Vector3 position)
+    {
+        Cell cell = GetCellAtWorldPosition(position);
+        if (cell != null)
         {
-            Vector3Int cellPosition = WorldToCell(position);
-            if (occupiedCells.Contains(cellPosition))
-            {   
-                Debug.Log("Cell Position Occupied");
-                return false;
-            }
-            
-            Debug.Log("Cell Position Not Occupied");
-            return true;
+            cell.isOccupied = true;
         }
-        // Fill Cell Post
-        public void MarkCellAsOccupied(Vector3 position)
-        {
-            Vector3Int cellPosition = WorldToCell(position);
-            occupiedCells.Add(cellPosition);
-        }
+    }
 
     #region Section 2 
-        public List<Building> GetAllBuildings()
-        {
-            return globalBuildings;
-        }
+    public List<Building> GetAllBuildings()
+    {
+        return globalBuildings;
+    }
 
-        private void OnEnable()
-        {
-            BuildingCost.OnBuildingPlaced += AddBuilding;
-        }
+    private void OnEnable()
+    {
+        BuildingCost.OnBuildingPlaced += AddBuilding;
+    }
 
-        private void OnDisable()
-        {
-            BuildingCost.OnBuildingPlaced -= AddBuilding;
-        }
-    
+    private void OnDisable()
+    {
+        BuildingCost.OnBuildingPlaced -= AddBuilding;
+    }
+
     // Start Method
-        private void Start()
-        {
-            bank = FindObjectOfType<Bank>();                // Find the Bank, if for some reason I forgot
-            grid = new Cell[gridSize, gridSize];            // determine the islands grid size
-            mapManager = FindObjectOfType<MapManager>();    // locate the amount of islands to be generated
-            gridCount = mapManager.numberOfIslands;         // count the amount of island grids that exist (protip: it starts at 0, so always add 1) 
-            buildingChecker = FindObjectOfType<BuildingChecker>();
-
-            // Generate Cell Grid
-            GenerateGrid();
-            
-            // Log Bounds Island
-            Island gridIsland = GetComponent<Island>();
-            //gridIsland.LogBounds();
-            
-            // Log Bounds Render
-            Renderer renderer = GetComponent<Renderer>();
-            //Debug.Log("Bounds: " + renderer.bounds);
-        }
+    private void Start()
+    {
+        // Basic Setup
+        bank = FindObjectOfType<Bank>();                        // Find the Bank, if for some reason I forgot
+        grid = new Cell[gridSize, gridSize];                    // determine the islands grid size
+        mapManager = FindObjectOfType<MapManager>();            // locate the amount of islands to be generated
+        gridCount = mapManager.numberOfIslands;                 // count the amount of island grids that exist (protip: it starts at 0, so always add 1) 
+        buildingChecker = FindObjectOfType<BuildingChecker>();
         
+        // Set Bounds Related Information
+        SetIslandBounds();
+        //gridPosition = transform.position;
+        //SetCurrentIsland(GetComponent<Island>());               // Set Local Island Bounds
+
+        // Generate Cell Grid
+        GenerateGrid();
+
+        // Log Bounds Island
+        Island gridIsland = GetComponent<Island>();
+
+        // Log Bounds Render
+        Renderer renderer = GetComponent<Renderer>();
+        
+        gridIsland.LogBounds();
+        //Debug.Log("Bounds: " + renderer.bounds);
+    }
+
     // Grid Generation Method
     private void GenerateGrid()
     {
         gridCount++;
         Vector3 cellSizeVec = new Vector3(cellSize, 0f, cellSize);
         int cellCount = 0; // How Many Cells was Generated per Island
-        
+
         // Square Island Generation
         for (int x = 0; x < gridSize; x++)
         {
@@ -126,35 +137,51 @@ public class GridSystem : MonoBehaviour
             {
                 Vector3 cellPos = transform.position + new Vector3(x * cellSize, 0f, z * cellSize);
 
+
                 RaycastHit hit;
                 if (Physics.Raycast(cellPos + Vector3.up * 100f, Vector3.down, out hit, Mathf.Infinity))
                 {
-                    cellPos = hit.point;
+                    cellPos = hit.point; // - offset;
                     cellPos.x = Mathf.Round(cellPos.x / cellSize) * cellSize;
                     cellPos.z = Mathf.Round(cellPos.z / cellSize) * cellSize;
                     cellPos.y = 0f; // Set the Y value to 0
-        
+
                     Cell cell = new Cell(cellPos, null, false);
                     grid[x, z] = cell;
 
-                    Debug.DrawRay(cell.position, Vector3.up * 50f, Color.green * 2f, 10f);
-
-                    
-                    // Questions
-                    // Does Grid Exist?
-                    // Does Cell Exist?
-                    // Does Bounds Exist?
-                    
-
-                    cellCount++; 
-                    //Debug.Log("Cell created at position: " + cell.position);
-
+                    cellCount++;
                 }
             }
         }
 
         // Total Number of Cells & Grids Generated - Console Debugging 
         Debug.Log("Cells: " + cellCount + " Grids: " + gridCount);
+    }
+
+    void OnDrawGizmos()
+    {
+        Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+        Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(gridMinPosition, new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMinPosition.z));
+        Gizmos.DrawLine(gridMinPosition, new Vector3(gridMinPosition.x, gridMinPosition.y, gridMaxPosition.z));
+        Gizmos.DrawLine(new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMaxPosition.z), new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMinPosition.z));
+        Gizmos.DrawLine(new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMaxPosition.z), new Vector3(gridMinPosition.x, gridMinPosition.y, gridMaxPosition.z));
+    }
+
+    public void SetIslandBounds()
+    {
+        Island island = GetComponent<Island>();
+
+        Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+        Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+
+        Vector3 center = (gridMinPosition + gridMaxPosition) / 2;
+        Vector3 size = gridMaxPosition - gridMinPosition;
+
+        Bounds bounds = new Bounds(center, size);
+        island.bounds = bounds;
     }
 
     public Cell GetCellAtWorldPosition(Vector3 worldPosition)
@@ -194,16 +221,17 @@ public class GridSystem : MonoBehaviour
     public Vector3 GetNearestPointOnGrid(Vector3 position)
     {
         Vector3 snappedPos = SnapToGrid(position);
+        snappedPos.y = 1f;
         Cell cell = GetCellAtPosition(snappedPos);
-        
+
         if (cell != null)
         {
-            //Debug.Log("result: " + snappedPos);
+            Debug.Log("result: " + snappedPos);
             return snappedPos;
         }
         else
         {
-   
+
             position -= offset; // Subtract the offset before calculating the grid position
 
             int xCount = Mathf.RoundToInt(position.x / cellSize);
@@ -216,7 +244,7 @@ public class GridSystem : MonoBehaviour
                 (float)zCount * cellSize);
 
             result += offset; // Add the offset back to the result
-            
+
             cell = GetCellAtPosition(result);
 
             if (cell != null)
@@ -229,92 +257,75 @@ public class GridSystem : MonoBehaviour
             return result;
         }
     }
-    // Within a island Bounds
-    public Cell GetCellAtPosition(Vector3 position)
-    {   
+    // Add the bounds to the GridSystem class
+    public Bounds gridBounds;
 
-        // Outside island
-
-        // Clamp Y value to 0
-        position.y = 0f; 
-
-        // If Out of Bounds - Check
-        if (!GetComponent<Renderer>().bounds.Contains(position)) // Check if the position is within the island's bounds
-        {
-            // if Position is Out of Bounds then this
-
-            //Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position); // Red
-            buildingChecker.canPlace = false;
-
-            return null;
-        } 
-        else 
-        {
-            // Inside Island
-
-            // If Grid Position within Bounds - Check
-            
-                //Debug.LogFormat("<color=green>In Bounds - {0}</color>", position); // Green
-            
-            // Account for Global to Local Position Difference 
-            // The difference in position is the real position
-            // World Position -= grid position = local Real Position 
-
-                position -= gridPosition;  
-                
-            // Reset the Y value for comparing it, since we adjusted for world difference
-            // Clamp Y value to 0, Again bc of Potential World difference
-                
-                position.y = 0f; 
-
-                //or                 
-
-                // Clamp Y value to 0 or higher
-                // position.y = Mathf.Clamp(position.y, 0f, Mathf.Infinity);
-
-            // Assigns X & Z Cordinates based on position values and CellSize
-
-                int x = Mathf.FloorToInt(position.x / cellSize);
-                int z = Mathf.FloorToInt(position.z / cellSize);
-
-                if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
-                {
-
-                    // Invalid Position
-
-                    //Debug.LogFormat("<color=red>Invalid Position - {0}</color>", position); // Red
-                    buildingChecker.canPlace = false;
-                    Debug.Log($"Invalid grid position: ({x}, {z})");
-                    return null;
-                }
-
-            // If Cell Exists & Inbound (Cell Request Can be made)
-
-            // Get Cell Position
-            Cell cell = grid[x, z];
-            
-            //Debug.Log("<color=green>Cells grid position " + $"({x}, {z}), cell: {cell}</color>");  // Real & True
-            buildingChecker.canPlace = true;
-            // Cell Return
-            return cell; 
-        }
+    // Update the bounds when the current island changes
+    public void SetCurrentIsland(Island island)
+    {
+        // Update the bounds based on the current island
+        gridBounds = island.bounds;
     }
-    
+    public Cell GetCellAtPosition(Vector3 position)
+    {
+
+        Debug.Log(position);
+        position.y = 0f;
+        // Get Local Island - GridSystem Bounds
+        Island gridIsland = GetComponent<Island>();
+        Bounds islandBounds = gridIsland.bounds;
+
+        // Null Check
+        if (islandBounds == null)
+        {
+            Debug.Log($"Island{gridIsland.islandName} has No Bounds.");
+            return null;
+        }
+        position.y = 0f;
+
+        // Calculate the local position within the island's grid
+        Vector3 localPosition = gridIsland.transform.InverseTransformPoint(position);
+
+        // Calculate the grid's local minimum and maximum positions
+        Vector3 gridMinPosition = -new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+        Vector3 gridMaxPosition = new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+
+        // Check if the local position is within the grid's local bounds and within the island's bounds
+        if (!islandBounds.Contains(localPosition) ||
+            localPosition.x < gridMinPosition.x ||
+            localPosition.x > gridMaxPosition.x ||
+            localPosition.z < gridMinPosition.z ||
+            localPosition.z > gridMaxPosition.z)
+        {
+            Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
+            buildingChecker.canPlace = false;
+            return null;
+        }
+
+        // Convert the local position to grid indices
+        localPosition -= gridMinPosition;
+        localPosition.y = 0f;
+
+        int x = Mathf.FloorToInt(localPosition.x / cellSize);
+        int z = Mathf.FloorToInt(localPosition.z / cellSize);
+
+        // Check if the indices are out of bounds
+        if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
+        {
+            Debug.LogFormat("<color=red>Invalid position - {0}</color>", position);
+            buildingChecker.canPlace = false;
+            return null;
+        }
+
+        // Indices are within bounds, so it's safe to access the array
+        Cell cell = grid[x, z];
+        buildingChecker.canPlace = true;
+        return cell;
+    }
+
+
     public bool CanPlaceAtPosition(Vector3 position, Vector3 size)
     {
-        /*  CanPlaceAtPosition
-
-            Requirements: Position - Cell && Position - Size Collider  
-
-                1. The position argument must be within the bounds of the grid.
-                2. The cell at the position must not already have a building placed on it.
-                3. The size argument must not overlap with any other colliders in the scene. ´
-            Or
-                1. False == CanPlaceAtPosition
-                2. Errors from CanPlaceAtPosition
-            
-        */
-
         Cell cell = GetCellAtPosition(position);
 
         // Check for building
@@ -327,10 +338,28 @@ public class GridSystem : MonoBehaviour
         // Check for building
         if (cell.building != null)
         {
-            Debug.Log("Cell is occupied!"+ cell.building);
+            Debug.Log("Cell is occupied!" + cell.building);
             return false;
         }
-         
+
+        int startX = Mathf.FloorToInt(position.x - size.x / 2);
+        int startZ = Mathf.FloorToInt(position.z - size.z / 2);
+
+        for (int x = 0; x < size.x; x++)
+        {
+            for (int z = 0; z < size.z; z++)
+            {
+                int targetX = startX + x;
+                int targetZ = startZ + z;
+
+                Cell targetCell = GetCellAtPosition(new Vector3(targetX, 0, targetZ));
+
+                if (targetCell == null || targetCell.building != null)
+                {
+                    return false;
+                }
+            }
+        }
 
         // Perform an overlap test using a box collider
         Collider[] overlap = Physics.OverlapBox(position, size / 2, Quaternion.identity, buildings);
@@ -349,7 +378,118 @@ public class GridSystem : MonoBehaviour
 
         return true;
     }
-    
+
     #endregion
+
 }
 
+
+/*
+public Cell GetCellAtPosition(Vector3 position)
+{
+    position.y = 0f;
+    // Get Local Island - GridSystem Bounds
+    Island gridIsland = GetComponent<Island>();
+    Bounds islandBounds = gridIsland.bounds;
+
+    // Null Check
+    if (islandBounds == null)
+    {
+        Debug.Log($"Island{gridIsland.islandName} has No Bounds.");
+        return null;
+    }
+    position.y = 0f;
+
+    // Check if position is within the bounds of the island
+    if (!islandBounds.Contains(position))
+    {
+        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
+        buildingChecker.canPlace = false;
+        return null;
+    }
+
+    // Calculate the local position within the island's grid
+    Vector3 localPosition = gridIsland.transform.InverseTransformPoint(position);
+
+    // Calculate the grid's local minimum and maximum positions
+    Vector3 gridMinPosition = -new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+    Vector3 gridMaxPosition = new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+
+    // Check if the local position is within the grid's local bounds
+    if (localPosition.x < gridMinPosition.x || localPosition.x > gridMaxPosition.x || localPosition.z < gridMinPosition.z || localPosition.z > gridMaxPosition.z)
+    {
+        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
+        buildingChecker.canPlace = false;
+        return null;
+    }
+
+    // Convert the local position to grid indices
+    localPosition -= gridMinPosition;
+    localPosition.y = 0f;
+
+    int x = Mathf.FloorToInt(localPosition.x / cellSize);
+    int z = Mathf.FloorToInt(localPosition.z / cellSize);
+
+    // Check if the indices are out of bounds
+    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
+    {
+        Debug.LogFormat("<color=red>Invalid position - {0}</color>", position);
+        buildingChecker.canPlace = false;
+        return null;
+    }
+
+    // Indices are within bounds, so it's safe to access the array
+    Cell cell = grid[x, z];
+    buildingChecker.canPlace = true;
+    return cell;
+}
+
+
+// Legacy
+//public Cell GetCellAtPosition(Vector3 position)
+//{
+//    position.y = 0f;
+
+//    Vector3 gridMinPosition = gridBounds.min;
+//    Vector3 gridMaxPosition = gridBounds.max;
+
+//    // Check if position is within grid bounds
+//    if (position.x < gridMinPosition.x || position.x > gridMaxPosition.x || position.z < gridMinPosition.z || position.z > gridMaxPosition.z)
+//    {
+//        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
+//        buildingChecker.canPlace = false;
+
+//        return null;
+//    }
+
+//    // Account for Global to Local Position Difference 
+//    // The difference in position is the real position
+//    // World Position -= grid position = local Real Position 
+//    // Position is within grid bounds
+
+//    Debug.LogFormat("<color=green>In Bounds - {0}</color>", position);
+
+//    // Convert position to grid space
+//    position -= gridMinPosition;
+//    position.y = 0f;
+
+//    // Calculate grid indices
+//    int x = Mathf.FloorToInt(position.x / cellSize);
+//    int z = Mathf.FloorToInt(position.z / cellSize);
+
+//    Debug.LogFormat("Position: {0}, X: {1}, Z: {2}", position, x, z);
+
+//    // Check if indices are out of bounds
+//    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
+//    {
+//        Debug.LogFormat("<color=red>invalid position - {0}</color>", position); // issue
+//        buildingChecker.canPlace = false;
+//        return null;
+//    }
+
+//    // Indices are within bounds, so it's safe to access the array
+//    Cell cell = grid[x, z];
+//    buildingChecker.canPlace = true;
+
+//    return cell;
+//} */

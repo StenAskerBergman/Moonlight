@@ -122,6 +122,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38a6bea034e869943bdf2349c5cb9d7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  localCanPlace: 0
   groundLayer:
     serializedVersion: 2
     m_Bits: 64

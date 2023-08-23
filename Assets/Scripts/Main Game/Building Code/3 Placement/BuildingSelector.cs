@@ -4,7 +4,10 @@ public class BuildingSelector : MonoBehaviour
 {
     [SerializeField] private BuildingChecker buildingChecker;
     [SerializeField] private GameObject buildingPreviewPrefab;
-    
+    [SerializeField] private Vector3 buildingPlacementSize;
+
+    public GameObject previewPrefab;
+
     private BuildingPreview currentPreview;
 
     void Start()

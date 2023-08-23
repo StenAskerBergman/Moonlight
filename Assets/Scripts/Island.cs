@@ -1,16 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 public class Island : MonoBehaviour
 {
 
     // Variables
         public int id;
         public string islandName;
-
         public Bounds bounds;
         public Enums.IslandType islandType;
         public GameObject islandObject { get; set; }
+
     // Refs
 
         IslandResourceManager islandResourceManager;
@@ -23,19 +24,22 @@ public class Island : MonoBehaviour
     public void Start(){
         islandResource = gameObject.GetComponent<IslandResource>();
         islandResourceManager = gameObject.GetComponent<IslandResourceManager>();
+        bounds.center = transform.position;
+        bounds.extents = new Vector3(5.0f, 5.0f, 5.0f); // Change these values to your desired size
+
 
         // MapManager As Island Parent
         //mapManager = FindObjectOfType<MapManager>(); // locate the amount of islands to be generated
         //this.transform.SetParent(mapManager.transform);
-
         //LogBounds(); // Bounds Debugging
     }
 
     public void LogBounds()
     {
-        // Debug.Log($"Island {islandName}");       // island names
-        Debug.Log($"Bounds: center: {bounds.center}");      // island centers
-        Debug.Log($"Bounds: extents: {bounds.extents}");     // island extents
+        Renderer renderer = GetComponent<Renderer>();
+        Debug.Log($"Island: {islandName + "id: " + id} Bounds: {renderer.bounds}");       // island names
+        //Debug.Log($"Island: {islandName + "id: " + id} Set Bounds center: {bounds.center}");      // island centers
+        //Debug.Log($"Island: {islandName + "id: " + id} Set Bounds extents: {bounds.extents}");     // island extents
     }
     public Island(Enums.IslandType type)
     {

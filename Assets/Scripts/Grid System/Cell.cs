@@ -34,6 +34,7 @@ public class Cell
         this.cellPosition = new Vector3Int(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), Mathf.RoundToInt(position.z));
     }
 
+    // Cell ( Vector3 pos, Building Obj, Bool isWater )
     public Cell(Vector3 pos, Building obj, bool a)
     {
         isWater = a; 
