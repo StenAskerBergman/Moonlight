@@ -4,7 +4,7 @@ public class BuildingChecker : MonoBehaviour
 {
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private LayerMask UI;
-    public bool canPlace, canPlace2;
+    public bool canPlace; //, canPlace2;
     public bool IC = false;
     [SerializeField] private BuildingPreview currentBuildingPreview;
     [SerializeField] private BuildingPlacer buildingPlacer;
@@ -40,7 +40,7 @@ public class BuildingChecker : MonoBehaviour
     private void Start()
     {
         canPlace = false;
-        canPlace2 = false;
+
         // Subscribe to event for the current island.
         IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
         IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
@@ -123,167 +123,246 @@ public class BuildingChecker : MonoBehaviour
             }
         }
     }
+   
 
-    void Update()
+    private void Update()
     {
 
         // Check if there is a Building Preview Active...
         if (currentBuildingPreview != null)
         {
+            /* Random Text Ideas & Code Ideas
+             
             // There is a Building Preview Active...
 
-            /* Future stuff
+            // Future stuff
+             
                 // Logic Desc - Goal
-                // Determine where the player wants to build
-                // Determine Location Suitability
+                // Determines where the player wants to build
+                // Determines Location Suitability
                 // Additional Post Construction Extras
 
                 // To do - Not Yet
-                // UpdateBuildsite(x);              // For Determine Location 
-                // CheckBuildsite(x,y);             // For Determine Suitability
-                // ConstructBuildsite(x,y,z);       // For Determine Construction        
+                // Check Site Selector();                   // Determines Site Type
+                // Check Site Preview();                    // Determines Site Preview (Desired Target Location)
+                // Check Site Placement();                  // Determines Site Movement ( Preview Properties & Outcome )
+                // Check Site Behaviour();                  // Determines Site Behaviours ( Grid, Deposit, Other )
+                // Check Site Location();                   // Determines Site Location ( Island, Grid & Bounds)
+                // Check Site Position();                   // Determines Site Position ( Local & Global Position 
+                // Check Site Viability();                  // Determines Site Viability ( Island Resources  
+                // Check Site Compatibility();              // Determines Site Compatibility
+                // Check Site Suitability(x,y);             // Determines Site Suitability
+                // Check Site Construction(x,y,z);          // Determines Site Construction        
+                // Check Site Evaluation();                 // Determines Site Evaluation
+                // Check Site Affordability(x,y,z);         // Determines Site Affordability
+                // UpdateAnalysis().Refresh                 // Determines Site Analysis
 
-                // Logic Desc - Current
+            // Logic Desc - Current
                 // Does all in one method
             */
 
             // Doing - Now
-            UpdateBuildsite();  // Determines Location              
+            UpdateBuildsite();  // Determiness Location              
+            //CheckBuildsite();
+            //AffordBuildsite();
+            //PlaceBuilding()
+            //UpdateBuildsite(TargetLocation);
 
-            // currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
+            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
 
             Debug.Log("Update: " + canPlace);
 
+            InputCheck();
 
-            // Click to Build - Building Method - Click to Set the Selected Building Preview at Mouse Location...
-            if (Input.GetMouseButtonDown(0))
-            {
-                // Check CanPlace for "place-ability"...
-                if (IC == true || canPlace == true)// || canPlace2 == true) // Either Require True 
-                {
-                    // IDEA: Add a Parent check? ... avoid nullref
-                    // Place Building - Construct BuildSite...
-
-                    Debug.LogFormat("<color=green>placing building - {0}</color>", canPlace); // Green
-                    buildingPlacer.PlaceBuilding(currentBuildingPreview, currentBuildingPreview.transform.parent); // Requires Parent! 
-
-                }
-                else if (IC == false && canPlace == false) // Both Require False
-                {
-                    Debug.LogFormat("<color=red>Cant place building - {0}</color>", canPlace); // Red
-                    // currentBuildingPreview.SetPreviewMaterial(canPlace); // Update the color of the building preview based on canPlace value
-
-                }
-
-            }
-
-            // Click to Cancel
-            if (Input.GetMouseButtonDown(1))
-            {
-                CancelBuilding();
-            }
         }
     }
-
-    #region Grid Related
-    private GridSystem GetCurrentIslandGridSystem(Island currentIsland)
+    
+    private void InputCheck()
     {
-        // You can replace this with your method for getting the current island's GridSystem
-        // For example, if you have an island manager that keeps track of the current island 
-        // you can get the GridSystem from there
-
-        if (currentIsland == null)
+        // Click to Build - Building Method - Click to Set the Selected Building Preview at Mouse Location...
+        if (Input.GetMouseButtonDown(0))
         {
-            Debug.LogWarning("GetCurrentIslandGridSystem: currentIsland is null");
-            return null;
+            // Check CanPlace for "place-ability"...
+            if (IC == true || canPlace == true)// || canPlace2 == true) // Either Require True 
+            {
+                // IDEA: Add a Parent check? ... avoid nullref
+                // Place Building - Construct BuildSite...
+
+                Debug.LogFormat("<color=green>placing building - {0}</color>", canPlace); // Green
+                buildingPlacer.PlaceBuilding(currentBuildingPreview, currentBuildingPreview.transform.parent); // Requires Parent! 
+
+            }
+            else if (IC == false || canPlace == false) // Require One False
+            {
+                Debug.LogFormat("<color=red>Cant place building - {0}</color>", canPlace); // Red
+                                                                                           // currentBuildingPreview.SetPreviewMaterial(canPlace); // Update the color of the building preview based on canPlace value
+
+            }
+
         }
 
-        GridSystem gridSystem = currentIsland.GetComponent<GridSystem>();
-        currentBuildingPreview.gridSystem = gridSystem;
-        return currentBuildingPreview.gridSystem;
+        // Click to Cancel
+        if (Input.GetMouseButtonDown(1))
+        {
+            CancelBuilding();
+        }
     }
+    
+    #region Grid Related
+    
+    // Update Methods for getting the current selected island grid system
 
+        // Major
+        private GridSystem GetCurrentIslandGridSystem(Island currentIsland)
+        {
+            // You can replace this with your method for getting the current island's GridSystem
+            // For example, if you have an island manager that keeps track of the current island 
+            // you can get the GridSystem from there
 
-    public void UpdateGridSystem(GridSystem newGridSystem)
-    {
-        gridSystem = newGridSystem;
-    }
+            if (currentIsland == null)
+            {
+                Debug.LogWarning("GetCurrentIslandGridSystem: currentIsland is null");
+                return null;
+            }
+
+            GridSystem gridSystem = currentIsland.GetComponent<GridSystem>();
+            currentBuildingPreview.gridSystem = gridSystem;
+            return currentBuildingPreview.gridSystem;
+        }
+
+        // Minor
+        public void UpdateGridSystem(GridSystem newGridSystem)
+        {
+            gridSystem = newGridSystem;
+        }
+        
+        // How to Use:
+        // GridSystem CurrentGrid = GetGridSystem();
+        
+        private GridSystem GetGridSystem() 
+        {
+            // Null Check
+            if (gridSystem == null)
+            {
+                Debug.LogWarning("GetGridSystem: currentIsland is null");
+                return null;
+            }
+
+            return gridSystem;
+        }
+
     #endregion
 
     #region Construction Methods 
 
     // ( Conditions Requirements Price ) 
 
-    // Buildsite 
-    public void Buildsite()
-    {
+        
+    // Build Site 
+        public void Buildsite()
+        {
+            GridSystem CurrentGrid = GetGridSystem();
+        
+            // Construct Building & Checks Island for Needs
+            // Construct Building & Checks Grid System for Needs
+            // Construct Building & Checks Cell Location for Needs
 
-        // Construct Building & Checks Island for Needs
-        // Construct Building & Checks Grid System for Needs
-        // Construct Building & Checks Cell Location for Needs
 
+            // then...
+            // Finishes or Cancelled
 
-        // then...
-        // Finishes or Cancelled
-
-    }
+        }
+        
     // Check Buildsite
-    public void CheckBuildsite()
-    {
+        public bool CheckBuildsite()
+        {
+            Cell cell = null;
 
-        // Checks Island
-        // Checks Grid System
-        // Checks Cell Location
+            // gridSystem.
+            // Checks Island
+            // Checks Grid System
+            // Checks Cell Location
 
 
-        // then...
+            // then...
+            return true;
+        }
 
-    }
-
+        
     // Construction 
-    public void Construction()
-    {
-        Price();            // Price for Construction 
-        Conditions();       // Conditions for Construction
-        Requirements();     // Requirements for Construction
-    }
+        public void Construction()
+        {
+            Price();            // Price for Construction 
+            Conditions();       // Conditions for Construction
+            Requirements();     // Requirements for Construction
+        }
 
-
+        
     // Conditions
-    private void Conditions()
-    {
+        private void Conditions()
+        {
 
-    }
+            // bool legalbounds; // A Legal Bounds is within the limit 
+            // bool illegalbounds; // A Illegal Bounds is outside of the limit
+
+        }
 
     // Requirements
-    private void Requirements()
-    {
+        private void Requirements()
+        {
 
-    }
-
+        }
+        
     // price
-    private void Price()
-    {
+        private void Price()
+        {
 
-    }
+        }
+
+    #endregion
+
+    #region Construction SetValue
+
+    // Set Conditions
+        private void SetConditions()
+        {
+
+            // bool legalbounds; // A Legal Bounds is within the limit 
+            // bool illegalbounds; // A Illegal Bounds is outside of the limit
+
+        }
+
+    // Set Requirements
+        private void SetRequirements()
+        {
+
+        }
+
+    // Set Price
+        private void SetPrice()
+        {
+
+        }
 
     #endregion
 
     #region  Construction GetValue 
 
     private void GetPrice()
-    {
+        {
 
-        //return price;         // Get Price 
-    }
-    private void GetRequirements()
-    {
-        //return requirements;  // Get Requirements 
-    }
-    private void GetConditions()
-    {
-        //return Conditions;    // Get Conditions
-    }
+            //return price;         // Get Price 
+        }
+        private void GetRequirements()
+        {
+
+            //return requirements;  // Get Requirements 
+        }
+        private void GetConditions()
+        {
+
+            //return Conditions;    // Get Conditions
+        }
 
     #endregion
 
@@ -295,8 +374,8 @@ public class BuildingChecker : MonoBehaviour
          
             // Script Task List
                 // 1. Gather a Building Location
-                // 2. Determine Build-ability
-                // 3. Determine Compatability
+                // 2. Determines Build-ability
+                // 3. Determines Compatability
 
             // Return
                 // Location (Position Cell) 
@@ -312,58 +391,68 @@ public class BuildingChecker : MonoBehaviour
             // Creates a New Position... 
             Vector3 newPos = hit.point;
 
-            // Simple Null Ref Check ... on currentBuildingPreview 
-            if (currentBuildingPreview == null)
-            {
-                Debug.Log("currentBuildingPreview is null");
-                canPlace = false;
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
-                currentBuildingPreview.SetRendererEnabled(false);
-                return;
-            }
+            #region Default Null Checks
 
-            // *Not if* currentBuildingPreview is not Null
-            // *Since* currentBuildingPreview is not Null I can... update it to the new grid system
+                // Simple Null Ref Check ... on currentBuildingPreview 
+                if (currentBuildingPreview == null)
+                {
+                    Debug.Log("currentBuildingPreview is null");
+                    canPlace = false;
+                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
+                    currentBuildingPreview.SetRendererEnabled(false);
+                    return;
+                }
 
-            // lesser side note: This is needed because, if the user drags a building from one island to another then we need to account for that
+                // *Not if* currentBuildingPreview is not Null
+                // *Since* currentBuildingPreview is not Null I can... update it to the new grid system
 
-            currentBuildingPreview.UpdateGridSystem(gridSystem);
-            GridSystem newGridSystem = GetCurrentIslandGridSystem(currentIsland);
+                // lesser side note: This is needed because, if the user drags a building from one island to another then we need to account for that
 
-            if (newGridSystem == null)
-            {
-                Debug.LogWarning("newGridSystem is null");
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
-                currentBuildingPreview.SetRendererEnabled(true);
-                return;
-            }
+                currentBuildingPreview.UpdateGridSystem(gridSystem);
+                GridSystem newGridSystem = GetCurrentIslandGridSystem(currentIsland);
 
-            currentBuildingPreview.gridSystem = newGridSystem;
+                if (newGridSystem == null)
+                {
+                    Debug.LogWarning("newGridSystem is null");
+                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
+                    currentBuildingPreview.SetRendererEnabled(true);
+                    return;
+                }
 
-            // Checks currentBuildingPreview for GridSystem
-            if (currentBuildingPreview.gridSystem == null)
-            {
-                Debug.Log("currentBuildingPreview.gridSystem is null");
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                currentBuildingPreview.SetRendererEnabled(true);
-                return;
-            }
+                currentBuildingPreview.gridSystem = newGridSystem;
 
-            // Enable the renderer if the parent object is present
-            if (currentBuildingPreview.transform.parent != null)
-            {
-                currentBuildingPreview.SetRendererEnabled(true);
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
+                // Null Check for currentBuildingPreview for GridSystem
+                if (currentBuildingPreview.gridSystem == null)
+                {
+                    Debug.Log("currentBuildingPreview.gridSystem is null");
+                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
+                    currentBuildingPreview.SetRendererEnabled(true);
+                    return;
+                } 
 
-                // currentIsland.LogBounds(); // Debugg Log for Bounds
-            }
-            else
-            {
-                // Disable the renderer and return early if there is no parent object
-                currentBuildingPreview.SetRendererEnabled(false);
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
-                return;
-            }
+                // Enable the renderer if the parent object is present
+                if (currentBuildingPreview.transform.parent != null)
+                {
+                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
+                    currentBuildingPreview.SetRendererEnabled(true);
+
+                    // currentIsland.LogBounds(); // Debugg Log for Bounds
+                }
+                else
+                {
+                    // Disable the renderer and return early if there is no parent object
+                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator - you don't want a future false positive
+                    currentBuildingPreview.SetRendererEnabled(false);
+                    return;
+                }
+
+            #endregion
+            
+            // Default Null Checks for Systems are done
+            // Now the actual System Logics can start!
+
+            // Get the nearest Position to Cursor for 
+            // Cell Placement 
 
             newPos = newGridSystem.GetNearestPointOnGrid(newPos);
             Cell cell = gridSystem.GetCellAtWorldPosition(newPos);
@@ -371,130 +460,66 @@ public class BuildingChecker : MonoBehaviour
             // Checks for cells
             if (cell != null)
             {
-                /* Future Ideas 
-                  
-                    switch (cell.status)
-                    {
-                        case status.isFull:
-                            // Handle isFull case
-                            break;
 
-                        case status.isNull:
-                            // Handle isNull case
-                            break;
-
-                        case status.isWater:
-                            // Handle isWater case
-                            break;
-
-                        default:
-                            // Handle default case (if any)
-                            break;
-                    }
-                 
-                 */
-                Debug.Log("Checking - Cell x:" + cell.position.x + ", Cell z:" + cell.position.z);
-                if (cell.isBlocked != true)
+                // First,
+                // ensure that the primary cell where you are trying to place the building is not blocked or occupied.
+                if (cell.isBlocked || cell.isOccupied)
                 {
-                    if (cell.isOccupied != true)
-                    {
-
-                        if (cell.building != null)
-                        {
-                            canPlace = false;
-                            Debug.Log("Cell is occupied by a building. - canPlace:" + canPlace);
-                            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                            return;
-                        }
-
-
-                        Debug.Log("Cell is Open, not occupied. - canPlace:" + canPlace);
-                        currentBuildingPreview.transform.position = newPos;
-
-                        // Check if the building can be placed at the new position
-                        BuildingProperties buildingProperties = currentBuildingPreview.GetBuildingPrefab().GetComponent<BuildingProperties>();
-
-                        if (buildingProperties == null)
-                        {
-                            canPlace = false;
-                            Debug.LogError("buildingProperties is null"); // Game Breaker
-                            return;
-                        }
-
-                        Vector3 buildingSize = buildingProperties.buildingSize; // Retains the correct size configurements
-
-                        Vector3Int gridPosition = gridSystem.WorldToCell(newPos); // Moves the model to the correct location
-
-                        canPlace = true; // Since Size & Location was retained & not blocked or filled allow Building
-
-                        // Semi Works
-
-                        for (int x = 0; x < buildingSize.x; x++)
-                        {
-                            for (int z = 0; z < buildingSize.z; z++)
-                            {
-                                int targetX = gridPosition.x + x;
-                                int targetZ = gridPosition.z + z;
-
-                                Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
-                                Cell targetCell = gridSystem.GetCellAtPosition(targetCellWorldPosition);
-
-                                if (targetCell == null || targetCell.isBlocked || targetCell.isOccupied || targetCell.building != null)
-                                {
-                                    canPlace = false;
-                                    break;
-                                }
-                            }
-
-                            if (!canPlace)
-                            {
-                                break;
-                            }
-                        }
-
-
-                        currentBuildingPreview.SetPreviewMaterial(canPlace);
-                        currentBuildingPreview.transform.position = newPos;
-
-                        // Asking the Grid System to perform a Check
-                        canPlace = currentBuildingPreview.gridSystem.CanPlaceAtPosition(newPos, buildingSize);  // Duel Check
-                        canPlace2 = currentBuildingPreview.gridSystem.CanPlaceAtPosition(newPos, buildingSize); // Duel Check
-
-                        // Works 
-                        if (gridSystem.CanPlaceAtPosition(newPos, buildingSize) == true)
-                        {
-                            canPlace = gridSystem.CanPlaceAtPosition(newPos, buildingSize);  // Duel Check
-                            canPlace2 = gridSystem.CanPlaceAtPosition(newPos, buildingSize); // Duel Check
-                            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                        }
-                        else
-                        {
-                            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                        }
-                        Debug.LogFormat("<color=pink>UpdateBuildsite - 1 canPlace: </color>" + canPlace);
-                        Debug.LogFormat("<color=pink>UpdateBuildsite - 2 canPlace: </color>" + canPlace2);
-
-                    }
-                    else
-                    {
-                        // Cell isOccupied
-
-                        canPlace = false;
-                        currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                        Debug.Log("Cell is occupied, not Open. - canPlace:" + canPlace);
-                        Debug.Log("Cell is occupied at position ( Cell x:" + cell.position.x + ", Cell z:" + cell.position.z + ")");
-                        // ref 1: See refrence below for more
-                    }
-                }
-                else
-                {
-                    // Cell isBlocked
-
                     canPlace = false;
-                    currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                    Debug.Log("Cell is Blocked.");
-
+                    currentBuildingPreview.SetPreviewMaterial(canPlace);
+                    Debug.Log(cell.isBlocked ? "Cell is Blocked." : "Cell is occupied, not Open.");
+                    return; // If the primary cell is blocked or occupied, then exit early.
                 }
+                // If Not, Continue...
+
+                // Second,
+                // If the cell is free, check for the entire footprint of the building & check Additional Properties and requirements
+                BuildingProperties buildingProperties = currentBuildingPreview.GetBuildingPrefab().GetComponent<BuildingProperties>();
+                
+                // Null Check for Building Properties.
+                if (buildingProperties == null)
+                {
+                    canPlace = false;
+                    Debug.LogError("buildingProperties is null");
+                    return; // If the building properties are Null, then exit Early.
+                }
+
+                // Third,
+                // Get The Build Stats
+                Vector3 buildingSize = buildingProperties.buildingSize;
+                Vector3Int gridPosition = gridSystem.WorldToCell(newPos);
+
+                // Initial assumption is that we can now place the building.
+
+                // canPlace = true; // its bad practic to confirm or deny anything at location where incentives for action is required
+
+                // Iterate over the entire size of the building.
+                for (int x = 0; x < buildingSize.x; x++)
+                {
+                    for (int z = 0; z < buildingSize.z; z++)
+                    {
+                        int targetX = gridPosition.x + x;
+                        int targetZ = gridPosition.z + z;
+
+                        Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
+                        Cell targetCell = gridSystem.GetCellAtPosition(targetCellWorldPosition);
+
+                        // If ANY cell within the footprint of the building is null, blocked, occupied or contains a building, we can't place.
+                        if (targetCell == null || targetCell.isBlocked || targetCell.isOccupied || targetCell.building != null)
+                        {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+
+                    if (!canPlace)
+                    {
+                        break;
+                    }
+                }
+
+                currentBuildingPreview.SetPreviewMaterial(canPlace); // Should be false unless you can play on boundary
+                Debug.LogFormat("<color=pink>UpdateBuildsite - canPlace: </color>" + canPlace);
 
 
             }
@@ -523,11 +548,11 @@ public class BuildingChecker : MonoBehaviour
                 //currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
                 currentBuildingPreview.SetPreviewMaterial(false);// canPlace == true && canPlace2 == true); // Placement Indicator
 
-                currentBuildingPreview.SetRendererEnabled(true);
+                currentBuildingPreview.SetRendererEnabled(canPlace);
                 return;
 
                 // Note:
-                // This Determines if you can move mouse off island
+                // This Determiness if you can move mouse off island
                 // and if the building retains it's last selected
                 // location on the island for the building preview
             }

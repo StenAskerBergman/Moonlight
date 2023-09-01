@@ -320,6 +320,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13025ea066bea1f49a97caaea1ac2021, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BuildHeightDebug: 0.5
+  useHeightDebug: 0
 --- !u!208 &2224744386100207605
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -377,7 +379,13 @@ MonoBehaviour:
   currentIsland: {fileID: 0}
   gridSystem: {fileID: 0}
   buildingProperties: {fileID: -4907743413093319222}
+  buildingData: {fileID: 11400000, guid: 88f90ac679fb39f4899d9b279699fa53, type: 2}
   buildingSize: {x: 2, y: 2, z: 2}
+  buildingName: 
+  buildingDescription: 
+  buildingType: 
+  buildingRenderer: {fileID: 0}
+  Requirements: 0000000001000000020000000300000004000000
 --- !u!114 &971140939423499999
 MonoBehaviour:
   m_ObjectHideFlags: 0

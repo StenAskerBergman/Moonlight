@@ -24,20 +24,20 @@ public class Island : MonoBehaviour
     public void Start(){
         islandResource = gameObject.GetComponent<IslandResource>();
         islandResourceManager = gameObject.GetComponent<IslandResourceManager>();
-        bounds.center = transform.position;
+        bounds.center = this.transform.position;
         bounds.extents = new Vector3(5.0f, 5.0f, 5.0f); // Change these values to your desired size
 
 
         // MapManager As Island Parent
         //mapManager = FindObjectOfType<MapManager>(); // locate the amount of islands to be generated
         //this.transform.SetParent(mapManager.transform);
-        //LogBounds(); // Bounds Debugging
+        LogBounds(); // Bounds Debugging
     }
 
     public void LogBounds()
     {
-        Renderer renderer = GetComponent<Renderer>();
-        Debug.Log($"Island: {islandName + "id: " + id} Bounds: {renderer.bounds}");       // island names
+
+        //Debug.Log($"Island: {islandName + "id: " + id} Bounds: {bounds}");       // island names
         //Debug.Log($"Island: {islandName + "id: " + id} Set Bounds center: {bounds.center}");      // island centers
         //Debug.Log($"Island: {islandName + "id: " + id} Set Bounds extents: {bounds.extents}");     // island extents
     }

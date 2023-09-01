@@ -1,7 +1,10 @@
 using UnityEngine;
 
 public class BuildingPreview : MonoBehaviour
-{
+{    
+    // Building Data
+    // public BuildingData buildingData; 
+
     // Inspector Settings and Adjustments 
     // And all the variable used in the code
 
@@ -18,22 +21,30 @@ public class BuildingPreview : MonoBehaviour
     [SerializeField] private Material truePlacement;
     [SerializeField] private Material falsePlacement;
 
+
     public enum SnapMode
     {
         Grid,
         Deposit
     }
 
-    private void Start()
-    {
-        IslandManager.instance.OnGridSystemDetected += OnGridSystemDetected;
-        IslandManager.instance.OnPlayerEnterIsland += OnPlayerEnterIsland;
-    }
-    private void OnDestroy()
-    {
-        IslandManager.instance.OnGridSystemDetected -= OnGridSystemDetected;
-        IslandManager.instance.OnPlayerEnterIsland -= OnPlayerEnterIsland;
-    }
+    #region Start + OnDestroy
+
+        private void Start()
+        {
+            IslandManager.instance.OnGridSystemDetected += OnGridSystemDetected;
+            IslandManager.instance.OnPlayerEnterIsland += OnPlayerEnterIsland;
+        }
+        private void OnDestroy()
+        {
+            IslandManager.instance.OnGridSystemDetected -= OnGridSystemDetected;
+            IslandManager.instance.OnPlayerEnterIsland -= OnPlayerEnterIsland;
+        }
+
+    #endregion
+    
+    #region Events + GridSystem
+    
     private void OnPlayerEnterIsland(Island island)
     {
         currentIsland = island;
@@ -44,31 +55,36 @@ public class BuildingPreview : MonoBehaviour
         gridSystem = detectedGridSystem;
     }
 
-    #region Color & Render
-
-        // Preview Color & Render Methods
-        public void SetPreviewMaterial(bool canPlace)
-        {
-            localCanPlace = canPlace;
-            MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-            Material targetMaterial = canPlace ? truePlacement : falsePlacement;
-
-        foreach (MeshRenderer renderer in renderers)
-            {
-                renderer.material = targetMaterial;
-            }
-        }
-
-        public void SetRendererColor(Color color)
-        {
-            MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-            foreach (MeshRenderer renderer in renderers)
-            {
-                renderer.material.color = color;
-            }
-        }
+    public void UpdateGridSystem(GridSystem newGridSystem)
+    {
+        gridSystem = newGridSystem;
+    }
 
     #endregion
+
+    #region Render Related
+
+    // Preview Color & Render Methods
+    public void SetPreviewMaterial(bool canPlace)
+    {
+        localCanPlace = canPlace;
+        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
+        Material targetMaterial = canPlace ? truePlacement : falsePlacement;
+
+        foreach (MeshRenderer renderer in renderers)
+        {
+            renderer.material = targetMaterial;
+        }
+    }
+
+    public void SetRendererColor(Color color)
+    {
+        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
+        foreach (MeshRenderer renderer in renderers)
+        {
+            renderer.material.color = color;
+        }
+    }
 
 
     public void SetRendererEnabled(bool isEnabled)
@@ -79,6 +95,8 @@ public class BuildingPreview : MonoBehaviour
             renderer.enabled = isEnabled;
         }
     }
+
+    #endregion
 
 
     // BUILDING PREFAB RELATED
@@ -96,65 +114,66 @@ public class BuildingPreview : MonoBehaviour
     {
         return buildingPrefab;
     }
-    public void UpdateGridSystem(GridSystem newGridSystem)
-    {
-        gridSystem = newGridSystem;
-    }
-    
+
+
     // Update Method Starts
-public void Update()
-{
-    Island hoveredIsland = IslandManager.instance.GetHoveredIsland();
-    if (hoveredIsland != null)
+    public void Update()
     {
-        currentIsland = hoveredIsland;
-        UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
-    }
-    else
-    {
-        Island islandForBuildingPreview = IslandManager.instance.GetIslandForBuildingPreview(this);
-        if (islandForBuildingPreview != null)
-        {
-            currentIsland = islandForBuildingPreview;
-            UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
-        }
-    }
-
-    if (currentIsland != null)
-    {
-        transform.SetParent(currentIsland.transform);
-
-        RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        if (Physics.Raycast(ray, out hit, 1000f, groundLayer))
-        {
-            Vector3 newPos = hit.point;
-            newPos.y = offsetY;
-
-            if (currentIsland != null)
+        #region Hovering Mechanics 
+            
+        // Assigns Island
+            Island hoveredIsland = IslandManager.instance.GetHoveredIsland();
+            if (hoveredIsland != null)
             {
-                switch (snapMode)
+                currentIsland = hoveredIsland;
+                UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
+            }
+            else
+            {
+                Island islandForBuildingPreview = IslandManager.instance.GetIslandForBuildingPreview(this);
+                if (islandForBuildingPreview != null)
                 {
-                    case SnapMode.Grid:
-                        newPos = gridSystem.GetNearestPointOnGrid(newPos);
-                        break;
-                    case SnapMode.Deposit:
-                        newPos = gridSystem.GetNearestDepositPosition(newPos);
-                        break;
+                    currentIsland = islandForBuildingPreview;
+                    UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
                 }
             }
+        
+        // Assigns Parent
+            if (currentIsland != null)
+            {
+                transform.SetParent(currentIsland.transform);
 
-            transform.position = newPos;
-        }
+                RaycastHit hit;
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                if (Physics.Raycast(ray, out hit, 1000f, groundLayer))
+                {
+                    Vector3 newPos = hit.point;
+                    newPos.y = offsetY;
+
+                    if (currentIsland != null)
+                    {
+                        switch (snapMode)
+                        {
+                            case SnapMode.Grid:
+                                newPos = gridSystem.GetNearestPointOnGrid(newPos);
+                                break;
+                            case SnapMode.Deposit:
+                                newPos = gridSystem.GetNearestDepositPosition(newPos);
+                                break;
+                        }
+                    }
+
+                    transform.position = newPos;
+                }
+            }
+            else
+            {
+                UpdateGridSystem(null);
+                transform.SetParent(null);
+            }
+        #endregion
     }
-    else
-    {
-        UpdateGridSystem(null);
-        transform.SetParent(null);
-    }
-}
-    
     // Update Method Ends
 
 
@@ -164,6 +183,7 @@ public void Update()
         {
             finalBuildingProperties.currentIsland = currentIsland;
             finalBuildingProperties.gridSystem = gridSystem;
+
         }
     }
 }

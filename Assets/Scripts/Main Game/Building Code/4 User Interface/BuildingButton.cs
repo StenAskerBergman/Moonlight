@@ -13,7 +13,7 @@ public class BuildingButton : MonoBehaviour
 
     private void OnButtonClick()
     {
-        // Debug.Log("Building button clicked: " + this.name); // Add this line
+        // Debug.Log("Building button clicked: " + this.name); // Logs Button Selection
         
         if(buildingPrefab != null)
         {

@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
+using static BuildingProperties;
 
 public class BuildingPlacer : MonoBehaviour
 {
@@ -11,9 +13,15 @@ public class BuildingPlacer : MonoBehaviour
     [SerializeField] private BuildingChecker buildingChecker;
     public delegate void OnConfirmPlacement(GameObject previewObject);
     public event OnConfirmPlacement ConfirmPlacement;
+
+    // Resource Related
     [SerializeField] private IslandResourceManager islandResourceManager;
     [SerializeField] private IslandResource islandResource;
 
+    // Requirement Related
+    [SerializeField] private Enums.RequirementType requirementType;
+    [SerializeField] private Enums.RequirementType[] req;
+    
     private void Start()
     {
         IslandManager.instance.OnGridSystemDetected += OnGridSystemDetected;
@@ -46,7 +54,16 @@ public class BuildingPlacer : MonoBehaviour
         islandResource = currentIsland.GetComponent<IslandResource>(); 
     }
 
+    private Vector3 CalculateOffset(Vector3 buildingSize)
+    {
+        float offsetX = (buildingSize.x % 2 == 0) ? gridSystem.cellSize / 2 : 0;
+        float offsetZ = (buildingSize.z % 2 == 0) ? gridSystem.cellSize / 2 : 0;
 
+        return new Vector3(offsetX, 0, offsetZ);
+    }
+
+    // Sets Req Bools
+    private bool ReqShore, ReqSea, ReqSub, ReqLand, ReqOther;
 
     public void PlaceBuilding(BuildingPreview buildingPreview, Transform islandTransform)
     {
@@ -83,10 +100,82 @@ public class BuildingPlacer : MonoBehaviour
             // Sets Target Position
             Vector3 targetPosition = buildingPreview.transform.position;
 
-            // Sets the actual size values
+            // Sets Builds Size Values
             Vector3 buildingSize = buildingPreview.GetBuildingPrefab().GetComponent<BuildingProperties>().buildingSize;
+           
+            // Sets Builds Type
+            // Enums.RequirementType[] req = buildingPreview.GetBuildingPrefab().GetComponent<Enums>().Requirements;
+            
+            if (req != null)
+            {
+                foreach (Enums.RequirementType requirement in req)
+                {
+                    switch (requirement)
+                    {
+                        case Enums.RequirementType.ReqShore:
+                            // Handle shore requirement
+                            ReqShore = true;
+                        
+                            // False
+                            ReqSea = false;
+                            ReqSub = false; 
+                            ReqLand = false; 
+                            ReqOther = false;
 
-            if (gridSystem.CanPlaceAtPosition(targetPosition, buildingSize) == true)
+                            break;
+
+                        case Enums.RequirementType.ReqSea:
+                            // Handle sea requirement
+                            ReqSea = true;
+
+                            // False
+                            ReqShore = false;
+                            ReqSub = false;
+                            ReqLand = false;
+                            ReqOther = false;
+
+
+                            break;
+
+                        case Enums.RequirementType.ReqSub:
+                            // Handle sea requirement
+                            ReqSub = true;
+
+                            // False
+                            ReqShore = false;
+                            ReqSea = false;
+                            ReqLand = false;
+                            ReqOther = false;
+
+                            break;
+
+                        case Enums.RequirementType.ReqLand:
+                            // Handle land requirement
+                            ReqLand = true;
+
+                            // False
+                            ReqShore = false;
+                            ReqSea = false;
+                            ReqSub = false;
+                            ReqOther = false;
+
+                            break;
+
+                        default:
+                            // Handle any other requirement type
+                            ReqOther = true;
+
+                            // False
+                            ReqShore = false;
+                            ReqSea = false;
+                            ReqSub = false;
+                            ReqLand = false;
+                            break;
+                    }
+                }
+            }
+
+            if (buildingChecker.canPlace) // aka. -> if (gridSystem.CanPlaceAtPosition(targetPosition, buildingSize) == true) // Additional Check Before Building
             {
                 // If true...
                 // Place the building
@@ -105,16 +194,30 @@ public class BuildingPlacer : MonoBehaviour
 
                 // Update the bank balance and island resources using the BuildingCost script
                 BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>();
+
                 if (buildingCost != null)
                 {
-                    Debug.Log("BuildingCost component found."); // Cost was found
+                    // Debug.Log("BuildingCost component found."); // Cost was found
 
                     Bank bank = FindObjectOfType<Bank>();
                     if (bank != null)
                     {
                         // is Placing the Building
-                        Debug.Log("Bank component found."); // Bank was found
-                        
+                        // Mark all cells that the building will cover as occupied.
+                        Vector3Int gridPosition = gridSystem.WorldToCell(targetPosition);
+                        for (int x = 0; x < buildingSize.x; x++)
+                        {
+                            for (int z = 0; z < buildingSize.z; z++)
+                            {
+                                int targetX = gridPosition.x + x;
+                                int targetZ = gridPosition.z + z;
+
+                                Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
+                                gridSystem.MarkCellAsOccupied(targetCellWorldPosition);  // Mark each cell as occupied
+                            }
+                        }
+
+                        // Debug.Log("Bank component found."); // Bank was 
                         bank.AddIncome(-buildingCost.GetPrice()); // Use AddIncome with a negative value to place price
                         currentIsland.RemoveResource(buildingCost.GetResourceType(), buildingCost.GetPrice());
                     }
@@ -172,6 +275,10 @@ public class BuildingPlacer : MonoBehaviour
 
 }
 
+    
+
+// 
+    
     // // Update the building preview's parent and current island
     // BuildingPreview buildingPreview = previewObject.GetComponent<BuildingPreview>();
     

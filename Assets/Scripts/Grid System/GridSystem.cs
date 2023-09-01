@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static BuildingProperties;
 
 public class GridSystem : MonoBehaviour
 {
@@ -174,6 +175,9 @@ public class GridSystem : MonoBehaviour
     {
         Island island = GetComponent<Island>();
 
+        Debug.Log($"Island: {island.islandName + "id: " + island.id} Bounds: {island.bounds}");
+
+
         Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
         Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
 
@@ -217,6 +221,7 @@ public class GridSystem : MonoBehaviour
 
         return nearestDepositPos;
     }
+
     // GetNearestPointOnGrid Method
     public Vector3 GetNearestPointOnGrid(Vector3 position)
     {
@@ -226,7 +231,7 @@ public class GridSystem : MonoBehaviour
 
         if (cell != null)
         {
-            Debug.Log("result: " + snappedPos);
+            //Debug.Log("result: " + snappedPos);
             return snappedPos;
         }
         else
@@ -266,10 +271,14 @@ public class GridSystem : MonoBehaviour
         // Update the bounds based on the current island
         gridBounds = island.bounds;
     }
+
+    // Sets Req Bools
+    private bool _ReqShore, _ReqSea, _ReqSub, _ReqLand, _ReqOther;
+
     public Cell GetCellAtPosition(Vector3 position)
     {
 
-        Debug.Log(position);
+        // Debug.Log(position);
         position.y = 0f;
         // Get Local Island - GridSystem Bounds
         Island gridIsland = GetComponent<Island>();
@@ -290,16 +299,24 @@ public class GridSystem : MonoBehaviour
         Vector3 gridMinPosition = -new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
         Vector3 gridMaxPosition = new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
 
-        // Check if the local position is within the grid's local bounds and within the island's bounds
-        if (!islandBounds.Contains(localPosition) ||
+        // Future Note:
+        // Need a Shoreline Case for
+        // Fisheries and vice versa.
+        // Check if Shoreline then Nope
+        
+        if (!_ReqShore || _ReqSea || _ReqSub || _ReqLand || _ReqOther) // None Shoreline Buildings
+        {
+            // Bounds Check
+            if (!islandBounds.Contains(localPosition) ||
             localPosition.x < gridMinPosition.x ||
             localPosition.x > gridMaxPosition.x ||
             localPosition.z < gridMinPosition.z ||
-            localPosition.z > gridMaxPosition.z)
-        {
-            Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
-            buildingChecker.canPlace = false;
-            return null;
+            localPosition.z > gridMaxPosition.z) 
+            {
+                    buildingChecker.canPlace = false;
+                    return null;
+            }
+            
         }
 
         // Convert the local position to grid indices
@@ -309,13 +326,10 @@ public class GridSystem : MonoBehaviour
         int x = Mathf.FloorToInt(localPosition.x / cellSize);
         int z = Mathf.FloorToInt(localPosition.z / cellSize);
 
-        // Check if the indices are out of bounds
-        if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
-        {
-            Debug.LogFormat("<color=red>Invalid position - {0}</color>", position);
-            buildingChecker.canPlace = false;
-            return null;
-        }
+        x = Mathf.Clamp(x, 0, gridSize - 1);
+        z = Mathf.Clamp(z, 0, gridSize - 1);
+
+        //Debug.LogFormat("GridSize: {0}, CellSize: {1}, LocalPosition: {2} Position:{3} x:{4} z:{5}", gridSize, cellSize, localPosition, position, x, z);
 
         // Indices are within bounds, so it's safe to access the array
         Cell cell = grid[x, z];
@@ -382,114 +396,3 @@ public class GridSystem : MonoBehaviour
     #endregion
 
 }
-
-
-/*
-public Cell GetCellAtPosition(Vector3 position)
-{
-    position.y = 0f;
-    // Get Local Island - GridSystem Bounds
-    Island gridIsland = GetComponent<Island>();
-    Bounds islandBounds = gridIsland.bounds;
-
-    // Null Check
-    if (islandBounds == null)
-    {
-        Debug.Log($"Island{gridIsland.islandName} has No Bounds.");
-        return null;
-    }
-    position.y = 0f;
-
-    // Check if position is within the bounds of the island
-    if (!islandBounds.Contains(position))
-    {
-        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
-        buildingChecker.canPlace = false;
-        return null;
-    }
-
-    // Calculate the local position within the island's grid
-    Vector3 localPosition = gridIsland.transform.InverseTransformPoint(position);
-
-    // Calculate the grid's local minimum and maximum positions
-    Vector3 gridMinPosition = -new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-    Vector3 gridMaxPosition = new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-
-    // Check if the local position is within the grid's local bounds
-    if (localPosition.x < gridMinPosition.x || localPosition.x > gridMaxPosition.x || localPosition.z < gridMinPosition.z || localPosition.z > gridMaxPosition.z)
-    {
-        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
-        buildingChecker.canPlace = false;
-        return null;
-    }
-
-    // Convert the local position to grid indices
-    localPosition -= gridMinPosition;
-    localPosition.y = 0f;
-
-    int x = Mathf.FloorToInt(localPosition.x / cellSize);
-    int z = Mathf.FloorToInt(localPosition.z / cellSize);
-
-    // Check if the indices are out of bounds
-    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
-    {
-        Debug.LogFormat("<color=red>Invalid position - {0}</color>", position);
-        buildingChecker.canPlace = false;
-        return null;
-    }
-
-    // Indices are within bounds, so it's safe to access the array
-    Cell cell = grid[x, z];
-    buildingChecker.canPlace = true;
-    return cell;
-}
-
-
-// Legacy
-//public Cell GetCellAtPosition(Vector3 position)
-//{
-//    position.y = 0f;
-
-//    Vector3 gridMinPosition = gridBounds.min;
-//    Vector3 gridMaxPosition = gridBounds.max;
-
-//    // Check if position is within grid bounds
-//    if (position.x < gridMinPosition.x || position.x > gridMaxPosition.x || position.z < gridMinPosition.z || position.z > gridMaxPosition.z)
-//    {
-//        Debug.LogFormat("<color=red>Out of Bounds - {0}</color>", position);
-//        buildingChecker.canPlace = false;
-
-//        return null;
-//    }
-
-//    // Account for Global to Local Position Difference 
-//    // The difference in position is the real position
-//    // World Position -= grid position = local Real Position 
-//    // Position is within grid bounds
-
-//    Debug.LogFormat("<color=green>In Bounds - {0}</color>", position);
-
-//    // Convert position to grid space
-//    position -= gridMinPosition;
-//    position.y = 0f;
-
-//    // Calculate grid indices
-//    int x = Mathf.FloorToInt(position.x / cellSize);
-//    int z = Mathf.FloorToInt(position.z / cellSize);
-
-//    Debug.LogFormat("Position: {0}, X: {1}, Z: {2}", position, x, z);
-
-//    // Check if indices are out of bounds
-//    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
-//    {
-//        Debug.LogFormat("<color=red>invalid position - {0}</color>", position); // issue
-//        buildingChecker.canPlace = false;
-//        return null;
-//    }
-
-//    // Indices are within bounds, so it's safe to access the array
-//    Cell cell = grid[x, z];
-//    buildingChecker.canPlace = true;
-
-//    return cell;
-//} */

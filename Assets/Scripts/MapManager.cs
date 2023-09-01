@@ -255,6 +255,7 @@ public class MapManager : MonoBehaviour
 
         // Convert the list of resources to a dictionary
         //Dictionary<Enums.Resource, int> resourceDictionary = new Dictionary<Enums.Resource, int>();
+
         /*foreach (Enums.Resource resource in data.resources)
         {
             if (resourceDictionary.ContainsKey(resource))
@@ -266,6 +267,7 @@ public class MapManager : MonoBehaviour
                 resourceDictionary.Add(resource, 1);
             }
         }*/
+
         //island.Resource = resourceDictionary;
         island.bounds = data.bounds;
         island.id = GetNextIslandID(); // set the id of the island

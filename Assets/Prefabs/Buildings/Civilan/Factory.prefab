@@ -104,13 +104,19 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9011460188820254165}
+  - component: {fileID: 5458917520764114094}
   - component: {fileID: -1891711454010014083}
   - component: {fileID: -5547138109784249715}
   - component: {fileID: -1122826016688852086}
   - component: {fileID: 6751755316577799458}
   - component: {fileID: 2681780460320286326}
+  - component: {fileID: -6778097432394761726}
+  - component: {fileID: -8415532596218765019}
+  - component: {fileID: 4324319228194213602}
+  - component: {fileID: -7950726100429408182}
+  - component: {fileID: -2145090538528256587}
   m_Layer: 0
-  m_Name: Cutter
+  m_Name: Factory
   m_TagString: notStackable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -133,6 +139,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5458917520764114094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingInventory: {fileID: 0}
+  buildingData: {fileID: 0}
+  Data: {fileID: 0}
 --- !u!114 &-1891711454010014083
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -145,7 +166,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  buildingName: Factory
+  price: 0
   cost: 0
+  expense: 0
   resourceType: 0
 --- !u!65 &-5547138109784249715
 BoxCollider:
@@ -202,6 +226,85 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_VisionRange: 5
+--- !u!114 &-6778097432394761726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: d24c57d878a5555488f4620f5083126f, type: 2}
+  buildingSize: {x: 0, y: 0, z: 0}
+  buildingName: []
+  buildingDescription: []
+  buildingTags: []
+  buildingRenderer: {fileID: 0}
+  Requirements: 0000000001000000020000000300000004000000
+--- !u!114 &-8415532596218765019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingName: 
+  price: 0
+  cost: 0
+  expense: 0
+  resourceType: 0
+--- !u!114 &4324319228194213602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13025ea066bea1f49a97caaea1ac2021, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BuildHeightDebug: -0.5
+  useHeightDebug: 1
+--- !u!114 &-7950726100429408182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 352f987dc83aa394e9954d0f41df590e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deliveryInterval: 1
+  resetInterval: 60
+--- !u!114 &-2145090538528256587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c1b21b832abcf14fa409cb7450b23d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9011460189199838194
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,23 +2,27 @@ using UnityEngine;
 
 public class BuildingSelector : MonoBehaviour
 {
+    #region Variables
     [SerializeField] private BuildingChecker buildingChecker;
     [SerializeField] private GameObject buildingPreviewPrefab;
     [SerializeField] private Vector3 buildingPlacementSize;
 
     public GameObject previewPrefab;
-
     private BuildingPreview currentPreview;
+    #endregion
 
+    #region Start Method
     void Start()
     {
         buildingChecker = FindObjectOfType<BuildingChecker>();
         if (buildingChecker == null)
         {
-            Debug.LogError("BuildingMover not found in the scene.");
+            Debug.LogError("BuildingChecker not found in the scene.");
         }
     }
+    #endregion
 
+    #region Grid Methods
     private GridSystem GetCurrentIslandGridSystem()
     {
         Island currentIsland = IslandManager.instance.GetIslandInFrontOfCamera(Camera.main);
@@ -28,7 +32,14 @@ public class BuildingSelector : MonoBehaviour
         }
         return null;
     }
+    #endregion
 
+    #region Selector Method
+    
+    /// <summary>
+    /// Method used on buttons via onclick event
+    /// </summary>
+    /// <param name="buildingPrefab"></param>
     public void SpawnPreview(GameObject buildingPrefab)
     {
         // Destroy any current preview object
@@ -56,8 +67,12 @@ public class BuildingSelector : MonoBehaviour
         // Set current preview object
         currentPreview = bp;
     }
+    #endregion
 
-
+    #region Cancel Preview
+    /// <summary>
+    /// Cancels the current Preview Building, used by the player
+    /// </summary>
     public void CancelPreview()
     {
         if (currentPreview != null)
@@ -66,4 +81,5 @@ public class BuildingSelector : MonoBehaviour
             currentPreview = null;
         }
     }
+    #endregion
 }

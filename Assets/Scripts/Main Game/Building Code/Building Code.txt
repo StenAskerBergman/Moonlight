@@ -113,8 +113,9 @@ movement is based on the players mouse input.
             if (buildingPreview != null)
             {BuildingMover.cs
 
-BuildingMover.cs handles the movement of the building preview object based on the 
-player's mouse position. It should contain a method for setting the preview object 
+BuildingChecker.cs 
+handles the movement of the building preview object based on the player's 
+mouse position. It should contain a method for setting the preview object 
 that it needs to move.
 
     public class BuildingMover : MonoBehaviour
