@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static BuildingProperties;
 
 public class BuildingPlacer : MonoBehaviour
 {
@@ -14,13 +13,16 @@ public class BuildingPlacer : MonoBehaviour
     public delegate void OnConfirmPlacement(GameObject previewObject);
     public event OnConfirmPlacement ConfirmPlacement;
 
+    // Can Afford
+    private bool canAfford;
+
     // Resource Related
-    [SerializeField] private IslandResourceManager islandResourceManager;
-    [SerializeField] private IslandResource islandResource;
+    [SerializeField] private IslandItemManager islandItemManager;
+    [SerializeField] private IslandItems islandItems;
 
     // Requirement Related
-    [SerializeField] private Enums.RequirementType requirementType;
-    [SerializeField] private Enums.RequirementType[] req;
+    [SerializeField] private RequirementEnums.RequirementType requirementType;
+    [SerializeField] private RequirementEnums.RequirementType[] req;
     
     private void Start()
     {
@@ -43,15 +45,15 @@ public class BuildingPlacer : MonoBehaviour
     private void OnPlayerEnterIsland(Island island)
     {
         currentIsland = island;
-        islandResourceManager = currentIsland.GetComponent<IslandResourceManager>(); 
-        islandResource = currentIsland.GetComponent<IslandResource>(); 
+        islandItemManager = currentIsland.GetComponent<IslandItemManager>(); 
+        islandItems = currentIsland.GetComponent<IslandItems>(); 
     }
 
     private void OnGridSystemDetected(GridSystem detectedGridSystem)
     {
         gridSystem = detectedGridSystem;
-        islandResourceManager = currentIsland.GetComponent<IslandResourceManager>();
-        islandResource = currentIsland.GetComponent<IslandResource>(); 
+        islandItemManager = currentIsland.GetComponent<IslandItemManager>();
+        islandItems = currentIsland.GetComponent<IslandItems>(); 
     }
 
     private Vector3 CalculateOffset(Vector3 buildingSize)
@@ -72,16 +74,24 @@ public class BuildingPlacer : MonoBehaviour
 
         if (buildingChecker.canPlace || buildingChecker.IC)
         {
-            // Your building placement logic here
+            // Building Placement Logic - Section
             
+            // Minor Verfication Area
+
+            // Check if there is a island to build on infront of you or not
             Camera mainCamera = Camera.main;
             Island currentIsland = islandManager.GetIslandInFrontOfCamera(mainCamera);
 
             if (currentIsland == null)
             {
+                buildingPreview.SetPreviewMaterial(false); // Start Update the color of the building preview based on canPlace value
+
                 Debug.Log("No island found in front of the camera.");
                 return;
             }
+
+            // Reset the Preview Material if needed
+            buildingPreview.SetPreviewMaterial(buildingChecker.canPlace);
 
             if (buildingPreview == null)
             {
@@ -96,35 +106,40 @@ public class BuildingPlacer : MonoBehaviour
                 buildingPreview.gridSystem = currentIsland.GetComponentInChildren<GridSystem>();
             }
 
+            // building placement logic - Starts Here...
 
             // Sets Target Position
             Vector3 targetPosition = buildingPreview.transform.position;
 
+            // Sets Target Rotation
+            Quaternion targetRotation = buildingPreview.transform.rotation;
+
             // Sets Builds Size Values
             Vector3 buildingSize = buildingPreview.GetBuildingPrefab().GetComponent<BuildingProperties>().buildingSize;
-           
+
             // Sets Builds Type
-            // Enums.RequirementType[] req = buildingPreview.GetBuildingPrefab().GetComponent<Enums>().Requirements;
-            
+            RequirementEnums.RequirementType[] req = buildingPreview.GetBuildingPrefab().GetComponent<RequirementEnums>().Requirements;
+
+            // Check Build Requirements
             if (req != null)
             {
-                foreach (Enums.RequirementType requirement in req)
+                foreach (RequirementEnums.RequirementType requirement in req)
                 {
                     switch (requirement)
                     {
-                        case Enums.RequirementType.ReqShore:
+                        case RequirementEnums.RequirementType.ReqShore:
                             // Handle shore requirement
                             ReqShore = true;
-                        
+
                             // False
                             ReqSea = false;
-                            ReqSub = false; 
-                            ReqLand = false; 
+                            ReqSub = false;
+                            ReqLand = false;
                             ReqOther = false;
 
                             break;
 
-                        case Enums.RequirementType.ReqSea:
+                        case RequirementEnums.RequirementType.ReqSea:
                             // Handle sea requirement
                             ReqSea = true;
 
@@ -137,7 +152,7 @@ public class BuildingPlacer : MonoBehaviour
 
                             break;
 
-                        case Enums.RequirementType.ReqSub:
+                        case RequirementEnums.RequirementType.ReqSub:
                             // Handle sea requirement
                             ReqSub = true;
 
@@ -149,7 +164,7 @@ public class BuildingPlacer : MonoBehaviour
 
                             break;
 
-                        case Enums.RequirementType.ReqLand:
+                        case RequirementEnums.RequirementType.ReqLand:
                             // Handle land requirement
                             ReqLand = true;
 
@@ -179,9 +194,9 @@ public class BuildingPlacer : MonoBehaviour
             {
                 // If true...
                 // Place the building
-
+                
                 // Instantiate the actual building prefab with the correct parent
-                GameObject buildingInstance = Instantiate(buildingPreview.buildingPrefab, targetPosition, Quaternion.identity, islandTransform);
+                GameObject buildingInstance = Instantiate(buildingPreview.buildingPrefab, targetPosition, targetRotation, islandTransform); // (buildingPreview.buildingPrefab, targetPosition, Quaternion.identity, islandTransform);
 
                 // Set the current island and gridSystem in the BuildingProperties component
                 BuildingProperties buildingProperties = buildingInstance.GetComponent<BuildingProperties>();
@@ -193,33 +208,72 @@ public class BuildingPlacer : MonoBehaviour
                 }
 
                 // Update the bank balance and island resources using the BuildingCost script
-                BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>();
+                BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>(); // Get Building Cost
 
                 if (buildingCost != null)
                 {
-                    // Debug.Log("BuildingCost component found."); // Cost was found
+                    // Cost was found
+                    //Debug.Log("BuildingCost component found."); 
 
-                    Bank bank = FindObjectOfType<Bank>();
+                    Bank bank = FindObjectOfType<Bank>(); // Get Player Bank
                     if (bank != null)
                     {
-                        // is Placing the Building
-                        // Mark all cells that the building will cover as occupied.
-                        Vector3Int gridPosition = gridSystem.WorldToCell(targetPosition);
-                        for (int x = 0; x < buildingSize.x; x++)
-                        {
-                            for (int z = 0; z < buildingSize.z; z++)
-                            {
-                                int targetX = gridPosition.x + x;
-                                int targetZ = gridPosition.z + z;
+                        // Bank was 
+                        // Debug.Log("Bank component found."); 
 
-                                Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
-                                gridSystem.MarkCellAsOccupied(targetCellWorldPosition);  // Mark each cell as occupied
+                        // Use AddIncome with a negative value to place price
+                        // bank.AddIncome(-buildingCost.GetPrice()); 
+                        // Weird to pay before checking affordability 
+
+                        // Use RemoveResource to Remove Resources from Island
+                        currentIsland.RemoveResource(buildingCost.GetResourceType(), buildingCost.GetPrice());
+
+                        // issue: there is only one price! for one good! jezus, fix this please!
+
+                        // Sets local price based of the One price preset
+                        int buildPrice = buildingCost.GetPrice();
+
+                        // Gets local island resource count
+                        int resourceCount = currentIsland.GetResourceCount(buildingCost.GetResourceType());
+
+                        // Balance Check 
+                        if (resourceCount > 0 || resourceCount >= buildPrice) { canAfford = true; } else { canAfford = false; }
+
+                        if (canAfford)
+                        {
+                            // We Can Afford it!
+
+                            // Use AddIncome with a negative value to place price
+                            bank.AddIncome(-buildingCost.GetPrice()); 
+
+                            // use Remove Resource to remove resource from island
+                            currentIsland.RemoveResource(buildingCost.GetResourceType(), buildingCost.GetPrice());
+                            
+                            // "Still" Placing the 
+                            // Mark all cells that the building will cover as occupied.
+                            Vector3Int gridPosition = gridSystem.WorldToCell(targetPosition);
+                            for (int x = 0; x < buildingSize.x; x++)
+                            {
+                                for (int z = 0; z < buildingSize.z; z++)
+                                {
+                                    int targetX = gridPosition.x + x;
+                                    int targetZ = gridPosition.z + z;
+
+                                    Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
+                                    gridSystem.MarkCellAsOccupied(targetCellWorldPosition);  // Mark each cell as occupied
+                                }
                             }
+                            // Next Step Initialize Building!
+                            // Success Building is Now placed! 
+                        } 
+                        else
+                        {
+                            // We can't Afford it!
+                            Debug.Log("Not Enough Resources!");
+                            Destroy(buildingInstance);
+                            buildingChecker.CancelBuilding();
                         }
 
-                        // Debug.Log("Bank component found."); // Bank was 
-                        bank.AddIncome(-buildingCost.GetPrice()); // Use AddIncome with a negative value to place price
-                        currentIsland.RemoveResource(buildingCost.GetResourceType(), buildingCost.GetPrice());
                     }
                     else
                     {   
@@ -230,7 +284,8 @@ public class BuildingPlacer : MonoBehaviour
                 }    
                 else
                 {
-                    Debug.Log("BuildingCost component not found."); // Add this line
+                    // Add this line
+                    Debug.Log("BuildingCost component not found."); 
                 }
                 // Destroy the preview object and reset the reference in BuildingMover
                 buildingChecker.CancelBuilding();

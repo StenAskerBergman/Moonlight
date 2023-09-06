@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static Enums;
+using static ItemEnums;
 
 public interface IBuildingProduction
 {
@@ -9,6 +9,6 @@ public interface IBuildingProduction
     void SetProductionRate(int rate);
     int GetProductionCapacity();
     void SetProductionCapacity(int capacity);
-    Resource GetProducedResource();
-    void SetProducedResource(Resource resource);
+    ResourceType GetProducedResource();
+    void SetProducedResource(ResourceType resource);
 }

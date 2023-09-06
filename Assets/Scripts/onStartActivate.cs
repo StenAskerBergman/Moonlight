@@ -12,10 +12,30 @@ using UnityEngine;
 
 public class onStartActivate : MonoBehaviour
 {
+    [SerializeField]
+    private Enums.Faction thisFaction; // set this in the inspector to the faction this script is associated with
+
     [SerializeField]private GameObject Faction;   
     [SerializeField]private bool activationBool = false; 
+
+    private PlayerFactionController factionController;
+
     void Start()
     {
-        if(activationBool==true){Faction.SetActive(true);}
+        // Legacy Method
+        // if (activationBool == true) { Faction.SetActive(true); }
+
+        // New Method
+        factionController = FindObjectOfType<PlayerFactionController>();
+
+        if (factionController == null)
+        {
+            Debug.LogError("No PlayerFactionController found in the scene!");
+            return;
+        }
+
+        activationBool = factionController.IsFactionActive(thisFaction);
+        Faction.SetActive(activationBool);
     }
+
 }

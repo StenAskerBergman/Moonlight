@@ -130,8 +130,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerMaterialManager: {fileID: 0}
   buildings: []
-  resourceTypes: 
-  resources: 
+  itemTypes: 
+  resourcesType: 
   island: {fileID: 0}
   islandID: 0
 --- !u!114 &-9030132306054211866
@@ -179,10 +179,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b575f1b9cb4daa47b70f10c58647341, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StartAmount: 0
+  Resource_StartAmount: 10000
+  Material_StartAmount: 10
+  Good_StartAmount: 10
+  resource0Amount: 100
   resource1Amount: 100
   resource2Amount: 100
   resource3Amount: 100
+  material1Amount: 40
+  material2Amount: 40
+  material3Amount: 40
+  good1Amount: 100
+  good2Amount: 100
+  good3Amount: 100
 --- !u!114 &-1735661172497315272
 MonoBehaviour:
   m_ObjectHideFlags: 0

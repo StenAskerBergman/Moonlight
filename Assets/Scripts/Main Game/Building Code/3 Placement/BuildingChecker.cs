@@ -16,14 +16,14 @@ public class BuildingChecker : MonoBehaviour
     // Refs 1: 
     [Header("Island Related")]
     [Space(8)]
-    public IslandResource islandResource;
+    public IslandItems islandItems;
     public IslandPower islandPower;
     public IslandEcology islandEcology;
 
 
     // Refs 2
     private PlayerMaterialManager playerMaterialManager;
-    private IslandResourceManager islandResourceManager;
+    private IslandItemManager islandItemManager;
 
     private void Awake()
     {
@@ -77,11 +77,11 @@ public class BuildingChecker : MonoBehaviour
             return;
         }
 
-        islandResource = island.GetComponent<IslandResource>();
+        islandItems = island.GetComponent<IslandItems>();
         islandPower = island.GetComponent<IslandPower>();
         islandEcology = island.GetComponent<IslandEcology>();
         GetCurrentIslandGridSystem(currentIsland);
-        islandResourceManager = island.GetComponent<IslandResourceManager>();
+        islandItemManager = island.GetComponent<IslandItemManager>();
     }
 
 

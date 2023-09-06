@@ -9,6 +9,8 @@ public class BuildingCost : MonoBehaviour
     [SerializeField] private int price;             // price - Direct cost of the building
     [SerializeField] private int cost;              // cost - Indirect cost (monthly maintenance cost) of the building
     [SerializeField] private int expense;           // expense - Really just another word for cost
+
+    [SerializeField] private CostData costData;
     
     public delegate void BuildingPlacedHandler(BuildingCost buildingCost);
     public static event BuildingPlacedHandler OnBuildingPlaced;
@@ -32,12 +34,14 @@ public class BuildingCost : MonoBehaviour
     private BuildingProperties buildingProperties;
     private BuildingData buildingData;
 
-    public Enums.Resource resourceType; // The type of resource needed to build the building
+    public ItemEnums.ResourceType resourceType; // The type of resource needed to build the building
 
     #region Set Methods - SetResourceType, SetBuildingName, SetExpense, SetPrice, SetCost 
 
+        // costData Sends Cost Related Data
+        // BuildingData Sends Building Data
 
-        public Enums.Resource SetResourceType() 
+        public ItemEnums.ResourceType SetResourceType() 
         {
             return resourceType;
         }
@@ -51,19 +55,19 @@ public class BuildingCost : MonoBehaviour
         
         public int SetExpense()
         {
-            expense = buildingData.expense;
+            expense = costData.expense;
             return expense;
         }
     
         public int SetPrice()
         {
-            price = buildingData.price;
+            price = costData.price;
             return price;   
         }
 
         public int SetCost()
         {
-            cost = buildingData.cost;
+            cost = costData.cost;
             return cost;
         }
 
@@ -74,33 +78,39 @@ public class BuildingCost : MonoBehaviour
 
     #region Get Methods - GetReources, GetBuildingNames, GetExpense, GetPrice, GetCost
 
-    // Here is begins...
-
-        public Enums.Resource GetResourceType() 
+        public ItemEnums.GoodType GetGoodType()
         {
-            return resourceType;
+            return costData.goodType;
+        }
+        
+        public ItemEnums.MaterialType GetMaterialType()
+        {
+            return costData.materialType;
+        }
+
+        public ItemEnums.ResourceType GetResourceType()
+        {
+            return costData.resourceType;
         }
 
         public string GetBuildingName()
         {
-            return buildingName;
+            return costData.name;
         }
 
         public int GetExpense()
         {
-            // You should define the building's expense here, or pass it from another script
-            expense = cost;
-            return expense;
+            return costData.expense;
         }
 
         public int GetPrice()
         {
-            return price;
+            return costData.price;
         }
 
         public int GetCost()
         {
-            return cost;
+            return costData.cost;
         }
 
     #endregion

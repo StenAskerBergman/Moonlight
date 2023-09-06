@@ -6,21 +6,22 @@ public class IslandStorage : MonoBehaviour
 {
     public Enums.IslandType Island { get; set; }
 
-    public Dictionary<Enums.Resource, int> GetAllResources()
+    public Dictionary<ItemEnums.ResourceType, int> GetAllResources()
     {
         return Resource;
     }
-    public Dictionary<Enums.Material, int> GetAllMaterials()
+    public Dictionary<ItemEnums.MaterialType, int> GetAllMaterials()
     {
         return Material;
     }
-    public Dictionary<Enums.Good, int> GetAllGoods()
+    public Dictionary<ItemEnums.GoodType, int> GetAllGoods()
     {
         return Good;
     }
-    private Dictionary<Enums.Material, int> Material = new Dictionary<Enums.Material, int>();
-    private Dictionary<Enums.Good, int> Good = new Dictionary<Enums.Good, int>();
-    private Dictionary<Enums.Resource, int> Resource = new Dictionary<Enums.Resource, int>();
+
+    private Dictionary<ItemEnums.MaterialType, int> Material = new Dictionary<ItemEnums.MaterialType, int>();
+    private Dictionary<ItemEnums.GoodType, int> Good = new Dictionary<ItemEnums.GoodType, int>();
+    private Dictionary<ItemEnums.ResourceType, int> Resource = new Dictionary<ItemEnums.ResourceType, int>();
 
     private Transport transportComponent;
 
@@ -70,23 +71,23 @@ public class IslandStorage : MonoBehaviour
 
 // Has Section
     // has a resource to the islandStorage
-    public bool HasResource(Enums.Resource resource)
+    public bool HasResource(ItemEnums.ResourceType resource)
     {
         return Resource.ContainsKey(resource);
     }
     // has a material to the islandStorage
-    public bool HasMaterial(Enums.Material material)
+    public bool HasMaterial(ItemEnums.MaterialType material)
     {
         return Material.ContainsKey(material);
     }
     // has a Good to the islandStorage
-    public bool HasGood(Enums.Good good)
+    public bool HasGood(ItemEnums.GoodType good)
     {
         return Good.ContainsKey(good);
     }
 // bool Add Section
     // add a resource to the island
-    public bool AddResource(Enums.Resource resource, int amount)
+    public bool AddResource(ItemEnums.ResourceType resource, int amount)
     {
         if (Resource.ContainsKey(resource))
         {
@@ -101,7 +102,7 @@ public class IslandStorage : MonoBehaviour
         //return false;
     }
     // add a material to the islandStorage
-    public bool AddMaterial(Enums.Material material, int amount)
+    public bool AddMaterial(ItemEnums.MaterialType material, int amount)
     {
         if (Material.ContainsKey(material))
         {
@@ -117,7 +118,7 @@ public class IslandStorage : MonoBehaviour
     }
 
     // add a good to the islandStorage
-    public bool AddGood(Enums.Good good, int amount)
+    public bool AddGood(ItemEnums.GoodType good, int amount)
     {
         if (Good.ContainsKey(good))
         {
@@ -189,7 +190,7 @@ public class IslandStorage : MonoBehaviour
     }
 // Bool Remove Section
     // remove a resource from the island
-    public bool RemoveResource(Enums.Resource resource, int amount)
+    public bool RemoveResource(ItemEnums.ResourceType resource, int amount)
     {
         if (Resource.ContainsKey(resource) && Resource[resource] >= amount)
         {
@@ -199,7 +200,7 @@ public class IslandStorage : MonoBehaviour
         return false;
     }
     // remove a material from the islandStorage
-    public bool RemoveMaterial(Enums.Material material, int amount)
+    public bool RemoveMaterial(ItemEnums.MaterialType material, int amount)
     {
         if (Material.ContainsKey(material) && Material[material] >= amount)
         {
@@ -210,7 +211,7 @@ public class IslandStorage : MonoBehaviour
     }
 
     // remove a good from the islandStorage
-    public bool RemoveGood(Enums.Good good, int amount)
+    public bool RemoveGood(ItemEnums.GoodType good, int amount)
     {
         if (Good.ContainsKey(good) && Good[good] >= amount)
         {

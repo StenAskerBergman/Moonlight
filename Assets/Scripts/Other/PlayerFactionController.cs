@@ -1,66 +1,72 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static Enums;
 
 public class PlayerFactionController : MonoBehaviour
 {
-    [SerializeField] private bool A, B, C = false; // Faction Unlocked Status
-    [SerializeField] private GameObject TYC, ECO, TEC; // Faction Game Object References
-    [SerializeField] [Range(0, 3)] public int startFaction = 0; // Faction Starting Preference
+    private Dictionary<Faction, FactionData> factionDict = new Dictionary<Faction, FactionData>();
+
+    [SerializeField] private List<Faction> startingFactions; // Store all the factions player starts with
     
-    void Awake( ){
-        if (A == true){startFaction++;}
-        if (B == true){startFaction++;}
-        if (C == true){startFaction++;}
+    public GameObject TYC, ECO, SCI;
+    private Faction currentDisplayedFaction = Faction.None;
+
+    private void Awake()
+    {
+        InitializeFactions();
     }
-    
-    void Start(){
 
-        // Starting Faction
-        switch(startFaction){
-            case 0: // Tycoon Start
-                //Debug.Log("No Faction Selected: #"+ startFaction);
-                // Unlock Nothing 
+    private void Start()
+    {
+        ActivateStartingFactions();
+    }
 
-            break;
+    private void InitializeFactions()
+    {
+        factionDict[Faction.Tyc] = new FactionData { gameObject = TYC, isActive = false };
+        factionDict[Faction.Eco] = new FactionData { gameObject = ECO, isActive = false };
+        factionDict[Faction.Sci] = new FactionData { gameObject = SCI, isActive = false };
+    }
 
-            // Choosing a Option: 
-
-                    case 1: // Tycoon Start
-                        //Debug.Log("Global Trust: #"+ startFaction);
-                        A = true; // Unlock Tycoons 
-                        FactionUnlock();
-
-                    break;
-
-                    case 2: // Eco Start
-                        //Debug.Log("Eden Initative: #"+ startFaction);
-                        B = true; // Unlocks Eco
-                        FactionUnlock();
-                        
-                    break;
-
-                    case 3: // Tech Start
-                        //Debug.Log("Science Faction: #"+ startFaction);
-                        C = true; // Unlock Tech
-                        FactionUnlock();
-
-                    break;
-
-            // Error Input 
-
-            default:
-                //Debug.LogError("Error: ``No Start Faction Assigned´´ #" + startFaction);
-                // Error Code Occurs if (>3||<0), Bigger than 3 lesser than 0 
-       
-            break;
+    private void ActivateStartingFactions()
+    {
+        foreach (var faction in startingFactions)
+        {
+            JoinFaction(faction);
         }
     }
-    
-    public void FactionUnlock() { 
-    // Note: Just Called Once
-        TYC.SetActive(A);
-        ECO.SetActive(B);
-        TEC.SetActive(C);
+
+    public void JoinFaction(Faction faction)
+    {
+        factionDict[faction].isActive = true;
+        UpdateFactionDisplay();
+    }
+
+    private void UpdateFactionDisplay()
+    {
+        foreach (var pair in factionDict)
+        {
+            pair.Value.gameObject.SetActive(pair.Value.isActive);
+            if (pair.Value.isActive && currentDisplayedFaction == Faction.None) // Only set if there's no current displayed faction
+            {
+                currentDisplayedFaction = pair.Key;
+            }
+        }
+    }
+
+    public Faction GetCurrentFactionDisplay()
+    {
+        return currentDisplayedFaction;
+    }
+
+    public bool IsFactionActive(Faction faction)
+    {
+        return factionDict[faction].isActive;
+    }
+
+    private class FactionData
+    {
+        public GameObject gameObject;
+        public bool isActive;
     }
 }

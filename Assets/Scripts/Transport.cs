@@ -5,13 +5,13 @@ using UnityEngine;
 public class Transport : MonoBehaviour
 {
     private int capacity;
-    private Dictionary<Enums.Resource, int> resources = new Dictionary<Enums.Resource, int>();
+    private Dictionary<ItemEnums.ResourceType, int> resources = new Dictionary<ItemEnums.ResourceType, int>();
 
     public Transport(int capacity)
     {
         this.capacity = capacity;
     }
-    public bool AddResource(Enums.Resource resource, int amount)
+    public bool AddResource(ItemEnums.ResourceType resource, int amount)
     {
         if (resources.ContainsKey(resource))
         {
@@ -35,7 +35,7 @@ public class Transport : MonoBehaviour
         return false;
     }
 
-    public bool RemoveResource(Enums.Resource resource, int amount)
+    public bool RemoveResource(ItemEnums.ResourceType resource, int amount)
     {
         if (resources.ContainsKey(resource))
         {

@@ -7,7 +7,7 @@ public class IslandData
 {
     public Enums.IslandType islandType;
     public List<Building> buildings;
-    public List<Enums.Resource> resources;
+    public List<ItemEnums.ItemType> resources;
     public Bounds bounds;
     public int id;
     public string name;

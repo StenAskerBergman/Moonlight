@@ -14,16 +14,16 @@ public class Island : MonoBehaviour
 
     // Refs
 
-        IslandResourceManager islandResourceManager;
+        IslandItemManager islandItemManager;
         MapManager mapManager;
 
 
     // Island resources
-        IslandResource islandResource;
+        IslandItems islandItems;
 
     public void Start(){
-        islandResource = gameObject.GetComponent<IslandResource>();
-        islandResourceManager = gameObject.GetComponent<IslandResourceManager>();
+        islandItems = gameObject.GetComponent<IslandItems>();
+        islandItemManager = gameObject.GetComponent<IslandItemManager>();
         bounds.center = this.transform.position;
         bounds.extents = new Vector3(5.0f, 5.0f, 5.0f); // Change these values to your desired size
 
@@ -78,21 +78,21 @@ public class Island : MonoBehaviour
 
     // add a resource to the island
     // add a resource to the island
-    public void AddResource(Enums.Resource resource, int amount)
+    public void AddResource(ItemEnums.ResourceType resource, int amount)
     {
-        islandResource.AddResource(resource, amount);
+        islandItems.AddResource(resource, amount);
     }
 
     // remove a resource from the island
-    public bool RemoveResource(Enums.Resource resource, int amount)
+    public bool RemoveResource(ItemEnums.ResourceType resource, int amount)
     {
-        return islandResource.RemoveResource(resource, amount);
+        return islandItems.RemoveResource(resource, amount);
     }
 
     // get the amount of a resource on the island
-    public int GetResourceCount(Enums.Resource resource)
+    public int GetResourceCount(ItemEnums.ResourceType resource)
     {
-        return islandResource.GetResourceAmount(resource);
+        return islandItems.GetResourceAmount(resource);
     }
 
     // get the amount of a material on the island

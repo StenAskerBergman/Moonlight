@@ -20,9 +20,9 @@ public class InitializeIslands : MonoBehaviour
 
         if (islandStorage != null)
         {
-            islandStorage.AddResource(Enums.Resource.Resource1, resource1);
-            islandStorage.AddResource(Enums.Resource.Resource2, resource2);
-            islandStorage.AddResource(Enums.Resource.Resource3, resource3);
+            islandStorage.AddResource(ItemEnums.ResourceType.Resource1, resource1);
+            islandStorage.AddResource(ItemEnums.ResourceType.Resource2, resource2);
+            islandStorage.AddResource(ItemEnums.ResourceType.Resource3, resource3);
         }
         else
         {

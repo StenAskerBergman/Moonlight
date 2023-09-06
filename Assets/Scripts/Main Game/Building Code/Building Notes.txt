@@ -74,3 +74,18 @@ default orientation which the BuildingPlacer will place using.
 Prefabs:
 > Select Building (Loose Substitute Term for every building selectable)
 > Preview Building (Generic GameObject with the intended function)
+
+
+Code Diary
+
+// Game Progression:
+// Player Progression is a simple line
+// Each time a player reaches certain 
+// Goals they gain Progression making
+// The games progression system 100%
+// Linear, and making each milestone
+// A perfect roadmap for progression
+
+// I just deleted 42 classes of progression
+// By mistake, I would hang 2 complete families
+// to get my data back :,) Unlucky & Painful <3

@@ -9,6 +9,9 @@ TagManager:
   - Ground
   - target
   - Selected
+  - Unlocked
+  - Locked
+  - Hidden
   layers:
   - Default
   - TransparentFX

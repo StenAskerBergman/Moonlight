@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class GetResourceData : MonoBehaviour
 {
-  private IslandResourceManager islandResourceManager;
+  private IslandItemManager islandItemManager;
   private ResourceManager resourceManager;
   private IslandStorage islandStorage;
   public Text resourceCountText;
@@ -20,10 +20,10 @@ public class GetResourceData : MonoBehaviour
           Island currentIsland = gameManager.GetCurrentIsland();
           if (currentIsland != null)
           {
-              islandResourceManager = gameManager.GetIslandResourceManager(currentIsland.id);
-              if (islandResourceManager != null)
+              islandItemManager = gameManager.GetIslandItemManager(currentIsland.id);
+              if (islandItemManager != null)
               {
-                  islandResourceManager.OnResourceCountChanged += OnResourceCountChanged;
+                  islandItemManager.OnResourceCountChanged += OnResourceCountChanged;
               }
           }
       }
@@ -31,15 +31,15 @@ public class GetResourceData : MonoBehaviour
 
   private void OnDestroy()
   {
-      if (islandResourceManager != null)
+      if (islandItemManager != null)
       {
-          islandResourceManager.OnResourceCountChanged -= OnResourceCountChanged;
+          islandItemManager.OnResourceCountChanged -= OnResourceCountChanged;
       }
   }
 
-  private void OnResourceCountChanged(Enums.Resource resource, int count)
+  private void OnResourceCountChanged(ItemEnums.ResourceType resource, int count)
   {
-      if (resource == Enums.Resource.Resource1)
+      if (resource == ItemEnums.ResourceType.Resource1)
       {
           resourceCountText.text = count.ToString();
       }

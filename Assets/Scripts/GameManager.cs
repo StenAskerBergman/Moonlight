@@ -28,15 +28,15 @@ public class GameManager : MonoBehaviour
 
 
 
-    public IslandResourceManager GetIslandResourceManager(int islandID)
+    public IslandItemManager GetIslandItemManager(int islandID)
     {
         Island islandData = islandManager.GetIslandByID(islandID);
         if (islandData != null)
         {
-            IslandResourceManager islandResourceManager = islandData.islandObject.GetComponent<IslandResourceManager>();
-            if (islandResourceManager != null)
+            IslandItemManager islandItemManager = islandData.islandObject.GetComponent<IslandItemManager>();
+            if (islandItemManager != null)
             {
-                return islandData.islandObject.GetComponent<IslandResourceManager>();
+                return islandData.islandObject.GetComponent<IslandItemManager>();
             }
         }
         return null;

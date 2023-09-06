@@ -381,9 +381,9 @@ MonoBehaviour:
   buildingProperties: {fileID: -4907743413093319222}
   buildingData: {fileID: 11400000, guid: 88f90ac679fb39f4899d9b279699fa53, type: 2}
   buildingSize: {x: 2, y: 2, z: 2}
-  buildingName: 
-  buildingDescription: 
-  buildingType: 
+  buildingName: []
+  buildingDescription: []
+  buildingTags: []
   buildingRenderer: {fileID: 0}
   Requirements: 0000000001000000020000000300000004000000
 --- !u!114 &971140939423499999
@@ -398,6 +398,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  buildingInventory: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: 88f90ac679fb39f4899d9b279699fa53, type: 2}
 --- !u!114 &4021450057484334881
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -282,11 +282,11 @@ public class MapManager : MonoBehaviour
         island.islandObject = islandGO;
 
         // Get the IslandResourceManager component and set its island field
-        IslandResourceManager islandResourceManager = islandGO.GetComponent<IslandResourceManager>();
-        if (islandResourceManager != null) 
+        IslandItemManager islandItemManager = islandGO.GetComponent<IslandItemManager>();
+        if (islandItemManager != null) 
         {
-            islandResourceManager.SetIsland(island);
-            islandResourceManager.island.id = data.id; // Sets ID
+            islandItemManager.SetIsland(island);
+            islandItemManager.island.id = data.id; // Sets ID
             
         }
         else 
