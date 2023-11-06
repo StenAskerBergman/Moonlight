@@ -16,7 +16,7 @@ public class FogOfWarManagerEditor : Editor
     SerializedProperty m_FogPlane;
     SerializedProperty m_FogColor;
 
-    SerializedProperty m_FogDissapear;
+    SerializedProperty m_FogDisappear;
     SerializedProperty m_FogUpdateInterval;
     SerializedProperty m_FogAppearSpeed;
     SerializedProperty m_BlurIterations;
@@ -43,7 +43,7 @@ public class FogOfWarManagerEditor : Editor
         m_BlurIterations = serializedObject.FindProperty("m_BlurIterations");
         m_ComputeShaders = serializedObject.FindProperty("m_ShaderReferencesObject");
 
-        m_FogDissapear= serializedObject.FindProperty("m_VisionDissapear");
+        m_FogDisappear= serializedObject.FindProperty("m_VisionDisappear");
 
         m_FogOfWarOutput = serializedObject.FindProperty("m_FogOfWarOutput");
         m_LogWarnings = serializedObject.FindProperty("m_LogWarnings");
@@ -55,7 +55,7 @@ public class FogOfWarManagerEditor : Editor
         EditorGUILayout.PropertyField(m_MapHeight);
         EditorGUILayout.PropertyField(m_MapResolution);
         EditorGUILayout.Space();
-        EditorGUILayout.PropertyField(m_FogDissapear);
+        EditorGUILayout.PropertyField(m_FogDisappear);
         if (ShowVisuals=EditorGUILayout.Foldout(ShowVisuals, "Visuals"))
         {
             EditorGUILayout.PropertyField(m_FogPlane);

@@ -1,0 +1,99 @@
+Write / Read - Top to Bottom 
+------------------------------------------------------------------
+Entry: 2
+------------------------------------------------------------------
+
+Storage : MonoBehaviour  
+	
+		BaseStorage : Storage	
+
+StorageManager : MonoBehaviour
+	
+		BaseStorageManager : StorageManager
+	 
+
+
+------------------------------------------------------------------
+Entry: 1
+------------------------------------------------------------------
+
+1. Island Inventory
+
+Purpose:
+To serve as the central data structure for all items that are 
+present on the island. It doesn't handle the logic or interactions 
+of these items; it merely stores and provides access to them.
+
+Proposed Name: IslandInventory
+
+Responsibilities:
+
+Store a list or dictionary of items and their quantities.
+Provide methods to check the quantity of an item.
+Provide methods to add or remove items (quantity adjustments).
+
+------------------------------------------------------------------
+
+2. Island Inventory Manager
+
+Purpose:
+This script is responsible for high-level management of the entire 
+inventory system for the island. It would interact with the Island 
+Inventory, decide when items move, get produced, get consumed, etc. 
+It's the brain of the inventory system for the island.
+
+Proposed Name: IslandInventorySystem
+
+Responsibilities:
+
+Interact with IslandInventory to get, set, or adjust items.
+Coordinate with other systems (like production, consumption, 
+transportation).
+
+Handle events or triggers related to the inventory (e.g., when an 
+item is produced or consumed).
+
+Act as a central point to communicate with other inventory 
+managers (like BuildingInventoryManager or BoatInventoryManager).
+
+
+------------------------------------------------------------------
+
+3. Island Item Manager
+
+Purpose:
+This script would handle the specific behaviors & characteristics 
+of individual item types on the island. For example, the growth 
+pattern of wheat, the decay of perishable items, or the specific 
+use of a particular tool.
+
+
+Proposed Name: IslandItemBehaviorManager
+
+Responsibilities:
+
+Define and manage specific behaviors of individual items (e.g., 
+decay, growth). Handle any item-specific events or triggers.
+Coordinate with IslandInventorySystem to reflect any changes or 
+behaviors in the central inventory.
+
+------------------------------------------------------------------
+
+4. Island Storage
+
+Purpose:
+A representation of the physical storage facilities on the island. 
+It dictates how much of each item or total items the island can 
+store. It might also be used to influence game mechanics, like if 
+storage is full, certain processes might stop.
+
+Proposed Name: IslandStorageCapacity
+
+Responsibilities:
+
+Define the maximum capacity or individual capacities of different 
+item types. Provide methods to check if the storage is full or if 
+there's enough space for a certain item. Potentially trigger events 
+when storage is full or nearing full capacity.
+
+------------------------------------------------------------------

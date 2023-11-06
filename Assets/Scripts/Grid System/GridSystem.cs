@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static BuildingProperties;
+using static Cell;
 
 public class GridSystem : MonoBehaviour
 {
@@ -12,6 +12,7 @@ public class GridSystem : MonoBehaviour
     #region section 1 
 
     private HashSet<Vector3Int> occupiedCells = new HashSet<Vector3Int>();
+
     public int gridSize = 10;
     public float cellSize = 1f;
     public Vector3 gridPosition;
@@ -56,11 +57,11 @@ public class GridSystem : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    //  Empty Cell Check 
+    // Empty Cell Check 
     public bool IsCellEmpty(Vector3 position)
     {
         Cell cell = GetCellAtWorldPosition(position);
-        if (cell == null || cell.isOccupied)
+        if (cell == null || cell.currentStatus != Cell.CellStatus.Empty)
         {
             Debug.Log("Cell Position Occupied");
             return false;
@@ -71,14 +72,40 @@ public class GridSystem : MonoBehaviour
     }
 
     // Fill Cell Post
-    public void MarkCellAsOccupied(Vector3 position)
+    public void MarkCellAsOccupied(Vector3 position, Building building)
     {
         Cell cell = GetCellAtWorldPosition(position);
         if (cell != null)
         {
-            cell.isOccupied = true;
+            cell.OccupyCellWithBuilding(building);
         }
     }
+
+
+    // Get Cell Type
+    public Cell.TerrainType GetCellType(Vector3 position)
+    {
+        Cell cell = GetCellAtWorldPosition(position);
+
+        if (cell != null)
+        {
+            return cell.currentTerrainType;
+        }
+
+        return Cell.TerrainType.None;
+    }
+
+
+    public bool IsCellWater(Vector3 position)
+    {
+        Cell cell = GetCellAtWorldPosition(position);
+        if (cell != null && cell.currentTerrainType == Cell.TerrainType.Water)
+        {
+            return true;
+        }
+        return false;
+    }
+
 
     #region Section 2 
     public List<Building> GetAllBuildings()
@@ -120,44 +147,23 @@ public class GridSystem : MonoBehaviour
         // Log Bounds Render
         Renderer renderer = GetComponent<Renderer>();
         
-        gridIsland.LogBounds();
+        //gridIsland.LogBounds();
         //Debug.Log("Bounds: " + renderer.bounds);
     }
 
-    // Grid Generation Method
-    private void GenerateGrid()
+    // Grid Generation Method - from GridSystem.cs / Called from Start Method
+    public void GenerateGrid()
     {
-        gridCount++;
-        Vector3 cellSizeVec = new Vector3(cellSize, 0f, cellSize);
-        int cellCount = 0; // How Many Cells was Generated per Island
-
-        // Square Island Generation
-        for (int x = 0; x < gridSize; x++)
-        {
-            for (int z = 0; z < gridSize; z++)
-            {
-                Vector3 cellPos = transform.position + new Vector3(x * cellSize, 0f, z * cellSize);
-
-
-                RaycastHit hit;
-                if (Physics.Raycast(cellPos + Vector3.up * 100f, Vector3.down, out hit, Mathf.Infinity))
-                {
-                    cellPos = hit.point; // - offset;
-                    cellPos.x = Mathf.Round(cellPos.x / cellSize) * cellSize;
-                    cellPos.z = Mathf.Round(cellPos.z / cellSize) * cellSize;
-                    cellPos.y = 0f; // Set the Y value to 0
-
-                    Cell cell = new Cell(cellPos, null, false);
-                    grid[x, z] = cell;
-
-                    cellCount++;
-                }
-            }
-        }
-
-        // Total Number of Cells & Grids Generated - Console Debugging 
-        Debug.Log("Cells: " + cellCount + " Grids: " + gridCount);
+        // Create Grid here using the Grid.cs
     }
+
+    /*
+    public void SetupGrid(IslandData data)
+    {
+        this.gridPosition = data.gridData.gridPosition;
+        // Use GridData to set up the grid system's logic and initial state.
+    }
+    */
 
     void OnDrawGizmos()
     {
@@ -165,8 +171,10 @@ public class GridSystem : MonoBehaviour
         Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
 
         Gizmos.color = Color.red;
+
         Gizmos.DrawLine(gridMinPosition, new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMinPosition.z));
         Gizmos.DrawLine(gridMinPosition, new Vector3(gridMinPosition.x, gridMinPosition.y, gridMaxPosition.z));
+
         Gizmos.DrawLine(new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMaxPosition.z), new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMinPosition.z));
         Gizmos.DrawLine(new Vector3(gridMaxPosition.x, gridMinPosition.y, gridMaxPosition.z), new Vector3(gridMinPosition.x, gridMinPosition.y, gridMaxPosition.z));
     }
@@ -175,7 +183,7 @@ public class GridSystem : MonoBehaviour
     {
         Island island = GetComponent<Island>();
 
-        Debug.Log($"Island: {island.islandName + "id: " + island.id} Bounds: {island.bounds}");
+        // Debug.Log($"Island: {island.islandName + "id: " + island.id} Bounds: {island.bounds}");
 
 
         Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
@@ -303,7 +311,7 @@ public class GridSystem : MonoBehaviour
         // Need a Shoreline Case for
         // Fisheries and vice versa.
         // Check if Shoreline then Nope
-        
+
         if (!_ReqShore || _ReqSea || _ReqSub || _ReqLand || _ReqOther) // None Shoreline Buildings
         {
             // Bounds Check
@@ -316,7 +324,7 @@ public class GridSystem : MonoBehaviour
                     buildingChecker.canPlace = false;
                     return null;
             }
-            
+
         }
 
         // Convert the local position to grid indices
@@ -350,11 +358,12 @@ public class GridSystem : MonoBehaviour
         }
 
         // Check for building
-        if (cell.building != null)
+        if (cell.occupyingBuilding != null)
         {
-            Debug.Log("Cell is occupied!" + cell.building);
+            Debug.Log("Cell is occupied!" + cell.occupyingBuilding);
             return false;
         }
+
 
         int startX = Mathf.FloorToInt(position.x - size.x / 2);
         int startZ = Mathf.FloorToInt(position.z - size.z / 2);
@@ -368,7 +377,7 @@ public class GridSystem : MonoBehaviour
 
                 Cell targetCell = GetCellAtPosition(new Vector3(targetX, 0, targetZ));
 
-                if (targetCell == null || targetCell.building != null)
+                if (targetCell == null || targetCell.occupyingBuilding != null)
                 {
                     return false;
                 }

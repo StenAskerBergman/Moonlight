@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class ExampleScript : MonoBehaviour
 {
-    private ResourceManager resourceManager;
     private IslandStorage islandStorage;
 
     private void Awake(){

@@ -7,12 +7,17 @@ public class GameManager : MonoBehaviour
     public static GameManager instance;
     public int currentIslandID;
     public MapManager mapManager;
-    public PlayerMaterialManager playerMaterialManager;
-    private IslandManager islandManager;
-    private UIManager uiManager;
+    public PlayerItemManager playerItemManager;
     public Island currentIsland;
+
+    private IslandManager islandManager;
+    private HUDManager hudManager;
     private Dictionary<int, GameObject> islandObjects = new Dictionary<int, GameObject>(); // Added dictionary for island game objects
     private Island previousIsland;
+    
+    // Games Return Rate Policy
+    public int ReturnRate;
+    public int previousIslandID;
 
     private void Awake()
     {
@@ -22,21 +27,19 @@ public class GameManager : MonoBehaviour
         }
 
         instance = this;
-        playerMaterialManager = FindObjectOfType<PlayerMaterialManager>();
         islandManager = FindObjectOfType<IslandManager>();
+        hudManager = FindObjectOfType<HUDManager>();
     }
 
-
-
-    public IslandItemManager GetIslandItemManager(int islandID)
+    public Inventory GetIslandInventory(int islandID)
     {
         Island islandData = islandManager.GetIslandByID(islandID);
         if (islandData != null)
         {
-            IslandItemManager islandItemManager = islandData.islandObject.GetComponent<IslandItemManager>();
-            if (islandItemManager != null)
+            Inventory islandInventory = islandData.islandObject.GetComponent<Inventory>();
+            if (islandInventory != null)
             {
-                return islandData.islandObject.GetComponent<IslandItemManager>();
+                return islandData.islandObject.GetComponent<Inventory>();
             }
         }
         return null;
@@ -57,7 +60,6 @@ public class GameManager : MonoBehaviour
     {
         return islandManager.GetIslandByID(id);
     }
-    
 
     public Island GetCurrentIsland()
     {

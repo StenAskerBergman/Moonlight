@@ -1550,7 +1550,7 @@ Terrain:
   m_DrawInstanced: 0
   m_DrawTreesAndFoliage: 1
   m_ReflectionProbeUsage: 1
-  m_MaterialTemplate: {fileID: 10652, guid: 0000000000000000f000000000000000, type: 0}
+  m_MaterialTemplate: {fileID: 2100000, guid: 594ea882c5a793440b60ff72d896021e, type: 2}
   m_BakeLightProbesForTrees: 1
   m_PreserveTreePrototypeLayers: 0
   m_DeringLightProbesForTrees: 1
@@ -1799,6 +1799,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2750205416833787686, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
+      propertyPath: medium.m_Bits
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2750205416833787694, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
       propertyPath: m_RootOrder
       value: 11
@@ -1907,7 +1911,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6365208427929418188, guid: c48a2b58776b96046b3060cd1c22dab7, type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6365208427929418188, guid: c48a2b58776b96046b3060cd1c22dab7, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2314,6 +2318,14 @@ PrefabInstance:
       propertyPath: ScrollZooming
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5638055982792574632, guid: ffcda6e850d6c5542af224c6c3bc7a82, type: 3}
+      propertyPath: maxZoomDistance
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 5638055982792574632, guid: ffcda6e850d6c5542af224c6c3bc7a82, type: 3}
+      propertyPath: minZoomDistance
+      value: 30
+      objectReference: {fileID: 0}
     - target: {fileID: 5638055982792574633, guid: ffcda6e850d6c5542af224c6c3bc7a82, type: 3}
       propertyPath: m_Name
       value: Camera Rig
@@ -2401,6 +2413,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2750205416833787686, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
+      propertyPath: medium.m_Bits
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2750205416833787694, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
       propertyPath: m_RootOrder
       value: 12
@@ -2598,7 +2614,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235675187675300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3327,7 +3347,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235675636865093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4065,7 +4089,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676097635990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4599,7 +4627,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676200471301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4877,7 +4909,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676268834259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5363,7 +5399,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676786204735
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5590,7 +5630,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676843472465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5879,7 +5923,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235676886589084
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6289,7 +6337,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 514620863fc388a49aaeb2cd9e31847c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  house_blueprint: {fileID: 8322433471225209493, guid: f9b83c3576688d24dbac9f17c31d3094, type: 3}
+  buildingChecker: {fileID: 0}
+  buildingRequirements: {fileID: 0}
+  buildingPreviewPrefab: {fileID: 0}
+  buildingPlacementSize: {x: 0, y: 0, z: 0}
+  previewPrefab: {fileID: 0}
 --- !u!114 &1835235677167847980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6524,6 +6576,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2750205416833787686, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
+      propertyPath: medium.m_Bits
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2750205416833787694, guid: f5e1050e91df39e418b265f40bbc3ddd, type: 3}
       propertyPath: m_RootOrder
       value: 10
@@ -6583,7 +6639,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6086019476776207292, guid: cbb082e504b5cd74595d9455cfe3971e, type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6086019476776207292, guid: cbb082e504b5cd74595d9455cfe3971e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6636,6 +6692,10 @@ PrefabInstance:
     - target: {fileID: 6086019476776207295, guid: cbb082e504b5cd74595d9455cfe3971e, type: 3}
       propertyPath: m_Name
       value: FogOfWar
+      objectReference: {fileID: 0}
+    - target: {fileID: 6086019476776207295, guid: cbb082e504b5cd74595d9455cfe3971e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cbb082e504b5cd74595d9455cfe3971e, type: 3}

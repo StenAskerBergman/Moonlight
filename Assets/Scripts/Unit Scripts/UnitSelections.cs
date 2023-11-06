@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
+public enum UnitType { Character, House, Drone };
+
 public class UnitSelections : MonoBehaviour
 {
 
@@ -13,9 +15,33 @@ public class UnitSelections : MonoBehaviour
     public bool hasCharacters = false;
     public UnityEvent<List<Unit>> selectionChanged;
 
+    public bool hasInventory = false; // For Inventory UI
+    public GameObject inventoryUIPanel;
+
     private static UnitSelections _instance;
     public static UnitSelections Instance { get { return _instance; } }
+
+    #region User Interface Events
     
+    // User Interface Events
+
+    // Determine What Userface Events are needed for this script
+
+    // Determine What userface to show depending on what unit is selected
+
+    // Determine What userface to show when a unit is selected
+    // Is one or multiple units selected?
+    // Is a character selected or house selected?
+    // Is several characters selected or several houses selected?
+
+    // Determine What userface to show when a character is selected
+    // Determine What userface to show when a building is selected
+    // Determine What userface to show when a drone is selected
+
+
+
+    #endregion
+
     #region On Awake List
     private void Awake()
     {  
@@ -35,12 +61,15 @@ public class UnitSelections : MonoBehaviour
     // When Clicked on Unit Then...
     public void ClickSelect(Unit unitToAdd) 
     {
-        this.DeselectAll();
-        unitsSelected.Add(unitToAdd); 
-        unitToAdd.transform.GetChild(0).gameObject.SetActive(true); // Enables the Selection Child Game Object
-        unitToAdd.GetComponent<UnitMovement>().enabled = true;
-        selectionChanged.Invoke(unitsSelected);
-
+        // Handles A single Unit Clicked 
+        if (!unitsSelected.Contains(unitToAdd))
+        {
+            this.DeselectAll();
+            unitsSelected.Add(unitToAdd);
+            unitToAdd.transform.GetChild(0).gameObject.SetActive(true); // Enables the Selections first Childs GameObject
+            unitToAdd.GetComponent<UnitMovement>().enabled = true;
+            selectionChanged.Invoke(unitsSelected);
+        }
     }
     #endregion
 
@@ -50,12 +79,12 @@ public class UnitSelections : MonoBehaviour
 
     /* 
      * 
-     * It will always activate the first child 
-     * of the game object no matter, this also 
-     * include the first child of any children
+     *  It will always activate the first child 
+     *  of the game object no matter, this also 
+     *  include the first child of any children
      * 
-     * Try to always make children unselectable 
-     * from UC or the US Scripts for less bugs.
+     *  Try to always make children unselectable 
+     *  from UC or the US Scripts for less bugs.
      * 
      */
 
@@ -95,7 +124,7 @@ public class UnitSelections : MonoBehaviour
            
             if (unitToAdd != null) 
             {
-                if (unitToAdd.type == Unit.UnitType.Character)
+                if (unitToAdd.type == UnitType.Character)
                 {
                     hasCharacters = true;
                     unitToAdd.GetComponent<UnitMovement>().enabled = true;
@@ -118,7 +147,7 @@ public class UnitSelections : MonoBehaviour
     {
         foreach (var unit in unitsSelected)
         {
-            if (unit.type == Unit.UnitType.Character) unit.GetComponent<UnitMovement>().enabled = false;
+            if (unit.type == UnitType.Character) unit.GetComponent<UnitMovement>().enabled = false;
             unit.transform.GetChild(0).gameObject.SetActive(false);
 
         }

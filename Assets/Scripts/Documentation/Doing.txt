@@ -1,0 +1,97 @@
+﻿
+# Project: Moonlight
+-----------------------------------------------------------------
+Current Goal: Write Interaction System
+
+		( Using Lobby System )
+
+		Ownership Interface & Assigment System
+
+		> Owner Interface: Defines Who / What is the current Owner
+		> Owner Controller: Allow All Valid Ownership Interaction
+		  
+		
+		Relationship System
+		
+		> Relationship has Two Ints of Ranges 0 to 1000 Influence Points 
+
+		> Default InPeace which lets you develop your relationship with 
+		other players and lets you access certain perks at certain tiers
+		
+		> InPeace has no Cap on how well you develop your relationship 
+		but only 1000 is decay protected anything above needs to retained
+		by acting in favour of the said owner.
+
+		> If InPeace reaches sub 100, the other Owner has a arsenal of dmg
+		to send you way. So try to stay above it, but if a war does breaks 
+		out, then your InPeace Range will be reduced to 0 and swapped with 
+		the InWar Range which will decay further down in contrast combat
+
+		
+		> Relationship Tiers Exist for both 100 - 250 - 500 - 750 - 1000
+		
+
+
+
+		Define Relationship System
+
+		> Define Relations between Owners 
+
+			> Each relation has a development parameter to show
+			players what their potential relations can be, also
+			serves as a social status progress bar with all the
+			owners in your game session. At the beginning start
+			with the default values, and as the game progresses
+			and the choices players do reflect onto their other
+			owners relations. 
+			
+			Conflicting playstyles will drain points and reduce
+			gains, potential chances from certain owners can be
+			greatly reduced. 
+
+			While relationships which share mutually beneficial 
+			playstyles will grant players influence points. And 
+			these influence points lets the player access deals
+			with the other owners that are unique, it will also
+			grant the player certain oppertunities other miss. 
+			
+			Finding the balance between relations is the key to 
+			everything from gaining favours, weapons, to intel. 
+			
+			Retaining relations thru Diplomacy get more complex 
+			as the game grows on. Fragile relationships will be
+			exploited by opposite forces. The Game is all about
+			Letting the late game Power fantasy loose and other
+			owners can create extremely strong ties to rely on.
+
+			Their allegiance will show in your relation, so be
+			careful because that can come around real quick if
+			handled poorly.
+			
+
+			> The Parameters range is 1000p long, and each step
+			of the way defines a new standing depending on who,
+			your talking to. 
+		> 
+
+		> Influence Framework
+
+
+		( Bots / Ai / Npcs / Players 
+
+-----------------------------------------------------------------
+Current Issues:
+
+		Undefined Interaction System
+		Undefined 
+
+-----------------------------------------------------------------
+Potential Issues:
+
+		File Concurrency
+		File Corruption
+		File Syncing
+
+-----------------------------------------------------------------
+Clipboard: 
+

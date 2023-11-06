@@ -9,6 +9,15 @@ public class BuildingEnums : MonoBehaviour
     // Should be standing on, then define it
     // from there. 
 
+
+    public enum BuildingStyle
+    {
+        Residential,    // Houses People    -   Unique:     Tax + Redline
+        Industrial,     // Produces Items   -   Unique:     Produce
+        Spawner,        // Spawns a Unit    -   Unique:     Spawn Units
+        Emitter,        // Zone Emitters    -   Unique:     Emit Zone
+    }
+
     public enum BuildingType
     {
         // Debug Type

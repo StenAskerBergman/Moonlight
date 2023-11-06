@@ -25,7 +25,7 @@ public class BuildingProperties : MonoBehaviour
         public string[] buildingTags;
 
     // Building Model Components
-        //public Renderer buildingRenderer;
+    //public Renderer buildingRenderer;
 
     // Ideas:
     // Make this a string[] and hold all the names for this building,
@@ -33,40 +33,24 @@ public class BuildingProperties : MonoBehaviour
     // on a lot of things! Being enemies, allies, under attack vice
     // versa. Therefore there needs to be a generative method to fix
     // the different names for the different views.
-    
+
     #endregion
-
-
-    // private 
-
-
 
     private void Start()
     {
-        GetData();
         SetData();
-    }
-
-    public void GetData()
-    {
-        buildingProperties = GetComponent<BuildingProperties>();
-        buildingProperties.buildingData = buildingData;
     }
 
     public void SetData()
     {
-        buildingProperties = GetComponent<BuildingProperties>();
-        buildingProperties.buildingData = buildingData;
-
+        // Legacy Code
         // Fetch Resource Cost Data
-        int[] costResources = costData.costResource;
+        // int[] costResources = costData.costResource;
 
         // Fetch Size Data
-        Vector3 size = buildingData.buildingSize;
-
-        // Fetch Requirement
-        RequirementEnums.RequirementType[] requirements = buildingData.Requirements;
+        buildingSize = buildingData.buildingSize;
     }
+
 
     // Update the Initialize method to take currentIsland and gridSystem as parameters
     public void Initialize(Island island, GridSystem detectedGridSystem)

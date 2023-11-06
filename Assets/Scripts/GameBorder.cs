@@ -5,12 +5,13 @@ using UnityEngine;
 public class GameBorder : MonoBehaviour
 {
     //public Vector2 borderSize = new Vector2(100, 100);
+    public bool ShowRange = true;
     public Vector2 _range = new Vector2(100,100);   // IMPORTANT: Map Boarder
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.white;
-        Gizmos.DrawWireCube(transform.position, new Vector3(_range.x * 2, 0, _range.y * 2));
+        if (ShowRange) Gizmos.DrawWireCube(transform.position, new Vector3(_range.x * 2, 0, _range.y * 2));
     }
 
     internal bool IsInBounds(Vector3 position)

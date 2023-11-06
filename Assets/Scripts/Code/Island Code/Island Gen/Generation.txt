@@ -1,0 +1,91 @@
+---------------------------------------------------------------------
+ABEIRD  /  Neighbour = N.
+---------------------------------------------------------------------
+
+Abyss - A
+> Edge Strength: 0
+
+Beyond - B
+> Edge Strength: Highest Neighbour Value -1 
+> If Neighbour is Edge then Edge Strength = 4 + N  (N = Sum of All N. Edges)
+> Shore / Ocean Floor
+
+Edge - E
+> Length Strength: add 1 + Sum All N. Edges = L1 -> This.L1 + N.(L1) = L2 Final Length Strength Value
+> Sand / Rocky
+
+Interior - I
+> Interior Stength: 0E || i1 =< E
+
+Rock - R
+
+Deposit - D
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Question:
+
+Which of these Programming Patterns, fit my problem the most?
+
+Describe what needs / problems will occur inorder to generate 
+the following:
+
+Islands
+The desired outcome for the island generation, an island with 
+a variety of terrain features, including a flat mainland area, 
+rocky shores, bays, and potentially mountains. The island is 
+surrounded by water, with a gradual transition from the shore 
+to the ocean.
+
+Plateaus
+The desired outcome for the  underwater plateau will have similar 
+terrain features as the islands, but with some unique characteristics 
+due to its underwater nature. The Plateaus is surrounded with a 
+gradual transition from the Plateau to the depths of the Sea.
+
+Issue:
+
+Links:
+
+Stratergy Pattern:
+https://refactoring.guru/design-patterns/strategy/csharp/example
+https://refactoring.guru/design-patterns/strategy
+
+Builder Pattern:
+https://refactoring.guru/design-patterns/builder/csharp/example
+https://refactoring.guru/design-patterns/builder
+
+Factory Pattern:
+https://refactoring.guru/design-patterns/factory-method/csharp/example
+https://refactoring.guru/design-patterns/factory-method
+
+Other Pattern:
+https://refactoring.guru/design-patterns/csharp
+
+
+
+
+Issue:
+Generating a Island Mesh Using my Cell Class and this Image as reference point
+

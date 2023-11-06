@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Enums : MonoBehaviour
 {
+
     public enum Faction
     {
         None,
@@ -11,7 +12,7 @@ public class Enums : MonoBehaviour
         Eco,
         Sci,
     }
-    
+
     public enum View 
     { 
         Tycoon,
@@ -30,19 +31,6 @@ public class Enums : MonoBehaviour
         Extra,
         Film,
         None
-    }
-
-    public enum IslandType
-    {
-        None,
-        Tropical,
-        Arctic,
-        Desert,
-        Volcanic,
-        Forest,
-        Swamp,
-        Mountainous,
-        Industrial,
     }
 
     public enum Direction 

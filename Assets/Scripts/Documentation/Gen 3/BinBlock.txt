@@ -1,0 +1,323 @@
+﻿
+
+Bin of all prior text
+--------------------------------------------------------------
+
+Defining a Interactions 
+
+	Player to Player 
+
+	Player to Unit
+	
+	Unit to Unit
+
+--------------------------------------------------------------
+
+		( Using Lobby System )
+
+		Ownership Interface & Assigment System
+
+		> Owner Interface: Defines Who / What is the current Owner
+		> Owner Controller: Allow All Valid Ownership Interaction
+		  
+		Relationship System
+		> Define Relations between Owners 
+
+			> Each relation has a development parameter to show
+			players what their potential relations can be, also
+			serves as a social status progress bar with all the
+			owners in your game session. At the beginning start
+			with the default values, and as the game progresses
+			and the choices players do reflect onto their other
+			owners relations. 
+			
+			Conflicting playstyles will drain points and reduce
+			gains, potential chances from certain owners can be
+			greatly reduced. 
+
+			While relationships which share mutually beneficial 
+			playstyles will grant players influence points. And 
+			these influence points lets the player access deals
+			with the other owners that are unique, it will also
+			grant the player certain oppertunities other miss. 
+			
+			Finding the balance between relations is the key to 
+			everything from gaining favours, weapons, to intel. 
+			
+			Retaining relations thru Diplomacy get more complex 
+			as the game grows on. Fragile relationships will be
+			exploited by opposite forces. The Game is all about
+			Letting the late game Power fantasy loose and other
+			owners can create extremely strong ties to rely on.
+
+			Their allegiance will show in your relation, so be
+			careful because that can come around real quick if
+			handled poorly.
+			
+
+			> The Parameters range is 1000p long, and each step
+			of the way defines a new standing depending on who,
+			your talking to. 
+
+--------------------------------------------------------------
+
+		> Influence Framework
+        		( Using Lobby System )
+
+		Ownership Interface & Assigment System
+
+		> Owner Interface: Defines Who / What is the current Owner
+		> Owner Controller: Allow All Valid Ownership Interaction
+		  
+		
+		Relationship System
+		
+		> Relationship has Two Ints of Ranges 0 to 1000 Influence Points 
+
+		> Default InPeace which lets you develop your relationship with 
+		other players and lets you access certain perks at certain tiers
+		
+		> InPeace has no Cap on how well you develop your relationship 
+		but only 1000 is decay protected anything above needs to retained
+		by acting in favour of the said owner.
+
+		> If InPeace reaches sub 100, the other Owner has a arsenal of dmg
+		to send you way. So try to stay above it, but if a war does breaks 
+		out, then your InPeace Range will be reduced to 0 and swapped with 
+		the InWar Range which will decay further down in contrast combat
+
+		
+		> Relationship Tiers Exist for both 100 - 250 - 500 - 750 - 1000
+		
+
+
+
+		Define Relationship System
+
+		> Define Relations between Owners 
+
+			> Each relation has a development parameter to show
+			players what their potential relations can be, also
+			serves as a social status progress bar with all the
+			owners in your game session. At the beginning start
+			with the default values, and as the game progresses
+			and the choices players do reflect onto their other
+			owners relations. 
+			
+			Conflicting playstyles will drain points and reduce
+			gains, potential chances from certain owners can be
+			greatly reduced. 
+
+			While relationships which share mutually beneficial 
+			playstyles will grant players influence points. And 
+			these influence points lets the player access deals
+			with the other owners that are unique, it will also
+			grant the player certain oppertunities other miss. 
+			
+			Finding the balance between relations is the key to 
+			everything from gaining favours, weapons, to intel. 
+			
+			Retaining relations thru Diplomacy get more complex 
+			as the game grows on. Fragile relationships will be
+			exploited by opposite forces. The Game is all about
+			Letting the late game Power fantasy loose and other
+			owners can create extremely strong ties to rely on.
+
+			Their allegiance will show in your relation, so be
+			careful because that can come around real quick if
+			handled poorly.
+			
+
+			> The Parameters range is 1000p long, and each step
+			of the way defines a new standing depending on who,
+			your talking to. 
+--------------------------------------------------------------
+
+
+
+> Storage Manager & Inventory System - Status: Work in Progress
+
+Tasks: Finish Creating the New Inventory Classes
+Tasks: Finish Creating the New Manager Classes
+
+Status: 100% Complete
+
+
+
+
+
+    
+--------------------------------------------------------------
+
+            // Pre Game Settings
+
+                // Player Choices:
+                    
+                    // Set Game Mode:
+
+                        // Sandbox - No Win Condition 
+                        // Mission - Win Condition
+                
+            // Now Game Mode is Set: Sandbox or Mission
+
+                // Set Game Parties:
+                
+                    // Player Parties
+                    // Bot NPC Parties
+
+                    // Allies Parties
+                    // Enemy Parties
+                    // Trader Parties
+                    // Pirate Parties
+
+            // Select Game Map Size:
+
+            - - - 
+
+    // Pre Runtime:
+
+        // Game Scenarios, Conditions & Settings:
+                
+            // > Select > Island Start Condition:
+
+                // Starting Resources: Poor - Average - Rich 
+                
+                // Starting Seeds: Few - Average - Many - Rare 
+
+                // Normal Island Scenario
+                
+                // Custom Island Scenario
+                    // Number or Area Based Island Biome Types?
+
+                        // If Area, then for each type selected:
+                            // Area Sizes: Small - Medium - Large - Extreme
+					        // Area Shape: Circle - Square - Triangle - Hexagon
+					        // Area Location: Center - Random - Custom
+                
+                        // If Number of Island Biomes Per Map: 
+                            // Normal Biomes Cases: Default, Random, Custom 
+                            // Rare Biomes Cases: Default - Amplifed 
+                
+                // Player Start based on: Difficulty / Custom Settings
+
+                    // Bases: None - One - Two
+                    // Ships: None - Few - Many - Rare
+                
+
+                // Select Spawn Patterns
+                // Size - Small
+                // Size - Normal - This is the default and the one we are working on
+                // Size - Large
+                // Size - Extreme
+
+
+                // Spawn Patterns: Normal
+            
+                // Set Island Data Parameters for Generation
+
+                // Add Islands Operation
+                    
+                    // Set Island Layout
+                    // + Create Island Objects
+                    // + Create Cells
+                    // + Add Cells to Island Object
+
+                    // Map Structure
+                    // + Add Island Object To Map Object
+                    // + Define Noise Map Parameters
+                    
+                    // Noise Creation
+                    // + Create Noise Map
+
+                    // Cell Predefined Types
+                    // + Define Cell Values & Types
+                    // + Set Value & Type Parameters
+
+                    // Island Structure
+                    // + Apply Noise Map Value to Cell Values
+                    // + Set Cell Type by the Type Parameters
+					// + Set Cell Meshes By Cell Type & Value
+                    
+                    // Island Data
+                    // Type
+                    // Value
+                    // Height
+                    // Size
+                    
+                    // Cell Data
+                    // Type
+                    // Value
+
+                // Creates Island Game Object
+                    
+                    // Start  
+
+                    // + Render Island GameObjects
+                    // + Generate & Get Data 
+                    // + Set Data
+               
+                    // Complete
+
+                // Add Water Operation
+                    // Start 
+                    // Complete
+
+                // Add Plataeu Operation
+                    // Start - Complete
+
+                // Initialize Start Game Session
+                    // gameManager.StartGameSession(string Name,int GameSpeed, Bool WinCon);
+
+                // If WinCon exists 
+                    // false: gameManager.LoseGameSession();
+                    // true: gameManager.WinGameSession();
+
+                // And then End Game Session
+                    // gameManager.EndGameSession();
+
+
+
+
+	Aight so, Concurrency how do we address it here
+
+
+	Storage : MonoBehaviour - Code:
+
+	StorageManager : MonoBehaviour - Code:
+	 
+	BaseStorage : Storage - Code:
+	
+	BaseStorageManager : StorageManager - Code:
+
+
+	Storage : MonoBehaviour 
+	StorageManager : MonoBehaviour 
+	BaseStorage : Storage 
+	BaseStorageManager : StorageManager 
+
+	🌸
+
+	    public int Quantity;
+	
+	So each island will have island Storage and Island Storage manager and each player who want to be on the island will require to build a building to create a base instance on that specific island. When the first building is placed (using a boat) this spawn in a base entity that the building will be built as a child to. This base entity is a empty game object, base entity will store the base storage, base storage manager, and the base inventory. If a player has no claim to island meaning no entity present then no base inventory can be read. 
+
+
+	// Define core item base class
+Class Item {
+    UniqueIdentifier ID;
+    String name;
+    ItemType type; // Enum: Resource, Material, Good, etc.
+    Image icon;
+    Float baseValue; // Subject to in-game dynamics
+    Float volume; // Amount of space required in storage/transport
+    Perishability perishability; // Optional: Some items won't have this.
+    Usability usability; // Singular, Multiple, etc.
+    ...
+
+    // Methods related to the core functionalities of the item.
+    Function refine(): Item {...}
+    Function craft(Item otherItem): Item {...}
+    Function consume(): Effect {...} // Can be a buff, debuff, or any effect
+}
+
+

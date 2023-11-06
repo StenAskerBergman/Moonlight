@@ -12,6 +12,28 @@ public class IslandEnterDetector : MonoBehaviour
     public delegate void GridSystemDetectedEventHandler(GridSystem gridSystem);
     public event GridSystemDetectedEventHandler OnGridSystemDetected;
 
+    [SerializeField] private bool _showLogs;
+    void Log(object message)
+    {
+        if (_showLogs)
+        {
+            Debug.Log(message);
+        }
+    }
+    void LogError(object message)
+    {
+        if (_showLogs)
+        {
+            Debug.LogError(message);
+        }
+    }
+    void LogWarning(object message)
+    {
+        if (_showLogs)
+        {
+            Debug.LogWarning(message);
+        }
+    }
 
     private void Start()
     {
@@ -27,12 +49,12 @@ public class IslandEnterDetector : MonoBehaviour
         // Ray Cast
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
 
-        //Debug.Log("0");
+        Log("0");
 
         if (Physics.Raycast(ray, out hit, Mathf.Infinity))
         {
             
-            //Debug.Log("1");
+            Log("1");
             
             Island island = hit.collider.GetComponent<Island>();
      
@@ -41,16 +63,16 @@ public class IslandEnterDetector : MonoBehaviour
                 currentIsland = island;
                 IslandManager.instance.InvokeOnPlayerEnterIsland(currentIsland);
                 GridSystem gridSystem = island.GetComponent<GridSystem>();
-                Debug.Log("2");
+                Log("2");
 
                 if (gridSystem != null)
                 {
                     IslandManager.instance.InvokeOnGridSystemDetected(gridSystem);
-                    Debug.Log("3");
+                    Log("3");
                 }
                 else
                 {
-                    Debug.Log("4");
+                    Log("4");
                     return;
                 }
             }

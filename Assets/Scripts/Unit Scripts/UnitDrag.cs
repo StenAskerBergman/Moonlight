@@ -57,18 +57,18 @@ public class UnitDrag : MonoBehaviour
     }
 
     void DrawVisual()
-        {
-            Vector2 boxStart = startPosition;
-            Vector2 boxEnd = endPosition;
+    {
+        Vector2 boxStart = startPosition;
+        Vector2 boxEnd = endPosition;
 
-            Vector2 boxCenter = (boxStart + boxEnd) / 2;
-            boxVisual.position = boxCenter;
+        Vector2 boxCenter = (boxStart + boxEnd) / 2;
+        boxVisual.position = boxCenter;
 
-            Vector2 boxSize = new Vector2(Mathf.Abs(boxStart.x - boxEnd.x), Mathf.Abs(boxStart.y - boxEnd.y));
+        Vector2 boxSize = new Vector2(Mathf.Abs(boxStart.x - boxEnd.x), Mathf.Abs(boxStart.y - boxEnd.y));
 
-            boxVisual.sizeDelta = boxSize;
+        boxVisual.sizeDelta = boxSize;
 
-        }
+    }
 
     void DrawSelection()
     {

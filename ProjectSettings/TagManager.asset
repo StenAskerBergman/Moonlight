@@ -12,6 +12,7 @@ TagManager:
   - Unlocked
   - Locked
   - Hidden
+  - Fire
   layers:
   - Default
   - TransparentFX
@@ -48,4 +49,7 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Camera_Effect
+    uniqueID: 2160305147
     locked: 0

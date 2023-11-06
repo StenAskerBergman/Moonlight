@@ -12,7 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e0b3aaba4d8def41a4fa9df1e695cd5, type: 3}
   m_Name: Gravel Extracter Cost Data
   m_EditorClassIdentifier: 
+  resourceArray: 
+  materialArray: 
+  goodArray: 
   resourceType: 0
+  materialType: 0
+  goodType: 0
   price: 15
   cost: 0
   expense: 0

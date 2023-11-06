@@ -1,0 +1,2696 @@
+
+public class NoiseMixer
+{
+    public float[,] MixNoiseMaps(List<float[,]> noiseMaps, List<float> weights)
+    {
+        int width = noiseMaps[0].GetLength(0);
+        int height = noiseMaps[0].GetLength(1);
+        float[,] mixedMap = new float[width, height];
+
+        // TODO: Implement the logic to mix the noiseMaps based on weights
+        // For instance, you can simply sum them, or multiply them, etc.
+
+        return mixedMap;
+    }
+
+    // Example of a method that combines two height maps
+    public float[,] MixHeightMaps(float[,] heightMap1, float[,] heightMap2)
+    {
+        int width = heightMap1.GetLength(0);
+        int height = heightMap1.GetLength(1);
+
+        float[,] mixedHeightMap = new float[width, height];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // Here, we are simply averaging the heights, but you can use more complex functions
+                mixedHeightMap[x, y] = (heightMap1[x, y] + heightMap2[x, y]) / 2.0f;
+            }
+        }
+
+        return mixedHeightMap;
+    }
+}
+/*
+// IslandMesh.cs - Noise
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandMesh : MonoBehaviour
+{
+    public IslandNoise islandNoise;
+    private Vector3[] vertices;
+    private int[] triangles;
+
+    private void Start()
+    {
+        InitializeMeshData();
+        GenerateMesh();
+    }
+
+    public void InitializeMeshData()
+    {
+        islandNoise.GenerateNoise();
+        vertices = new Vector3[islandNoise.width * islandNoise.height];
+        triangles = new int[(islandNoise.width - 1) * (islandNoise.height - 1) * 6];
+    }
+
+    public void GenerateMesh()
+    {
+
+        int vertexIndex = 0;
+        int triangleIndex = 0;
+
+        float offsetX = islandNoise.width / 2.0f;
+        float offsetY = islandNoise.height / 2.0f;
+
+        for (int x = 0; x < islandNoise.width; x++)
+        {
+            for (int y = 0; y < islandNoise.height; y++)
+            {
+                // Populate vertex array + Subtract the offsets to center the mesh
+                vertices[vertexIndex] = new Vector3(x - offsetX, islandNoise.Heights[x, y], y - offsetY);
+                vertexIndex++;
+
+                // Populate triangle array
+                if (x < islandNoise.width - 1 && y < islandNoise.height - 1)
+                {
+                    int bottomLeft = x + y * islandNoise.width;
+                    int bottomRight = (x + 1) + y * islandNoise.width;
+                    int topLeft = x + (y + 1) * islandNoise.width;
+                    int topRight = (x + 1) + (y + 1) * islandNoise.width;
+
+                    // First triangle
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = topLeft;
+
+                    // Second triangle
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                }
+            }
+        }
+
+        Mesh mesh = new Mesh
+        {
+            vertices = vertices,
+            triangles = triangles
+        };
+        mesh.RecalculateNormals();
+
+        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
+        meshFilter.mesh = mesh;
+    }
+}
+*/
+
+
+using UnityEngine;
+
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class IslandMesh : MonoBehaviour
+{
+    public IslandCurve islandCurve;
+
+    private Mesh mesh;
+    private Vector3[] vertices;
+    private int[] triangles;
+
+    void Awake()
+    {
+        mesh = new Mesh();
+        GetComponent<MeshFilter>().mesh = mesh;
+
+        if (islandCurve != null)
+        {
+            CreateMesh();
+        }
+    }
+
+    public void CreateMesh()
+    {
+        if (mesh == null)
+        {
+            mesh = new Mesh();
+            GetComponent<MeshFilter>().mesh = mesh;
+        }
+
+        float[,] heights = islandCurve.Heights;
+        int width = heights.GetLength(0);
+        int height = heights.GetLength(1);
+
+        vertices = new Vector3[(width + 1) * (height + 1)];
+
+        // Fill vertices
+        for (int i = 0, y = 0; y <= height; y++)
+        {
+            for (int x = 0; x <= width; x++)
+            {
+                float vertexHeight = y < height && x < width ? heights[x, y] : 0;
+                vertices[i] = new Vector3(x, vertexHeight, y);
+                i++;
+            }
+        }
+
+        // Fill triangles
+        triangles = new int[width * height * 6];
+        for (int ti = 0, vi = 0, y = 0; y < height; y++, vi++)
+        {
+            for (int x = 0; x < width; x++, ti += 6, vi++)
+            {
+                triangles[ti] = vi;
+                triangles[ti + 1] = vi + width + 1;
+                triangles[ti + 2] = vi + 1;
+                triangles[ti + 3] = vi + 1;
+                triangles[ti + 4] = vi + width + 1;
+                triangles[ti + 5] = vi + width + 2;
+            }
+        }
+
+        mesh.Clear();
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+    }
+}
+
+/*
+// IslandMesh.cs - Noise
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandMesh : MonoBehaviour
+{
+    public IslandNoise islandNoise;
+    private Vector3[] vertices;
+    private int[] triangles;
+
+    private void Start()
+    {
+        InitializeMeshData();
+        GenerateMesh();
+    }
+
+    public void InitializeMeshData()
+    {
+        islandNoise.GenerateNoise();
+        vertices = new Vector3[islandNoise.width * islandNoise.height];
+        triangles = new int[(islandNoise.width - 1) * (islandNoise.height - 1) * 6];
+    }
+
+    public void GenerateMesh()
+    {
+
+        int vertexIndex = 0;
+        int triangleIndex = 0;
+
+        float offsetX = islandNoise.width / 2.0f;
+        float offsetY = islandNoise.height / 2.0f;
+
+        for (int x = 0; x < islandNoise.width; x++)
+        {
+            for (int y = 0; y < islandNoise.height; y++)
+            {
+                // Populate vertex array + Subtract the offsets to center the mesh
+                vertices[vertexIndex] = new Vector3(x - offsetX, islandNoise.Heights[x, y], y - offsetY);
+                vertexIndex++;
+
+                // Populate triangle array
+                if (x < islandNoise.width - 1 && y < islandNoise.height - 1)
+                {
+                    int bottomLeft = x + y * islandNoise.width;
+                    int bottomRight = (x + 1) + y * islandNoise.width;
+                    int topLeft = x + (y + 1) * islandNoise.width;
+                    int topRight = (x + 1) + (y + 1) * islandNoise.width;
+
+                    // First triangle
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = topLeft;
+
+                    // Second triangle
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                }
+            }
+        }
+
+        Mesh mesh = new Mesh
+        {
+            vertices = vertices,
+            triangles = triangles
+        };
+        mesh.RecalculateNormals();
+
+        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
+        meshFilter.mesh = mesh;
+    }
+}
+*/
+
+
+public void GenerateHeightMap()
+{
+    Texture2D heightMapTexture = new Texture2D(width, height);
+    heightMapTexture.wrapMode = TextureWrapMode.Clamp;
+    heightMapTexture.filterMode = FilterMode.Point;
+
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            float pX = (float)x / width * scale;
+            float pY = (float)y / height * scale;
+            float value = noiseGenerator.Generate(pX, pY, 1.0f); // scale already applied to pX and pY
+            Debug.Log("Noise value: " + value); // Debugging line
+            Color color = new Color(value, value, value);
+            heightMapTexture.SetPixel(x, y, color);
+        }
+    }
+
+    heightMapTexture.Apply();
+
+    if (Application.isPlaying)
+    {
+        GetComponent<Renderer>().material.mainTexture = heightMapTexture;
+    }
+    else
+    {
+        GetComponent<Renderer>().sharedMaterial.mainTexture = heightMapTexture;
+    }
+}
+
+
+
+
+public float[,] GenerateLayer(int width, int height)
+{
+    // Use the width and height passed as parameters, or fall back to the properties of this class
+    int finalWidth = width > 0 ? width : this.width;
+    int finalHeight = height > 0 ? height : this.height;
+
+    // Final Size of the noise map
+    float[,] noiseMap = new float[finalWidth, finalHeight];
+
+    // Noise generation logic
+    for (int x = 0; x < finalWidth; x++)
+    {
+        for (int y = 0; y < finalHeight; y++)
+        {
+            float sampleX = x / (float)finalWidth * frequency;
+            float sampleY = y / (float)finalHeight * frequency;
+            float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * amplitude;
+            noiseMap[x, y] = perlinValue;
+            var BC = noiseMap[x, y];
+            Debug.Log("Before curve: " + noiseMap[x, y]);  // Got Logged 20000 Times
+        }
+    }
+
+    if (noiseCurve != null)
+    {
+        // Apply the curve to modulate the noise map
+        for (int x = 0; x < finalWidth; x++)
+        {
+            for (int y = 0; y < finalHeight; y++)
+            {
+                noiseMap[x, y] = noiseCurve.Evaluate(noiseMap[x, y]);
+                var VC = noiseMap[x, y];
+                Debug.Log("After curve: " + noiseMap[x, y]);  // Log the values after applying the curve
+            }
+        }
+    }
+    Debug.Log("Before curve: " + BC + "After curve: " + VC);
+    return noiseMap;
+}
+
+
+
+[CustomEditor(typeof(NoiseLayer))]
+public class NoiseLayerEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+
+        NoiseLayer noiseLayer = (NoiseLayer)target;
+
+        if (noiseLayer.previewTexture != null)
+        {
+            GUILayout.Label("Preview");
+            Rect rect = GUILayoutUtility.GetRect(100, 100);
+            EditorGUI.DrawPreviewTexture(rect, noiseLayer.previewTexture, null, ScaleMode.ScaleToFit);
+
+            // Also works
+            // EditorGUI.DrawTextureTransparent(rect, noiseLayer.previewTexture, ScaleMode.ScaleToFit);
+
+        }
+    }
+}
+
+// AI V2 - Not Accurate
+public void GeneratePreview()
+    public virtual void GeneratePreview()
+    {
+        // Logic to generate the preview texture for NoiseCurve
+        int previewWidth = 100;
+        int previewHeight = 100;
+
+        _previewTexture = new Texture2D(previewWidth, previewHeight);
+        _previewTexture.wrapMode = TextureWrapMode.Clamp;
+        _previewTexture.filterMode = FilterMode.Point;
+
+        for (int x = 0; x < previewWidth; x++)
+        {
+            float t = (float)x / (previewWidth - 1);
+            float value = curve.Evaluate(t);
+            int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+            _previewTexture.SetPixel(x, y, Color.white);
+        }
+
+        _previewTexture.Apply();
+    }
+
+
+// MY V1 - Accurate
+public virtual void GeneratePreview()
+{
+    // Logic to generate the preview texture for NoiseCurve
+
+    // Define the size of the preview texture
+    int previewWidth = 100;
+    int previewHeight = 100;
+
+    // Create a texture for the preview
+    _previewTexture = new Texture2D(previewWidth, previewHeight);
+    _previewTexture.wrapMode = TextureWrapMode.Clamp;
+    _previewTexture.filterMode = FilterMode.Point;
+
+    // Evaluate the curve at several points and plot the results on the texture
+    for (int x = 0; x < previewWidth; x++)
+    {
+        float t = (float)x / (previewWidth - 1);
+        float value = curve.Evaluate(t);
+        int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+        // Set the pixel color at the evaluated point
+        _previewTexture.SetPixel(x, y, Color.white);
+
+        // Clear the other pixels in the column
+        for (int i = 0; i < previewHeight; i++)
+        {
+            if (i != y)
+            {
+                _previewTexture.SetPixel(x, i, Color.black);
+            }
+        }
+    }
+
+    _previewTexture.Apply();
+}
+
+
+// VERSION 1 - NOT WORKING
+
+        // Evaluate the curve at several points and plot the results on the texture
+        for (int x = 0; x < previewWidth; x++)
+        {
+            float t = (float)x / (previewWidth - 1);
+            float value = curve.Evaluate(t);
+            int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+            // Set the pixel color at the evaluated point
+            _previewTexture.SetPixel(x, y, Color.white);
+
+            // Create a vertical gradient based on the line's y-position
+            for (int i = 0; i < previewHeight; i++)
+            {
+                float lerpValue = (float)i / (previewHeight - 1);
+                Color gradientColor = gradient.Evaluate(lerpValue);
+                if (i == y)
+                {
+                    _previewTexture.SetPixel(x, i, Color.white);
+                }
+                else
+                {
+                    _previewTexture.SetPixel(x, i, gradientColor);
+                }
+            }
+        }
+
+        _previewTexture.Apply();
+    }
+
+// VERSION 2 - UNTESTED
+
+        // Evaluate the curve at several points and plot the results on the texture
+        for (int x = 0; x < previewWidth; x++)
+        {
+            float t = (float)x / (previewWidth - 1);
+            float value = curve.Evaluate(t);
+            int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+            // Create a vertical gradient based on the line's y-position
+            for (int i = 0; i < previewHeight; i++)
+            {
+                float lerpValue = (float)i / (previewHeight - 1);
+                Color gradientColor = gradient.Evaluate(lerpValue);
+                _previewTexture.SetPixel(x, i, gradientColor);
+            }
+
+            // Set the pixel color at the evaluated point
+            _previewTexture.SetPixel(x, y, Color.white);
+        }
+
+        _previewTexture.Apply();
+    }
+
+
+    
+
+
+
+        public override void GeneratePreview()
+        {
+            Debug.Log("NoiseGradient GeneratePreview");
+
+            if (curve == null)
+            {
+                Debug.LogError("Curve is null. Please assign a valid AnimationCurve object.");
+                return;
+            }
+
+            // Define the size of the preview texture
+            int previewWidth = 100;
+            int previewHeight = 100;
+
+            // Create a texture for the preview
+            _previewTexture = new Texture2D(previewWidth, previewHeight);
+            _previewTexture.wrapMode = TextureWrapMode.Clamp;
+            _previewTexture.filterMode = FilterMode.Point;
+
+            // Evaluate the curve at several points and plot the results on the texture
+            for (int x = 0; x < previewWidth; x++)
+            {
+                float t = (float)x / (previewWidth - 1);
+                float value = curve.Evaluate(t);
+                int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+                // Create a vertical gradient based on the line's y-position
+                for (int i = 0; i < previewHeight; i++)
+                {
+                    float lerpValue = (float)i / (previewHeight - 1);
+                    Color gradientColor = gradient.Evaluate(lerpValue);
+                    //Debug.Log($"Gradient color at {lerpValue}: {gradientColor}");  // Print out the gradient color
+                    _previewTexture.SetPixel(x, i, gradientColor);
+                }
+
+                // Set the pixel color at the evaluated point
+                _previewTexture.SetPixel(x, y, Color.red);
+            }
+
+            _previewTexture.Apply();
+        }
+
+public override void GeneratePreview()
+{
+    Debug.Log("NoiseGradient GeneratePreview");
+
+    if (curve == null)
+    {
+        Debug.LogError("Curve is null. Please assign a valid AnimationCurve object.");
+        return;
+    }
+
+    // Define the size of the preview texture
+    int previewWidth = 100;
+    int previewHeight = 100;
+
+    // Create a texture for the preview
+    _previewTexture = new Texture2D(previewWidth, previewHeight);
+    _previewTexture.wrapMode = TextureWrapMode.Clamp;
+    _previewTexture.filterMode = FilterMode.Point;
+
+    // Evaluate the curve at several points and plot the results on the texture
+    for (int x = 0; x < previewWidth; x++)
+    {
+        float t = (float)x / (previewWidth - 1);
+        float value = curve.Evaluate(t);
+        int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+        // Get the gradient color at the y-position
+        float lerpValue = (float)y / (previewHeight - 1);
+        Color gradientColor = gradient.Evaluate(lerpValue);
+        Debug.Log($"Gradient color at {lerpValue}: {gradientColor}");  // Print out the gradient color
+
+        // Set the pixel color at the evaluated point
+        _previewTexture.SetPixel(x, y, gradientColor);
+
+        // Clear the other pixels in the column
+        for (int i = 0; i < previewHeight; i++)
+        {
+            if (i != y)
+            {
+                _previewTexture.SetPixel(x, i, Color.black);
+            }
+        }
+    }
+
+    _previewTexture.Apply();
+}
+
+
+public override void GeneratePreview()
+{
+    Debug.Log("NoiseGradient GeneratePreview");
+
+    if (curve == null)
+    {
+        Debug.LogError("Curve is null. Please assign a valid AnimationCurve object.");
+        return;
+    }
+
+    // Define the size of the preview texture
+    int previewWidth = 100;
+    int previewHeight = 100;
+
+    // Create a texture for the preview
+    _previewTexture = new Texture2D(previewWidth, previewHeight);
+    _previewTexture.wrapMode = TextureWrapMode.Clamp;
+    _previewTexture.filterMode = FilterMode.Point;
+
+    // Evaluate the curve at several points and plot the results on the texture
+    for (int x = 0; x < previewWidth; x++)
+    {
+        float t = (float)x / (previewWidth - 1);
+        float value = curve.Evaluate(t);
+        int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+        // Get the gradient color at the y-position
+        float lerpValue = (float)y / (previewHeight - 1);
+        Color gradientColor = gradient.Evaluate(lerpValue);
+        Debug.Log($"Gradient color at {lerpValue}: {gradientColor}");  // Print out the gradient color
+
+        // Set the pixel color at the evaluated point
+        _previewTexture.SetPixel(x, y, gradientColor);
+
+        // Clear the other pixels in the column
+        for (int i = 0; i < previewHeight; i++)
+        {
+            if (i != y)
+            {
+                _previewTexture.SetPixel(x, i, Color.black);
+            }
+        }
+    }
+
+    _previewTexture.Apply();
+}
+
+public override void GeneratePreview()
+{
+    Debug.Log("NoiseGradient GeneratePreview");
+
+    if (curve == null)
+    {
+        Debug.LogError("Curve is null. Please assign a valid AnimationCurve object.");
+        return;
+    }
+
+    // Define the size of the preview texture
+    int previewWidth = 100;
+    int previewHeight = 100;
+
+    // Create a texture for the preview
+    _previewTexture = new Texture2D(previewWidth, previewHeight);
+    _previewTexture.wrapMode = TextureWrapMode.Clamp;
+    _previewTexture.filterMode = FilterMode.Point;
+
+    // Evaluate the curve at several points and plot the results on the texture
+    for (int x = 0; x < previewWidth; x++)
+    {
+        float t = (float)x / (previewWidth - 1);
+        float value = curve.Evaluate(t);
+        int y = Mathf.Clamp((int)(value * (previewHeight - 1)), 0, previewHeight - 1);
+
+        // Create a horizontal gradient based on the line's y-position
+        for (int i = 0; i < previewHeight; i++)
+        {
+            float distance = Mathf.Abs(i - y);
+            float lerpValue = 1 - (distance / (previewHeight - 1));
+            Color gradientColor = gradient.Evaluate(lerpValue);
+            _previewTexture.SetPixel(x, i, gradientColor);
+        }
+
+        // Set the pixel color at the evaluated point
+        _previewTexture.SetPixel(x, y, Color.red);
+    }
+
+    _previewTexture.Apply();
+}
+
+
+
+private Texture2D Combine(Texture2D[] textures, float[] weights)
+{
+    int width = textures[0].width;
+    int height = textures[0].height;
+    Texture2D combinedTexture = new Texture2D(width, height);
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            Color combinedColor = Color.black;
+
+            for (int i = 0; i < textures.Length; i++)
+            {
+                Color color = textures[i].GetPixel(x, y);
+                combinedColor += color * weights[i];
+            }
+
+            combinedTexture.SetPixel(x, y, combinedColor);
+        }
+    }
+
+    combinedTexture.Apply();
+    return combinedTexture;
+}
+
+{
+    int width = textures[0].width;
+    int height = textures[0].height;
+    Texture2D combinedTexture = new Texture2D(width, height);
+
+    for (int x = 0; x < width; x++)
+    {
+        for (int y = 0; y < height; y++)
+        {
+            Color combinedColor = Color.black;
+
+            for (int i = 0; i < textures.Length; i++)
+            {
+                Color color = textures[i].GetPixel(x, y);
+                combinedColor += color * weights[i];
+            }
+
+            combinedTexture.SetPixel(x, y, combinedColor);
+        }
+    }
+
+    combinedTexture.Apply();
+    return combinedTexture;
+}
+
+
+
+[CreateAssetMenu(fileName = "GradientCombiner", menuName = "Gradient/GradientCombiner", order = 1)]
+public class GradientCombiner : ScriptableObject
+{
+    public Texture2D[] _textures;
+    public NoiseCurve[] _gradients;
+
+
+    /// <summary>
+    /// Combine the textures based on the given weights.
+    /// </summary>
+    /// <param name="textures">Textures to combine.</param>
+    /// <param name="weights">Weights for each texture. The length of weights should be the same as the length of textures.</param>
+    /// <returns>The combined texture.</returns>
+    public Texture2D Combine(Texture2D[] textures, float[] weights)
+    {
+        if (textures.Length == 0)
+        {
+            Debug.LogError("No textures to combine.");
+            return null;
+        }
+
+        if (textures.Length != weights.Length)
+        {
+            Debug.LogError("The length of weights should be the same as the length of textures.");
+            return null;
+        }
+
+        int width = textures[0].width;
+        int height = textures[0].height;
+        Texture2D combinedTexture = new Texture2D(width, height);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Color combinedColor = Color.black;
+
+                for (int i = 0; i < textures.Length; i++)
+                {
+                    Color color = textures[i].GetPixel(x, y);
+                    combinedColor += color * weights[i];
+                }
+
+                combinedTexture.SetPixel(x, y, combinedColor);
+            }
+        }
+
+        combinedTexture.Apply();
+        return combinedTexture;
+    }
+
+}
+
+
+// WORKING
+
+
+#region Flatten Mesh
+
+public void FlattenMesh()
+{
+    if (vertices == null || vertices.Length == 0)
+    {
+        Debug.LogError("Vertices array is null or empty. Cannot flatten mesh.");
+        return;
+    }
+
+    // Set the y-coordinate of each vertex to 0 to flatten the mesh
+    for (int i = 0; i < vertices.Length; i++)
+    {
+        vertices[i].y = 0f;
+    }
+
+    // Update the mesh
+    mesh.vertices = vertices;
+    mesh.RecalculateNormals();
+
+    // Mark the mesh for regeneration
+    MarkForRegeneration();
+}
+
+#endregion
+
+#region Reshape Mesh
+
+public void ReshapeMesh()
+{
+    if (vertices == null || vertices.Length == 0)
+    {
+        Debug.LogError("Vertices array is null or empty. Cannot reshape mesh.");
+        return;
+    }
+
+    // Pass baseWidth and baseHeight as parameters to MixNoiseStacks
+    float[,] heights = noiseMixer.MixNoiseStacks(noiseStacks, stackWeights, baseWidth, baseHeight);
+
+    if (heights == null || heights.Length == 0)
+    {
+        Debug.LogError("Heights array is null or empty. Cannot reshape mesh.");
+        return;
+    }
+
+    // Apply the height map values to the y-coordinate of each vertex
+    for (int i = 0, y = 0; y <= baseHeight; y++)
+    {
+        for (int x = 0; x <= baseWidth; x++)
+        {
+            if (y < heights.GetLength(1) && x < heights.GetLength(0))
+            {
+                vertices[i].y = heights[x, y];
+            }
+            i++;
+        }
+    }
+
+    // Update the mesh
+    mesh.vertices = vertices;
+    mesh.RecalculateNormals();
+
+    // Mark the mesh for regeneration
+    MarkForRegeneration();
+}
+
+#endregion
+
+// FALLOFF MAP CODE
+
+    // Apply falloff
+    for (int i = 0; i < finalWidth; i++)
+    {
+        for (int j = 0; j < finalHeight; j++)
+        {
+            float x = i / (float)finalWidth * 2 - 1;
+            float y = j / (float)finalHeight * 2 - 1;
+
+            float value = Mathf.Max(Mathf.Abs(x), Mathf.Abs(y));
+            noiseMap[i, j] *= FalloffGenerator.Evaluate(value);
+        }
+    }
+
+
+// NEW 
+
+public float[,] GenerateLayer(int width, int height)
+{
+    // ... (previous code)
+
+    if (noiseCurve != null)
+    {
+        // Apply the curve to modulate the noise map
+        for (int x = 0; x < finalWidth; x++)
+        {
+            for (int y = 0; y < finalHeight; y++)
+            {
+                float value = Mathf.Max(Mathf.Abs((float)x / finalWidth * 2 - 1), Mathf.Abs((float)y / finalHeight * 2 - 1));
+                noiseMap[x, y] = noiseCurve.Evaluate(value);
+            }
+        }
+    }
+
+    return noiseMap;
+}
+
+
+
+// Curve logic w. Bool
+bool defaultCurve;
+
+// Curve logic
+if (noiseCurve != null)
+{
+    // Apply the curve to modulate the noise map
+    for (int x = 0; x < finalWidth; x++)
+    {
+        for (int y = 0; y < finalHeight; y++)
+        {
+            if (defaultCurve)
+            {
+                noiseMap[x, y] = noiseCurve.Evaluate(noiseMap[x, y]);
+            }
+            else
+            {
+                float value = EvaluateCurve(x, y, finalWidth, finalHeight);
+                noiseMap[x, y] = noiseCurve.Evaluate(value);
+            }
+        }
+    }
+}
+
+
+
+public void ReshapeMesh()
+{
+    // Ensure the mesh is initialized and vertices are fetched
+    InitializeMeshData();
+
+    // Pass baseWidth and baseHeight as parameters to MixNoiseStacks
+    float[,] heights = noiseMixer.MixNoiseStacks(noiseStacks, stackWeights, baseWidth, baseHeight);
+
+    if (heights == null || heights.Length == 0)
+    {
+        Debug.LogError("Heights array is null or empty. Cannot reshape mesh.");
+        return;
+    }
+
+    // Apply the height map values to the y-coordinate of each vertex
+    for (int i = 0, y = 0; y <= baseHeight; y++)
+    {
+        for (int x = 0; x <= baseWidth; x++)
+        {
+            if (y < heights.GetLength(1) && x < heights.GetLength(0))
+            {
+                vertices[i].y = heights[x, y];
+            }
+            i++;
+        }
+    }
+
+    // Apply individual noise layers
+    if (noiseLayers != null)
+    {
+        foreach (var layer in noiseLayers)
+        {
+            float[,] layerHeights = layer.GenerateLayer(baseWidth, baseHeight);
+            for (int x = 0; x < baseWidth; x++)
+            {
+                for (int y = 0; y < baseHeight; y++)
+                {
+                    heights[x, y] += layerHeights[x, y];
+                }
+            }
+        }
+    }
+
+    // Update the mesh
+    mesh.vertices = vertices;
+    mesh.RecalculateNormals();
+
+    // Mark the mesh for regeneration
+    MarkForRegeneration();
+}
+
+
+// New
+
+public void ReshapeMesh()
+{
+    // Ensure the mesh is initialized and vertices are fetched
+    InitializeMeshData();
+
+    // Pass baseWidth and baseHeight as parameters to MixNoiseStacks
+    float[,] heights = noiseMixer.MixNoiseStacks(noiseStacks, stackWeights, baseWidth, baseHeight);
+
+    if (heights == null || heights.Length == 0)
+    {
+        Debug.LogError("Heights array is null or empty. Cannot reshape mesh.");
+        return;
+    }
+
+    // Apply the height map values to the y-coordinate of each vertex
+    for (int i = 0, y = 0; y <= baseHeight; y++)
+    {
+        for (int x = 0; x <= baseWidth; x++)
+        {
+            if (y < heights.GetLength(1) && x < heights.GetLength(0))
+            {
+                vertices[i].y = heights[x, y];
+            }
+            i++;
+        }
+    }
+
+    // Apply individual noise layers
+    if (noiseLayers != null)
+    {
+        foreach (var layer in noiseLayers)
+        {
+            float[,] layerHeights = layer.GenerateLayer(baseWidth, baseHeight);
+            for (int x = 0; x < baseWidth; x++)
+            {
+                for (int y = 0; y < baseHeight; y++)
+                {
+                    heights[x, y] += layerHeights[x, y];
+                }
+            }
+        }
+    }
+
+    // Update the mesh
+    mesh.vertices = vertices;
+    mesh.RecalculateNormals();
+
+    // Mark the mesh for regeneration
+    MarkForRegeneration();
+}
+
+
+public void ReshapeMesh()
+{
+    // Ensure the mesh is initialized and vertices are fetched
+    InitializeMeshData();
+
+    // Pass baseWidth and baseHeight as parameters to MixNoiseStacks
+    float[,] heights = noiseMixer.MixNoiseStacks(noiseStacks, stackWeights, baseWidth, baseHeight);
+
+    if (heights == null || heights.Length == 0)
+    {
+        Debug.LogError("Heights array is null or empty. Cannot reshape mesh.");
+        return;
+    }
+
+    // Apply the height map values to the y-coordinate of each vertex
+    for (int i = 0, y = 0; y <= baseHeight; y++)
+    {
+        for (int x = 0; x <= baseWidth; x++)
+        {
+            if (y < heights.GetLength(1) && x < heights.GetLength(0))
+            {
+                vertices[i].y = heights[x, y];
+            }
+            i++;
+        }
+    }
+
+    // Apply individual noise layers
+    if (noiseLayers != null)
+    {
+        foreach (var layer in noiseLayers)
+        {
+            float[,] layerHeights = layer.GenerateLayer(baseWidth, baseHeight);
+            for (int x = 0; x < baseWidth; x++)
+            {
+                for (int y = 0; y < baseHeight; y++)
+                {
+                    heights[x, y] += layerHeights[x, y];
+                }
+            }
+        }
+    }
+
+    // Update the mesh
+    mesh.vertices = vertices;
+    mesh.RecalculateNormals();
+
+    // Mark the mesh for regeneration
+    MarkForRegeneration();
+}
+
+
+using UnityEngine;
+using UnityEditor;
+
+[CustomEditor(typeof(IslandCurve))]
+public class IslandCurveEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        // Draw the default inspector
+        DrawDefaultInspector();
+
+        // Get a reference to the IslandNoise script
+        IslandCurve islandCurve = (IslandCurve)target;
+
+        // Create sliders for the parameters
+        islandCurve.octaves = EditorGUILayout.IntSlider("Octaves", islandCurve.octaves, 1, 8);
+        islandCurve.persistence = EditorGUILayout.Slider("Persistence", islandCurve.persistence, 0, 1);
+        islandCurve.lacunarity = EditorGUILayout.Slider("Lacunarity", islandCurve.lacunarity, 1, 4);
+
+        // Add a button to regenerate noise
+        if (GUILayout.Button("Generate Noise"))
+        {
+            islandCurve = (IslandCurve)target;
+            islandCurve.GenerateNoise();
+
+            // Find the IslandMesh component and regenerate the mesh
+            IslandMesh islandMesh = islandCurve.GetComponent<IslandMesh>();
+            if (islandMesh != null)
+            {
+                islandMesh.CreateMesh();
+            }
+        }
+    }
+}
+
+// 
+
+using UnityEngine;
+using UnityEditor;
+
+[CustomEditor(typeof(IslandNoise))]
+public class IslandNoiseEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        // Draw the default inspector
+        DrawDefaultInspector();
+
+        // Get a reference to the IslandNoise script
+        IslandNoise islandNoise = (IslandNoise)target;
+
+        // Create sliders for the parameters
+        islandNoise.octaves = EditorGUILayout.IntSlider("Octaves", islandNoise.octaves, 1, 8);
+        islandNoise.persistence = EditorGUILayout.Slider("Persistence", islandNoise.persistence, 0, 1);
+        islandNoise.lacunarity = EditorGUILayout.Slider("Lacunarity", islandNoise.lacunarity, 1, 4);
+
+        // Add a button to regenerate noise
+        if (GUILayout.Button("Generate Noise"))
+        {
+            islandNoise = (IslandNoise)target;
+            islandNoise.GenerateNoise();
+
+            // Find the IslandMesh component and regenerate the mesh
+            IslandMesh islandMesh = islandNoise.GetComponent<IslandMesh>();
+            if (islandMesh != null)
+            {
+                // Noise Version
+                //islandMesh.InitializeMeshData();
+                //islandMesh.GenerateMesh();
+            }
+        }
+    }
+}
+
+
+// 
+using UnityEditor;
+using UnityEngine;
+
+[CustomEditor(typeof(IslandMesh))]
+public class IslandMeshEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector(); // Draws the default inspector content
+
+        IslandMesh islandMesh = (IslandMesh)target;
+
+        if (GUILayout.Button("Generate Island"))
+        {
+            islandMesh.Initialize(); // Initialize the island mesh
+            islandMesh.MarkForRegeneration();
+            islandMesh.CreateMesh(); // Calls the CreateMesh method to regenerate the island
+        }
+    }
+}
+
+// 
+using UnityEditor;
+using UnityEngine;
+
+[CustomEditor(typeof(IslandMesh))]
+public class IslandMeshEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector(); // Draws the default inspector content
+
+        IslandMesh islandMesh = (IslandMesh)target;
+
+        if (GUILayout.Button("Generate Island"))
+        {
+            islandMesh.Initialize(); // Initialize the island mesh
+            islandMesh.MarkForRegeneration();
+        }
+    }
+}
+
+// SHORT
+// Issue: There was no size to begin with, and assuming all sizes to be the same is retarded in instant application 
+
+// LONG
+// Issue: There was no size to begin with, and assuming all sizes to be the same is so retarded, which you would realize 
+// in instant you tried the application, since you perma want to apply things of different sizes.
+ 
+// NoiseMixer.cs
+using UnityEngine;
+using System.Collections.Generic;
+
+public class NoiseMixer
+{
+
+    // Mixes Noise Stacks
+    public float[,] MixNoiseStacks(List<NoiseStack> noiseStacks, List<float> stackWeights, int width, int height)
+    {
+
+        // Note: Replace the 0,0 with actual dimensions if needed
+        // Assume that all noise stacks should have the same dimensions - So fucking dumb thing to do no clue why I thought this was a good idea ever
+        width = noiseStacks[0].layers[0].GenerateLayer(0, 0).GetLength(0);
+        height = noiseStacks[0].layers[0].GenerateLayer(0, 0).GetLength(1);
+
+        // WHY IS THIS DUMB? explaination
+        // Each Noise has a spesific purpose and role in the create of the final map.
+        // Some are compounding while others are just stacking, and some are both but
+        // Some are just a single layer while others are multiple layers at once, why
+        // this is important is because it makes it easier to understand the code for
+        // creating the final map
+
+        // this is important is because, while some serve little to almost no effect on
+        // the final outcome. Some serve alot more than others, the ones which do serve
+        // a lot more, and create bigger outcomes are more defining which lets us apply
+        // them in ways that create features that we normally otherwise wouldn't be able
+        // to do, so because of that we let them have custom sizes so we can create maps
+        // of different sizes with features of different sizes and shapes. Or that's how
+        // I atleast interprate how this works and I COULD ALWAYS BE WRONG!!!
+
+        float[,] mixedMap = new float[width, height];
+
+        // Normalize stack weights
+        float totalWeight = 0;
+        foreach (var weight in stackWeights)
+        {
+            totalWeight += weight;
+        }
+
+        for (int i = 0; i < noiseStacks.Count; i++)
+        {
+            float[,] stackMap = noiseStacks[i].GenerateStack(width, height);
+            float weight = (i < stackWeights.Count) ? stackWeights[i] : 1f;
+
+            // Combine the stack into the final map
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    mixedMap[x, y] += (stackMap[x, y] * weight) / totalWeight;
+                }
+            }
+        }
+
+        if (mixedMap == null)
+        {
+            Debug.LogError("MixedMap is null");
+            return null;
+        }
+        return mixedMap;
+    }
+
+    // Mixes Noise Maps
+    public float[,] MixNoiseMaps(List<float[,]> noiseMaps, List<float> stackWeights)
+    {
+        int width = noiseMaps[0].GetLength(0);
+        int height = noiseMaps[0].GetLength(1);
+        float[,] mixedMap = new float[width, height];
+
+        // Normalize the stack weights
+        float totalWeight = 0;
+        foreach (var weight in stackWeights)
+        {
+            totalWeight += weight;
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float mixedValue = 0;
+                for (int i = 0; i < noiseMaps.Count; i++)
+                {
+                    mixedValue += (noiseMaps[i][x, y] * stackWeights[i]) / totalWeight;
+                }
+                mixedMap[x, y] = mixedValue;
+            }
+        }
+
+        if (mixedMap == null)
+        {
+            Debug.LogError("MixedMap is null");
+            return null;
+        }
+        return mixedMap;
+    }
+}
+
+// 
+// NoiseMixer.cs
+using UnityEngine;
+using System.Collections.Generic;
+
+public class NoiseMixer
+{
+
+    // Mixes Noise Stacks
+    public float[,] MixNoiseStacks(List<NoiseStack> noiseStacks, List<float> stackWeights, int width, int height)
+    {
+
+        // Note: Replace the 0,0 with actual dimensions if needed
+        // Assume that all noise stacks should have the same dimensions - So fucking dumb thing to do no clue why I thought this was a good idea ever
+        width = noiseStacks[0].layers[0].GenerateLayer(0, 0).GetLength(0);
+        height = noiseStacks[0].layers[0].GenerateLayer(0, 0).GetLength(1);
+
+        // WHY IS THIS DUMB? explaination
+        // Each Noise has a specific purpose and role in the create of the final map.
+        // Some are compounding while others are just stacking, and some are both but
+        // Some are just a single layer while others are multiple layers at once, why
+        // this is important is because, while some serve little, to almost no effect
+        // on the final outcome.
+
+        // Ones which define more, lets us apply them in ways that creates richer and
+        // more cool looking terrain features then we normally would be able to do so
+        // because of that, we let them have custom sizes so we can create richer maps
+        // of different sizes with features of different sizes and shapes.
+
+        // Or that's how I interprate how this works & I'm semi confident (CL: 15% / 25%) 
+        // this is important is because it makes it easier to understand the code for
+        // creating the final map
+
+
+        float[,] mixedMap = new float[width, height];
+
+        // Normalize stack weights
+        float totalWeight = 0;
+        foreach (var weight in stackWeights)
+        {
+            totalWeight += weight;
+        }
+
+        for (int i = 0; i < noiseStacks.Count; i++)
+        {
+            float[,] stackMap = noiseStacks[i].GenerateStack(width, height);
+            float weight = (i < stackWeights.Count) ? stackWeights[i] : 1f;
+
+            // Combine the stack into the final map
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    mixedMap[x, y] += (stackMap[x, y] * weight) / totalWeight;
+                }
+            }
+        }
+
+        if (mixedMap == null)
+        {
+            Debug.LogError("MixedMap is null");
+            return null;
+        }
+        return mixedMap;
+    }
+
+    // Mixes Noise Maps
+    public float[,] MixNoiseMaps(List<float[,]> noiseMaps, List<float> stackWeights)
+    {
+        int width = noiseMaps[0].GetLength(0);
+        int height = noiseMaps[0].GetLength(1);
+        float[,] mixedMap = new float[width, height];
+
+        // Normalize the stack weights
+        float totalWeight = 0;
+        foreach (var weight in stackWeights)
+        {
+            totalWeight += weight;
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float mixedValue = 0;
+                for (int i = 0; i < noiseMaps.Count; i++)
+                {
+                    mixedValue += (noiseMaps[i][x, y] * stackWeights[i]) / totalWeight;
+                }
+                mixedMap[x, y] = mixedValue;
+            }
+        }
+
+        if (mixedMap == null)
+        {
+            Debug.LogError("MixedMap is null");
+            return null;
+        }
+        return mixedMap;
+    }
+}
+
+// Island Mesh Gens
+
+// IslandMesh.cs - Noise Curve 
+using UnityEngine;
+
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class IslandMesh : MonoBehaviour
+{
+    public IslandCurve islandCurve;
+
+    private Mesh mesh;
+    private Vector3[] vertices;
+    private int[] triangles;
+
+    void Awake()
+    {
+        mesh = new Mesh();
+        GetComponent<MeshFilter>().mesh = mesh;
+
+        if (islandCurve != null)
+        {
+            CreateMesh();
+        }
+    }
+
+    public void CreateMesh()
+    {
+        if (mesh == null)
+        {
+            mesh = new Mesh();
+            GetComponent<MeshFilter>().mesh = mesh;
+        }
+
+        float[,] heights = islandCurve.Heights;
+        int width = heights.GetLength(0);
+        int height = heights.GetLength(1);
+
+        vertices = new Vector3[(width + 1) * (height + 1)];
+
+        // Fill vertices
+        for (int i = 0, y = 0; y <= height; y++)
+        {
+            for (int x = 0; x <= width; x++)
+            {
+                float vertexHeight = y < height && x < width ? heights[x, y] : 0;
+                vertices[i] = new Vector3(x, vertexHeight, y);
+                i++;
+            }
+        }
+
+        // Fill triangles
+        triangles = new int[width * height * 6];
+        for (int ti = 0, vi = 0, y = 0; y < height; y++, vi++)
+        {
+            for (int x = 0; x < width; x++, ti += 6, vi++)
+            {
+                triangles[ti] = vi;
+                triangles[ti + 1] = vi + width + 1;
+                triangles[ti + 2] = vi + 1;
+                triangles[ti + 3] = vi + 1;
+                triangles[ti + 4] = vi + width + 1;
+                triangles[ti + 5] = vi + width + 2;
+            }
+        }
+
+        mesh.Clear();
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+    }
+}
+
+
+// IslandMesh.cs - Noise Map
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandMesh : MonoBehaviour
+{
+    public IslandNoise islandNoise;
+    private Vector3[] vertices;
+    private int[] triangles;
+
+    private void Start()
+    {
+        InitializeMeshData();
+        GenerateMesh();
+    }
+
+    public void InitializeMeshData()
+    {
+        islandNoise.GenerateNoise();
+        vertices = new Vector3[islandNoise.width * islandNoise.height];
+        triangles = new int[(islandNoise.width - 1) * (islandNoise.height - 1) * 6];
+    }
+
+    public void GenerateMesh()
+    {
+
+        int vertexIndex = 0;
+        int triangleIndex = 0;
+
+        float offsetX = islandNoise.width / 2.0f;
+        float offsetY = islandNoise.height / 2.0f;
+
+        for (int x = 0; x < islandNoise.width; x++)
+        {
+            for (int y = 0; y < islandNoise.height; y++)
+            {
+                // Populate vertex array + Subtract the offsets to center the mesh
+                vertices[vertexIndex] = new Vector3(x - offsetX, islandNoise.Heights[x, y], y - offsetY);
+                vertexIndex++;
+
+                // Populate triangle array
+                if (x < islandNoise.width - 1 && y < islandNoise.height - 1)
+                {
+                    int bottomLeft = x + y * islandNoise.width;
+                    int bottomRight = (x + 1) + y * islandNoise.width;
+                    int topLeft = x + (y + 1) * islandNoise.width;
+                    int topRight = (x + 1) + (y + 1) * islandNoise.width;
+
+                    // First triangle
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = topLeft;
+
+                    // Second triangle
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                }
+            }
+        }
+
+        Mesh mesh = new Mesh
+        {
+            vertices = vertices,
+            triangles = triangles
+        };
+        mesh.RecalculateNormals();
+
+        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
+        meshFilter.mesh = mesh;
+    }
+}
+
+// 
+// IslandNoise.cs - Last version That barely work
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandNoise : MonoBehaviour
+{
+    public int seed = 0;
+
+    public int width = 256;
+    public int height = 256;
+
+    public float scale = 20.0f;
+    public float mountainHeight = 10f;
+
+    [Space(10)]
+    public float centerFlatness = 0.2f;
+    public float edgeScale = 0.1f;
+    public float seaLevel = 5.0f;
+
+    [Space(10)]
+    public float shoreFalloffStrength = 1.0f;
+    public float oceanFalloffStrength = 2.0f;
+
+    [Space(10)]
+    public float shoreHeightFactor = 0.2f;
+    public float shoreScale = 0.1f;
+
+    [Space(10)]
+    public float oceanHeightFactor = 0.2f;
+    public float oceanScale = 0.1f;
+
+    private float[,] heights;
+
+    [HideInInspector] public int octaves = 4;
+    [HideInInspector] public float persistence = 0.5f;
+    [HideInInspector] public float lacunarity = 2.0f;
+
+    public float[,] Heights
+    {
+        get { return heights; }
+    }
+
+    private void Awake()
+    {
+        heights = new float[width, height];
+        GenerateNoise();
+    }
+
+    private float[,] GenerateFalloffMap()
+    {
+        float[,] map = new float[width, height];
+        Vector2 center = new Vector2(width / 2, height / 2);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), center) / (width / 2);
+
+                // This value could be adjusted based on how much of the center you want to keep flat.
+
+                if (distanceToCenter < centerFlatness)
+                {
+                    map[x, y] = 1; // No falloff at the center
+                    continue;
+                }
+
+                // For shore
+                float shoreValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, shoreFalloffStrength));
+
+                // For ocean
+                float oceanValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, oceanFalloffStrength));
+
+                // Your existing square falloff function
+                float xValue = x / (float)width * 2 - 1;
+                float yValue = y / (float)height * 2 - 1;
+                float squareValue = Evaluate(Mathf.Max(Mathf.Abs(xValue), Mathf.Abs(yValue)));
+
+                // Combine them. This is a simple example; you can use more complex functions.
+                map[x, y] = shoreValue * oceanValue * squareValue;
+            }
+        }
+
+        return map;
+    }
+
+
+    static float Evaluate(float value)
+    {
+        float a = 3;
+        float b = 2.2f;
+        return Mathf.Pow(value, a) / (Mathf.Pow(value, a) + Mathf.Pow(b - b * value, a));
+    }
+
+
+
+
+    public void GenerateNoise()
+    {
+        if (heights == null)
+        {
+            heights = new float[width, height];
+        }
+
+        Random.InitState(seed);
+        float offsetX = Random.Range(0.0f, 999.0f);
+        float offsetY = Random.Range(0.0f, 999.0f);
+
+        float[,] falloffMap = GenerateFalloffMap();
+        float[,] roughnessMap = GenerateRoughnessMap();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // This value could be adjusted based on how much of the center you want to keep flat.
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), new Vector2(width / 2, height / 2)) / (width / 2);
+                float centerAmplitude = 1.0f - Mathf.Clamp01(distanceToCenter / centerFlatness); // closer to 1 at center
+
+                float amplitude = 1;
+                float frequency = 1;
+                float noiseHeight = 0;
+
+                for (int i = 0; i < octaves; i++)
+                {
+                    float xCoord = x / (float)width * scale * frequency + offsetX;
+                    float yCoord = y / (float)height * scale * frequency + offsetY;
+
+                    float perlinValue = Mathf.PerlinNoise(xCoord, yCoord) * 2 - 1;
+                    noiseHeight += perlinValue * amplitude * centerAmplitude;  // Use centerAmplitude here
+
+                    amplitude *= persistence;
+                    frequency *= lacunarity;
+                }
+
+                // Control the roughness
+                heights[x, y] *= roughnessMap[x, y];
+
+                // Normalize the generated noise value
+                noiseHeight = Mathf.InverseLerp(-1, 1, noiseHeight); // Normalize to 0-1
+                heights[x, y] = noiseHeight * mountainHeight; // Scale to mountain height
+
+                // Control the roughness
+                heights[x, y] *= roughnessMap[x, y];
+
+                // Apply the falloff map
+                heights[x, y] *= falloffMap[x, y];
+
+                // Add the shore and shore to ocean area
+                float shoreNoise = Mathf.PerlinNoise(x / (float)width * shoreScale, y / (float)height * shoreScale);
+                heights[x, y] *= 1 + shoreNoise * shoreHeightFactor;
+
+                // Add the ocean and ocean to abyss area
+                float oceanNoise = Mathf.PerlinNoise(x / (float)width * oceanScale, y / (float)height * oceanScale);
+                heights[x, y] *= 1 + oceanNoise * oceanHeightFactor;
+
+                // Potential changes for making the center of the island less uneven
+                float centerLimit = 0.3f;  // You can adjust this value
+                if (distanceToCenter < centerLimit)
+                {
+                    noiseHeight *= 0.5f;  // Reduce the noise effect at the center
+                }
+
+                // Potential changes for controlling the edges between shore and ocean
+                if (distanceToCenter > 0.8f)  // This could be a configurable parameter
+                {
+                    // Apply some logic here to control the transition
+                    float edgeControl = Mathf.PerlinNoise(x * edgeScale, y * edgeScale);
+                    heights[x, y] *= edgeControl;
+                }
+
+                // Potential changes for the slope at the corners
+                bool isCorner = (x < width * 0.2f && y < height * 0.2f) || // bottom-left corner
+                                (x > width * 0.8f && y < height * 0.2f) || // bottom-right corner
+                                (x < width * 0.2f && y > height * 0.8f) || // top-left corner
+                                (x > width * 0.8f && y > height * 0.8f);   // top-right corner
+
+                if (isCorner)
+                {
+                    // Apply some logic to make the slope steeper
+                    heights[x, y] *= 0.7f;  // Reduce the height at the corners
+                }
+            }
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // Raise the entire island above sea level
+                heights[x, y] += seaLevel;
+            }
+        }
+    }
+
+    private float[,] GenerateRoughnessMap()
+    {
+        // Generate a Perlin noise map that will control the roughness
+        // You can adjust the scale and other parameters
+        float[,] map = new float[width, height];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float xCoord = x / (float)width * scale;
+                float yCoord = y / (float)height * scale;
+                map[x, y] = Mathf.PerlinNoise(xCoord, yCoord);
+            }
+        }
+        return map;
+    }
+}
+
+
+
+// 
+// IslandNoise.cs - Older version That did work
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandNoise : MonoBehaviour
+{
+    public int seed = 0;
+
+    public int width = 256;
+    public int height = 256;
+
+    public float scale = 20.0f;
+    public float mountainHeight = 10f;
+
+    [Space(10)]
+    public float centerFlatness = 0.2f;
+    public float centerLimit = 0.3f;
+    public float edgeScale = 0.1f;
+    public float OceanEdgeLength = 0.9f;
+    public float seaLevel = 5.0f;
+
+    [Space(10)]
+    public float shoreFalloffStrength = 1.0f;
+    public float oceanFalloffStrength = 2.0f;
+
+    [Space(10)]
+    public float shoreHeightFactor = 0.2f;
+    public float shoreScale = 0.1f;
+
+    [Space(10)]
+    public float oceanHeightFactor = 0.2f;
+    public float oceanScale = 0.1f;
+
+    private float[,] heights;
+
+    [HideInInspector] public int octaves = 4;
+    [HideInInspector] public float persistence = 0.5f;
+    [HideInInspector] public float lacunarity = 2.0f;
+
+    public float[,] Heights
+    {
+        get { return heights; }
+    }
+
+    private void Awake()
+    {
+        heights = new float[width, height];
+        GenerateNoise();
+    }
+
+    private float[,] GenerateFalloffMap()
+    {
+        float[,] map = new float[width, height];
+        Vector2 center = new Vector2(width / 2, height / 2);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), center) / (width / 2);
+
+                // This value could be adjusted based on how much of the center you want to keep flat.
+
+                if (distanceToCenter < centerFlatness)
+                {
+                    map[x, y] = 1; // No falloff at the center
+                    continue;
+                }
+
+                // For shore
+                float shoreValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, shoreFalloffStrength));
+
+                // For ocean
+                float oceanValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, oceanFalloffStrength));
+
+                // Your existing square falloff function
+                float xValue = x / (float)width * 2 - 1;
+                float yValue = y / (float)height * 2 - 1;
+                float squareValue = Evaluate(Mathf.Max(Mathf.Abs(xValue), Mathf.Abs(yValue)));
+
+                // Combine them. This is a simple example; you can use more complex functions.
+                map[x, y] = shoreValue * oceanValue * squareValue;
+            }
+        }
+
+        return map;
+    }
+
+
+    static float Evaluate(float value)
+    {
+        float a = 3;
+        float b = 2.2f;
+        return Mathf.Pow(value, a) / (Mathf.Pow(value, a) + Mathf.Pow(b - b * value, a));
+    }
+
+
+
+
+    public void GenerateNoise()
+    {
+        if (heights == null)
+        {
+            heights = new float[width, height];
+        }
+
+        Random.InitState(seed);
+        float offsetX = Random.Range(0.0f, 999.0f);
+        float offsetY = Random.Range(0.0f, 999.0f);
+
+        float[,] falloffMap = GenerateFalloffMap();
+        float[,] roughnessMap = GenerateRoughnessMap();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // This value could be adjusted based on how much of the center you want to keep flat.
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), new Vector2(width / 2, height / 2)) / (width / 2);
+                float centerAmplitude = 1.0f - Mathf.Clamp01(distanceToCenter / centerFlatness); // closer to 1 at center
+
+                float amplitude = 1;
+                float frequency = 1;
+                float noiseHeight = 0;
+
+                for (int i = 0; i < octaves; i++)
+                {
+                    float xCoord = x / (float)width * scale * frequency + offsetX;
+                    float yCoord = y / (float)height * scale * frequency + offsetY;
+
+                    float perlinValue = Mathf.PerlinNoise(xCoord, yCoord) * 2 - 1;
+                    noiseHeight += perlinValue * amplitude * centerAmplitude;  // Use centerAmplitude here
+
+                    amplitude *= persistence;
+                    frequency *= lacunarity;
+                }
+
+                // Normalize the generated noise value
+                noiseHeight = Mathf.InverseLerp(-1, 1, noiseHeight); // Normalize to 0-1
+
+                // For making the center of the island less uneven but above water
+                if (distanceToCenter < centerLimit)
+                {
+                    noiseHeight *= 0.5f;  // Increase the noise effect at the center
+                }
+
+                // Scale to mountain height
+                heights[x, y] = noiseHeight * mountainHeight;
+
+                // Control the roughness
+                heights[x, y] *= roughnessMap[x, y];
+
+                //  If there only was a way to clamp roughness to the edge
+                //  before the shores edge to stop it before it reached the
+                //  middle of the islands core. And if you could scale the
+                //  Parameters somehow.
+
+                // For controlling the edges between shore and ocean
+                if (distanceToCenter > OceanEdgeLength)  // This could be a configurable parameter
+                {
+                    // Apply some logic here to control the transition
+                    float edgeControl = Mathf.PerlinNoise(x * edgeScale, y * edgeScale);
+                    heights[x, y] *= edgeControl;
+                }
+
+                // Potential changes for the slope at the corners
+                bool isCorner = (x < width * 0.2f && y < height * 0.2f) || // bottom-left corner
+                                (x > width * 0.8f && y < height * 0.2f) || // bottom-right corner
+                                (x < width * 0.2f && y > height * 0.8f) || // top-left corner
+                                (x > width * 0.8f && y > height * 0.8f);   // top-right corner
+
+                if (isCorner)
+                {
+                    // Apply some logic to make the slope steeper
+                    heights[x, y] *= 0.7f;  // Reduce the height at the corners
+                }
+
+                // Apply the falloff map
+                heights[x, y] *= falloffMap[x, y];
+
+                // Add the shore and shore to ocean area
+                float shoreNoise = Mathf.PerlinNoise(x / (float)width * shoreScale, y / (float)height * shoreScale);
+                heights[x, y] *= 1 + shoreNoise * shoreHeightFactor;
+
+                // Add the ocean and ocean to abyss area
+                float oceanNoise = Mathf.PerlinNoise(x / (float)width * oceanScale, y / (float)height * oceanScale);
+                heights[x, y] *= 1 + oceanNoise * oceanHeightFactor;
+            }
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // Raise the entire island above sea level
+                heights[x, y] += seaLevel;
+            }
+        }
+    }
+
+    private float[,] GenerateRoughnessMap()
+    {
+        // Generate a Perlin noise map that will control the roughness
+        // You can adjust the scale and other parameters
+        float[,] map = new float[width, height];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float xCoord = x / (float)width * scale;
+                float yCoord = y / (float)height * scale;
+                map[x, y] = Mathf.PerlinNoise(xCoord, yCoord);
+            }
+        }
+        return map;
+    }
+}
+
+
+// 
+// IslandNoise.cs - Newer Version that never worked
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class IslandNoise : MonoBehaviour
+{
+    public int seed = 0;
+
+    public int width = 256;
+    public int height = 256;
+
+    public float scale = 20.0f;
+    public float mountainHeight = 10f;
+
+    [Space(10)]
+    public float centerFlatness = 0.2f;
+    public float edgeScale = 0.1f;
+    public float seaLevel = 5.0f;
+
+    [Space(10)]
+    public float shoreFalloffStrength = 1.0f;
+    public float oceanFalloffStrength = 2.0f;
+
+    [Space(10)]
+    public float shoreHeightFactor = 0.2f;
+    public float shoreScale = 0.1f;
+
+    [Space(10)]
+    public float oceanHeightFactor = 0.2f;
+    public float oceanScale = 0.1f;
+
+    private float[,] heights;
+
+    [HideInInspector] public int octaves = 4;
+    [HideInInspector] public float persistence = 0.5f;
+    [HideInInspector] public float lacunarity = 2.0f;
+
+    public float[,] Heights
+    {
+        get { return heights; }
+    }
+
+    private void Awake()
+    {
+        heights = new float[width, height];
+        GenerateNoise();
+    }
+
+    public void GenerateNoise()
+    {
+        if (heights == null)
+        {
+            heights = new float[width, height];
+        }
+
+        InitializeHeights();
+
+        ApplyBasePerlinNoise();
+        ApplyRoughness();
+        ApplyFalloff();
+        ApplyShoreAndOceanNoise();
+        ApplySpecialConditions();
+        RaiseAboveSeaLevel();
+    }
+    public void InitializeHeights()
+    {
+        if (heights == null)
+        {
+            heights = new float[width, height];
+        }
+        Random.InitState(seed);
+    }
+    private float[,] GenerateFalloffMap()
+    {
+        float[,] map = new float[width, height];
+        Vector2 center = new Vector2(width / 2, height / 2);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), center) / (width / 2);
+
+                // This value could be adjusted based on how much of the center you want to keep flat.
+
+                if (distanceToCenter < centerFlatness)
+                {
+                    map[x, y] = 1; // No falloff at the center
+                    continue;
+                }
+
+                // For shore
+                float shoreValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, shoreFalloffStrength));
+
+                // For ocean
+                float oceanValue = Mathf.Clamp01(1 - Mathf.Pow(distanceToCenter, oceanFalloffStrength));
+
+                // Your existing square falloff function
+                float xValue = x / (float)width * 2 - 1;
+                float yValue = y / (float)height * 2 - 1;
+                float squareValue = Evaluate(Mathf.Max(Mathf.Abs(xValue), Mathf.Abs(yValue)));
+
+                // Combine them. This is a simple example; you can use more complex functions.
+                map[x, y] = shoreValue * oceanValue * squareValue;
+            }
+        }
+
+        return map;
+    }
+
+
+    static float Evaluate(float value)
+    {
+        float a = 3;
+        float b = 2.2f;
+        return Mathf.Pow(value, a) / (Mathf.Pow(value, a) + Mathf.Pow(b - b * value, a));
+    }
+
+    private void ApplyBasePerlinNoise()
+    {
+        if (heights == null)
+        {
+            heights = new float[width, height];
+        }
+
+        Random.InitState(seed);
+        float offsetX = Random.Range(0.0f, 999.0f);
+        float offsetY = Random.Range(0.0f, 999.0f);
+
+        float amplitude = 1;
+        float frequency = 1;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), new Vector2(width / 2, height / 2)) / (width / 2);
+                float centerAmplitude = 1.0f - Mathf.Clamp01(distanceToCenter / centerFlatness);
+
+                float noiseHeight = 0;
+
+                for (int i = 0; i < octaves; i++)
+                {
+                    float xCoord = x / (float)width * scale * frequency + offsetX;
+                    float yCoord = y / (float)height * scale * frequency + offsetY;
+
+                    float perlinValue = Mathf.PerlinNoise(xCoord, yCoord) * 2 - 1;
+                    noiseHeight += perlinValue * amplitude * centerAmplitude;
+
+                    amplitude *= persistence;
+                    frequency *= lacunarity;
+                }
+
+                noiseHeight = Mathf.InverseLerp(-1, 1, noiseHeight);
+                heights[x, y] = noiseHeight * mountainHeight;
+            }
+        }
+    }
+
+    private void ApplyRoughness()
+    {
+        float[,] roughnessMap = GenerateRoughnessMap();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                heights[x, y] *= roughnessMap[x, y];
+            }
+        }
+    }
+
+    private void ApplyFalloff()
+    {
+        float[,] falloffMap = GenerateFalloffMap();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                heights[x, y] *= falloffMap[x, y];
+            }
+        }
+    }
+
+    private void ApplyShoreAndOceanNoise()
+    {
+        // logic to apply shore and ocean noise
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float shoreNoise = Mathf.PerlinNoise(x / (float)width * shoreScale, y / (float)height * shoreScale);
+                heights[x, y] *= 1 + shoreNoise * shoreHeightFactor;
+
+                float oceanNoise = Mathf.PerlinNoise(x / (float)width * oceanScale, y / (float)height * oceanScale);
+                heights[x, y] *= 1 + oceanNoise * oceanHeightFactor;
+            }
+        }
+    }
+
+    private void ApplySpecialConditions()
+    {
+        // logic for special conditions like corners and edges
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float distanceToCenter = Vector2.Distance(new Vector2(x, y), new Vector2(width / 2, height / 2)) / (width / 2);
+                if (distanceToCenter < 0.3f)
+                {
+                    heights[x, y] *= 0.5f;
+                }
+
+                if (distanceToCenter > 0.8f)
+                {
+                    float edgeControl = Mathf.PerlinNoise(x * edgeScale, y * edgeScale);
+                    heights[x, y] *= edgeControl;
+                }
+
+                bool isCorner = (x < width * 0.2f && y < height * 0.2f) ||
+                                (x > width * 0.8f && y < height * 0.2f) ||
+                                (x < width * 0.2f && y > height * 0.8f) ||
+                                (x > width * 0.8f && y > height * 0.8f);
+
+                if (isCorner)
+                {
+                    heights[x, y] *= 0.7f;
+                }
+            }
+        }
+    }
+
+    private void RaiseAboveSeaLevel()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                heights[x, y] += seaLevel;
+            }
+        }
+    }
+
+    private float[,] GenerateRoughnessMap()
+    {
+        // Generate a Perlin noise map that will control the roughness
+        // You can adjust the scale and other parameters
+        float[,] map = new float[width, height];
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float xCoord = x / (float)width * scale;
+                float yCoord = y / (float)height * scale;
+                map[x, y] = Mathf.PerlinNoise(xCoord, yCoord);
+            }
+        }
+        return map;
+    }
+}
+
+
+
+// 
+using CodeMonkey;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+/*  File Role: Creating the map of the game 
+
+    Author: Sten
+
+    The MapManager script is responsible for creating 
+    the map of the game. It creates the islands, sets 
+    their positions, and creates the borders around them. 
+    It also handles clicking on an island to select it 
+    and displaying the name and resources of the island 
+    in the UI.
+
+*/
+
+// tldr: responsible for spawning in the islands
+
+public class MapManager : MonoBehaviour
+{
+    #region Map Variables
+
+    // Spawn Patterns
+    [System.Serializable]
+    public class PatternData
+    {
+        [SerializeField]
+        internal string displayName = "My Custom Name";
+
+        public SpawnPattern spawnPattern;
+        public string patternName;
+        public string patternDescription;
+    }
+
+    public enum SpawnPattern
+    {
+        Singular,
+        Linear,
+        Circular,
+        Square,
+        Normal,
+        Medium,
+        Large,
+    }
+
+    [Header("Spawn Patterns")]
+    public List<PatternData> patternDataList;
+    [Space]
+    public SpawnPattern selectedSpawnPattern;
+
+
+    // Prefabs ... (and below the rest of your variables)
+    [SerializeField] private GameObject islandPrefab; // The Current Island Object 
+    [SerializeField] private GameObject waterObject; // Assuming that waterObject is a reference to the water game object
+    [SerializeField] private IslandConfiguration islandConfig; // Assuming that IslandConfig is a reference to the IslandConfiguration scriptable object
+
+    //[Range(0, 7)] // Add Later
+    public int numberOfIslands;
+    public List<Island> islands { get; private set; }
+    private int nextIslandID;
+    private GameManager gameManager;
+    [Space]
+    [SerializeField] private bool WaterOnStart;
+    [SerializeField] private float waterHeight = 0f; // Replace with the correct height of your water
+
+    [Space]
+
+
+    [Space]
+    [Header("Square Patterns Only")]
+    [Tooltip("Square Patterns Only")]
+    [SerializeField] private float islandSpacing = 20f;
+    [SerializeField] private float islandSize = 10f;
+    [SerializeField] private int IslandHeight;
+
+    private float xOffset, zOffset; // Calculate the offset needed to start the islands in the center of the scene
+
+    [Header("Island Selection")]
+    public bool invertSelection;
+
+    [Tooltip("Max Island Amount: 49")]
+    public List<int> currentIslandSelection; // Current Selected Islands
+
+    #endregion
+
+    #region Start Methods
+
+    // Set Island Spawning Settings - Spawn Patterns 
+
+    void Start()
+    {
+
+        this.waterObject.SetActive(WaterOnStart);
+        waterObject.transform.localPosition = new Vector3(0f, waterHeight, 0f);
+
+        islands = new List<Island>();
+        nextIslandID = 1;
+        gameManager = FindObjectOfType<GameManager>();
+
+        // Creates Island Game Object
+        // > Start 
+
+        switch (selectedSpawnPattern)
+        {
+            case SpawnPattern.Singular: // DEV ONLY
+                // Singular Spawn
+                for (int i = 0; i < 1; i++)
+                {
+                    // Singular Spawn
+                    // Generate a Single new island
+                    invertSelection = false;
+                    IslandData islandData = new IslandData();
+                    islandData.islandType = IslandType.None;
+                    islandData.bounds = new Bounds(new Vector3(i * 0, 0, 0), new Vector3(10, 10, 10));
+                    islandData.id = i + 1;
+                    islandData.name = "Island " + 1;
+
+                    AddIsland(islandData);
+                }
+                break;
+
+            case SpawnPattern.Linear: // DEV ONLY
+                // Linear Spawn
+                for (int i = 0; i < numberOfIslands; i++)
+                {
+                    // Linear Spawn
+                    // Generate a islands in a row
+                    IslandData islandData = new IslandData();
+                    islandData.islandType = IslandType.None;
+                    islandData.buildings = new List<Building>();
+                    islandData.items = new Dictionary<ItemData, int>();
+                    islandData.bounds = new Bounds(new Vector3(i * 20, 0, 0), new Vector3(10, 10, 10));
+                    islandData.id = i + 1;
+                    islandData.name = "Island " + (i + 1);
+
+                    AddIsland(islandData);
+                }
+                break;
+
+            case SpawnPattern.Circular: // DEV ONLY
+                // Circular Spawn
+                float worldLimit = 100f; // Define your world limit here
+                float angleIncrement = 360f / numberOfIslands;
+
+                for (int i = 0; i < numberOfIslands; i++)
+                {
+                    // Calculate the island's position in a circular pattern
+                    float angle = i * angleIncrement * Mathf.Deg2Rad;
+                    Vector3 islandPosition = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (worldLimit / 2);
+
+                    // 1. Generate a new island
+                    IslandData islandData = new IslandData();
+
+                    // 2. Set the new island's data
+                    islandData.islandType = IslandType.None;
+                    islandData.buildings = new List<Building>();
+                    islandData.items = new Dictionary<ItemData, int>();
+                    islandData.bounds = new Bounds(islandPosition, new Vector3(10, 10, 10));
+                    islandData.id = i + 1;
+                    islandData.name = "Island " + (i + 1);
+
+                    AddIsland(islandData);
+                }
+                break;
+
+            case SpawnPattern.Square: // DEV ONLY
+                // Square Spawn
+                int currentIsland = 0;
+                float halfIslands = numberOfIslands / 2f;
+                float xOffset = (halfIslands - 0.5f) * islandSpacing;
+                float zOffset = (halfIslands - 0.5f) * islandSpacing;
+
+                for (int i = 0; i < numberOfIslands; i++)
+                {
+                    for (int j = 0; j < numberOfIslands; j++)
+                    {
+                        // Generate a new island
+                        IslandData islandData = new IslandData();
+                        islandData.islandType = IslandType.None;
+                        //islandData.buildings = new List<Building>();
+
+                        // Set the position and size of the island's bounds
+                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset, 0, j * islandSpacing - zOffset);
+                        Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
+
+                        // Set the remaining data for the island
+                        islandData.bounds = islandBounds;
+                        islandData.id = currentIsland + 1;
+                        islandData.name = "Island " + (currentIsland + 1);
+
+                        // Add the island to the game world
+                        AddIsland(islandData);
+
+                        currentIsland++;
+                    }
+                }
+                break;
+            case SpawnPattern.Normal: // FINAL VERSION
+                // Square Spawn + Normal Sized Orbitor Islands
+                currentIsland = 0;
+                halfIslands = numberOfIslands / 2f;
+                xOffset = (halfIslands - 0.5f) * islandSpacing;
+                zOffset = (halfIslands - 0.5f) * islandSpacing;
+
+                // Add Islands Loop
+                for (int i = 0; i < numberOfIslands; i++)
+                {
+                    for (int j = 0; j < numberOfIslands; j++)
+                    {
+                        // Create New Data
+                        IslandData islandData = new IslandData();
+
+                        // Set the position
+                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset, 0, j * islandSpacing - zOffset);
+
+                        // Set Size 
+                        // Yet to be a Fully Written, "Game Option / Player Setting
+
+                        // Set island type
+                        islandData.islandType = IslandType.None;
+
+                        // Set buildings
+                        islandData.buildings = new List<Building>();
+
+                        // Set items
+                        islandData.items = new Dictionary<ItemData, int>();
+
+                        // Set the bounds
+                        Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
+
+                        // Set the remaining data for the island
+                        islandData.bounds = islandBounds;
+
+                        islandData.id = currentIsland + 1;
+
+                        islandData.name = "Island " + (currentIsland + 1);
+
+                        // Generate Island Data
+
+                        // Add the island to the game world
+                        AddIsland(islandData);
+
+                        currentIsland++;
+
+                    }
+                }
+
+                // Creates Island Game Object
+                // > Complete
+
+                // Add Water Operation
+                // Start - Complete
+
+                // Add Plataeu Operation
+                // Start - Complete
+
+                // Initialize Start Game Session
+                // gameManager.StartGameSession(string Name,int GameSpeed, Bool WinCon);
+
+                // If WinCon exists 
+                // false: gameManager.LoseGameSession();
+                // true: gameManager.WinGameSession();
+
+                // And then End Game Session
+                // gameManager.EndGameSession();
+
+
+                break;
+
+            /*
+            case SpawnPattern.Medium:
+                // Circular Spawn
+                // Your existing code for Circular Spawn
+                break;
+
+            case SpawnPattern.Large:
+                // Custom1 Spawn
+                // Your code for Custom1 Spawn
+                break;
+            */
+
+            default:
+                Debug.LogError("Incomplete or Invalid Spawn Pattern Selected!");
+                Debug.LogWarning("Select New a Valid or Complete Pattern next time!");
+                break;
+        }
+    }
+    #endregion
+
+    #region Island +/- Methods 
+
+    // IMPORTANT: USES SPAWN PATTERNS 
+    public void AddIsland(IslandData data)
+    {
+        if (currentIslandSelection.Contains(nextIslandID) && !invertSelection)
+        {
+            nextIslandID++;
+            return;
+        }
+
+        if (!currentIslandSelection.Contains(nextIslandID) && invertSelection)
+        {
+            nextIslandID++;
+            return;
+        }
+
+        Island island = new Island(data.islandType);
+
+        island.islandConfig = islandConfig;  // Assign the appropriate IslandConfiguration here - Doesn't work, not sure why
+
+        // Add Buildings at the games start to the island
+        island.buildings = data.buildings;
+
+        // Add Raw Resources & Seed items to the island
+        island.IslandItems = data.items;
+
+        island.bounds = data.bounds;
+        island.id = GetNextIslandID(); // set the id of the island
+
+        // Create new game object for the island
+        GameObject islandGO = Instantiate(islandPrefab);
+        islandGO.transform.position = island.bounds.center;
+        islandGO.name = data.name;
+
+        // islandGO.transform.parent = this.transform; // island = transform.root.gameObject.GetComponent<Island>();
+
+        // Set the GameObject reference in the Island class
+        island.islandObject = islandGO;
+
+        islands.Add(island); // adds the island to the MapManager private list after the ID has been assigned
+
+        // Create the grid for the island
+        GridSystem gridSystem = islandGO.GetComponent<GridSystem>();
+    }
+
+    public void RemoveIsland(Island island)
+    {
+        islands.Remove(island);
+    }
+
+    #endregion
+
+    #region Remove Selection Methods
+    public void RemoveSelectedIslands(bool invertSelection)
+    {
+        List<Island> islandsToRemove = new List<Island>();
+
+        // Add the islands to remove based on the current selection
+        foreach (Island island in islands)
+        {
+            if (currentIslandSelection.Contains(island.id) && !invertSelection)
+            {
+                islandsToRemove.Add(island);
+            }
+            else if (!currentIslandSelection.Contains(island.id) && invertSelection)
+            {
+                islandsToRemove.Add(island);
+            }
+        }
+
+        // Remove the selected islands
+        foreach (Island island in islandsToRemove)
+        {
+            RemoveIsland(island);
+        }
+    }
+    #endregion
+
+    #region Set Island Id
+    private int GetNextIslandID()
+    {
+        //Debug.Log("nextIslandID = " + nextIslandID);
+        return nextIslandID++;
+    }
+    #endregion
+
+    #region Get Island Methods
+
+    // Unique Id 
+    public Island GetIslandUID(string ID)
+    {
+        return islands.Find(island => island.ID == ID);
+    }
+    // Spawn Id
+    public Island GetIslandSID(int id)
+    {
+        return islands.Find(island => island.id == id);
+    }
+
+    public Island GetIslandByName(string name)
+    {
+        return islands.Find(island => island.islandName == name);
+    }
+
+    public IslandType GetCurrentIslandType(Vector3 playerPosition)
+    {
+        foreach (Island island in islands)
+        {
+            if (island.bounds.Contains(playerPosition))
+            {
+                return island.islandType;
+            }
+        }
+
+        return IslandType.None;
+    }
+    #endregion
+}
+
+
+// 
+public float[,] GenerateLayer(int width, int height)
+{
+    // Use the width and height passed as parameters, or fall back to the properties of this class
+    int finalWidth = width > 0 ? width : this.width;
+    int finalHeight = height > 0 ? height : this.height;
+
+    // Final Size of the noise map
+    float[,] noiseMap = new float[finalWidth, finalHeight];
+
+    // Noise generation logic
+    for (int x = 0; x < finalWidth; x++)
+    {
+        for (int y = 0; y < finalHeight; y++)
+        {
+            float sampleX = x / (float)finalWidth * frequency;
+            float sampleY = y / (float)finalHeight * frequency;
+            float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * amplitude;
+            noiseMap[x, y] = perlinValue;
+            var BC = noiseMap[x, y];
+            Debug.Log("Before curve: " + noiseMap[x, y]);  // Got Logged 20000 Times
+        }
+    }
+
+    if (noiseCurve != null)
+    {
+        // Apply the curve to modulate the noise map
+        for (int x = 0; x < finalWidth; x++)
+        {
+            for (int y = 0; y < finalHeight; y++)
+            {
+                noiseMap[x, y] = noiseCurve.Evaluate(noiseMap[x, y]);
+                var VC = noiseMap[x, y];
+                Debug.Log("After curve: " + noiseMap[x, y]);  // Log the values after applying the curve
+            }
+        }
+    }
+    Debug.Log("Before curve: " + BC + "After curve: " + VC);
+    return noiseMap;
+}
+// 
+
+// 

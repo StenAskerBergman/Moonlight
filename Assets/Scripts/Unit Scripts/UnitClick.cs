@@ -18,8 +18,8 @@ public class UnitClick : MonoBehaviour
 
     private Camera myCam;
     public GameObject groundMarker;
-    //public bool Blinked;
-    //public GameObject GroundMarkerGraphics;
+    public bool Blinked;
+    public GameObject GroundMarkerGraphics;
 
     private const float SelectionRange = 50.0f;
     public LayerMask clickable;
@@ -44,25 +44,27 @@ public class UnitClick : MonoBehaviour
 
             //if(Physics.Raycast(ray, out hit, Mathf.Infinity, clickable))
 
-            if (Physics.Raycast(ray, out hit, SelectionRange, clickable))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, clickable))
             {
                 // if we hit a clickable object
                 if(Input.GetKey(KeyCode.LeftShift))
                 {
                     //Shift Clicked
                     UnitSelections.Instance.ShiftClickSelect(hit.collider.GetComponent<Unit>());
+                    Debug.Log("Shift Clicked");
                 }
                 else
                 {
                     //Normal Click
-                    UnitSelections.Instance.ShiftClickSelect(hit.collider.GetComponent<Unit>());
+                    UnitSelections.Instance.ClickSelect(hit.collider.GetComponent<Unit>());
+
                 }
             }
             else
             {
                 if (!Input.GetKey(KeyCode.LeftShift)) 
                 { 
-                UnitSelections.Instance.DeselectAll();
+                    UnitSelections.Instance.DeselectAll();
                 }
             }
         }
@@ -89,12 +91,12 @@ public class UnitClick : MonoBehaviour
                 groundMarker.transform.position = hit.point;
                 StartCoroutine(BlinkCoroutine());
 
-                //Debug.Log("Hit.point Location: " + hit.point);
+                Debug.Log("Hit.point Location: " + hit.point);
 
                 //groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint = true;
                 //Debug.Log("ClickMarker.unit_waypoint =" + groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint);
 
-                /*
+               /*
                  * Old Code Didn't work
                  * 
                  * groundMarker.SetActive(false);

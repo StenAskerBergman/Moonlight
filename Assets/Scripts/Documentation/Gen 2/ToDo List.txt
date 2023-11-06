@@ -1,0 +1,327 @@
+
+Issue List:
+> Concurrency
+> Granularity
+> Ownership
+
+----------------------------------------------------------------------------------
+(0) System Progress
+----------------------------------------------------------------------------------
+
+> Item System - Status: Work in Progress
+
+Tasks: Add All Items + All Item 
+Efforts: High
+
+----------------------------------------------------------------------------------
+
+> User Interface - Status: Work in Progress
+
+Tasks: Create New Menu System for Looking at Inventories    
+Efforts: High
+
+----------------------------------------------------------------------------------
+
+> Inventory System - Status: Work in Progress
+
+Tasks: Finish Creating the New Inventory System
+Efforts: Medium
+
+----------------------------------------------------------------------------------
+
+> Ownership System - Status: Zilch
+
+Tasks: Create New Ownership System for inventories
+Efforts: High
+
+----------------------------------------------------------------------------------
+
+> Manager System - Status: Work in Progress
+
+Tasks: Finish Creating the New Manager System
+Efforts: Medium
+
+----------------------------------------------------------------------------------
+Other Tasks:
+1. Connect UI Manager w. New Item System
+2. Connect Building Checker w. New Item System
+3. Connect Building Placer w. New Item System
+4. Connect Building Placer w. New Inventory System
+5. Resolve all Errors in console 
+----------------------------------------------------------------------------------
+
+Input System:
+> Storage Abstract : Subclasses
+> Storage Managers Abstract : Subclasses
+> Inventory Abstract : Subclasses
+----------------------------------------------------------------------------------
+(1) Item System
+----------------------------------------------------------------------------------
+ Meta Description of the entire system, and all of its 
+ sub systems. First off, we are using MVC Model here.
+
+ MVC (Model-View-Controller) design pattern:
+
+    Model: Storage 
+    (Stores data & state of items)
+
+    View: Inventory 
+    (Interactions & interface of data)
+
+    Controller: StorageManager 
+    (Events & Manipulations of the data)
+
+> Model
+Storage: This is the fundamental system where items, 
+resources, or data are stored. Think of it like a 
+database or a container. 
+
+Its primary concern is the efficient, safe, and 
+organized storage of items. It doesn't necessarily 
+care how the items are accessed, only that they are 
+stored correctly.
+
+Therefore Invalid Storage should result in an error;
+A error the Storage Manager is responsible to handle.
+
+> View
+Inventory: This is the interface or the access point 
+for the player. It's what the player sees & interacts 
+with. 
+
+The inventory provides a representation of what
+is in the storage, and when the player wants to do 
+something (like use an item, move an item, etc.), the 
+inventory communicates with the Storage Manager to 
+make that happen.
+
+> Controller
+Storage Manager: This is the intermediary that knows 
+how to perform operations on the storage. It can add 
+items, remove items, check for capacity, etc. 
+
+The Storage Manager essentially controls and manages 
+the storage, ensuring that all operations are valid 
+and that the integrity of the storage is maintained.
+
+
+ 1. Storage.cs (Abstract Class) (Done)
+	
+	This would be the base class for all storage types. 
+	It contains the actual data or the items and their 
+	quantities.
+
+	Status: Created, but not yet tested or implemented.
+
+ 1.1 Sub Classes (Half Done)
+
+		a. IslandStorage.cs         - This is the storage for one island. 
+		c. BuildingStorage.cs       - This is the storage for one building.
+		b. PlayerBaseStorage.cs     - This is the storage for one player.		
+		d. UnitStorage.cs           - This is the storage for one unit.
+		e. DroneStorage.cs          - This is the storage for one drone.
+
+	Status: Being Created, will be tested, and later implemented.
+
+----------------------------------------------------------------------------------
+ 2. StorageManager.cs
+
+	This would be responsible for handling interactions 
+	and behaviors associated with storages.
+	
+    Basic CRUD operations: Add, Remove, Update items.
+    Common validations (e.g., inventory space check).
+    Inventory initialization.
+	
+    IslandStorageManager: Manages inventories related to islands.
+    PlayerBaseStorageManager: Handles inventories related to the bases.
+    BuildingStorageManager: Handles building-specific inventories.
+
+	Status: Created, but not yet tested or implemented.
+----------------------------------------------------------------------------------
+
+ 3. Inventory.cs 
+
+    Universal Base Inventory:
+	
+    This will be attached to game entities and serve as 
+	the main interaction point for the item system.
+
+This will be responsible for:
+	
+	1. Keeping track of the items and their quantities.
+	2. Handling item-related events (e.g., item added, item removed).
+	3. Handling item-related actions (e.g., add item, remove item).
+	4. Handling item-related validations (e.g., inventory space check).
+	5. Handling item-related UI (e.g., display items, display item quantity).
+
+    
+    // Usage & Application: 
+    // 1. Abstract Storage Class > Pick a Storage Subclass
+    // 2. Add the Inventory Subclass Component to your desired "Prefab GameObject" 
+    // 3. Add the StorageManager Component to your desired "Prefab Inventory Component"
+    // 4. Add the Storage Subclass to your desired StorageManager 
+    // 5. Finished: GameObject w. Item Interaction Methods Accessible
+
+
+----------------------------------------------------------------------------------
+
+  4. Storage.cs
+ 	 Storage serves as the backbone for the inventory system, offering a 
+	 generic structure to hold and track items. Within, a dictionary 
+	 efficiently maintains items and their respective quantities. This 
+	 class adheres strictly to data manipulation, remaining detached 
+	 from the logic that governs how items are added or removed.
+
+Role: A generic container for item storage.
+
+Reason for Existence: To offer a consistent and flexible approach to 
+storing items across different types of entities.
+
+----------------------------------------------------------------------------------
+
+ 6. What do we do with this file? (Later)
+ 
+ -> Island Inventory Manager . cs
+ -> Island Item Manager . cs
+ -> Building Placer . cs
+ 
+ ----------------------------------------------------------------------------------
+
+ 7. How do we Fix these files? (Later)
+
+ -> UIManager . cs
+	> Needs to be updated to work with the new Item System & Inventories.
+ 
+ -> BuildingChecker . cs
+	> Needs to be updated to work with the new Item System & Inventories.
+	> Needs to be able to Check if the player has the required items.
+
+ -> BuildingPlacer . cs
+	> Needs to be updated to work with the new Item System & Inventories.
+	> Needs to be able to deduct price from the right inventory.
+
+----------------------------------------------------------------------------------
+	
+	Issues:
+
+    Adding a Player Base Class is harder than I originally thought 
+	considering that the ownership is fluid and can change means 
+	that the player base class ownership to be able to be added and 
+	removed from the island.This is a problem because the island 
+	class is not handling ownership of the player base class and the 
+	player base class is not handling ownership of itself either. 
+	
+	This really means that the ownership isn't fluid. The ownership is 
+	static and the player base will always be owned by the player. 
+
+     Why this is a problem?
+     Without proper Ownership indication other systems will not be 
+	 able to properly interact with the player base class. This means 
+	 one thing only, Total System Failure. (Example: Can't Deduct Cost)
+
+     How to fix this?
+     Player Bases needs to be added and ownership needs to be 
+	 transfered to the player once it's placed
+
+
+----------------------------------------------------------------------------------
+
+	Other Notes:
+
+	// Generic Inventory Class
+
+    // Rq:
+
+        // 1. Storage Abstract 
+        // 2. Storage Subclass
+        // 3. Connect Storage Subclass to StorageManager
+        // 4. Storage Manager 
+        // 5. Connect the inventory to StorageManager
+        // 6. Inventory 
+
+	(Created: Done) (Tested: No) (Relationships: Unsure) (Implemented: Unsure)
+
+
+    // Exist  Storage Subclass              (e.g. IslandStorage         /       BuildingStorage           /        BaseStorage           /        DroneStorage          / etc. )
+    // Zilch  Storage Manager Subclass      (e.g. IslandStorageManager  /       BuildingStorageManager    /        BaseStorageManager    /        DroneStorageManager   / etc. )
+    // Zilch  Inventory Subclass            (e.g. IslandInventory       /       BuildingInventory         /        BaseInventory         /        DroneInventory        / etc. )
+
+        // 1. Abstract Storage Class > Pick a Storage Subclass
+        // 2. Add the Inventory Subclass Component to your desired "GameObject" 
+        // 2. Add the StorageManager Component to your desired "Inventory" 
+        // 3. Add the Storage Subclass to the StorageManager
+
+    // Note: 
+    // This Class is responsible for managing the inventory of item
+    // It provides a wide array of functionality to any inventories
+
+
+
+	// Dumb Definitions
+	
+	   // Status Definition:
+        // Shelfed: Files moved out of the project scope
+        // Shelled: Files Got Commented Out Temporarily
+        
+        // Frozen: File temporarily Produced Errors Which Remain But is Commented Out
+        // Froze: File Produced Error so it got removed out of flow 
+
+        // Shell: Files Exist but is empty of some code
+        // Empty: Files Exist but is empty of any code
+        // Exist: Created in Somewhat of a capacity
+        // Zilch: Not Created in any form of a capacity
+
+
+
+		
+    // Note: ... (Generic Inventory Class)
+    // This Class is responsible for managing the inventory of item
+    // It provides a wide array of functionality to any inventories
+
+    // Requirement:
+    // 1. Storage Abstract 
+    // 2. Storage Subclass
+    // 3. Connect Storage Subclass to StorageManager
+    // 4. Storage Manager 
+    // 5. Connect the inventory to StorageManager
+    // 6. Inventory 
+
+    // Exist  Storage Subclass              (e.g. IslandStorage         /       BuildingStorage           /        BaseStorage           /        DroneStorage          / etc. )
+    // Zilch  Storage Manager Subclass      (e.g. IslandStorageManager  /       BuildingStorageManager    /        BaseStorageManager    /        DroneStorageManager   / etc. )
+    // Zilch  Inventory Subclass            (e.g. IslandInventory       /       BuildingInventory         /        BaseInventory         /        DroneInventory        / etc. )
+
+    // 1. Abstract Storage Class > Pick a Storage Subclass
+    // 2. Add the Inventory Subclass Component to your desired "Prefab GameObject" 
+    // 3. Add the StorageManager Component to your desired "Prefab Inventory Component"
+    // 4. Add the Storage Subclass to your desired StorageManager 
+    // 5. Finished
+
+    Saving this here for later: 
+
+        [RequireComponent(typeof(Island))]
+
+
+public Dictionary<ItemType, int> GetTotalResourcesOnIsland()
+{
+    Dictionary<ItemType, int> totalResources = new Dictionary<ItemType, int>();
+    foreach (Base playerBase in island.GetComponentsInChildren<Base>()) // Assuming each player base has a 'Base' component
+    {
+        Inventory baseInventory = playerBase.GetComponent<Inventory>();
+        if (baseInventory)
+        {
+            foreach (KeyValuePair<ItemType, int> entry in baseInventory.GetItems())
+            {
+                if (totalResources.ContainsKey(entry.Key))
+                {
+                    totalResources[entry.Key] += entry.Value;
+                }
+                else
+                {
+                    totalResources.Add(entry.Key, entry.Value);
+                }
+            }
+        }
+    }
+    return totalResources;
+}

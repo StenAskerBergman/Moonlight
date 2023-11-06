@@ -36,8 +36,8 @@ public class FogOfWarManager : MonoBehaviour
     [Range(1,10)]
     float m_FogAppearSpeed = 3f;
     [SerializeField]
-    [Tooltip("Should the vision dissapear when no vision components are in range, or should the discovered parts of the map stay visible")]
-    bool m_VisionDissapear=false;
+    [Tooltip("Should the vision disappear when no vision components are in range, or should the discovered parts of the map stay visible")]
+    bool m_VisionDisappear=false;
 
     [SerializeField]
     [Range(0,10)]
@@ -70,6 +70,9 @@ public class FogOfWarManager : MonoBehaviour
     RenderTexture m_FogOfWarInputRenderTexture;
     RenderTexture m_VisionBlockingRenderTexture;
     RenderTexture m_BlurRenderTexture;
+
+    RenderTexture m_ActiveVisionTexture;
+    RenderTexture m_ExploredVisionTexture;
 
     FogOfWarComputeHandler m_FogOfWarComputeHandler;
     UpscaleFogComputeHandler m_UpscaleFogOfWarHandler;
@@ -130,11 +133,16 @@ public class FogOfWarManager : MonoBehaviour
         m_BlurRenderTexture.enableRandomWrite = true;
         m_BlurRenderTexture.Create();
 
+        //Create the explored vision texture - new
+        m_ExploredVisionTexture = new RenderTexture(m_Resolution * 4, m_ResolutionHeight * 4, 1, RenderTextureFormat.ARGB64);
+        m_ExploredVisionTexture.enableRandomWrite = true;
+        m_ExploredVisionTexture.Create();
+
 
         //Create and initialize the compute handlers
         m_FogOfWarComputeHandler = new FogOfWarComputeHandler(m_ShaderReferencesObject.m_FogOfWarComputeShader, m_Resolution, m_ResolutionHeight, m_MapWidth, m_MapHeight, transform.position, m_VisionBlockingRenderTexture);
         m_UpscaleFogOfWarHandler = new UpscaleFogComputeHandler(m_ShaderReferencesObject.m_UpscaleComputeShader, m_Resolution, m_ResolutionHeight);
-        m_LerpComputeShaderHandler = new LerpTextureComputeHandler(m_ShaderReferencesObject.m_LerpComputeShader, m_Resolution * 4, m_ResolutionHeight * 4, m_FogAppearSpeed, m_VisionDissapear);
+        m_LerpComputeShaderHandler = new LerpTextureComputeHandler(m_ShaderReferencesObject.m_LerpComputeShader, m_Resolution * 4, m_ResolutionHeight * 4, m_FogAppearSpeed, m_VisionDisappear);
         m_FogOfWarCheckComputeHandler = new FogOfWarCheckComputeHandler(m_ShaderReferencesObject.m_FogOfWarCheckComputeShader);
 
         m_FogOfWarComputeHandler.Initialize();
@@ -201,12 +209,23 @@ public class FogOfWarManager : MonoBehaviour
     void UpdateFogOfWar() {
         m_FogOfWarInputRenderTexture = m_FogOfWarComputeHandler.Run();
         UpscaleTexture();
+        UpdateExploredVision();
+
     }
 
     void UpscaleTexture()
     {
         m_UpscaleFogOfWarHandler.SetFogOfWarInput(m_FogOfWarInputRenderTexture);
         m_FogOfWarResultRenderTexture=m_UpscaleFogOfWarHandler.Run();
+    }
+    private void UpdateExploredVision()
+    {
+        // Here, you should combine the current Active Vision with the Explored Vision.
+        // You might use a compute shader or a simple blit operation depending on your approach.
+        // Essentially, for every pixel that's visible in Active Vision, mark it as explored.
+
+        // Example with a simple blit (this is naive and may require adjustment):
+        Graphics.Blit(m_FogOfWarInputRenderTexture, m_ExploredVisionTexture);
     }
 
     void LerpTexture() {
@@ -218,8 +237,11 @@ public class FogOfWarManager : MonoBehaviour
 
             m_FogOfWarCheckComputeHandler.SetFogOfWarFinalTexture(FogOfWarMask);
 
-            if(m_FogMaterial)
+            if (m_FogMaterial)
+            {
                 m_FogMaterial.mainTexture = FogOfWarMask;
+                m_FogMaterial.SetTexture("_ExploredTex", m_ExploredVisionTexture);
+            }
 
 
             if (m_FogOfWarOutput)

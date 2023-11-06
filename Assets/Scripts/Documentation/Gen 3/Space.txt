@@ -1,0 +1,19 @@
+
+
+Defining a Interaction System is hard
+
+	Player to Player 
+	
+		Require: 
+	
+			Player to be Defined & Initialized
+			
+			2 Player to Interact with eachother
+			
+
+	Player to Unit
+	
+	
+	
+	Unit to Unit
+

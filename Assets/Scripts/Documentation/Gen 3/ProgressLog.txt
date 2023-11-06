@@ -1,0 +1,12 @@
+
+# Project: Moonlight 
+-----------------------------------------------------------------
+Progress Log
+-----------------------------------------------------------------
+> Storage Manager & Inventory System - Status: Mostly Finished
+
+Tasks: Finish Creating the New Inventory Classes
+Tasks: Finish Creating the New Manager Classes
+
+Status: 100% Complete
+
