@@ -24,9 +24,36 @@ Deposit - D
 
 
 
+//  Height value
+float value = pos.y + noise(pos) + pos.y % terraceHeight;
 
 
 
+
+    // Grid.cs
+    private void ApplyBeachEdges()
+    {
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Cell cell = grid[x, y];
+                if (cell.currentTerrainType == TerrainType.Land)
+                {
+                    // Check if any neighbor is a water cell
+                    foreach (Cell neighbor in cell.neighbors)
+                    {
+                        if (neighbor.currentTerrainType == TerrainType.Water)
+                        {
+                            // Change the terrain type to Beach
+                            cell.ChangeTerrainType(TerrainType.Beach);
+                            break; // No need to check the other neighbors
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
 

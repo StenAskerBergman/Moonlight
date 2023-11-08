@@ -378,6 +378,7 @@
     <Compile Include="Assets\Scripts\Item System\Storages\BuildingStorage.cs" />
     <Compile Include="Assets\Scripts\Main Game\Building Code\Data Assets Code\BuildingProductionData.cs" />
     <Compile Include="Assets\Prefabs\Building Prefab\House Components\CityInventory.cs" />
+    <Compile Include="Assets\Reposition.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Main Game\Building Code\Building Code.txt" />

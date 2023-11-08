@@ -12,9 +12,11 @@ public class UnitClick : MonoBehaviour
 
     // Errors List
     // Done: #1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
-    // Open: #2 ERROR: Ground Marker isn't Active? -> Transform.Position is correct but the Active states are not
+    // Done: #2 ERROR: Ground Marker isn't Active? -> Transform.Position is correct but the Active states are not
     // Done: #3 ERROR: Sometimes you can't deselect? ->  Seems to be fixed by Asserting This.
     // Done: #4 ERROR: Fixed the Coroutine() Start Bug
+
+    // Open: #5 ERROR: Selected Units Can't Move 
 
     private Camera myCam;
     public GameObject groundMarker;
@@ -96,13 +98,6 @@ public class UnitClick : MonoBehaviour
                 //groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint = true;
                 //Debug.Log("ClickMarker.unit_waypoint =" + groundMarker.GetComponentInChildren<ClickMarker>().unit_waypoint);
 
-               /*
-                 * Old Code Didn't work
-                 * 
-                 * groundMarker.SetActive(false);
-                 * groundMarker.SetActive(true);
-                 * 
-                 */
             }
         }
         #endregion

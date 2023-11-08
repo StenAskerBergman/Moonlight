@@ -38,12 +38,8 @@ public class MapManager : MonoBehaviour
     public enum SpawnPattern
     {
         Singular,
-        Linear,
-        Circular,
         Square,
         Normal,
-        Medium,
-        Large,
     }
     
     [Header("Spawn Patterns")]
@@ -106,64 +102,70 @@ public class MapManager : MonoBehaviour
         {
             case SpawnPattern.Singular: // DEV ONLY
                 // Singular Spawn
+
+                float halfSize = islandSize / 2f;
+                float QuarterSize = (halfSize / 2);
+                float Offset = QuarterSize * -1; 
+               
                 for (int i = 0; i < 1; i++)
                 {
                     // Singular Spawn
+
                     // Generate a Single new island
                     invertSelection = false;
                     IslandData islandData = new IslandData();
+
+                    // Set the position and size of the island's bounds
+                    Vector3 islandPosition = new Vector3(Offset, 0, Offset);
+                    Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
+                    islandData.bounds = islandBounds;
+
                     islandData.islandType = IslandType.None;
-                    islandData.bounds = new Bounds(new Vector3(i * 0, 0, 0), new Vector3(10, 10, 10));
                     islandData.id = i + 1;
                     islandData.name = "Island " + 1;
 
-                    AddIsland(islandData);
+                    AddIsland(islandData); // Singular
                 }
                 break;
 
-            case SpawnPattern.Linear: // DEV ONLY
-                // Linear Spawn
-                for (int i = 0; i < numberOfIslands; i++)
-                {
-                    // Linear Spawn
-                    // Generate a islands in a row
-                    IslandData islandData = new IslandData();
-                    islandData.islandType = IslandType.None;
-                    islandData.buildings = new List<Building>();
-                    islandData.items = new Dictionary<ItemData, int>();
-                    islandData.bounds = new Bounds(new Vector3(i * 20, 0, 0), new Vector3(10, 10, 10));
-                    islandData.id = i + 1;
-                    islandData.name = "Island " + (i + 1);
+            //case SpawnPattern.Linear: // DEV ONLY
+            //    // Linear Spawn
+            //    for (int i = 0; i < numberOfIslands; i++)
+            //    {
+            //        // Linear Spawn
+            //        // Generate a islands in a row
+            //        IslandData islandData = new IslandData();
+            //        islandData.islandType = IslandType.None;
+            //        islandData.buildings = new List<Building>();
+            //        islandData.items = new Dictionary<ItemData, int>();
+            //        islandData.bounds = new Bounds(new Vector3(i * 20, 0, 0), new Vector3(10, 10, 10));
+            //        islandData.id = i + 1;
+            //        islandData.name = "Island " + (i + 1);
+            //        AddIsland(islandData);
+            //    }
+            //    break;
 
-                    AddIsland(islandData);
-                }
-                break;
-
-            case SpawnPattern.Circular: // DEV ONLY
-                // Circular Spawn
-                float worldLimit = 100f; // Define your world limit here
-                float angleIncrement = 360f / numberOfIslands;
-
-                for (int i = 0; i < numberOfIslands; i++)
-                {
-                    // Calculate the island's position in a circular pattern
-                    float angle = i * angleIncrement * Mathf.Deg2Rad;
-                    Vector3 islandPosition = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (worldLimit / 2);
-
-                    // 1. Generate a new island
-                    IslandData islandData = new IslandData();
-                    
-                    // 2. Set the new island's data
-                    islandData.islandType = IslandType.None;
-                    islandData.buildings = new List<Building>(); 
-                    islandData.items = new Dictionary<ItemData, int>();
-                    islandData.bounds = new Bounds(islandPosition, new Vector3(10, 10, 10));
-                    islandData.id = i + 1;
-                    islandData.name = "Island " + (i + 1);
-
-                    AddIsland(islandData);
-                }
-                break;
+            //case SpawnPattern.Circular: // DEV ONLY
+            //    // Circular Spawn
+            //    float worldLimit = 100f; // Define your world limit here
+            //    float angleIncrement = 360f / numberOfIslands;
+            //    for (int i = 0; i < numberOfIslands; i++)
+            //    {
+            //        // Calculate the island's position in a circular pattern
+            //        float angle = i * angleIncrement * Mathf.Deg2Rad;
+            //        Vector3 islandPosition = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * (worldLimit / 2);
+            //        // 1. Generate a new island
+            //        IslandData islandData = new IslandData();
+            //        // 2. Set the new island's data
+            //        islandData.islandType = IslandType.None;
+            //        islandData.buildings = new List<Building>(); 
+            //        islandData.items = new Dictionary<ItemData, int>();
+            //        islandData.bounds = new Bounds(islandPosition, new Vector3(10, 10, 10));
+            //        islandData.id = i + 1;
+            //        islandData.name = "Island " + (i + 1);
+            //        AddIsland(islandData);
+            //    }
+            //    break;
                 
             case SpawnPattern.Square: // DEV ONLY
                 // Square Spawn
@@ -172,6 +174,7 @@ public class MapManager : MonoBehaviour
                 xOffset = (halfIslands - 0.5f) * islandSpacing;
                 zOffset = (halfIslands - 0.5f) * islandSpacing;
                 
+
                 for (int i = 0; i < numberOfIslands; i++)
                 {
                     for (int j = 0; j < numberOfIslands; j++)
@@ -182,7 +185,7 @@ public class MapManager : MonoBehaviour
                         //islandData.buildings = new List<Building>();
 
                         // Set the position and size of the island's bounds
-                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset, 0, j * islandSpacing - zOffset);
+                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset - 30, 0, j * islandSpacing - zOffset - 30);
                         Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
 
                         // Set the remaining data for the island
@@ -191,12 +194,13 @@ public class MapManager : MonoBehaviour
                         islandData.name = "Island " + (currentIsland + 1);
 
                         // Add the island to the game world
-                        AddIsland(islandData);
+                        AddIsland(islandData); // Square
 
                         currentIsland++;
                     }
                 }
                 break;
+
             case SpawnPattern.Normal: // FINAL VERSION
                 // Square Spawn + Normal Sized Orbitor Islands
                 currentIsland = 0;
@@ -232,15 +236,13 @@ public class MapManager : MonoBehaviour
 
                         // Set the remaining data for the island
                         islandData.bounds = islandBounds;
-
                         islandData.id = currentIsland + 1;
-
                         islandData.name = "Island " + (currentIsland + 1);
 
                         // Generate Island Data
 
                         // Add the island to the game world
-                        AddIsland(islandData);
+                        AddIsland(islandData); // Normal
 
                         currentIsland++;
 
@@ -271,18 +273,6 @@ public class MapManager : MonoBehaviour
 
 
                 break;
-                
-            /*
-            case SpawnPattern.Medium:
-                // Circular Spawn
-                // Your existing code for Circular Spawn
-                break;
-
-            case SpawnPattern.Large:
-                // Custom1 Spawn
-                // Your code for Custom1 Spawn
-                break;
-            */
 
             default:
                 Debug.LogError("Incomplete or Invalid Spawn Pattern Selected!");
