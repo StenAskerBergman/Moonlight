@@ -125,10 +125,16 @@ public abstract class InventoryUserface : MonoBehaviour
         // Implementation to clear/reset predefined slots
         // This might involve setting the slots to some 'empty' state
 
-        foreach (ItemSlot slot in inventorySlots)
+        if (inventorySlots != null)
         {
-             slot.CheckAndClearSlotIfEmpty(); 
-            // Old: Destroy(child.gameObject);
+            foreach (ItemSlot slot in inventorySlots)
+            {
+                if (slot != null)
+                {
+                    slot.CheckAndClearSlotIfEmpty(); 
+                    // Old: Destroy(child.gameObject);
+                }
+            }
         }
     }
     

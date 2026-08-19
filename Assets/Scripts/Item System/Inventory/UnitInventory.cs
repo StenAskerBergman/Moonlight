@@ -93,13 +93,19 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
                 GameObject slotGO = new GameObject($"ItemSlot {index}");
                 slotGO.transform.SetParent(transform, false);
                 ItemSlot slot = slotGO.AddComponent<ItemSlot>();
+                slot.unitInventory = this;
+                slot.storageManager = unitStorageManager;
                 itemSlots[index] = slot;
 
                 GameObject stackGO = new GameObject($"ItemStack {index}");
                 stackGO.transform.SetParent(slot.transform, false);
                 ItemStack itemStack = stackGO.AddComponent<ItemStack>();
+                itemStack.SetItemSlot(slot);
                 itemStack.SetItemData(kvp.Key, kvp.Value);
-                itemStack.SetMaxQuantity(kvp.Key.maxStackSize);
+                if (kvp.Key.maxStackSize > 0)
+                {
+                    itemStack.SetMaxQuantity(kvp.Key.maxStackSize);
+                }
 
                 slot.itemStack = itemStack;
             }
@@ -111,9 +117,13 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
     private void UpdateUISlots()
     {
+        if (uiSlots == null) return;
+
         for (int i = 0; i < uiSlots.Length; i++)
         {
-            if (i < itemSlots.Length && itemSlots[i] != null && itemSlots[i].itemStack != null)
+            if (uiSlots[i] == null) continue;
+
+            if (itemSlots != null && i < itemSlots.Length && itemSlots[i] != null && itemSlots[i].itemStack != null && itemSlots[i].itemStack.HasItem() && itemSlots[i].itemStack.GetQuantity() > 0)
             {
                 uiSlots[i].SetItemData(itemSlots[i].itemStack.GetItemData(), itemSlots[i].itemStack.GetQuantity());
             }
@@ -300,10 +310,11 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
 
     // UnitInventory.cs - Returns a ItemSlot 
-    private ItemSlot CreateNewItemSlot(bool resizeArray = false)
+    private ItemSlot CreateNewItemSlot(bool resizeArray = true)
     {
         // Create a Name for the Slot
-        string slotName = $"ItemSlot {itemSlots.Length}";
+        int slotIndex = itemSlots != null ? itemSlots.Length : 0;
+        string slotName = $"ItemSlot {slotIndex}";
         Debug.Log($"<color=orange>Creating New ItemSlot: </color>{slotName}");
 
         // Pass the Slot Name On & GetSlotGameObjects
@@ -322,7 +333,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         slot.storageManager = unitStorageManager; 
 
         // Create StackGO and then ... (Not done Yet) ... try to assign ItemStackGO to the slot.
-        GameObject stackGO = new GameObject($"ItemStack - {itemSlots.Length}");
+        GameObject stackGO = new GameObject($"ItemStack - {slotIndex}");
         
         // Set StackGO to the SlotGO
         stackGO.transform.SetParent(slotGO.transform, false);
@@ -334,6 +345,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         if (stack != null)
         {
             Debug.Log($"<color=green>{stack.name} -> ItemStack successfully created for {stack} in {slotName}</color>");
+            stack.SetItemSlot(slot);
             stack.SetItemData(null, 0); // Initialize with no item and quantity zero.
         }
         else
@@ -345,9 +357,16 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (resizeArray)
         {
-            // Resize itemSlots array to accommodate the new slot
-            Array.Resize(ref itemSlots, itemSlots.Length + 1);
-            itemSlots[itemSlots.Length - 1] = slot;
+            if (itemSlots == null)
+            {
+                itemSlots = new ItemSlot[] { slot };
+            }
+            else
+            {
+                // Resize itemSlots array to accommodate the new slot
+                Array.Resize(ref itemSlots, itemSlots.Length + 1);
+                itemSlots[itemSlots.Length - 1] = slot;
+            }
         }
         return slot;
     }
@@ -465,6 +484,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             Debug.Log($"<color=green><b>Success!</b></color> CreateItemStackInSlot(); Worked!");    
         }
         
+        itemStack.SetItemSlot(slot);
         itemStack.SetItemData(itemData, 0); // Initialize with zero quantity
         itemStack.SetItemData(itemData);    // Ensure this happens immediately after creation
         itemComponent.itemData = itemData;  // Double-check this assignment
@@ -533,10 +553,15 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     {
         Debug.Log($"Validating and adding item {itemData.name} with amount {amount} to slot {slot.name}");
 
-        if (!unitStorageManager.CanAddItem(itemData, amount))
+        if (unitStorageManager != null && !unitStorageManager.CanAddItem(itemData, amount))
         {
             Debug.LogError($"Cannot add {itemData.name} with amount {amount} to slot: {slot.name}");
             return false;
+        }
+
+        if (unitStorageManager != null)
+        {
+            unitStorageManager.AddItem(itemData, amount);
         }
 
         slot.itemStack.AddQuantity(amount);
@@ -545,26 +570,47 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
     public bool RemoveItem(ItemData itemData, int amount)
     {
-        if (unitStorageManager.CanRemoveItem(itemData, amount))
+        if (unitStorageManager != null && unitStorageManager.CanRemoveItem(itemData, amount))
         {
+            bool removed = unitStorageManager.RemoveItem(itemData, amount);
+            if (removed)
+            {
+                // Deduct from physical stacks (itemSlots)
+                int remainingToRemove = amount;
+                if (itemSlots != null)
+                {
+                    for (int i = 0; i < itemSlots.Length && remainingToRemove > 0; i++)
+                    {
+                        ItemSlot slot = itemSlots[i];
+                        if (slot != null && slot.itemStack != null && slot.itemStack.GetItemData() == itemData)
+                        {
+                            int currentQty = slot.itemStack.GetQuantity();
+                            int toSubtract = Mathf.Min(currentQty, remainingToRemove);
+                            slot.itemStack.SubtractQuantity(toSubtract);
+                            remainingToRemove -= toSubtract;
 
-            // Notify change
-            OnUnitInventoryChanged?.Invoke();
+                            if (slot.itemStack.GetQuantity() <= 0)
+                            {
+                                slot.itemStack.ClearStack();
+                            }
+                        }
+                    }
+                }
 
-            // After adding the item, update the editor list
-            UpdateItemListForEditor();
-            
-            UpdateUISlots(); // Added this line
+                // Notify change
+                OnUnitInventoryChanged?.Invoke();
 
-            return unitStorageManager.RemoveItem(itemData, amount);
-            // Additional code for when the item is successfully removed wont run here
+                // After removing the item, update the editor list
+                UpdateItemListForEditor();
 
+                UpdateUISlots();
+
+                return true;
+            }
         }
-        else
-        {
-            // Handle the case where the item cannot be removed
-            return false;
-        }
+
+        // Handle the case where the item cannot be removed or removal failed
+        return false;
     }
 
     // Op: This seems Unfinished
@@ -602,25 +648,31 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     //  Get Slot based on Item && quant
     private ItemSlot GetSlot(ItemData itemData, int quantity)
     {
-        // Logic to determine the best slot for the item
-        // Placeholder: returns the first available slot
-     
-        // Improved logic to handle slots more robustly
+        if (itemData == null || itemSlots == null) return null;
+
+        ItemSlot firstEmptySlot = null;
+
         foreach (var slot in itemSlots)
         {
-            //Old
-            //if (slot.CanHoldItemType(itemData.type) && (slot.stack == null || !slot.IsSlotFull()))
-            //{
-            //    return slot;
-            //}
-
-            //New
-            if (slot != null && slot.CanHoldItemType(itemData.type) && (slot.itemStack == null || !slot.IsSlotFull()))
+            if (slot == null || !slot.CanHoldItemType(itemData.type))
             {
-                return slot;
+                continue;
+            }
+
+            if (slot.IsOccupied())
+            {
+                if (slot.itemStack.GetItemData() == itemData && !slot.IsSlotFull())
+                {
+                    return slot;
+                }
+            }
+            else if (firstEmptySlot == null)
+            {
+                firstEmptySlot = slot;
             }
         }
-        return null;  // Better handling when no suitable slot is found
+
+        return firstEmptySlot;
     }
 
     // Get Best Slot Available - Don't even know if this works anymore

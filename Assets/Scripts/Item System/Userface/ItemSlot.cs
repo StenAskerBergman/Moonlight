@@ -44,6 +44,12 @@ public class ItemStackFactory
         itemStack.InitializeUIComponents(itemIcon, itemQuantityText);
 
         // Set up other necessary components
+        ItemSlot slot = parent != null ? parent.GetComponent<ItemSlot>() : null;
+        if (slot != null)
+        {
+            itemStack.SetItemSlot(slot);
+            slot.itemStack = itemStack;
+        }
 
         return itemStack;
     }
@@ -83,25 +89,14 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // ItemSlot.cs 
     private void Awake()
     {
-        // This might not be ready until start
-        itemStack = GetComponentInChildren<ItemStack>();
-        if (itemStack == null)
-        {
-            Debug.LogError("ItemSlot: ItemStack component not found in children.");
-            return;
-        }
-
-        itemStack = GetComponentInChildren<ItemStack>();
-        if (itemStack == null)
-        {
-            itemStack = ItemStackFactory.CreateItemStack(transform);
-        }
-
         // Assign storageManager
-        storageManager = GetComponentInParent<UnitStorageManager>();
         if (storageManager == null)
         {
-            Debug.LogError("ItemSlot: storageManager is null!");
+            storageManager = GetComponentInParent<UnitStorageManager>();
+            if (storageManager == null)
+            {
+                Debug.LogError("ItemSlot: storageManager is null!");
+            }
         }
 
         // Set up names
@@ -128,6 +123,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             GameObject stackGO = new GameObject($"ItemStack Name:{itemData.name}");
             stackGO.transform.SetParent(transform, false);
             itemStack = stackGO.AddComponent<ItemStack>();
+            itemStack.SetItemSlot(this);
+        }
+        else if (itemStack.itemSlot == null)
+        {
+            itemStack.SetItemSlot(this);
         }
         itemStack.SetItemData(itemData, quantity);
     }
@@ -140,9 +140,13 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             var ItemText = GetComponentInChildren<Text>();
 
             empty = false;
-            this.gameObject.name = $"{this.realName} - {this.itemStack.itemData.itemName} ({this.itemStack.GetQuantity()}/{this.maxQuantity})";
+            int max = this.itemStack.GetMaxQuantity();
+            this.gameObject.name = $"{this.realName} - {this.itemStack.itemData.itemName} ({this.itemStack.GetQuantity()}/{max})";
 
-            ItemText.text = this.itemStack.GetQuantity() + "/" + this.maxQuantity;
+            if (ItemText != null)
+            {
+                ItemText.text = this.itemStack.GetQuantity() + "/" + max;
+            }
         }
         else
         {
@@ -167,8 +171,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         Debug.Log("NameCheck by "+callerName);
         // if name is equal too the name is has then returns true otherwise returns negative meaning name change required
         if (!this.empty)
-            if (this.gameObject.name == $"{this.realName} - {this.itemStack.itemData.itemName} ({this.itemStack.GetQuantity()}/{this.maxQuantity})") return true; 
+        {
+            int max = this.itemStack != null ? this.itemStack.GetMaxQuantity() : 0;
+            if (this.gameObject.name == $"{this.realName} - {this.itemStack.itemData.itemName} ({this.itemStack.GetQuantity()}/{max})") return true; 
             else return false;
+        }
         else if (this.empty && this.gameObject.name == $"{this.realName} - Empty") return true;
         else return false;
     }
@@ -237,9 +244,17 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             }
         }
 
+        if (itemStack != null && itemStack.itemSlot == null)
+        {
+            itemStack.SetItemSlot(this);
+        }
+
         // Continue initializing references
         unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
-        unitInventory = unitInventoryUI != null ? unitInventoryUI.unitInventory : null;
+        if (unitInventory == null)
+        {
+            unitInventory = unitInventoryUI != null ? unitInventoryUI.unitInventory : GetComponentInParent<UnitInventory>();
+        }
 
         if (unitInventory == null)
         {
@@ -264,6 +279,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
         if (itemStack != null)
         {
+            if (itemStack.itemSlot == null)
+            {
+                itemStack.SetItemSlot(this);
+            }
+
             itemStack.SetItemData(itemData, quantity);
 
             // gets our own Image and sets it to item
@@ -353,7 +373,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     private bool CanReceiveItem(ItemData itemData)
     {
         // Determine if the slot can receive/get the given item 
-        return !restrictedType.HasValue || restrictedType.Value == itemData.type;
+        return itemData != null && (!restrictedType.HasValue || restrictedType.Value == itemData.type);
     }
 
     /// <summary>
@@ -485,90 +505,119 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     }
     #endregion
 
-    // Define local maxQuantity here ( Tends to be more convenient )
-    private int maxQuantity; 
+    private void PlayDropSound()
+    {
+        AudioManager audioManager = AudioManager.Instance ?? FindObjectOfType<AudioManager>();
+        if (audioManager != null && audioManager.DropIntoSlot != null)
+        {
+            audioManager.PlaySound(audioManager.DropIntoSlot);
+        }
+    }
+
     private void HandleItemDrop(ItemStack droppedItem)
     {
+        if (droppedItem == null || droppedItem == this.itemStack)
+        {
+            Debug.Log("Dropped Item is Null or same stack");
+            return;
+        }
+
+        if (droppedItem.itemData == null || droppedItem.GetQuantity() <= 0)
+        {
+            Debug.Log("Dropped Item has no item data or quantity <= 0");
+            return;
+        }
+
         if (debugSlot) 
         {
             // Debug Slot  
-
             SwapItems(droppedItem);
-
+            PlayDropSound();
         }
         else
         {
             // Normal Slot  
-
-            // Add logic to handle the dropped item
-            // Example: Check if the slot is empty,
-            // or if items can be swapped, etc. 
-
-            if (droppedItem == null)
+            if (droppedItem.itemData.itemName != null)
             {
-                Debug.Log("Dropped Item is Null");
+                Debug.Log($"Item Wasn't Null On Drop {droppedItem.itemData.itemName}.");
             }
-            else if (droppedItem != null)
+            else
             {
-                if (droppedItem.itemData.itemName != null)
-                {
-                    Debug.Log($"Item Wasn't Null On Drop {droppedItem.itemData.itemName}.");
-                }
-                else
-                {
-                    Debug.Log($"Item Wasn't Null On Drop but itemData.itemName Was? Trying to get DisplayName! {droppedItem.itemData.displayName}.");
-                }
+                Debug.Log($"Item Wasn't Null On Drop but itemData.itemName Was? Trying to get DisplayName! {droppedItem.itemData.displayName}.");
             }
-
 
             // Example: Swap items if the slot is not empty
             if (IsOccupied())
             {
-
                 // Slot is Occupied
-
-                // Swap
-                // If slot item does not match dropped item - Swap Items
-                SwapItems(droppedItem);
-
-                // Reject
-                // If slot item isFull - Reject
-
-                // Add
-                // If slot item matches dropped item - Add to quantity
-
                 if (itemStack.GetItemData() == droppedItem.GetItemData())
                 {
-                    int newAdd = itemStack.AddQuantity(droppedItem.GetQuantity());
-
-                    // Return Rest of Dropped Item that didn't fit 
-                    //if (newAdd > unitInventoryUI.unitInventory.maxQuantity) 
-                    //{ 
-                    //    droppedItem.SetQuantity(newAdd - maxQuantity); 
-                    //}
-
-                    // + Assuming maxQuantity is defined within this class
-                    if (newAdd > maxQuantity)
+                    // Same Item
+                    if (!itemStack.IsFull())
                     {
-                        droppedItem.SetQuantity(newAdd - maxQuantity);
+                        // Add
+                        // If slot item matches dropped item - Add to quantity
+                        int remainder = itemStack.AddQuantity(droppedItem.GetQuantity());
+
+                        // Return Rest of Dropped Item that didn't fit 
+                        if (remainder > 0)
+                        {
+                            droppedItem.SetQuantity(remainder);
+                        }
+                        else
+                        {
+                            droppedItem.ClearStack();
+                        }
+
+                        UpdateSlotName();
+                        if (droppedItem.itemSlot != null)
+                        {
+                            droppedItem.itemSlot.RenameSlot();
+                        }
+                        PlayDropSound();
+                    }
+                    else
+                    {
+                        // Reject
+                        // If slot item isFull - Reject
+                        Debug.Log("Slot is full: Cannot merge dropped item.");
                     }
                 }
-             
+                else
+                {
+                    // Swap
+                    // If slot item does not match dropped item - Swap Items
+                    // Check if source slot can hold target slot's item type
+                    if (droppedItem.itemSlot == null || itemStack.itemData == null || droppedItem.itemSlot.CanHoldItemType(itemStack.itemData.type))
+                    {
+                        SwapItems(droppedItem);
+                        PlayDropSound();
+                    }
+                    else
+                    {
+                        Debug.Log("Cannot swap: Source slot restricted type mismatch.");
+                    }
+                }
             }
             else
             {
                 // Slot is Empty
-
-                // Set the item stack
-           
-                // Add the dropped item to this slot - Set new item data
-                if (droppedItem != null)
+                if (itemStack == null)
                 {
-                    if (droppedItem.GetItemData() != null)
+                    itemStack = ItemStackFactory.CreateItemStack(transform);
+                }
+
+                if (itemStack != null)
+                {
+                    itemStack.SetItemData(droppedItem.GetItemData(), droppedItem.GetQuantity());
+                    ItemSlot sourceSlot = droppedItem.itemSlot;
+                    droppedItem.ClearStack();
+                    UpdateSlotName();
+                    if (sourceSlot != null)
                     {
-                
-                        itemStack.SetItemData(droppedItem.GetItemData(), droppedItem.GetQuantity()); // Null Ref. Error - Something is null
+                        sourceSlot.RenameSlot();
                     }
+                    PlayDropSound();
                 }
             }
         }
@@ -576,13 +625,33 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
     private void SwapItems(ItemStack droppedItem)
     {
-        var tempData = itemStack.GetItemData();
-        var tempQuantity = itemStack.GetQuantity();
+        var targetData = itemStack != null ? itemStack.GetItemData() : null;
+        var targetQuantity = itemStack != null ? itemStack.GetQuantity() : 0;
 
-        itemStack.SetItemData(droppedItem.GetItemData(), droppedItem.GetQuantity());
-        droppedItem.SetItemData(tempData, tempQuantity);
+        var sourceData = droppedItem.GetItemData();
+        var sourceQuantity = droppedItem.GetQuantity();
+
+        if (itemStack == null)
+        {
+            itemStack = ItemStackFactory.CreateItemStack(transform);
+        }
+
+        itemStack.SetItemData(sourceData, sourceQuantity);
+
+        if (targetData != null && targetQuantity > 0)
+        {
+            droppedItem.SetItemData(targetData, targetQuantity);
+        }
+        else
+        {
+            droppedItem.ClearStack();
+        }
 
         UpdateSlotName();
+        if (droppedItem.itemSlot != null)
+        {
+            droppedItem.itemSlot.RenameSlot();
+        }
     }
 
     public void CheckAndClearSlotIfEmpty()
@@ -590,20 +659,23 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         if (itemStack != null && itemStack.GetQuantity() <= 0)
         {
             itemStack.ClearStack();
-            itemStack = null; // keep itemStack for reuse.
+            // keep itemStack for reuse.
         }
     }
 
     public void UseItem()
     {
         // Example method that uses an item
-        itemStack.SubtractQuantity(1);
-        CheckAndClearSlotIfEmpty();
-
-        // Additional logic for when the item stack reaches zero.
-        if (itemStack.GetQuantity() <= 0)
+        if (itemStack != null)
         {
-            // Handle the case of zero quantity, e.g., drop into the ocean
+            itemStack.SubtractQuantity(1);
+            CheckAndClearSlotIfEmpty();
+
+            // Additional logic for when the item stack reaches zero.
+            if (itemStack.GetQuantity() <= 0)
+            {
+                // Handle the case of zero quantity, e.g., drop into the ocean
+            }
         }
     }
 
@@ -641,11 +713,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (quantity == 0) Debug.Log("Stack Content: 0"); // Slot (Empty)
 
-        if (itemStack.itemData != null)
+        if (itemStack != null && itemStack.itemData != null)
         {
             Debug.Log($"UpdateSlotUI: Updating Slot UI by {quantity}");
-            itemStack.itemIcon.sprite = itemStack.itemData.Icon;        // Ensure itemIcon is assigned in the inspector
-            itemStack.itemQuantityText.text = quantity.ToString();      // Ensure itemQuantityText is assigned in the inspector
+            if (itemStack.itemIcon != null) itemStack.itemIcon.sprite = itemStack.itemData.Icon;        // Ensure itemIcon is assigned in the inspector
+            if (itemStack.itemQuantityText != null) itemStack.itemQuantityText.text = quantity.ToString();      // Ensure itemQuantityText is assigned in the inspector
         }
         else
         {
@@ -727,28 +799,41 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // Set Stack Slot Parent
     public void ReceiveDroppedItem(ItemStack droppedItem)
     {
+        if (droppedItem == null || droppedItem == this.itemStack) return;
+
         if (itemStack == null)
         {
-            GameObject stackObj = Instantiate(itemStackPrefab, transform);
-            itemStack = stackObj.GetComponent<ItemStack>();
-            if (itemStack == null)
+            if (itemStackPrefab != null)
             {
-                Debug.LogError("Failed to instantiate ItemStack.");
-                return;
+                GameObject stackObj = Instantiate(itemStackPrefab, transform);
+                itemStack = stackObj.GetComponent<ItemStack>();
+                if (itemStack == null)
+                {
+                    Debug.LogError("Failed to instantiate ItemStack.");
+                    return;
+                }
+
+                // Set the parent of the instantiated ItemStack to this slot
+                stackObj.transform.SetParent(transform);
+
+                // Reset the position of the instantiated ItemStack to align correctly in the slot
+                stackObj.transform.localPosition = Vector3.zero;
+
+                itemStack.SetItemSlot(this);
             }
-
-            // Set the parent of the instantiated ItemStack to this slot
-            stackObj.transform.SetParent(transform);
-
-            // Reset the position of the instantiated ItemStack to align correctly in the slot
-            stackObj.transform.localPosition = Vector3.zero;
+            else
+            {
+                itemStack = ItemStackFactory.CreateItemStack(transform);
+            }
+        }
+        else if (itemStack.itemSlot == null)
+        {
+            itemStack.SetItemSlot(this);
         }
         
-        if (droppedItem != null)
+        if (droppedItem.itemData != null && CanReceiveRetainReturn(droppedItem.itemData, droppedItem.itemData.type))
         { 
-            // Assuming droppedItem carries all necessary item data
-            itemStack.SetItemData(droppedItem.GetItemData(), droppedItem.GetQuantity());
-            UpdateSlotUI(itemStack.GetQuantity());  // Update UI to reflect the new item
+            HandleItemDrop(droppedItem);
         }
     }
 
@@ -759,7 +844,6 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         {
             itemStack.ClearStack(); // Clears the associated ItemStack
         }
-        itemStack = null; // Ensures the reference is cleared
 
         UpdateSlotUI(0); // Updates the UI to reflect an empty slot
 
@@ -770,39 +854,29 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // Handle Item Drop for Inventory
     public void OnDrop(PointerEventData eventData)
     {
+        if (eventData == null || eventData.pointerDrag == null)
+        {
+            Debug.Log("Drop was Null!");
+            return;
+        }
+
         ItemStack droppedItemStack = eventData.pointerDrag.GetComponent<ItemStack>();
 
-        if ( droppedItemStack != null && CanReceiveRetainReturn(droppedItemStack.itemData, droppedItemStack.itemData.type))
+        if (droppedItemStack != null && droppedItemStack != this.itemStack && droppedItemStack.itemData != null)
         {
-            // Handle the dropped item (e.g., swap, merge)
-            if (eventData.pointerDrag != null)
+            if (CanReceiveRetainReturn(droppedItemStack.itemData, droppedItemStack.itemData.type))
             {
-                // Pass 'this' as the ItemSlot instance that received the drop
-                UnitInventory unitInventory = FindObjectOfType<UnitInventory>(); // Get reference to UnitInventory
-                if (unitInventory != null)
-                {
-                    // Implement logic for when an item is dropped onto this slot
-    
-                    // For example, swapping items or adding to this slot's contents
-                    HandleItemDrop(eventData.pointerDrag.GetComponent<ItemStack>());
-                        
-                    // Optionally, notify the inventory system...
-                    // Placeholder Line - Replace with actual logic to notify unit inv.
-
-                    // FUTURE - NOT NOW LATER
-                    // TODO: Don't forget to remove the dropped item from the inventory 
-                }
+                HandleItemDrop(droppedItemStack);
             }
             else
             {
-                Debug.Log("Drop was somehow null, or cannot receive item!");
+                Debug.Log("Cannot receive item: Restricted type mismatch.");
             }
-        } 
-        else 
-        { 
-            Debug.Log("Dropp was Null!"); 
         }
-        
+        else
+        {
+            Debug.Log("Dropped ItemStack was null, same stack, or had no itemData.");
+        }
     }
 
 

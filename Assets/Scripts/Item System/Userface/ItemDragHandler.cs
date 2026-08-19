@@ -24,15 +24,13 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private void Awake()
     {
         // Get AudioManager
-        AudioManager AudioManager = FindObjectOfType<AudioManager>();
+        AudioManager = AudioManager.Instance ?? FindObjectOfType<AudioManager>();
 
         // Get UnitDrag
         unitDrag = FindObjectOfType<UnitDrag>();
 
-        // I assume InventoryItem component is on the same GameObject
+        // ItemStack component is on the same GameObject
         itemStack = GetComponent<ItemStack>();
-
-        // if ItemStack is not present adding it to the gameObject causes a Null Ref Error + Vfx glitch
 
         // Get the component, or add it if it's not present
         rectTransform = GetComponent<RectTransform>() 
@@ -41,7 +39,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         canvasGroup = GetComponent<CanvasGroup>()
         ?? gameObject.AddComponent<CanvasGroup>();
 
-        canvas = null ?? FindObjectOfType<Canvas>();
+        canvas = GetComponentInParent<Canvas>() ?? FindObjectOfType<Canvas>();
     }
 
 
@@ -51,49 +49,63 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         originalPosition = rectTransform.anchoredPosition;
         
         // Adding: Visual Effect 
-        canvasGroup.alpha = .6f;
-        canvasGroup.blocksRaycasts = false;
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = .6f;
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        if (unitDrag != null)
+        {
+            unitDrag.isHolding = true;
+        }
     }
 
     public void OnDrag(PointerEventData eventData)
     {
         // Set: Visual Effect
-        unitDrag.isHolding = true;
+        if (unitDrag != null)
+        {
+            unitDrag.isHolding = true;
+        }
 
         // Adding: Mouse Movement
-        rectTransform.anchoredPosition += eventData.delta / canvas.scaleFactor;
-
+        float scale = (canvas != null && canvas.scaleFactor > 0) ? canvas.scaleFactor : 1f;
+        rectTransform.anchoredPosition += eventData.delta / scale;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        // Create: Visual Effect
-        unitDrag.isHolding = false;
-
-        GameObject dropTarget = eventData.pointerCurrentRaycast.gameObject;
-        if (dropTarget != null && dropTarget.CompareTag("ItemSlotTag")) // Replace with your actual tag for ItemSlot
+        // Release: Visual Effect
+        if (unitDrag != null)
         {
-            ItemSlot slot = dropTarget.GetComponent<ItemSlot>();
-            if (slot != null)
+            unitDrag.isHolding = false;
+        }
+
+        // Always restore the dragged element's anchored position to its slot origin
+        rectTransform.anchoredPosition = originalPosition;
+
+        // Restore canvas group properties
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 1f;
+            canvasGroup.blocksRaycasts = true;
+        }
+
+        // Handle world/ocean drops if not dropped on a UI slot
+        if (eventData.pointerCurrentRaycast.gameObject != null)
+        {
+            string tag = eventData.pointerCurrentRaycast.gameObject.tag;
+            if (tag == "Ocean")
             {
-                // Notify the slot that an item has been dropped onto it
-                slot.ReceiveDroppedItem(itemStack);
+                HandleOceanDrop();
             }
         }
-        else
-        {
-            // If not dropped on a valid slot, revert to original position
-            rectTransform.anchoredPosition = originalPosition;
-        }
-
-        canvasGroup.alpha = 1f;
-        canvasGroup.blocksRaycasts = true;
     }
 
 
     private void HandleDrop(PointerEventData eventData)
     {
-
         if (eventData.pointerCurrentRaycast.gameObject != null)
         {
             string tag = eventData.pointerCurrentRaycast.gameObject.tag;
@@ -118,25 +130,21 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
             }
         }
     }
+
     private void HandleOceanDrop()
     {
         // Logic for dropping the item into the ocean
         Debug.Log("Dropped item into the ocean.");
-        // Play ocean drop sound, spawn crate, etc.
+        if (AudioManager != null && AudioManager.DropIntoSea != null)
+        {
+            AudioManager.PlaySound(AudioManager.DropIntoSea);
+        }
     }
 
     private void HandlePlayerDrop(PointerEventData eventData)
     {
         // Logic for dropping the item into another slot
         Debug.Log("Placed item into another slot.");
-        // Play slot drop sound, etc.
-    }
-
-    public void OnDrop(PointerEventData eventData)
-    {
-        // Logic for receiving a dropped item
-        Debug.Log("OnDrop");
-        // Optional: Handle the item being dropped onto this slot
     }
 }
 

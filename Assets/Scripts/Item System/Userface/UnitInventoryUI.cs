@@ -67,20 +67,65 @@ public class UnitInventoryUI : InventoryUserface
 
     public override void SetUnitInventory(UnitInventory newUnitInventory)
     {
+        if (this.unitInventory != null)
+        {
+            this.unitInventory.OnUnitInventoryChanged -= RefreshInventoryDisplay;
+        }
+
         this.unitInventory = newUnitInventory;
 
-        // Update the slot's UnitInventory data
-        foreach (var slot in inventorySlots)
+        if (this.unitInventory != null)
         {
-            slot.unitInventory = newUnitInventory;
+            this.unitInventory.OnUnitInventoryChanged += RefreshInventoryDisplay;
+        }
 
-            Debug.Log("<color=white>UnitInventoryUI:</color> <color=green>Succesful Set unitInventory! unitInventory: </color>" + unitInventory.name + " unitInventory.ID: " + unitInventory.ID);
+        SyncSlots();
+
+        // Update the slot's UnitInventory data
+        var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
+        if (slots != null)
+        {
+            foreach (var slot in slots)
+            {
+                if (slot != null)
+                {
+                    slot.unitInventory = newUnitInventory;
+                    slot.unitInventoryUI = this;
+                    if (newUnitInventory != null)
+                    {
+                        slot.storageManager = newUnitInventory.GetComponent<UnitStorageManager>();
+                    }
+                    Debug.Log("<color=white>UnitInventoryUI:</color> <color=green>Succesful Set unitInventory! unitInventory: </color>" + (unitInventory != null ? unitInventory.name : "null") + " unitInventory.ID: " + (unitInventory != null ? unitInventory.ID : "null"));
+                }
+            }
         }
     }
 
     public override void SetInventory(Inventory newInventory)
     {
+        if (this.inventory != null)
+        {
+            this.inventory.OnInventoryChanged -= RefreshInventoryDisplay;
+        }
+
         this.inventory = newInventory;
+
+        if (this.inventory != null)
+        {
+            this.inventory.OnInventoryChanged += RefreshInventoryDisplay;
+        }
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (unitInventory != null)
+        {
+            unitInventory.OnUnitInventoryChanged -= RefreshInventoryDisplay;
+        }
+        if (inventory != null)
+        {
+            inventory.OnInventoryChanged -= RefreshInventoryDisplay;
+        }
     }
 
     public void SetUnit(Unit newUnit)
@@ -122,10 +167,49 @@ public class UnitInventoryUI : InventoryUserface
 
     }
 
+    protected virtual void Awake()
+    {
+        SyncSlots();
+    }
+
     protected override void Start()
     {
         base.Start();
-        // Additional initialization if needed
+        SyncSlots();
+    }
+
+    public void SyncSlots()
+    {
+        if ((inventorySlots == null || inventorySlots.Count == 0) && itemSlots != null && itemSlots.Length > 0)
+        {
+            inventorySlots = new List<ItemSlot>(itemSlots);
+        }
+        else if ((itemSlots == null || itemSlots.Length == 0) && inventorySlots != null && inventorySlots.Count > 0)
+        {
+            itemSlots = inventorySlots.ToArray();
+        }
+        else if ((itemSlots == null || itemSlots.Length == 0) && (inventorySlots == null || inventorySlots.Count == 0) && itemSlotContainer != null)
+        {
+            itemSlots = itemSlotContainer.GetComponentsInChildren<ItemSlot>(true);
+            inventorySlots = new List<ItemSlot>(itemSlots);
+        }
+    }
+
+    protected override void ClearSlots()
+    {
+        SyncSlots();
+        var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
+        if (slots != null)
+        {
+            foreach (var slot in slots)
+            {
+                if (slot != null)
+                {
+                    slot.ClearSlot();
+                }
+            }
+        }
+        base.ClearSlots();
     }
 
     public void UpdateDisplayName(string unitName)
@@ -154,9 +238,6 @@ public class UnitInventoryUI : InventoryUserface
     // UnitInventoryUI.cs
     public override void RefreshInventoryDisplay()
     {
-        // Make sure to assign the inventories before refreshing.
-        // AssignInventoriesIfNeeded();
-
         // Now you can safely call the base refresh logic.
         base.RefreshInventoryDisplay();
 
@@ -173,20 +254,12 @@ public class UnitInventoryUI : InventoryUserface
         // Check if UnitInventory or Inventory is available.
         if (unitInventory != null)
         {
-            // Set the inspected object && unit - Good Idea but Wrong Place
-            //SetInspection(unitInventory.gameObject);
-            //SetUnit(unitInventory.gameObject.GetComponent<Unit>());
-
-            // Debug.Log("<color=green>UnitInventoryUI: Succesful Set Units Display Name! Unit.displayName: </color>" + unit.displayName);
-
-            // Refresh display based on UnitInventory
-            var items = unitInventory.GetAllItems();
-            // Fetch items from inventory and update UI slots.
-            UpdateSlotsWithItems(items);
+            // Refresh display based on UnitInventory's physical cargo slots to preserve slot identity
+            UpdateSlotsWithItems(unitInventory.itemSlots);
         }
         else if (inventory != null)
         {
-            // Fallback to Inventory if UnitInventory is not available.
+            // Fallback to aggregate Inventory if UnitInventory is not available.
             var items = inventory.GetAllItems();
             UpdateSlotsWithItems(items);
         }
@@ -195,68 +268,37 @@ public class UnitInventoryUI : InventoryUserface
             Debug.LogError("<color=red>UnitInventoryUI: No inventory or unit inventory available</color>");
         }
     }
-    public void RefreshSlots() {
-    ClearSlots(); // Ensure all slots are cleared initially.
 
-    if (unitInventory == null && inventory == null) {
-        Debug.LogError("No inventory found.");
-        return;
-    }
+    public void RefreshSlots()
+    {
+        SyncSlots();
+        ClearSlots(); // Ensure all slots are cleared initially.
 
-    var items = unitInventory?.GetAllItems() ?? inventory?.GetAllItems();
-    if (items == null) {
-        Debug.LogError("No items to display.");
-        return;
-    }
+        if (unitInventory == null && inventory == null)
+        {
+            Debug.LogError("No inventory found.");
+            return;
+        }
 
-    int index = 0;
-    foreach (var item in items) {
-        if (index >= itemSlots.Length) break; // Avoid exceeding slot array.
-        itemSlots[index].InitializeSlot(item.Key, item.Value);
-        index++;
+        if (unitInventory != null)
+        {
+            UpdateSlotsWithItems(unitInventory.itemSlots);
+        }
+        else if (inventory != null)
+        {
+            var items = inventory.GetAllItems();
+            if (items == null)
+            {
+                Debug.LogError("No items to display.");
+                return;
+            }
+            UpdateSlotsWithItems(items);
+        }
     }
-
-    for (int i = index; i < itemSlots.Length; i++) {
-        itemSlots[i].ClearSlot(); // Clear any remaining slots.
-    }
-}
 
     // UnitInventoryUI.cs - Resets all its ItemSlots & then copies the UnitInventory.cs onto its
     // own list or array of ItemSlots. Its own slots are the ones that display the unitInventory
     // content. Think of ItemSlots as windows which reflects the Unit Inventory content. 
-
-    // UnitInventoryUI.cs - Resets ItemSlots with content from its UnitInventory.cs Reference
-    //public void SetItemSlots()
-    //{
-    //    if (unitInventory == null)
-    //    {
-    //        Debug.LogError("No UnitInventory set.");
-    //        return;
-    //    }
-
-    //    // Only assign the inventories if they are not already set prior to this method in this class.
-    //    if (unitInventory == null) { unitInventory = UnitSelections.Instance.GetSelectedComponent<UnitInventory>(); }
-    //    if (inventory == null) { inventory = UnitSelections.Instance.GetSelectedComponent<Inventory>(); }
-
-    //    // If both are still null, log an error or handle appropriately.
-    //    if (unitInventory == null && inventory == null) { Debug.LogError("<color=red>No inventory available to display</color>"); }
-
-    //    // Clear All Slots from prior Inventory
-    //    foreach (var slot in inventorySlots)
-    //    {
-    //        // Check Update & Clear each Slot 
-    //        slot.itemStack.ClearStack();
-    //    }
-
-    //    // Retrieve Slots from Unit Inventory
-    //    foreach (var slot in inventorySlots)
-    //    {
-    //        // Check Update each Slots Value 
-    //        unitInventory.ViewItemSlots();
-    //    }
-    //}
-
-    // UnitInventoryUI.cs 
     public void SetItemSlots()
     {
         if (unitInventory == null)
@@ -265,25 +307,8 @@ public class UnitInventoryUI : InventoryUserface
             return;
         }
 
-        // Assuming inventorySlots is an array or list of ItemSlot UI components
-        int index = 0;
-        foreach (var item in unitInventory.GetAllItems())
-        {
-            if (index < inventorySlots.Count)
-            {
-                inventorySlots[index].InitializeSlot(item.Key, item.Value);
-            }
-            index++;
-        }
-
-        // Clear remaining slots if any
-        for (int i = index; i < inventorySlots.Count; i++)
-        {
-            if (inventorySlots[i] != null)
-            {
-                inventorySlots[i].ClearSlot(); // Ensure this method exists to clear the slot visually and logically
-            }
-        }
+        SyncSlots();
+        UpdateSlotsWithItems(unitInventory.itemSlots);
 
         Debug.Log("Slots have been set based on UnitInventory.");
     }
@@ -291,28 +316,74 @@ public class UnitInventoryUI : InventoryUserface
     public void DestroyInventory()
     {
         // Example method called when the inventory gets destroyed
-        foreach (var slot in inventorySlots)
+        SyncSlots();
+        var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
+        if (slots != null)
         {
-            slot.CheckAndClearSlotIfEmpty();
-            // Additional logic for handling destroyed inventories.
+            foreach (var slot in slots)
+            {
+                if (slot != null)
+                {
+                    slot.CheckAndClearSlotIfEmpty();
+                }
+            }
         }
     }
 
-    private void UpdateSlotsWithItems(Dictionary<ItemData, int> items)
+    public void UpdateSlotsWithItems(ItemSlot[] physicalSlots)
     {
-        for (int i = 0; i < itemSlots.Length; i++)
+        SyncSlots();
+        var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
+        if (slots == null) return;
+
+        for (int i = 0; i < slots.Length; i++)
         {
-            if (i < items.Count)
+            if (slots[i] == null) continue;
+
+            slots[i].unitInventory = unitInventory;
+            slots[i].unitInventoryUI = this;
+            if (unitInventory != null)
             {
-                var item = items.ElementAt(i);
-                itemSlots[i].InitializeSlot(item.Key, item.Value);
+                slots[i].storageManager = unitInventory.GetComponent<UnitStorageManager>();
+            }
+
+            if (physicalSlots != null && i < physicalSlots.Length && physicalSlots[i] != null && physicalSlots[i].itemStack != null && physicalSlots[i].itemStack.HasItem() && physicalSlots[i].itemStack.GetQuantity() > 0)
+            {
+                var stack = physicalSlots[i].itemStack;
+                slots[i].InitializeSlot(stack.GetItemData(), stack.GetQuantity());
             }
             else
             {
-                // Clear slots if no item to display
-                //itemSlots[i].ClearSlot(); // ClearSlot in Slots yet to be written
-                itemSlots[i].CheckAndClearSlotIfEmpty(); // Checks and clears empty Slots 
-                // itemSlots[i].itemStack.ClearStack(); // ClearStack in ItemStack is written
+                slots[i].ClearSlot();
+            }
+        }
+    }
+
+    public void UpdateSlotsWithItems(Dictionary<ItemData, int> items)
+    {
+        SyncSlots();
+        var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
+        if (slots == null || items == null) return;
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null) continue;
+
+            slots[i].unitInventory = unitInventory;
+            slots[i].unitInventoryUI = this;
+            if (unitInventory != null)
+            {
+                slots[i].storageManager = unitInventory.GetComponent<UnitStorageManager>();
+            }
+
+            if (i < items.Count)
+            {
+                var item = items.ElementAt(i);
+                slots[i].InitializeSlot(item.Key, item.Value);
+            }
+            else
+            {
+                slots[i].ClearSlot();
             }
         }
     }

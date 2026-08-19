@@ -70,7 +70,7 @@ public class StorageManager : MonoBehaviour
         
         itemCap = storage.GetCapacityLimit();
 
-        return capacityLeft = itemQuant - itemCap;
+        return capacityLeft = Mathf.Max(0, itemCap - itemQuant);
     }
 
     public virtual bool HasReachedCapacity(int quantityToAdd)

@@ -4,17 +4,22 @@ using UnityEngine;
 
 public class UnitStorageManager : StorageManager
 {
-    //[HideInInspector]
-    //[SerializeField]
-    protected new Storage storage; // This hides the inherited field
-
-
     // Unit Storage + Stack Stats
     //[SerializeField]
     protected UnitStorage unitStorage;
 
     // Constructor
     public UnitStorageManager(Storage storage) : base(storage) { }
+
+    // Stack Stat - Constants - These Number should be derive from the UnitStorage.cs file
+    public const int MAX_STACK_SIZE = 40; // Max Stack Quantity Allowed
+    private const int NORMAL_SLOTS = 4;    // Max Normal Item Slots - THIS IS ITEM SLOTS
+    private const int CONSUME_SLOT = 1;    // Max Consumable Item Slots
+    private const int ABILITY_SLOT = 1;    // Max Ability Item Slots
+
+    // Stack Stat - "Dynamic" / Placeholder Number
+    public int maxQuantity { get; private set; } = MAX_STACK_SIZE;
+    public int BonusQuantity { get; set; }
 
     // Unity Constructor
     private void Awake()
@@ -24,12 +29,17 @@ public class UnitStorageManager : StorageManager
             unitStorage = GetComponent<UnitStorage>();
             if (!unitStorage)
             {
-                unitStorage = new UnitStorage(); // Or some other way to initialize it properly
+                unitStorage = gameObject.AddComponent<UnitStorage>();
             }
-
-            // Updates Slot Max Quantity
-            UpdateMaxQuantity();
         }
+
+        if (!storage)
+        {
+            storage = unitStorage;
+        }
+
+        // Updates Slot Max Quantity
+        UpdateMaxQuantity();
 
 
         // Initialize usedSlots dictionary here if it's not already initialized
@@ -39,17 +49,6 @@ public class UnitStorageManager : StorageManager
             { ItemType.Consumable, 0 }
         };
     }
-
-
-    // Stack Stat - "Dynamic" / Placeholder Number
-    public int maxQuantity { get; private set; }
-    public int BonusQuantity { get; set; }
-
-    // Stack Stat - Constants - These Number should be derive from the UnitStorage.cs file
-    private const int MAX_STACK_SIZE = 40; // Max Stack Quantity Allowed
-    private const int NORMAL_SLOTS = 4;    // Max Normal Item Slots - THIS IS ITEM SLOTS
-    private const int CONSUME_SLOT = 1;    // Max Consumable Item Slots
-    private const int ABILITY_SLOT = 1;    // Max Ability Item Slots
 
     #region Const Getters
 
@@ -89,24 +88,38 @@ public class UnitStorageManager : StorageManager
     {
         get
         {
-            return usedSlots[ItemType.Normal] + usedSlots[ItemType.Consumable];
+            int normalUsed = usedSlots.ContainsKey(ItemType.Normal) ? usedSlots[ItemType.Normal] : 0;
+            int consumableUsed = usedSlots.ContainsKey(ItemType.Consumable) ? usedSlots[ItemType.Consumable] : 0;
+            return normalUsed + consumableUsed;
         }
     }
 
     public override void AddItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            return;
+        }
+
         if (CanAddItem(itemData, quantity))
         {
+            bool isNewSlot = GetItemQuantity(itemData) == 0;
+
             unitStorage.AddItem(itemData, quantity);
 
-            switch (itemData.type)
+            if (isNewSlot)
             {
-                case ItemType.Normal:
-                    usedSlots[ItemType.Normal]++;  
-                    break;
-                case ItemType.Consumable:
-                    usedSlots[ItemType.Consumable]++;
-                    break;
+                switch (itemData.type)
+                {
+                    case ItemType.Normal:
+                        if (!usedSlots.ContainsKey(ItemType.Normal)) usedSlots[ItemType.Normal] = 0;
+                        usedSlots[ItemType.Normal]++;  
+                        break;
+                    case ItemType.Consumable:
+                        if (!usedSlots.ContainsKey(ItemType.Consumable)) usedSlots[ItemType.Consumable] = 0;
+                        usedSlots[ItemType.Consumable]++;
+                        break;
+                }
             }
 
             totalStacks += quantity;
@@ -126,6 +139,11 @@ public class UnitStorageManager : StorageManager
     // Dedicated Method to determine if Can Add Item 
     public override bool CanAddItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            return false;
+        }
+
         // First, call the base method to check general storage capacity
         if (!base.CanAddItem(itemData, quantity))
         {
@@ -133,21 +151,33 @@ public class UnitStorageManager : StorageManager
             return false;
         }
 
-        // Check if adding this quantity exceeds the total allowed stacks
-        if (totalStacks + quantity > maxQuantity)
+        // Check if adding this quantity exceeds the per-stack maximum
+        if (quantity > maxQuantity)
         {
-            Debug.LogWarning($"Total stacks exceeded: {totalStacks + quantity} / {maxQuantity}");
+            Debug.LogWarning($"Item quantity exceeds stack maximum: {quantity} / {maxQuantity}");
             return false;
         }
 
-        // Determine the number of slots available for the item type using the new method
-        int slotsAvailable = CalculateAvailableSlots(itemData);
-
-        // Check if there are no slots available for the item type
-        if (slotsAvailable <= 0)
+        bool isNewSlot = GetItemQuantity(itemData) == 0;
+        if (isNewSlot)
         {
-            Debug.LogWarning($"No slots available for type {itemData.type}");
-            return false;
+            // Determine the number of slots available for the item type using the new method
+            int slotsAvailable = CalculateAvailableSlots(itemData);
+
+            // Check if there are no slots available for the item type
+            if (slotsAvailable <= 0)
+            {
+                Debug.LogWarning($"No slots available for type {itemData.type}");
+                return false;
+            }
+        }
+        else
+        {
+            if (GetItemQuantity(itemData) + quantity > maxQuantity)
+            {
+                Debug.LogWarning($"Total stack quantity exceeded for {itemData.displayName}: {GetItemQuantity(itemData) + quantity} / {maxQuantity}");
+                return false;
+            }
         }
 
         // If all checks pass, return true indicating the item can be added
@@ -158,12 +188,18 @@ public class UnitStorageManager : StorageManager
     // Dedicated method to calculate available slots
     private int CalculateAvailableSlots(ItemData itemData)
     {
+        if (itemData == null)
+        {
+            return 0;
+        }
+
+        int currentUsed = usedSlots.ContainsKey(itemData.type) ? usedSlots[itemData.type] : 0;
         switch (itemData.type)
         {
             case ItemType.Normal:
-                return NORMAL_SLOTS - usedSlots[ItemType.Normal];
+                return NORMAL_SLOTS - currentUsed;
             case ItemType.Consumable:
-                return CONSUME_SLOT - usedSlots[ItemType.Consumable];
+                return CONSUME_SLOT - currentUsed;
             default:
                 Debug.LogError("Unhandled item type: " + itemData.type);
                 return 0; // Handle other item types or throw an error
@@ -192,21 +228,40 @@ public class UnitStorageManager : StorageManager
 
     public override bool RemoveItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            return false;
+        }
+
+        bool wasInStorage = GetItemQuantity(itemData) > 0;
+
         if (base.RemoveItem(itemData, quantity))
         {
-            switch (itemData.type)
+            bool isStillInStorage = GetItemQuantity(itemData) > 0;
+
+            if (wasInStorage && !isStillInStorage)
             {
-                case ItemType.Normal:
-                    usedSlots[ItemType.Normal]--;
-                    break;
-                case ItemType.Consumable:
-                    usedSlots[ItemType.Consumable]--;
-                    // TODO: in future please check
-                    // if item in use or not check! 
-                    break;
+                switch (itemData.type)
+                {
+                    case ItemType.Normal:
+                        if (usedSlots.ContainsKey(ItemType.Normal) && usedSlots[ItemType.Normal] > 0)
+                        {
+                            usedSlots[ItemType.Normal]--;
+                        }
+                        break;
+                    case ItemType.Consumable:
+                        if (usedSlots.ContainsKey(ItemType.Consumable) && usedSlots[ItemType.Consumable] > 0)
+                        {
+                            usedSlots[ItemType.Consumable]--;
+                        }
+                        // TODO: in future please check
+                        // if item in use or not check! 
+                        break;
+                }
             }
 
             totalStacks -= quantity;
+            if (totalStacks < 0) totalStacks = 0;
             return true;
         }
 

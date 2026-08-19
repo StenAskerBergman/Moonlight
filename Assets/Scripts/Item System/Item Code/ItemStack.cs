@@ -32,9 +32,29 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public ItemSlot itemSlot { get; private set; }
     public ItemDragHandler itemDragHandler { get; private set; }
     
+    private void Awake()
+    {
+        if (itemSlot == null)
+        {
+            itemSlot = GetComponentInParent<ItemSlot>();
+        }
+        if (maxQuantity <= 0)
+        {
+            UpdateMaxQuantity();
+        }
+    }
+
     private void Start()
     {
-        itemSlot.storageManager?.GetComponent<Item>();
+        if (itemSlot == null)
+        {
+            itemSlot = GetComponentInParent<ItemSlot>();
+        }
+        if (maxQuantity <= 0)
+        {
+            UpdateMaxQuantity();
+        }
+
         if (itemSlot == null)
         {
             Debug.LogError("ItemStack: itemSlot is null.");
@@ -42,6 +62,15 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         }
 
         StorageManager storageManager = itemSlot.storageManager;
+        if (storageManager == null)
+        {
+            storageManager = itemSlot.GetComponentInParent<UnitStorageManager>();
+            if (storageManager != null)
+            {
+                itemSlot.storageManager = (UnitStorageManager)storageManager;
+            }
+        }
+
         if (storageManager == null)
         {
             Debug.LogError("ItemStack: itemSlot's storageManager is null.");
@@ -112,7 +141,8 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
 
     // Quantities
-    public int maxQuantity;
+    public const int DEFAULT_MAX_STACK_SIZE = 40;
+    public int maxQuantity = DEFAULT_MAX_STACK_SIZE;
     public int quantity; // public int quantity { get; private set; }
     public bool hasSpace;
 
@@ -124,7 +154,11 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
     #region Get - Item, Quantity, MaxQuantity, ItemData, ItemSlot
     public int GetQuantity() { return quantity; }
-    public int GetMaxQuantity() { return maxQuantity; }
+    public int GetMaxQuantity() 
+    { 
+        if (maxQuantity <= 0) UpdateMaxQuantity();
+        return maxQuantity; 
+    }
     public Item GetItem() { if (item != null) return item; Debug.Log("ItemStack: No Item In Stack"); return null; } // No item state -> NullReferenceException
     public ItemData GetItemData() { if (itemData != null) return itemData; Debug.Log("ItemStack: No item data"); return null; } // No item data -> NullReferenceException
     public ItemSlot GetItemSlot() { if (itemSlot != null && !isAboard) return itemSlot; Debug.Log("ItemStack: No item slot"); return null; } // No item slot -> NullReferenceException
@@ -139,17 +173,57 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         UpdateStackUI(quantity);
     }
 
+    public void UpdateMaxQuantity()
+    {
+        if (itemSlot == null)
+        {
+            itemSlot = GetComponentInParent<ItemSlot>();
+        }
+
+        if (itemData != null && itemData.maxStackSize > 0)
+        {
+            maxQuantity = itemData.maxStackSize;
+        }
+        else if (itemData != null && itemData.type == ItemType.Consumable)
+        {
+            maxQuantity = 1;
+        }
+        else if (itemSlot != null && itemSlot.storageManager != null && itemSlot.storageManager.maxQuantity > 0)
+        {
+            maxQuantity = itemSlot.storageManager.maxQuantity;
+        }
+        else
+        {
+            UnitStorageManager storageManager = GetComponentInParent<UnitStorageManager>();
+            if (storageManager != null && storageManager.maxQuantity > 0)
+            {
+                maxQuantity = storageManager.maxQuantity;
+            }
+            else
+            {
+                maxQuantity = DEFAULT_MAX_STACK_SIZE;
+            }
+        }
+    }
+
     // Set Max Quantity - ItemStack.cs (Revised) - this must be set
     public void SetMaxQuantity(int maxQuantity)
     {
-        this.maxQuantity = maxQuantity; // Correctly set maxQuantity
+        if (maxQuantity > 0)
+        {
+            this.maxQuantity = maxQuantity;
+        }
+        else
+        {
+            UpdateMaxQuantity();
+        }
     }
 
     // Set Item Data - ItemStack.cs 
     public void SetItemData(ItemData data)
     {
         itemData = data;
-
+        UpdateMaxQuantity();
         UpdateStackUI(quantity);
     }
 
@@ -158,7 +232,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     {
         itemData = data;
         this.quantity = quantity;
-
+        UpdateMaxQuantity();
         UpdateStackUI(quantity);
     }
 
@@ -167,7 +241,10 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public void SetItemSlot(ItemSlot slot)
     {
         itemSlot = slot;
-
+        if (maxQuantity <= 0 || (itemData == null && slot?.storageManager != null))
+        {
+            UpdateMaxQuantity();
+        }
         UpdateStackUI(quantity);
     }
 
@@ -186,6 +263,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Add Quantity - ItemStack.cs (Revised)
     public int AddQuantity(int addQuantity)
     {
+        if (maxQuantity <= 0) UpdateMaxQuantity();
         int spaceLeft = maxQuantity - quantity;
         int quantityToAdd = Mathf.Min(addQuantity, spaceLeft);
         quantity += quantityToAdd;
@@ -196,6 +274,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Add Stack - ItemStack.cs (Revised)
     public ItemStack AddStack(ItemStack _itemStack)
     {
+        if (maxQuantity <= 0) UpdateMaxQuantity();
         int spaceLeft = maxQuantity - quantity;
         int quantityToAdd = Mathf.Min(_itemStack.quantity, spaceLeft);
         quantity += quantityToAdd;
@@ -235,7 +314,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public int GetSpaceLeft(int quantity, int maxQuantity)
     {
         // currant_quantity - maxQuantity = quantity difference
-        int spaceLeft = quantity - maxQuantity;
+        int spaceLeft = maxQuantity - quantity;
 
         // If space Left is negative, set to 0 
         if (spaceLeft < 0) spaceLeft = 0;
@@ -250,8 +329,9 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     /// <returns>space left in a stack</returns>
     public int GetStackSpaceLeft()
     {
-        // currant_quantity - maxQuantity = quantity difference
-        int spaceLeft = quantity - maxQuantity;
+        if (maxQuantity <= 0) UpdateMaxQuantity();
+        // maxQuantity - quantity = space left
+        int spaceLeft = maxQuantity - quantity;
 
         // If space Left is negative, set to 0 
         if (spaceLeft < 0)
@@ -261,7 +341,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         }
 
         // if space left is to great, set to maxLimit
-        if (spaceLeft > maxQuantity || IsFull()) 
+        if (spaceLeft > maxQuantity) 
         {
             Debug.Log("StackMaxSpaceCalc: " + spaceLeft);
             spaceLeft = maxQuantity;
@@ -281,12 +361,13 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public bool IsFull(int quantity, int maxQuantity)
     {
         // Check if the current quantity is less than the max quantity
-        if (this.quantity == maxQuantity) return hasSpace = false;
+        if (this.quantity >= maxQuantity) return hasSpace = false;
         return hasSpace = true;
     }
 
     public bool IsFull()
     {
+        if (maxQuantity <= 0) UpdateMaxQuantity();
         // Check if the current quantity is less than the max quantity
         return this.quantity >= this.maxQuantity;
     }
@@ -294,7 +375,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public bool HasSpace(int quantity, int maxQuantity)
     {
         // Check if the current quantity is less than the max quantity
-        if (this.quantity == maxQuantity) return hasSpace = false;
+        if (this.quantity >= maxQuantity) return hasSpace = false;
         return hasSpace = true;
     }
 
@@ -306,6 +387,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     /// <returns>hasSpace</returns>
     public bool IsStackFull()
     {
+        if (maxQuantity <= 0) UpdateMaxQuantity();
         // Check if the current quantity is less than the max quantity
         return this.quantity >= this.maxQuantity;
     }
@@ -323,6 +405,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Check Max Quantity - ItemStack.cs
     public bool CheckMaxQuantity(int quantity)
     {
+        if (maxQuantity <= 0) UpdateMaxQuantity();
         return this.quantity + quantity <= maxQuantity;
     }
 
@@ -396,9 +479,10 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         // Clear Stack
         item = null;
         itemData = null;
-        itemIcon.sprite = null;
-        itemQuantityText.text = "";
+        if (itemIcon != null) itemIcon.sprite = null;
+        if (itemQuantityText != null) itemQuantityText.text = "";
         quantity = 0;
+        UpdateMaxQuantity();
 
         Debug.Log("Stack cleared."); // Debugging to confirm the action
         
@@ -463,43 +547,18 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Stack Drop 
     public void OnDrop(PointerEventData eventData)
     {
-        // Implement logic for when another item is dropped onto this stack
-        // For example, combining items, swapping, etc.
-
         Debug.Log("ItemStack: Stack: OnDrop");
-        if (eventData.pointerDrag != null)
+        if (eventData != null && eventData.pointerDrag != null)
         {
-            // Check if the dragged item can be added to the slot
-            // if () { }
-
-            // Null Check for Drop Location - Error: Not Suppose to Occur!
-            if (eventData.pointerDrag == null) Debug.LogError("ItemStack: Drop Location is null");
-            
-            // Valid Drop location - No Error!
-            if (eventData.pointerDrag != null)
+            ItemStack droppedItemStack = eventData.pointerDrag.GetComponent<ItemStack>();
+            if (droppedItemStack != null && droppedItemStack != this)
             {
-                // Move the dragged item to this slot
-                // Set New Drop Position! ( NewPos -> OldPos )
-                SetStackPosition(this, eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition, this.itemDragHandler.rectTransform.anchoredPosition); // This should work but stack infinite! 
-                
-                // Log The Dropped Target Name
-                if (eventData.pointerDrag.gameObject.name != null)
+                ItemSlot targetSlot = itemSlot != null ? itemSlot : GetComponentInParent<ItemSlot>();
+                if (targetSlot != null)
                 {
-                    Debug.Log($"ItemStack: Drop Location: {eventData.pointerDrag.gameObject.name}.");
-                }
-                else 
-                {
-                    Debug.Log($"ItemStack: Drop Location is Null"); // removing [ {eventData.pointerDrag.gameObject.name}."); ] This, Won't work since it's already null :)
+                    targetSlot.OnDrop(eventData);
                 }
             }
-
-            // Move the dragged item to this slot
-            eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
-
-            // Play Dropped Item Into Slot Sound
-            AudioManager AudioManager = FindObjectOfType<AudioManager>();
-            AudioClip DropIntoSlot = AudioManager.DropIntoSlot;
-            AudioManager.PlaySound(DropIntoSlot);
         }
     }
 

@@ -72,8 +72,8 @@ public class UnitStorage : Storage
 
     private void Awake()
     {
-        // Sets This UnitStorage Slot Counts
-        this.SetCapacityLimit(NORMAL_SLOTS + ABILITY_SLOT + CONSUME_SLOT);
+        // Sets This UnitStorage Total Item Quantity Capacity Limit
+        this.SetCapacityLimit((NORMAL_SLOTS * MAX_STACK_SIZE) + CONSUME_SLOT + ABILITY_SLOT);
     }
 
 
@@ -103,18 +103,31 @@ public class UnitStorage : Storage
 
     public override void AddItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            Debug.LogWarning("Can't add null itemData to UnitStorage.");
+            return;
+        }
+
         if (CanAddSpecificItem(itemData, quantity))
         {
+            bool isNewSlot = !items.ContainsKey(itemData) || items[itemData] == 0;
+
             base.AddItem(itemData, quantity);
 
-            switch (itemData.type)
+            if (isNewSlot)
             {
-                case ItemType.Normal:
-                    occupiedSlots[ItemType.Normal]++;
-                    break;
-                case ItemType.Consumable:
-                    occupiedSlots[ItemType.Consumable]++;
-                    break;
+                switch (itemData.type)
+                {
+                    case ItemType.Normal:
+                        if (!occupiedSlots.ContainsKey(ItemType.Normal)) occupiedSlots[ItemType.Normal] = 0;
+                        occupiedSlots[ItemType.Normal]++;
+                        break;
+                    case ItemType.Consumable:
+                        if (!occupiedSlots.ContainsKey(ItemType.Consumable)) occupiedSlots[ItemType.Consumable] = 0;
+                        occupiedSlots[ItemType.Consumable]++;
+                        break;
+                }
             }
         }
         else
@@ -125,26 +138,45 @@ public class UnitStorage : Storage
 
     public bool CanAddSpecificItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            return false;
+        }
+
         if (quantity > MAX_STACK_SIZE)
         {
             return false;
         }
 
-        // Check for slot availability based on item type.
-        switch (itemData.type)
+        bool isNewSlot = !items.ContainsKey(itemData) || items[itemData] == 0;
+
+        if (isNewSlot)
         {
-            case ItemType.Normal:
-                if (occupiedSlots[ItemType.Normal] + 1 > NORMAL_SLOTS) // +1 because we are checking if we can add an item to an empty slot
-                {
-                    return false;
-                }
-                break;
-            case ItemType.Consumable:
-                if (occupiedSlots[ItemType.Consumable] + 1 > CONSUME_SLOT)
-                {
-                    return false;
-                }
-                break;
+            int currentOccupied = occupiedSlots.ContainsKey(itemData.type) ? occupiedSlots[itemData.type] : 0;
+
+            // Check for slot availability based on item type.
+            switch (itemData.type)
+            {
+                case ItemType.Normal:
+                    if (currentOccupied + 1 > NORMAL_SLOTS) // +1 because we are checking if we can add an item to an empty slot
+                    {
+                        return false;
+                    }
+                    break;
+                case ItemType.Consumable:
+                    if (currentOccupied + 1 > CONSUME_SLOT)
+                    {
+                        return false;
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            if (items[itemData] + quantity > MAX_STACK_SIZE)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -163,16 +195,34 @@ public class UnitStorage : Storage
 
     public override bool RemoveItem(ItemData itemData, int quantity)
     {
+        if (itemData == null)
+        {
+            return false;
+        }
+
+        bool wasInStorage = items.ContainsKey(itemData) && items[itemData] > 0;
+
         if (base.RemoveItem(itemData, quantity))
         {
-            switch (itemData.type)
+            bool isStillInStorage = items.ContainsKey(itemData) && items[itemData] > 0;
+
+            if (wasInStorage && !isStillInStorage)
             {
-                case ItemType.Normal:
-                    occupiedSlots[ItemType.Normal]--;
-                    break;
-                case ItemType.Consumable:
-                    occupiedSlots[ItemType.Consumable]--;
-                    break;
+                switch (itemData.type)
+                {
+                    case ItemType.Normal:
+                        if (occupiedSlots.ContainsKey(ItemType.Normal) && occupiedSlots[ItemType.Normal] > 0)
+                        {
+                            occupiedSlots[ItemType.Normal]--;
+                        }
+                        break;
+                    case ItemType.Consumable:
+                        if (occupiedSlots.ContainsKey(ItemType.Consumable) && occupiedSlots[ItemType.Consumable] > 0)
+                        {
+                            occupiedSlots[ItemType.Consumable]--;
+                        }
+                        break;
+                }
             }
 
             return true;

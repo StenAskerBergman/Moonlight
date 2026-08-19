@@ -14,9 +14,22 @@ public class StarterUnit : MonoBehaviour
         AssignStartingItem();
         
         // Now initialize the slot with the starting item
-        foreach (var slot in inventoryUI.inventorySlots)
+        if (inventoryUI != null)
         {
-            slot.InitializeSlot(startingItemData, startingQuantity);
+            var slots = (inventoryUI.itemSlots != null && inventoryUI.itemSlots.Length > 0)
+                ? inventoryUI.itemSlots
+                : (inventoryUI.inventorySlots != null ? inventoryUI.inventorySlots.ToArray() : null);
+
+            if (slots != null)
+            {
+                foreach (var slot in slots)
+                {
+                    if (slot != null)
+                    {
+                        slot.InitializeSlot(startingItemData, startingQuantity);
+                    }
+                }
+            }
         }
     }
 
