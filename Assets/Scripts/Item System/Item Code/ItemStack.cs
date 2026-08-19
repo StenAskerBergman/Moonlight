@@ -157,6 +157,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public void SetItemData(ItemData data, int quantity)
     {
         itemData = data;
+        this.quantity = quantity;
 
         UpdateStackUI(quantity);
     }
