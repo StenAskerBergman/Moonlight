@@ -13,23 +13,15 @@ public class StarterUnit : MonoBehaviour
         // Example start method in the boat/unit script
         AssignStartingItem();
         
-        // Now initialize the slot with the starting item
-        if (inventoryUI != null)
+        // Now add the starting item to the unit's inventory
+        UnitInventory unitInv = GetComponent<UnitInventory>();
+        if (unitInv != null && startingItemData != null && startingQuantity > 0)
         {
-            var slots = (inventoryUI.itemSlots != null && inventoryUI.itemSlots.Length > 0)
-                ? inventoryUI.itemSlots
-                : (inventoryUI.inventorySlots != null ? inventoryUI.inventorySlots.ToArray() : null);
-
-            if (slots != null)
-            {
-                foreach (var slot in slots)
-                {
-                    if (slot != null)
-                    {
-                        slot.InitializeSlot(startingItemData, startingQuantity);
-                    }
-                }
-            }
+            unitInv.AddItem(startingItemData, startingQuantity, "StarterUnit");
+        }
+        else if (inventoryUI != null && inventoryUI.unitInventory != null && startingItemData != null && startingQuantity > 0)
+        {
+            inventoryUI.unitInventory.AddItem(startingItemData, startingQuantity, "StarterUnit");
         }
     }
 

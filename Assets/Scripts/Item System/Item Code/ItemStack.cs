@@ -38,10 +38,15 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         {
             itemSlot = GetComponentInParent<ItemSlot>();
         }
+        if (itemSlot != null && itemSlot.itemStack == null)
+        {
+            itemSlot.itemStack = this;
+        }
         if (maxQuantity <= 0)
         {
             UpdateMaxQuantity();
         }
+        InitializeUIComponents();
     }
 
     private void Start()
@@ -50,61 +55,25 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         {
             itemSlot = GetComponentInParent<ItemSlot>();
         }
+        if (itemSlot != null && itemSlot.itemStack == null)
+        {
+            itemSlot.itemStack = this;
+        }
         if (maxQuantity <= 0)
         {
             UpdateMaxQuantity();
         }
 
-        if (itemSlot == null)
+        if (itemSlot != null && itemSlot.storageManager == null)
         {
-            Debug.LogError("ItemStack: itemSlot is null.");
-            return;
-        }
-
-        StorageManager storageManager = itemSlot.storageManager;
-        if (storageManager == null)
-        {
-            storageManager = itemSlot.GetComponentInParent<UnitStorageManager>();
+            UnitStorageManager storageManager = itemSlot.GetComponentInParent<UnitStorageManager>();
             if (storageManager != null)
             {
-                itemSlot.storageManager = (UnitStorageManager)storageManager;
+                itemSlot.storageManager = storageManager;
             }
         }
 
-        if (storageManager == null)
-        {
-            Debug.LogError("ItemStack: itemSlot's storageManager is null.");
-            // Decide whether to return or handle accordingly
-            return;
-        }
-
-        item = storageManager.GetComponent<Item>();
-        if (item == null)
-        {
-            Debug.LogWarning("ItemStack: Item component not found on storageManager.");
-        }
-
-        // Defer assignment of itemData to when SetItemData() is called
-
-        // Initialize UI components
-        itemIcon = GetComponent<Image>();
-        if (itemIcon == null)
-        {
-            itemIcon = gameObject.AddComponent<Image>();
-            Debug.LogWarning("ItemStack: Added missing Image component for itemIcon.");
-        }
-
-        itemQuantityText = GetComponentInChildren<Text>();
-        if (itemQuantityText == null)
-        {
-            // If you're using TextMeshPro, use TextMeshProUGUI instead
-            itemQuantityText = gameObject.AddComponent<Text>();
-            Debug.LogWarning("ItemStack: Added missing Text component for itemQuantityText.");
-        }
-
-        // Ensure itemDragHandler is assigned
-        itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
-
+        InitializeUIComponents();
     }
 
     // This will just make it get it by it self from its environment
@@ -112,31 +81,38 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     {
         if (itemIcon == null)
         {
-            itemIcon = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
-            Debug.LogWarning("ItemStack: Added missing Image component for itemIcon.");
+            itemIcon = GetComponent<Image>() ?? GetComponentInChildren<Image>();
+            if (itemIcon == null)
+            {
+                itemIcon = gameObject.AddComponent<Image>();
+            }
         }
 
         if (itemQuantityText == null)
         {
-            // If you're using TextMeshPro, use TextMeshProUGUI instead
-            itemQuantityText = GetComponentInChildren<Text>() ?? gameObject.AddComponent<Text>();
-            Debug.LogWarning("ItemStack: Added missing Text component for itemQuantityText.");
+            itemQuantityText = GetComponentInChildren<Text>() ?? GetComponent<Text>();
+            if (itemQuantityText == null)
+            {
+                itemQuantityText = gameObject.AddComponent<Text>();
+            }
         }
 
-        // Any additional initialization logic
+        if (itemDragHandler == null)
+        {
+            itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
+        }
     }
 
     // directly infers a reference to use
     public void InitializeUIComponents(Image icon, Text quantityText)
     {
-        if (icon == null || quantityText == null)
-        {
-            Debug.LogError("InitializeUIComponents: Provided components are null.");
-            return;
-        }
+        if (icon != null) itemIcon = icon;
+        if (quantityText != null) itemQuantityText = quantityText;
 
-        itemIcon = icon;
-        itemQuantityText = quantityText;
+        if (itemDragHandler == null)
+        {
+            itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
+        }
     }
 
 
@@ -193,6 +169,10 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         {
             maxQuantity = itemSlot.storageManager.maxQuantity;
         }
+        else if (itemSlot != null && itemSlot.unitInventory != null && itemSlot.unitInventory.GetComponent<UnitStorageManager>() != null)
+        {
+            maxQuantity = itemSlot.unitInventory.GetComponent<UnitStorageManager>().maxQuantity;
+        }
         else
         {
             UnitStorageManager storageManager = GetComponentInParent<UnitStorageManager>();
@@ -242,6 +222,10 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     public void SetItemSlot(ItemSlot slot)
     {
         itemSlot = slot;
+        if (slot != null && slot.itemStack != this)
+        {
+            slot.itemStack = this;
+        }
         if (maxQuantity <= 0 || (itemData == null && slot?.storageManager != null))
         {
             UpdateMaxQuantity();
