@@ -180,13 +180,14 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
             itemSlot = GetComponentInParent<ItemSlot>();
         }
 
-        if (itemData != null && itemData.maxStackSize > 0)
+        if (itemData != null && itemData.type == ItemType.Consumable)
+        {
+            // Consumables never stack beyond 1 - see UnitStorage.cs notes
+            maxQuantity = 1;
+        }
+        else if (itemData != null && itemData.maxStackSize > 0)
         {
             maxQuantity = itemData.maxStackSize;
-        }
-        else if (itemData != null && itemData.type == ItemType.Consumable)
-        {
-            maxQuantity = 1;
         }
         else if (itemSlot != null && itemSlot.storageManager != null && itemSlot.storageManager.maxQuantity > 0)
         {
