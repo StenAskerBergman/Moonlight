@@ -85,15 +85,29 @@ public class UnitInventoryUI : InventoryUserface
         var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
         if (slots != null)
         {
-            foreach (var slot in slots)
+            for (int i = 0; i < slots.Length; i++)
             {
+                var slot = slots[i];
                 if (slot != null)
                 {
                     slot.unitInventory = newUnitInventory;
                     slot.unitInventoryUI = this;
+                    slot.slotIndex = i;
                     if (newUnitInventory != null)
                     {
                         slot.storageManager = newUnitInventory.GetComponent<UnitStorageManager>();
+                        if (newUnitInventory.itemSlots != null && i < newUnitInventory.itemSlots.Length)
+                        {
+                            slot.cargoSlot = newUnitInventory.itemSlots[i];
+                        }
+                        else
+                        {
+                            slot.cargoSlot = null;
+                        }
+                    }
+                    else
+                    {
+                        slot.cargoSlot = null;
                     }
                     Debug.Log("<color=white>UnitInventoryUI:</color> <color=green>Succesful Set unitInventory! unitInventory: </color>" + (unitInventory != null ? unitInventory.name : "null") + " unitInventory.ID: " + (unitInventory != null ? unitInventory.ID : "null"));
                 }
@@ -342,18 +356,29 @@ public class UnitInventoryUI : InventoryUserface
 
             slots[i].unitInventory = unitInventory;
             slots[i].unitInventoryUI = this;
+            slots[i].slotIndex = i;
             if (unitInventory != null)
             {
                 slots[i].storageManager = unitInventory.GetComponent<UnitStorageManager>();
             }
 
-            if (physicalSlots != null && i < physicalSlots.Length && physicalSlots[i] != null && physicalSlots[i].itemStack != null && physicalSlots[i].itemStack.HasItem() && physicalSlots[i].itemStack.GetQuantity() > 0)
+            if (physicalSlots != null && i < physicalSlots.Length && physicalSlots[i] != null)
             {
-                var stack = physicalSlots[i].itemStack;
-                slots[i].InitializeSlot(stack.GetItemData(), stack.GetQuantity());
+                slots[i].cargoSlot = physicalSlots[i];
+
+                if (physicalSlots[i].itemStack != null && physicalSlots[i].itemStack.HasItem() && physicalSlots[i].itemStack.GetQuantity() > 0)
+                {
+                    var stack = physicalSlots[i].itemStack;
+                    slots[i].InitializeSlot(stack.GetItemData(), stack.GetQuantity());
+                }
+                else
+                {
+                    slots[i].ClearSlot();
+                }
             }
             else
             {
+                slots[i].cargoSlot = null;
                 slots[i].ClearSlot();
             }
         }
@@ -371,6 +396,8 @@ public class UnitInventoryUI : InventoryUserface
 
             slots[i].unitInventory = unitInventory;
             slots[i].unitInventoryUI = this;
+            slots[i].slotIndex = i;
+            slots[i].cargoSlot = null;
             if (unitInventory != null)
             {
                 slots[i].storageManager = unitInventory.GetComponent<UnitStorageManager>();

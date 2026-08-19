@@ -75,6 +75,9 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     public Sprite icon;
     public int quantity;
 
+    public ItemSlot cargoSlot; // The authoritative physical cargo slot this UI slot represents (or itself if it is a cargo slot)
+    public int slotIndex = -1;  // The index of this slot in the inventory
+
     public bool canTrade, canTransfer, InRange, InTradeRange, hasItem;
 
     public UnitStorageManager storageManager; // Storage Manager reference - field is declared but not assigned?
@@ -84,19 +87,35 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
     private string realName, debugName;
 
+    public ItemSlot GetCargoSlot()
+    {
+        if (cargoSlot != null) return cargoSlot;
+        if (unitInventory != null && slotIndex >= 0 && unitInventory.itemSlots != null && slotIndex < unitInventory.itemSlots.Length)
+        {
+            return unitInventory.itemSlots[slotIndex];
+        }
+        return this;
+    }
+
+    public int GetSlotIndex()
+    {
+        if (slotIndex >= 0) return slotIndex;
+        if (unitInventory != null)
+        {
+            return unitInventory.GetSlotNumber(this);
+        }
+        return -1;
+    }
+
     #region Slot Initialization - Awake + InitializeSlot()
 
     // ItemSlot.cs 
     private void Awake()
     {
-        // Assign storageManager
+        // Assign storageManager if available on parent
         if (storageManager == null)
         {
             storageManager = GetComponentInParent<UnitStorageManager>();
-            if (storageManager == null)
-            {
-                Debug.LogError("ItemSlot: storageManager is null!");
-            }
         }
 
         // Set up names
@@ -105,13 +124,16 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         gameObject.name = debugSlot ? debugName : realName;
 
         // Setup references
-        unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
+        if (unitInventoryUI == null)
+        {
+            unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
+        }
 
         // Not Ability? Initialize ItemStack
         if (!AbilitySlot)
         {
             // Initialize => ItemStack
-            if (IsItemStackSetup(name) == false) return;
+            IsItemStackSetup(name);
         }
     }
 
@@ -120,16 +142,18 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (itemStack == null)
         {
-            GameObject stackGO = new GameObject($"ItemStack Name:{itemData.name}");
-            stackGO.transform.SetParent(transform, false);
-            itemStack = stackGO.AddComponent<ItemStack>();
-            itemStack.SetItemSlot(this);
+            itemStack = GetComponentInChildren<ItemStack>() ?? ItemStackFactory.CreateItemStack(transform);
         }
-        else if (itemStack.itemSlot == null)
+        
+        if (itemStack != null)
         {
-            itemStack.SetItemSlot(this);
+            if (itemStack.itemSlot == null)
+            {
+                itemStack.SetItemSlot(this);
+            }
+            itemStack.SetItemData(itemData, quantity);
         }
-        itemStack.SetItemData(itemData, quantity);
+        UpdateSlotName();
     }
 
     private bool empty = false;
@@ -227,9 +251,6 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                     Debug.LogError("ItemStack component not found on instantiated prefab.");
                     return false;
                 }
-
-                // If needed, initialize UI components
-                // Assuming your prefab already has the UI components set up, you may not need to call InitializeUIComponents here
             }
             else
             {
@@ -250,31 +271,29 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         }
 
         // Continue initializing references
-        unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
+        if (unitInventoryUI == null)
+        {
+            unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
+        }
         if (unitInventory == null)
         {
             unitInventory = unitInventoryUI != null ? unitInventoryUI.unitInventory : GetComponentInParent<UnitInventory>();
         }
-
-        if (unitInventory == null)
+        if (storageManager == null && unitInventory != null)
         {
-            Debug.LogError("<color=red>UnitInventory reference could not be assigned!</color>");
-            return false;
+            storageManager = unitInventory.GetComponent<UnitStorageManager>();
         }
 
         UpdateSlotName();
         return true;
     }
 
-
-
     // ItemSlot.cs 
     public void InitializeSlot(ItemData itemData, int quantity)
     {
         if (itemStack == null)
         {
-            Debug.LogError("ItemStack component not found.");
-            return;
+            itemStack = GetComponentInChildren<ItemStack>() ?? ItemStackFactory.CreateItemStack(transform);
         }
 
         if (itemStack != null)
@@ -286,78 +305,15 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
             itemStack.SetItemData(itemData, quantity);
 
-            // gets our own Image and sets it to item
-            itemStack.GetComponent<Image>().sprite = itemData.Icon;
-
             // Add button interaction if needed
-            Button button = GetComponent<Button>() ?? gameObject.AddComponent<Button>();
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() => OnItemSlotClicked());
-
-            // Add item slot interaction if needed
-            ItemSlot itemSlot = GetComponent<ItemSlot>() ?? gameObject.AddComponent<ItemSlot>();
-                     itemSlot.unitInventoryUI = this.unitInventoryUI;
-                     itemSlot.unitInventory = this.unitInventory;
-    
-            // ISSUE: Unclear Location of the Current Actual ItemSlots
-
-            // Location: itemSlots in UnitInventoryUI.cs
-            for (int i = 0; i < unitInventoryUI.itemSlots.Length; i++)
-            { 
-                // If Slot is Empty then...
-                if (unitInventoryUI.itemSlots[i] == null)
-                {
-                    // Set Null Slot to This Slot
-                    unitInventoryUI.itemSlots[i] = itemSlot;
-                    break;
-                }
-
-                // If Slot is Not Empty then...
-                if (unitInventoryUI.itemSlots[i] != null)
-                {
-                    // Check if Slot is already Updated
-                    if (unitInventoryUI.itemSlots[i].unitInventoryUI == itemSlot.unitInventoryUI) continue;
-                    if (unitInventoryUI.itemSlots[i].unitInventory == itemSlot.unitInventory) continue;
-
-                    // Update Slot - Set Slot to New Slot Values
-                    unitInventoryUI.itemSlots[i].unitInventoryUI = itemSlot.unitInventoryUI;
-                    unitInventoryUI.itemSlots[i].unitInventory = itemSlot.unitInventory;
-                    break;
-                }
-            }
-
-            // Location: itemSlots in UnitInventory.cs
-            for (int i = 0; i < unitInventoryUI.unitInventory.itemSlots.Length; i++)
+            Button button = GetComponent<Button>();
+            if (button != null)
             {
-          
-                // If Slot is Empty then...
-                if (unitInventoryUI.unitInventory.itemSlots[i] == null)
-                {
-                    unitInventoryUI.unitInventory.itemSlots[i] = itemSlot;
-                    break;
-                }
-
-                // If Slot is Not Empty then...
-                if (unitInventoryUI.unitInventory.itemSlots[i] != null)
-                {
-                    // Check if Slot is already Updated
-                    if (unitInventoryUI.unitInventory.itemSlots[i].unitInventoryUI == itemSlot.unitInventoryUI) continue;
-                    if (unitInventoryUI.unitInventory.itemSlots[i].unitInventory == itemSlot.unitInventory) continue;
-
-                    // Update Slot - Set Slot to New Slot Values
-                    unitInventoryUI.unitInventory.itemSlots[i].unitInventoryUI = itemSlot.unitInventoryUI;
-                    unitInventoryUI.unitInventory.itemSlots[i].unitInventory = itemSlot.unitInventory;
-                    break;
-                }
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => OnItemSlotClicked());
             }
         }
 
-        // Desired Outcome: New Fresh Slots 
-
-        // Set hasItem to true
-        // hasItem = true;
-
-        // I think this is the right spot?
         UpdateSlotName();
     }
     #endregion
