@@ -47,3 +47,17 @@ crashlytics-build.properties
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# IDE folders
+.vs/
+.idea/
+.vscode/
+
+# Local Unity Profiler Data
+/[Uu]nityProfileLocal/
+
+# OS / System Files
+[Dd]esktop.ini
+[Tt]humbs.db
+$RECYCLE.BIN/
+
