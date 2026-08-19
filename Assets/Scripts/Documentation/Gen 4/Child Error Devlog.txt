@@ -1,0 +1,58 @@
+Error
+-----
+
+ItemSlot: ItemStack component not found in children.
+UnityEngine.Debug:LogError (object)
+ItemSlot:Awake () (at Assets/Scripts/Item System/Userface/ItemSlot.cs:89)
+UnityEngine.GameObject:AddComponent<ItemSlot> ()
+UnitInventory:CreateNewItemSlot (bool) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:316)
+UnitInventory:InitializeItemSlots () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:278)
+UnitInventory:Awake () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:185)
+
+-- Question --
+Okay so why does the error appear to begin with? 
+I don't get how its even possible to begin with?
+
+-- Answer --
+
+Because ItemSlot is being created before its ItemStack exists.
+
+So ItemSlot.Awake() expects an ItemStack child immediately.
+
+The runtime sequence from your stack trace is:
+
+----
+
+UnitInventory.Awake()
+    ↓
+InitializeItemSlots()
+    ↓
+CreateNewItemSlot()
+    ↓
+newGameObject.AddComponent<ItemSlot>()
+    ↓
+ItemSlot.Awake() FIRES IMMEDIATELY
+
+----
+
+
+
+
+Your architecture intentionally expects:
+-
+ItemSlot GameObject
+└── ItemStack GameObject
+-
+ItemSlot assumption:
+"I have an ItemStack child"
+
+Reality:
+"I don't yet"
+----
+
+
+ItemSlot.cs
+ItemStack.cs
+UnitInventory.cs
+UnitInventoryUI.cs
+ItemDragHandler.cs

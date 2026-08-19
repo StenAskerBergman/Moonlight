@@ -6,8 +6,8 @@ using static ItemEnums;
 public class BaseStorage : Storage
 {
     // TODO: Add a reference to the player and owner
-    // public Player Player { get; set; }
-    // public Owner owner { get; set; }
+    public Player Player { get; set; }
+    public Owner owner { get; set; }
 
     public int baseCapacity;  // Default storage size for the player's base
     private int bonusCapacityFromStructures;

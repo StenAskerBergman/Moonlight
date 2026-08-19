@@ -20,7 +20,25 @@ public class DisplayManager : MonoBehaviour
     public List<GameObject> ShowList = new List<GameObject>(); // List of HUD elements to show
     public List<GameObject> HideList = new List<GameObject>(); // List of HUD elements to hide
 
-    
+    #region Singleton Setup
+
+        private static DisplayManager _instance;
+        public static DisplayManager Instance { get { return _instance; } }
+
+        private void Awake()
+        {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(this.gameObject);
+            }
+            else
+            {
+                _instance = this;
+            }
+        }
+
+    #endregion
+
     #region Focus Methods
 
     // A Stack to track for what object the player has previously selected to focus on
@@ -43,14 +61,18 @@ public class DisplayManager : MonoBehaviour
 
     public Stack<GameObject> FocusStack = new Stack<GameObject>(); // Last In, First Out (LIFO) 
 
-    // When a player selects an object to focus on, we add its ui to the stack if we can
 
+    // When a player selects an object to focus
+    // on, we add its ui to the stack if we can
     public void FocusOn(GameObject element)
     {
         if (element != null)
         {
             FocusStack.Push(element);
             Show(element);
+            // You can add more logic here if needed, for example,
+            // to update details in the UI based on the selected object.
+
         }
     }
 

@@ -11,7 +11,6 @@ public enum InventoryTier { Basic, Advanced }
 public class BuildingInventoryData : ScriptableObject
 {
  
-
     [Header("For Navigation & Identification")]
     [SerializeField] private int inventoryID;
     [SerializeField] private InventoryType currentInventoryType;

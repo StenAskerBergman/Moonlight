@@ -1,0 +1,14 @@
+ItemData
+"What item is this?"
+
+Storage / Inventory
+"How much does this owner possess?"
+
+ItemStack
+"How much of this item is in this stack?"
+
+ItemSlot
+"Where can this stack exist?"
+
+UnitInventoryUI
+"How do I show the inventory?"

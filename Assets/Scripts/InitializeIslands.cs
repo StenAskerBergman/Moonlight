@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
 // Initialize Resources on the Storage Component
 // When Starting a New game on a island
 // When Building on a New Island 
-
 
 
 [System.Serializable]

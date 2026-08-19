@@ -1,0 +1,281 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1759.4791999999998 2591.1" width="1759.4791999999998" height="2591.1" style="--bg:#1F1F1F;--fg:#CCCCCC;--line:#CCCCCC;--accent:#0078D4;--muted:#CCCCCCCC;--surface:#181818;--border:#CCCCCC;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="DataLayer" data-label="Data Layer (Definitions)">
+  <rect x="250.78841666666676" y="1542.4" width="291.804" height="249.40000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="250.78841666666676" y="1542.4" width="291.804" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="262.78841666666676" y="1556.4" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Data Layer (Definitions)</text>
+</g>
+<g class="subgraph" data-id="StorageLayer" data-label="Storage Layer (Backend Authority &amp; Specializations)">
+  <rect x="40" y="1928.4" width="1679.4791999999998" height="622.7" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="1928.4" width="1679.4791999999998" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="52" y="1942.4" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Storage Layer (Backend Authority &amp; Specializations)</text>
+</g>
+<g class="subgraph" data-id="ControllerLayer" data-label="Inventory Controller Layer (Unit Scene Hierarchy)">
+  <rect x="1135.5212499999998" y="1012.2" width="458.65250000000003" height="773.6" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="1135.5212499999998" y="1012.2" width="458.65250000000003" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1147.5212499999998" y="1026.2" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Inventory Controller Layer (Unit Scene Hierarchy)</text>
+</g>
+<g class="subgraph" data-id="PresentationLayer" data-label="UI &amp; Presentation Layer (Canvas Hierarchy)">
+  <rect x="570.5924166666666" y="40" width="632.4986666666666" height="841.6" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="570.5924166666666" y="40" width="632.4986666666666" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="582.5924166666666" y="54" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">UI &amp; Presentation Layer (Canvas Hierarchy)</text>
+</g>
+<polyline class="edge" data-from="UnitInventory" data-to="UnitStorageManager" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="queries CanAddItem() ONLY
+[MISSING MUTATION]" points="1224.2527499999999,1110 1224.2527499999999,1122 1210.8324999999998,1122 1210.8324999999998,1827.8000000000002 1175.1689999999999,1827.8000000000002 1175.1689999999999,2091.1000000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitInventory" data-to="UnitStorageManager" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="reads GetAllItems (DESYNC)" points="1296.9842499999997,1110 1296.9842499999997,1122 1253.69825,1122 1253.69825,1842.1 1327.9989999999998,1842.1 1327.9989999999998,1910.4 1257.163,1910.4 1257.1629999999998,2091.1000000000004" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitInventoryUI" data-to="UnitInventory" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="reads GetAllItems() (DESYNC)" points="1108.9873333333333,256.5 1108.9873333333333,268.5 1164.0745,268.5 1164.0745,925.9000000000001 1365.9540416666664,925.9000000000001 1365.9540416666664,994.2 1345.4719166666664,994.2 1345.4719166666664,1056.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CanvasItemSlot" data-to="UnitInventory" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="InitializeSlot: overwrites UI &amp; Unit arrays
+[COMPETING AUTHORITY]" points="1015.8302916666667,460.40000000000003 1015.8302916666667,484.40000000000003 1128.1274166666667,484.40000000000003 1128.1274166666665,923.6 933.6613749999999,923.6 933.6613749999999,994.2 1248.496583333333,994.2 1248.496583333333,1056.2" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CanvasItemSlot" data-to="UnitStorage" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="MISSING BACKEND SYNC
+(Storage &amp; UnitStorage unaffected)" points="1065.6764583333334,460.40000000000003 1065.6764583333334,472.40000000000003 1141.1274166666667,472.40000000000003 1141.1274166666665,982.2 1040.545375,982.2 1040.545375,982.2 556.210875,982.2 556.210875,1910.4 56,1910.4 56,2411.5 427.87126666666666,2411.5 427.87126666666666,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ItemData" data-to="ItemEnum" data-style="dotted" data-arrow-start="false" data-arrow-end="true" points="396.69041666666675,1674 396.69041666666675,1710.55" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageBase" data-to="UnitStorage" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1293.4712499999998,2399.5 1293.4712499999998,2423.5 500.23226666666665,2423.5 500.23226666666665,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageBase" data-to="BaseStorage" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1293.4712499999998,2399.5 1293.4712499999998,2423.5 1326.8987,2423.5 1326.8987,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageBase" data-to="BuildingStorage" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1293.4712499999998,2399.5 1293.4712499999998,2423.5 1060.2132,2423.5 1060.2132,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageBase" data-to="IslandStorage" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1293.4712499999998,2399.5 1293.4712499999998,2423.5 1588.0267,2423.5 1588.0267,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageManagerBase" data-to="UnitStorageManager" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="613.4087,2043.1000000000001 613.4087,2067.1 1175.1689999999999,2067.1 1175.1689999999999,2091.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageManagerBase" data-to="BaseStorageManager" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="613.4087,2043.1000000000001 613.4087,2067.1 519.1625,2067.1 519.1625,2091.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageManagerBase" data-to="BuildingStorageManager" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="613.4087,2043.1000000000001 613.4087,2067.1 835.1244999999999,2067.1 835.1244999999999,2091.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="StorageManagerBase" data-to="IslandStorageManager" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="613.4087,2043.1000000000001 613.4087,2067.1 209.12849999999997,2067.1 209.12849999999997,2091.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitStorageManager" data-to="StorageBase" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="hides field / unassigned" points="1229.8316666666665,2212.5 1229.8316666666665,2224.5 1293.4712499999998,2224.5 1293.4712499999998,2328.8" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitStorageManager" data-to="UnitStorage" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="mutates on AddItem" points="1120.5063333333333,2212.5 1120.5063333333333,2224.5 810.3693,2224.5 810.3693,2411.5 500.23226666666665,2411.5 500.23226666666665,2447.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitInventory" data-to="LogicalItemSlot" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="owns &amp; spawns" points="1369.7157499999998,1110 1369.7157499999998,1122 1410.5317499999996,1122 1410.5317499999996,1226.3000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LogicalItemSlot" data-to="LogicalItemStack" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="owns child" points="1364.390583333333,1330.8000000000002 1364.390583333333,1342.8000000000002 1340.5557499999998,1342.8000000000002 1340.5557499999998,1425.4 1361.920583333333,1425.4 1361.920583333333,1461.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LogicalItemStack" data-to="RuntimeItem" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="co-located with" points="1410.5317499999996,1582.8000000000002 1410.5317499999996,1710.55" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LogicalItemSlot" data-to="LogicalItemStack" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Awake: factory creates premature stack
+then overwritten by UnitInventory" points="1456.6729166666664,1330.8000000000002 1456.6729166666664,1342.8000000000002 1480.5077499999998,1342.8000000000002 1480.5077499999998,1425.4 1459.1429166666665,1425.4 1459.1429166666665,1461.4" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="InventoryUserface" data-to="UnitInventoryUI" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.3655833333332,154.7 1032.3655833333332,202.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitInventoryUI" data-to="CanvasItemSlot" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="references Canvas" points="1032.3655833333332,256.5 1032.3655833333332,268.5 1015.8302916666667,268.5 1015.8302916666667,372.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CanvasItemSlot" data-to="CanvasItemStack" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="holds child" points="965.984125,460.40000000000003 965.984125,496.40000000000003 1026.8639166666667,496.40000000000003 1026.8639166666667,555 1014.4830833333333,555 1014.4830833333333,591" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CanvasItemStack" data-to="ItemDragHandler" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="controls" points="962.6609166666665,678.6 962.6609166666665,758.9 833.7979583333332,758.9 833.7979583333332,794.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UnitInventoryUI" data-to="CanvasItemSlot" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="projects data into" points="955.7438333333332,256.5 955.7438333333332,268.5 908.5842916666666,268.5 908.5842916666666,336.8 916.1379583333332,336.8 916.1379583333332,372.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ItemDragHandler" data-to="CanvasItemSlot" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="OnEndDrag: calls ReceiveDroppedItem" points="715.0866249999999,794.9 715.0866249999999,758.9 683.0924166666666,758.9 683.0924166666666,472.40000000000003 866.2917916666665,472.40000000000003 866.2917916666665,460.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CanvasItemSlot" data-to="CanvasItemStack" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HandleItemDrop / SwapItems
+[MUTATES LOCAL STACK ONLY]" points="916.1379583333332,460.40000000000003 916.1379583333332,472.40000000000003 898.4579166666665,472.40000000000003 898.4579166666665,555 910.8387499999999,555 910.8387499999999,591" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="UnitInventory" data-to="UnitStorageManager" data-label="queries CanAddItem() ONLY
+[MISSING MUTATION]">
+  <rect x="1100.6689999999999" y="1834.8000000000002" width="148.33" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1174.8339999999998" y="1857.1000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="1174.8339999999998" dy="-3.3000000000000007">queries CanAddItem() ONLY</tspan><tspan x="1174.8339999999998" dy="14.3">[MISSING MUTATION]</tspan></text>
+</g>
+<g class="edge-label" data-from="UnitInventory" data-to="UnitStorageManager" data-label="reads GetAllItems (DESYNC)">
+  <rect x="1252.9989999999998" y="1849.1" width="149.518" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1327.7579999999998" y="1864.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">reads GetAllItems (DESYNC)</text>
+</g>
+<g class="edge-label" data-from="UnitInventoryUI" data-to="UnitInventory" data-label="reads GetAllItems() (DESYNC)">
+  <rect x="1287.9540416666664" y="932.9000000000001" width="155.458" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1365.6830416666664" y="948.0500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">reads GetAllItems() (DESYNC)</text>
+</g>
+<g class="edge-label" data-from="CanvasItemSlot" data-to="UnitInventory" data-label="InitializeSlot: overwrites UI &amp; Unit arrays
+[COMPETING AUTHORITY]">
+  <rect x="832.1613749999999" y="930.6" width="202.384" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="933.3533749999999" y="952.9" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="933.3533749999999" dy="-3.3000000000000007">InitializeSlot: overwrites UI &amp; Unit arrays</tspan><tspan x="933.3533749999999" dy="14.3">[COMPETING AUTHORITY]</tspan></text>
+</g>
+<g class="edge-label" data-from="CanvasItemSlot" data-to="UnitStorage" data-label="MISSING BACKEND SYNC
+(Storage &amp; UnitStorage unaffected)">
+  <rect x="467.210875" y="1834.8000000000002" width="177.43599999999998" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="555.928875" y="1857.1000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="555.928875" dy="-3.3000000000000007">MISSING BACKEND SYNC</tspan><tspan x="555.928875" dy="14.3">(Storage &amp; UnitStorage unaffected)</tspan></text>
+</g>
+<g class="edge-label" data-from="UnitStorageManager" data-to="StorageBase" data-label="hides field / unassigned">
+  <rect x="1229.9712499999998" y="2255.5" width="126.94600000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1293.4442499999998" y="2270.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">hides field / unassigned</text>
+</g>
+<g class="edge-label" data-from="UnitStorageManager" data-to="UnitStorage" data-label="mutates on AddItem">
+  <rect x="757.3693000000001" y="2255.5" width="105.56200000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="810.1503" y="2270.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">mutates on AddItem</text>
+</g>
+<g class="edge-label" data-from="UnitInventory" data-to="LogicalItemSlot" data-label="owns &amp; spawns">
+  <rect x="1366.0317499999999" y="1153" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1410.4967499999998" y="1168.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">owns &amp; spawns</text>
+</g>
+<g class="edge-label" data-from="LogicalItemSlot" data-to="LogicalItemStack" data-label="owns child">
+  <rect x="1307.0557499999995" y="1380.9499999999998" width="66.952" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1340.5317499999996" y="1396.1" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">owns child</text>
+</g>
+<g class="edge-label" data-from="LogicalItemStack" data-to="RuntimeItem" data-label="co-located with">
+  <rect x="1367.0317499999996" y="1625.8" width="86.55400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1410.3087499999997" y="1640.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">co-located with</text>
+</g>
+<g class="edge-label" data-from="LogicalItemSlot" data-to="LogicalItemStack" data-label="Awake: factory creates premature stack
+then overwritten by UnitInventory">
+  <rect x="1378.0077499999998" y="1373.8000000000002" width="204.16600000000003" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1480.0907499999998" y="1396.1000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="1480.0907499999998" dy="-3.3000000000000007">Awake: factory creates premature stack</tspan><tspan x="1480.0907499999998" dy="14.3">then overwritten by UnitInventory</tspan></text>
+</g>
+<g class="edge-label" data-from="UnitInventoryUI" data-to="CanvasItemSlot" data-label="references Canvas">
+  <rect x="960.8302916666665" y="299.5" width="109.72000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1015.6902916666666" y="314.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">references Canvas</text>
+</g>
+<g class="edge-label" data-from="CanvasItemSlot" data-to="CanvasItemStack" data-label="holds child">
+  <rect x="992.3639166666666" y="510.55000000000007" width="68.14" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1026.4339166666666" y="525.7" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">holds child</text>
+</g>
+<g class="edge-label" data-from="CanvasItemStack" data-to="ItemDragHandler" data-label="controls">
+  <rect x="934.1609166666666" y="721.6" width="56.854000000000006" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="962.5879166666666" y="736.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">controls</text>
+</g>
+<g class="edge-label" data-from="UnitInventoryUI" data-to="CanvasItemSlot" data-label="projects data into">
+  <rect x="859.5842916666664" y="299.5" width="97.24600000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="908.2072916666665" y="314.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">projects data into</text>
+</g>
+<g class="edge-label" data-from="ItemDragHandler" data-to="CanvasItemSlot" data-label="OnEndDrag: calls ReceiveDroppedItem">
+  <rect x="582.5924166666666" y="619.6500000000001" width="200.602" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="682.8934166666667" y="634.8000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">OnEndDrag: calls ReceiveDroppedItem</text>
+</g>
+<g class="edge-label" data-from="CanvasItemSlot" data-to="CanvasItemStack" data-label="HandleItemDrop / SwapItems
+[MUTATES LOCAL STACK ONLY]">
+  <rect x="807.9579166666666" y="503.40000000000003" width="180.40599999999998" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="898.1609166666666" y="525.7" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="898.1609166666666" dy="-3.3000000000000007">HandleItemDrop / SwapItems</tspan><tspan x="898.1609166666666" dy="14.3">[MUTATES LOCAL STACK ONLY]</tspan></text>
+</g>
+<g class="node" data-id="ItemData" data-label="ItemData (ScriptableObject)
+- displayName, itemName, type
+- maxStackSize, isStackable, Icon
+- oldSlot, newSlot (leaked runtime refs)" data-shape="rectangle">
+  <rect x="266.78841666666676" y="1586.4" width="259.804" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="396.69041666666675" y="1630.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="396.69041666666675" dy="-20.8">ItemData (ScriptableObject)</tspan><tspan x="396.69041666666675" dy="16.900000000000002">- displayName, itemName, type</tspan><tspan x="396.69041666666675" dy="16.900000000000002">- maxStackSize, isStackable, Icon</tspan><tspan x="396.69041666666675" dy="16.900000000000002">- oldSlot, newSlot (leaked runtime refs)</tspan></text>
+</g>
+<g class="node" data-id="ItemEnum" data-label="ItemEnums / ItemType
+- Normal, Consumable" data-shape="rectangle">
+  <rect x="313.10091666666676" y="1710.55" width="167.17899999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="396.69041666666675" y="1737.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="396.69041666666675" dy="-3.9000000000000012">ItemEnums / ItemType</tspan><tspan x="396.69041666666675" dy="16.900000000000002">- Normal, Consumable</tspan></text>
+</g>
+<g class="node" data-id="StorageBase" data-label="Storage (abstract MonoBehaviour)
+- items: Dictionary&lt;ItemData, int&gt;
+- capacityLimit: int? (treated as TOTAL UNITS)" data-shape="rectangle">
+  <rect x="1140.2277499999998" y="2328.8" width="306.48699999999997" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1293.4712499999998" y="2364.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1293.4712499999998" dy="-12.350000000000001">Storage (abstract MonoBehaviour)</tspan><tspan x="1293.4712499999998" dy="16.900000000000002">- items: Dictionary&lt;ItemData, int&gt;</tspan><tspan x="1293.4712499999998" dy="16.900000000000002">- capacityLimit: int? (treated as TOTAL UNITS)</tspan></text>
+</g>
+<g class="node" data-id="UnitStorage" data-label="UnitStorage (MonoBehaviour)
+- occupiedSlots: Dict&lt;ItemType, int&gt;
+- capacityLimit = 6 (SLOT COUNT != UNITS)
+- FullStacks, StackSize, slots (dead state)" data-shape="rectangle">
+  <rect x="355.51026666666667" y="2447.5" width="289.44399999999996" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="500.23226666666665" y="2491.3" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="500.23226666666665" dy="-20.8">UnitStorage (MonoBehaviour)</tspan><tspan x="500.23226666666665" dy="16.900000000000002">- occupiedSlots: Dict&lt;ItemType, int&gt;</tspan><tspan x="500.23226666666665" dy="16.900000000000002">- capacityLimit = 6 (SLOT COUNT != UNITS)</tspan><tspan x="500.23226666666665" dy="16.900000000000002">- FullStacks, StackSize, slots (dead state)</tspan></text>
+</g>
+<g class="node" data-id="BaseStorage" data-label="BaseStorage (MonoBehaviour)
+- Player base economy storage
+- baseCapacity + structure bonus" data-shape="rectangle">
+  <rect x="1209.2232" y="2447.5" width="235.35099999999997" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1326.8987" y="2482.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1326.8987" dy="-12.350000000000001">BaseStorage (MonoBehaviour)</tspan><tspan x="1326.8987" dy="16.900000000000002">- Player base economy storage</tspan><tspan x="1326.8987" dy="16.900000000000002">- baseCapacity + structure bonus</tspan></text>
+</g>
+<g class="node" data-id="BuildingStorage" data-label="BuildingStorage (MonoBehaviour)
+- Production/maintenance storage" data-shape="rectangle">
+  <rect x="939.2031999999999" y="2447.5" width="242.01999999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1060.2132" y="2474.4" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1060.2132" dy="-3.9000000000000012">BuildingStorage (MonoBehaviour)</tspan><tspan x="1060.2132" dy="16.900000000000002">- Production/maintenance storage</tspan></text>
+</g>
+<g class="node" data-id="IslandStorage" data-label="IslandStorage (MonoBehaviour)
+- Island-wide warehouse storage" data-shape="rectangle">
+  <rect x="1472.5741999999998" y="2447.5" width="230.90499999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1588.0267" y="2474.4" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1588.0267" dy="-3.9000000000000012">IslandStorage (MonoBehaviour)</tspan><tspan x="1588.0267" dy="16.900000000000002">- Island-wide warehouse storage</tspan></text>
+</g>
+<g class="node" data-id="StorageManagerBase" data-label="StorageManager (MonoBehaviour)
+- storage: Storage
+- GetItemQuantity(), GetAllItems" data-shape="rectangle">
+  <rect x="489.0641999999999" y="1972.4" width="248.68899999999996" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="613.4087" y="2007.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="613.4087" dy="-12.350000000000001">StorageManager (MonoBehaviour)</tspan><tspan x="613.4087" dy="16.900000000000002">- storage: Storage</tspan><tspan x="613.4087" dy="16.900000000000002">- GetItemQuantity(), GetAllItems</tspan></text>
+</g>
+<g class="node" data-id="UnitStorageManager" data-label="UnitStorageManager (MonoBehaviour)
+- new storage: Storage (HIDES BASE FIELD)
+- unitStorage: UnitStorage (new UnitStorage() bug)
+- totalStacks: int (tracks item quantity)
+- usedSlots: Dict&lt;ItemType, int&gt;
+- NORMAL_SLOTS=4, CONSUME_SLOT=1" data-shape="rectangle">
+  <rect x="1011.1809999999999" y="2091.1" width="327.97599999999994" height="121.4" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1175.1689999999999" y="2151.7999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1175.1689999999999" dy="-37.70000000000001">UnitStorageManager (MonoBehaviour)</tspan><tspan x="1175.1689999999999" dy="16.900000000000002">- new storage: Storage (HIDES BASE FIELD)</tspan><tspan x="1175.1689999999999" dy="16.900000000000002">- unitStorage: UnitStorage (new UnitStorage() bug)</tspan><tspan x="1175.1689999999999" dy="16.900000000000002">- totalStacks: int (tracks item quantity)</tspan><tspan x="1175.1689999999999" dy="16.900000000000002">- usedSlots: Dict&lt;ItemType, int&gt;</tspan><tspan x="1175.1689999999999" dy="16.900000000000002">- NORMAL_SLOTS=4, CONSUME_SLOT=1</tspan></text>
+</g>
+<g class="node" data-id="BaseStorageManager" data-label="BaseStorageManager (MonoBehaviour)" data-shape="rectangle">
+  <rect x="379.25700000000006" y="2091.1" width="279.811" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="519.1625" y="2109.5499999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">BaseStorageManager (MonoBehaviour)</text>
+</g>
+<g class="node" data-id="BuildingStorageManager" data-label="BuildingStorageManager (MonoBehaviour)" data-shape="rectangle">
+  <rect x="687.068" y="2091.1" width="296.11299999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="835.1244999999999" y="2109.5499999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">BuildingStorageManager (MonoBehaviour)</text>
+</g>
+<g class="node" data-id="IslandStorageManager" data-label="IslandStorageManager (MonoBehaviour)" data-shape="rectangle">
+  <rect x="67" y="2091.1" width="284.25699999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="209.12849999999997" y="2109.5499999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">IslandStorageManager (MonoBehaviour)</text>
+</g>
+<g class="node" data-id="UnitInventory" data-label="&quot;UnitInventory (MonoBehaviour on Unit GO)
+- itemSlots: ItemSlot[" data-shape="rectangle">
+  <rect x="1151.5212499999998" y="1056.2" width="290.926" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1296.9842499999997" y="1083.1000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1296.9842499999997" dy="-3.9000000000000012">&quot;UnitInventory (MonoBehaviour on Unit GO)</tspan><tspan x="1296.9842499999997" dy="16.900000000000002">- itemSlots: ItemSlot[</tspan></text>
+</g>
+<g class="node" data-id="LogicalItemSlot" data-label="ItemSlot (MonoBehaviour on Unit GO)
+- itemStack: ItemStack
+- unitInventory: UnitInventory
+- storageManager: UnitStorageManager
+- restrictedType: ItemType?" data-shape="rectangle">
+  <rect x="1272.1082499999998" y="1226.3000000000002" width="276.847" height="104.50000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1410.5317499999996" y="1278.5500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1410.5317499999996" dy="-29.250000000000004">ItemSlot (MonoBehaviour on Unit GO)</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- itemStack: ItemStack</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- unitInventory: UnitInventory</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- storageManager: UnitStorageManager</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- restrictedType: ItemType?</tspan></text>
+</g>
+<g class="node" data-id="LogicalItemStack" data-label="ItemStack (MonoBehaviour on Unit GO)
+- itemData: ItemData
+- quantity: int
+- maxQuantity: int
+- itemSlot: ItemSlot (NEVER SET)
+- itemIcon, itemQuantityText (UI components)" data-shape="rectangle">
+  <rect x="1264.69825" y="1461.4" width="291.6669999999999" height="121.4" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1410.5317499999999" y="1522.1000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1410.5317499999999" dy="-37.70000000000001">ItemStack (MonoBehaviour on Unit GO)</tspan><tspan x="1410.5317499999999" dy="16.900000000000002">- itemData: ItemData</tspan><tspan x="1410.5317499999999" dy="16.900000000000002">- quantity: int</tspan><tspan x="1410.5317499999999" dy="16.900000000000002">- maxQuantity: int</tspan><tspan x="1410.5317499999999" dy="16.900000000000002">- itemSlot: ItemSlot (NEVER SET)</tspan><tspan x="1410.5317499999999" dy="16.900000000000002">- itemIcon, itemQuantityText (UI components)</tspan></text>
+</g>
+<g class="node" data-id="RuntimeItem" data-label="Item (MonoBehaviour on Unit GO)
+- ID: Guid, itemData: ItemData
+- Refine(), Craft(), Consume()" data-shape="rectangle">
+  <rect x="1295.0792499999998" y="1710.55" width="230.90499999999994" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1410.5317499999996" y="1745.8999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1410.5317499999996" dy="-12.350000000000001">Item (MonoBehaviour on Unit GO)</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- ID: Guid, itemData: ItemData</tspan><tspan x="1410.5317499999996" dy="16.900000000000002">- Refine(), Craft(), Consume()</tspan></text>
+</g>
+<g class="node" data-id="InventoryUserface" data-label="InventoryUserface (abstract MonoBehaviour)
+- inventorySlots: List&lt;ItemSlot&gt;
+- RefreshInventoryDisplay(), ClearSlots()" data-shape="rectangle">
+  <rect x="877.6400833333332" y="84" width="309.45099999999996" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1032.3655833333332" y="119.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1032.3655833333332" dy="-12.350000000000001">InventoryUserface (abstract MonoBehaviour)</tspan><tspan x="1032.3655833333332" dy="16.900000000000002">- inventorySlots: List&lt;ItemSlot&gt;</tspan><tspan x="1032.3655833333332" dy="16.900000000000002">- RefreshInventoryDisplay(), ClearSlots()</tspan></text>
+</g>
+<g class="node" data-id="UnitInventoryUI" data-label="&quot;UnitInventoryUI (MonoBehaviour on Canvas)
+- itemSlots: ItemSlot[" data-shape="rectangle">
+  <rect x="879.1220833333332" y="202.7" width="306.48699999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1032.3655833333332" y="229.6" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1032.3655833333332" dy="-3.9000000000000012">&quot;UnitInventoryUI (MonoBehaviour on Canvas)</tspan><tspan x="1032.3655833333332" dy="16.900000000000002">- itemSlots: ItemSlot[</tspan></text>
+</g>
+<g class="node" data-id="CanvasItemSlot" data-label="ItemSlot (MonoBehaviour on Canvas Prefab)
+- button: Button
+- IDropHandler, IPointerEnterHandler
+- unitInventoryUI, unitInventory" data-shape="rectangle">
+  <rect x="816.4456249999998" y="372.8" width="299.077" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="965.9841249999998" y="416.6" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="965.9841249999998" dy="-20.8">ItemSlot (MonoBehaviour on Canvas Prefab)</tspan><tspan x="965.9841249999998" dy="16.900000000000002">- button: Button</tspan><tspan x="965.9841249999998" dy="16.900000000000002">- IDropHandler, IPointerEnterHandler</tspan><tspan x="965.9841249999998" dy="16.900000000000002">- unitInventoryUI, unitInventory</tspan></text>
+</g>
+<g class="node" data-id="CanvasItemStack" data-label="ItemStack (MonoBehaviour on Canvas Prefab)
+- itemIcon: Image, itemQuantityText: Text
+- itemDragHandler: ItemDragHandler
+- IDropHandler, IPointerEnterHandler" data-shape="rectangle">
+  <rect x="807.1944166666666" y="591" width="310.93299999999994" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="962.6609166666666" y="634.8" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="962.6609166666666" dy="-20.8">ItemStack (MonoBehaviour on Canvas Prefab)</tspan><tspan x="962.6609166666666" dy="16.900000000000002">- itemIcon: Image, itemQuantityText: Text</tspan><tspan x="962.6609166666666" dy="16.900000000000002">- itemDragHandler: ItemDragHandler</tspan><tspan x="962.6609166666666" dy="16.900000000000002">- IDropHandler, IPointerEnterHandler</tspan></text>
+</g>
+<g class="node" data-id="ItemDragHandler" data-label="ItemDragHandler (MonoBehaviour)
+- IBeginDragHandler, IDragHandler, IEndDragHandler
+- canvasGroup: CanvasGroup, canvas: Canvas" data-shape="rectangle">
+  <rect x="596.3752916666666" y="794.9" width="356.1339999999999" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="774.4422916666665" y="830.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="774.4422916666665" dy="-12.350000000000001">ItemDragHandler (MonoBehaviour)</tspan><tspan x="774.4422916666665" dy="16.900000000000002">- IBeginDragHandler, IDragHandler, IEndDragHandler</tspan><tspan x="774.4422916666665" dy="16.900000000000002">- canvasGroup: CanvasGroup, canvas: Canvas</tspan></text>
+</g>
+</svg>

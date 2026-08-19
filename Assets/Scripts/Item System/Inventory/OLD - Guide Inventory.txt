@@ -1,0 +1,52 @@
+|--------------------------------------------------------------------------------------------
+| Inventory - Relations
+|--------------------------------------------------------------------------------------------
+|
+|    Inventory.cs
+|
+|    StorageManager.cs
+|
+|    Storage.cs
+|
+|-------------------------------------------------------------------------------------------
+| 
+|	Storage - Guide: How to use Storage!
+| 
+|-------------------------------------------------------------------------------------------
+|
+|   InventoryUI.cs 
+|
+|        > Sole Responsibility: Convey Inventory UI    
+|
+|	Inventory.cs
+|
+|        > Sole Responsibility: Provide InventoryUI
+|        with methods to display relevant game info
+|        
+|        > Use StorageManager.cs to manage all items
+|        a player has in their base. 
+|		
+|        > Use Storage.cs to store items
+|
+|    StorageManager.cs 
+|    
+|        > Sole Responsibility: Storage Placeholder 
+|
+|        > Work as a middle man between anyone that 
+|        wants to touch the Storage Items.
+|
+|        > Empower inventory to effectivly relay UI
+|        information about items in storage and any
+|        other information relevant actionable info
+|
+|    Storage.cs
+|
+|        > Location for items to be stored inside
+|        > Encapsulated to serve StorageManager.cs
+|        > No Max Item Limit by Default
+|
+|
+|
+|
+|
+|

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a664bc9677321b3439f6c53ba28dc247, type: 3}
+  m_Name: DefaultIslandConfig
+  m_EditorClassIdentifier: 
+  islandClass: 0
+  seeds:
+  - Activated: 1
+    itemData: {fileID: 11400000, guid: e710216e443544340a61a0d7211d2ce3, type: 2}
+    initialValue: 1
+  resources:
+  - Activated: 10
+    itemData: {fileID: 11400000, guid: 1532d05600817a441b7f47270bd5ea1e, type: 2}
+    initialValue: 1000000
+  - Activated: 10
+    itemData: {fileID: 11400000, guid: 5fd7015a895258042a78a5fc7c5c4ef6, type: 2}
+    initialValue: 100000
+  - Activated: 10
+    itemData: {fileID: 11400000, guid: 06bc033aff1dae54ea166d304ea9fbb3, type: 2}
+    initialValue: 1000000
+  totalPowerfulSeeds: 2
+  totalSeedsToInitialize: 2

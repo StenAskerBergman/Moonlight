@@ -73,7 +73,8 @@ public class SeedDisplayManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Seeds count: " + seedsOnIsland.Count);  // Log the count of seeds
+            // Will Log 0 Because you don't look at a island when you start...
+            // Debug.Log("Seeds count: " + seedsOnIsland.Count);  // Log the count of seeds
         }
 
         for (int i = 0; i < seedSlots.Count; i++)

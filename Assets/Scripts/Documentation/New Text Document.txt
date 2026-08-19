@@ -1,0 +1,21 @@
+Whole Fuck I need to document how the item eco system works in full
+
+> Missing explaination 
+
+	- Item.cs
+	- ItemData.cs
+	- ItemSlot.cs
+	- Inventory.cs
+
+	- StartStack.cs ? Unclear Purpose: yet to be created ?
+	- StartItems.cs
+	
+	- UnitStorage.cs
+	- UnitManager.cs
+	- UnitInventory.cs
+	- UnitInteractions.cs
+	
+	- Storage.cs
+	- StorageManager.cs
+	
+

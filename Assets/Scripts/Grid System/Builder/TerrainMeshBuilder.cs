@@ -37,9 +37,24 @@ public class TerrainMeshBuilder
                     cellHeight = -1f; // Set water level; adjust as needed
                 }
 
+                if (cell.currentTerrainType == TerrainType.Shallow)
+                {
+                    cellHeight = -2f; // Set Shallow level; adjust as needed
+                }
+
                 if (cell.currentTerrainType == TerrainType.Deep)
                 {
-                    cellHeight = -2f; // Set water level; adjust as needed
+                    cellHeight = -3f; // Set Deep level; adjust as needed
+                }
+
+                if (cell.currentTerrainType == TerrainType.Plateau)
+                {
+                    cellHeight = -3f; // Set Plateau level; adjust as needed
+                }
+
+                if (cell.currentTerrainType == TerrainType.Abyssal)
+                {
+                    cellHeight = -5f; // Set Abyssal level; adjust as needed
                 }
 
                 if (cell.currentTerrainType == TerrainType.Mountain)

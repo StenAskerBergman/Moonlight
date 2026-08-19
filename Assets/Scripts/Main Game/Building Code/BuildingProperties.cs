@@ -34,6 +34,20 @@ public class BuildingProperties : MonoBehaviour
     // versa. Therefore there needs to be a generative method to fix
     // the different names for the different views.
 
+    // future issue:
+    // There also needs to be a way for preview buildings not to be
+    // viewed by other players
+
+    // future feature:
+    // we need a way to control the way we show + hold building data,
+    // from players in the future in each building to be read so that
+    // it is read correctly but also so that depending on each player
+    // and their intelligence levels / insight into a another player,
+    // is show the correct data, so that in the future players cannot
+    // do object manipulate to see this data inorder to cheat / edge.
+    // 
+    // Real Reason: plus it would be cool to have. :spy!: :poggers:
+
     #endregion
 
     private void Start()
@@ -43,7 +57,8 @@ public class BuildingProperties : MonoBehaviour
 
     public void SetData()
     {
-        // Legacy Code
+        /// Edit: In the future include, what replacement was added in its place!
+        // Legacy Code 
         // Fetch Resource Cost Data
         // int[] costResources = costData.costResource;
 

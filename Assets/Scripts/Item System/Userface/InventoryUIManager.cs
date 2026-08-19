@@ -1,0 +1,106 @@
+// InventoryUIManager.cs - Start
+
+using UnityEngine;
+
+public class InventoryUIManager : MonoBehaviour
+{
+    public GameObject unitInventoryTemplate;        
+    public GameObject buildingInventoryTemplate;  
+
+    private GameObject currentActiveTemplate;
+
+    // Singleton_City
+    private static InventoryUIManager _instance;
+    public static InventoryUIManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<InventoryUIManager>();
+
+                if (_instance == null)
+                {
+                    GameObject instanceObject = new GameObject();
+                    _instance = instanceObject.AddComponent<InventoryUIManager>();
+                    DontDestroyOnLoad(instanceObject);
+                }
+            }
+            return _instance;
+        }
+    }
+
+    void Awake()
+    {
+        // Handle singleton instance assignment
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (_instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    public void DisplayInventoryForUnit(Unit selectedUnit)
+    {
+        // Deactivate the current active template if any
+        if (currentActiveTemplate)
+            currentActiveTemplate.SetActive(false);
+
+        // Determine which inventory template to use based on the unit type
+        switch (selectedUnit.type)
+        {
+            case UnitType.Character:
+                currentActiveTemplate = unitInventoryTemplate;
+                Debug.Log("UI Showing: Unit Inventory Template");
+                break;
+            case UnitType.House:
+                currentActiveTemplate = buildingInventoryTemplate;
+                Debug.Log("UI Showing: Building Inventory Template");
+                break;
+
+            // ... potentially other cases ...
+
+            default:
+                // Log an error and return if there's no suitable inventory template
+                Debug.LogError($"No inventory template found for unit type {selectedUnit.type}");
+                return;
+        }
+
+        // Check if the unit has an inventory to show, and set the current "inventory" template active accordingly
+        if (selectedUnit.inventory != null)
+        {
+            currentActiveTemplate.SetActive(true);
+            // Call methods to fill the template with data from the selected unit's inventory
+        }
+        else
+        {
+            currentActiveTemplate.SetActive(false);
+        }
+
+        // unitInventoryTemplate is a prefab with UnitInventoryUI component
+        UnitInventoryUI unitInventoryUI = unitInventoryTemplate.GetComponent<UnitInventoryUI>();
+        if (unitInventoryUI != null)
+        {
+            unitInventoryUI.SetUnitInventory(selectedUnit.GetComponent<UnitInventory>());
+        }
+        else
+        {
+            Debug.LogError("UnitInventoryUI component not found on the template.");
+        }
+    }
+
+    // Additional: To hide inventory if needed
+    public void HideInventory()
+    {
+        if (currentActiveTemplate)
+            currentActiveTemplate.SetActive(false);
+    }
+
+
+}
+
+// InventoryUIManager.cs - End

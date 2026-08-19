@@ -10,6 +10,10 @@ using UnityEngine;
 
 public abstract class Storage : MonoBehaviour
 {
+    // Key thing to pay attention to here, is that we are creating a dictionary
+    // Using itemData instead of item, since this class doesnt need to stack the
+    // Same item over and over. Hence why we added UnitStorage.
+
     protected Dictionary<ItemData, int> items = new Dictionary<ItemData, int>();
     protected int? capacityLimit = null; // By default, there's no capacity limit.
 
@@ -22,10 +26,12 @@ public abstract class Storage : MonoBehaviour
     // Checks if the storage has reached its capacity limit
     public bool HasReachedCapacity(int quantityToAdd)
     {
+        // No Value > Not Full > Return false
         if (!capacityLimit.HasValue)
             return false;
 
         int currentTotalQuantity = 0;
+
         foreach (var entry in items)
         {
             currentTotalQuantity += entry.Value;

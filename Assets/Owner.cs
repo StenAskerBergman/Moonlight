@@ -1,18 +1,27 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
-public class Owner : MonoBehaviour
+public class Owner : MonoBehaviour, IUniqueIdentifier
 {
-    // Start is called before the first frame update
-    void Start()
+    // Owner Identification
+    public string ID { get; private set; } 
+    
+    // Sets a PlayerName & Obj. Ingame
+    public string playerName;  
+    public GameObject owner;
+
+    private void Awake()
     {
-        
+        // Generate a unique ID for this Owner. 
+        ID = Guid.NewGuid().ToString(); 
+
+        // Set Owner Object Name to Player Name.
+        owner.name = playerName;
     }
 
-    // Update is called once per frame
-    void Update()
+    public string GetOwnerID()
     {
-        
+        return ID;
     }
+
 }

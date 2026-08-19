@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8936014803923078681
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7857053462661928621}
+  - component: {fileID: 828858866057142928}
+  - component: {fileID: 7713872085463616760}
+  - component: {fileID: 3911099295431405612}
+  - component: {fileID: 6600348186084641203}
+  m_Layer: 0
+  m_Name: Interface Handler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7857053462661928621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8936014803923078681}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &828858866057142928
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8936014803923078681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1d673dba24f204390e03ab6115782a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CurrentPowerText: {fileID: 0}
+  MadePowerText: {fileID: 0}
+  SpentPowerText: {fileID: 0}
+  TotalPowerText: {fileID: 0}
+  islandPower: {fileID: 0}
+  IslandSettled: 0
+--- !u!114 &7713872085463616760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8936014803923078681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e577d601ed2ff04e8a6dcf5b2f1425c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bank: {fileID: 0}
+  BudgetsText: {fileID: 0}
+  BalanceText: {fileID: 0}
+  TaxText: {fileID: 0}
+  IncomeText: {fileID: 0}
+  ExpenseText: {fileID: 0}
+  RevenueText: {fileID: 0}
+  LicenseText: {fileID: 0}
+--- !u!114 &3911099295431405612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8936014803923078681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12c86454c5b0b1040a678f48a578b9a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  EcoValueText: {fileID: 0}
+  EcoPosText: {fileID: 0}
+  EcoNegText: {fileID: 0}
+  islandEcology: {fileID: 0}
+--- !u!114 &6600348186084641203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8936014803923078681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a364eb9fc5d6e44aabb64a0826c23ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InfoPanel: {fileID: 0}
+  TargetText: {fileID: 0}
+  ecologyUIManager: {fileID: 0}
+  powerUIManager: {fileID: 0}

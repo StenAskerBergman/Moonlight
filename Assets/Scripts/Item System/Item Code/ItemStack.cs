@@ -1,0 +1,508 @@
+// ItemStack.cs - Start
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using TMPro;
+
+[System.Serializable]
+public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointerExitHandler
+{
+    // READ ME 
+    // THIS IS A CODE OBJECT BUT ALSO A FUCKING PREFAB YOU MAKE
+    // SURE TO CHECK IF YOU'VE CODED WITH THIS IN MIND YOU FUCK
+    // (note to self) - N
+
+    // Known Issue
+    // Unclear Errors on awake
+    // why does the Item Data not show?
+    // 
+
+    // AI says Issues: Doesn't account for exceeding the stack Limitation? I dono maybe?
+    // Maybe referring to the fact stack on stack on stack limitations is my guess
+    // - 2026
+
+
+    // Item Refs
+    public bool filled { get; private set; }
+    public Item item { get; private set; }
+    public ItemData itemData { get; private set; } // why does the Item Data not show?
+    public ItemData current_itemData; 
+    public Image itemIcon { get; private set; } 
+    public Text itemQuantityText { get; private set; }
+    public ItemSlot itemSlot { get; private set; }
+    public ItemDragHandler itemDragHandler { get; private set; }
+    
+    private void Start()
+    {
+        itemSlot.storageManager?.GetComponent<Item>();
+        if (itemSlot == null)
+        {
+            Debug.LogError("ItemStack: itemSlot is null.");
+            return;
+        }
+
+        StorageManager storageManager = itemSlot.storageManager;
+        if (storageManager == null)
+        {
+            Debug.LogError("ItemStack: itemSlot's storageManager is null.");
+            // Decide whether to return or handle accordingly
+            return;
+        }
+
+        item = storageManager.GetComponent<Item>();
+        if (item == null)
+        {
+            Debug.LogWarning("ItemStack: Item component not found on storageManager.");
+        }
+
+        // Defer assignment of itemData to when SetItemData() is called
+
+        // Initialize UI components
+        itemIcon = GetComponent<Image>();
+        if (itemIcon == null)
+        {
+            itemIcon = gameObject.AddComponent<Image>();
+            Debug.LogWarning("ItemStack: Added missing Image component for itemIcon.");
+        }
+
+        itemQuantityText = GetComponentInChildren<Text>();
+        if (itemQuantityText == null)
+        {
+            // If you're using TextMeshPro, use TextMeshProUGUI instead
+            itemQuantityText = gameObject.AddComponent<Text>();
+            Debug.LogWarning("ItemStack: Added missing Text component for itemQuantityText.");
+        }
+
+        // Ensure itemDragHandler is assigned
+        itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
+
+    }
+
+    // This will just make it get it by it self from its environment
+    public void InitializeUIComponents()
+    {
+        if (itemIcon == null)
+        {
+            itemIcon = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
+            Debug.LogWarning("ItemStack: Added missing Image component for itemIcon.");
+        }
+
+        if (itemQuantityText == null)
+        {
+            // If you're using TextMeshPro, use TextMeshProUGUI instead
+            itemQuantityText = GetComponentInChildren<Text>() ?? gameObject.AddComponent<Text>();
+            Debug.LogWarning("ItemStack: Added missing Text component for itemQuantityText.");
+        }
+
+        // Any additional initialization logic
+    }
+
+    // directly infers a reference to use
+    public void InitializeUIComponents(Image icon, Text quantityText)
+    {
+        if (icon == null || quantityText == null)
+        {
+            Debug.LogError("InitializeUIComponents: Provided components are null.");
+            return;
+        }
+
+        itemIcon = icon;
+        itemQuantityText = quantityText;
+    }
+
+
+    // Quantities
+    public int maxQuantity;
+    public int quantity; // public int quantity { get; private set; }
+    public bool hasSpace;
+
+    // Is floating in Ocean
+    public bool isAboard = false;
+    public bool isFloating;
+
+    #region CRUD Operations
+
+    #region Get - Item, Quantity, MaxQuantity, ItemData, ItemSlot
+    public int GetQuantity() { return quantity; }
+    public int GetMaxQuantity() { return maxQuantity; }
+    public Item GetItem() { if (item != null) return item; Debug.Log("ItemStack: No Item In Stack"); return null; } // No item state -> NullReferenceException
+    public ItemData GetItemData() { if (itemData != null) return itemData; Debug.Log("ItemStack: No item data"); return null; } // No item data -> NullReferenceException
+    public ItemSlot GetItemSlot() { if (itemSlot != null && !isAboard) return itemSlot; Debug.Log("ItemStack: No item slot"); return null; } // No item slot -> NullReferenceException
+    #endregion
+
+    #region Set - Quantity, MaxQuantity, ItemData
+
+    // Set Quantity - ItemStack.cs
+    public void SetQuantity(int _quantity)
+    {
+        this.quantity = _quantity;
+        UpdateStackUI(quantity);
+    }
+
+    // Set Max Quantity - ItemStack.cs (Revised) - this must be set
+    public void SetMaxQuantity(int maxQuantity)
+    {
+        this.maxQuantity = maxQuantity; // Correctly set maxQuantity
+    }
+
+    // Set Item Data - ItemStack.cs 
+    public void SetItemData(ItemData data)
+    {
+        itemData = data;
+
+        UpdateStackUI(quantity);
+    }
+
+    // Set Item Data - ItemStack.cs / issues: Doesn't account for exceeding the stack Limitation
+    public void SetItemData(ItemData data, int quantity)
+    {
+        itemData = data;
+
+        UpdateStackUI(quantity);
+    }
+
+
+    // Set Item Slot - ItemStack.cs 
+    public void SetItemSlot(ItemSlot slot)
+    {
+        itemSlot = slot;
+
+        UpdateStackUI(quantity);
+    }
+
+    // Set Item - ItemStack.cs / issues: Doesn't account for exceeding the stack Limitation
+    public void SetItem(Item newItem, int quantity)
+    {
+        item = newItem;
+
+        UpdateStackUI(quantity);
+    }
+    
+    #endregion
+
+    #region Addition - Int, Stacks
+
+    // Add Quantity - ItemStack.cs (Revised)
+    public int AddQuantity(int addQuantity)
+    {
+        int spaceLeft = maxQuantity - quantity;
+        int quantityToAdd = Mathf.Min(addQuantity, spaceLeft);
+        quantity += quantityToAdd;
+        UpdateStackUI(quantity);
+        return Mathf.Max(addQuantity - quantityToAdd, 0); // Ensure no negative return
+    }
+
+    // Add Stack - ItemStack.cs (Revised)
+    public ItemStack AddStack(ItemStack _itemStack)
+    {
+        int spaceLeft = maxQuantity - quantity;
+        int quantityToAdd = Mathf.Min(_itemStack.quantity, spaceLeft);
+        quantity += quantityToAdd;
+        _itemStack.quantity = Mathf.Max(_itemStack.quantity - quantityToAdd, 0); // Ensure the stack quantity never goes below 0
+        UpdateStackUI(quantity);
+        return _itemStack;
+    }
+    #endregion
+
+    #region Subtraction - Remove, Subtract
+
+    // Subtract Quantity - ItemStack.cs
+    public void SubtractQuantity(int _quantity)
+    {
+        this.quantity -= _quantity;
+        UpdateStackUI(quantity);
+    }
+
+    // Remove Quantity - ItemStack.cs
+    public void RemoveQuantity(int quantity)
+    {
+        this.quantity -= quantity;
+        UpdateStackUI(quantity);
+    }
+    #endregion
+
+    #endregion
+
+    #region Check Operations - GetSpaceLeft, GetStackSpaceleft, IsFull, ...
+
+    /// <summary>
+    /// Gets the space left in a stack untill stack is full
+    /// </summary>
+    /// <param name="quantity"></param>
+    /// <param name="maxQuantity"></param>
+    /// <returns>int of space left in stack</returns>
+    public int GetSpaceLeft(int quantity, int maxQuantity)
+    {
+        // currant_quantity - maxQuantity = quantity difference
+        int spaceLeft = quantity - maxQuantity;
+
+        // If space Left is negative, set to 0 
+        if (spaceLeft < 0) spaceLeft = 0;
+
+        // Since No negatives returns allowed!
+        return spaceLeft;
+    }
+
+    /// <summary>
+    /// This should return the number of units left in a stack
+    /// </summary>
+    /// <returns>space left in a stack</returns>
+    public int GetStackSpaceLeft()
+    {
+        // currant_quantity - maxQuantity = quantity difference
+        int spaceLeft = quantity - maxQuantity;
+
+        // If space Left is negative, set to 0 
+        if (spaceLeft < 0)
+        {
+            Debug.Log("StackMinSpaceCalc: " + spaceLeft);
+            spaceLeft = 0;
+        }
+
+        // if space left is to great, set to maxLimit
+        if (spaceLeft > maxQuantity || IsFull()) 
+        {
+            Debug.Log("StackMaxSpaceCalc: " + spaceLeft);
+            spaceLeft = maxQuantity;
+        }
+
+        // Since No negatives returns allowed!
+        // Since No returns greater than maxQuant allowed!
+        return spaceLeft;
+    }
+
+    /// <summary>
+    /// Check if the current quantity is less than the max quantity
+    /// </summary>
+    /// <param name="quantity"></param>
+    /// <param name="maxQuantity"></param>
+    /// <returns>hasSpace</returns>
+    public bool IsFull(int quantity, int maxQuantity)
+    {
+        // Check if the current quantity is less than the max quantity
+        if (this.quantity == maxQuantity) return hasSpace = false;
+        return hasSpace = true;
+    }
+
+    public bool IsFull()
+    {
+        // Check if the current quantity is less than the max quantity
+        return this.quantity >= this.maxQuantity;
+    }
+
+    public bool HasSpace(int quantity, int maxQuantity)
+    {
+        // Check if the current quantity is less than the max quantity
+        if (this.quantity == maxQuantity) return hasSpace = false;
+        return hasSpace = true;
+    }
+
+    /// <summary>
+    /// Check if the current quantity is less than the max quantity
+    /// </summary>
+    /// <param name="quantity"></param>
+    /// <param name="maxQuantity"></param>
+    /// <returns>hasSpace</returns>
+    public bool IsStackFull()
+    {
+        // Check if the current quantity is less than the max quantity
+        return this.quantity >= this.maxQuantity;
+    }
+
+    /// <summary>
+    /// Check Quantity - ItemStack.cs
+    /// </summary>
+    /// <param name="quantity">Number we want to compare it too</param>
+    /// <returns>bool from checking if this quantity is great than quantity inputed</returns>
+    public bool CheckQuantity(int quantity)
+    {
+        return this.quantity >= quantity;
+    }
+
+    // Check Max Quantity - ItemStack.cs
+    public bool CheckMaxQuantity(int quantity)
+    {
+        return this.quantity + quantity <= maxQuantity;
+    }
+
+    #endregion
+
+    #region Extra Operations
+
+    public void UpdateStackUI(int quantity)
+    {
+        if (quantity == 0) Debug.Log("Stack Content: 0");
+        //OLD: Destroy(this.gameObject); // Destroy the item if quantity is 0 (Empty) 
+        //NEW: hold on there soldier might be a better way..
+
+        if (itemData != null)
+        {
+            if (itemIcon != null)
+            {
+                itemIcon.sprite = itemData.Icon;
+            }
+            else
+            {
+                Debug.LogError("ItemStack: itemIcon is null.");
+            }
+
+            if (itemQuantityText != null)
+            {
+                itemQuantityText.text = quantity.ToString();
+            }
+            else
+            {
+                Debug.LogError("ItemStack: itemQuantityText is null.");
+            }
+
+            Debug.Log($"UpdateStackUI by {quantity} itemQuantityText:{itemQuantityText?.text}");
+        }
+        else
+        {
+            Debug.Log("Stack Content: Null");
+        }
+
+        // The Prior Solution:
+        //
+        //    if (itemData != null)
+        //    {
+        //        itemIcon.sprite = itemData.Icon;                // Ensure itemIcon is assigned in the inspector on the ItemData, that will assign the itemData.icon to the GUI  <-- Null Ref Error
+        //        itemQuantityText.text = quantity.ToString();    // Ensure itemQuantityText is assigned in the inspector
+        //        Debug.Log($"UpdateStackUI by {quantity} itemQuantityText:{itemQuantityText.text}");
+        //    } 
+        //    else 
+        //    {
+        //        // Null Object Can't Exist Either
+        //        // Destroy(this.gameObject); 
+        //        Debug.Log("Stack Content: Null");
+        //    }
+        //}
+    }
+    public void SwapItemOnDrop(ItemStack _itemStack)
+    {
+        Item tempItem = item;
+        item = _itemStack.item;
+        _itemStack.item = tempItem;
+    }
+
+    public bool HasItem()
+    {
+        return itemData != null;
+    }
+
+    public void ClearStack()
+    {
+        // Clear Stack
+        item = null;
+        itemData = null;
+        itemIcon.sprite = null;
+        itemQuantityText.text = "";
+        quantity = 0;
+
+        Debug.Log("Stack cleared."); // Debugging to confirm the action
+        
+        // Update the UI
+        UpdateStackUI(quantity);
+    }
+    #endregion
+
+    #region Special Operations - SetReturnPosition (Set Return Position)
+
+    // Stack Return Positions
+    public void SetStackPosition(ItemStack stack, Vector2 newPos, Vector2 oldPos)
+    {
+        // Set The New Stacks Current Drop Location
+
+        oldPos = stack.itemDragHandler.originalPosition;
+        stack.itemDragHandler.newPosition = newPos;
+
+        // Return New Position! - Infinity Stacking :O Wowe! 
+        if (oldPos == newPos) return; else { oldPos = newPos; }
+
+    }
+    #endregion
+
+    #region Interactions - IDropHandler
+    // Add methods to interact with the item stack (e.g., drag-and-drop handling)
+
+    // Hover Effect: Start
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        Debug.Log("Stack: Stack: OnMouseEnter");
+        // Implement hover effect or tooltip
+
+        if (eventData.pointerDrag != null)
+        {
+            // Check if the dragged item can be added to the slot
+            // if () { }
+            Debug.Log("ItemStack: Stack: OnPointerEnter " + eventData.pointerDrag.name);
+        }
+
+        // Temporary Disable Square Selection if clicked on item
+    }
+
+    // Hover Effect: End
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        Debug.Log("ItemStack: Stack: OnMouseExit");
+        // Remove hover effect or tooltip
+
+    }
+    // Double Click - Yet to be a defined interaction
+    public void OnPointerDoubleClick(PointerEventData eventData)
+    {
+        Debug.Log("ItemStack: Stack: OnPointerDoubleClick");
+        // Implement logic for double click action on the item stack
+        // For example, open item details, use item, etc.
+
+        // When Double Clicking a Stack inslot inside a unit inventory then
+        // Select all other stacks.
+    }
+
+    // Stack Drop 
+    public void OnDrop(PointerEventData eventData)
+    {
+        // Implement logic for when another item is dropped onto this stack
+        // For example, combining items, swapping, etc.
+
+        Debug.Log("ItemStack: Stack: OnDrop");
+        if (eventData.pointerDrag != null)
+        {
+            // Check if the dragged item can be added to the slot
+            // if () { }
+
+            // Null Check for Drop Location - Error: Not Suppose to Occur!
+            if (eventData.pointerDrag == null) Debug.LogError("ItemStack: Drop Location is null");
+            
+            // Valid Drop location - No Error!
+            if (eventData.pointerDrag != null)
+            {
+                // Move the dragged item to this slot
+                // Set New Drop Position! ( NewPos -> OldPos )
+                SetStackPosition(this, eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition, this.itemDragHandler.rectTransform.anchoredPosition); // This should work but stack infinite! 
+                
+                // Log The Dropped Target Name
+                if (eventData.pointerDrag.gameObject.name != null)
+                {
+                    Debug.Log($"ItemStack: Drop Location: {eventData.pointerDrag.gameObject.name}.");
+                }
+                else 
+                {
+                    Debug.Log($"ItemStack: Drop Location is Null"); // removing [ {eventData.pointerDrag.gameObject.name}."); ] This, Won't work since it's already null :)
+                }
+            }
+
+            // Move the dragged item to this slot
+            eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
+
+            // Play Dropped Item Into Slot Sound
+            AudioManager AudioManager = FindObjectOfType<AudioManager>();
+            AudioClip DropIntoSlot = AudioManager.DropIntoSlot;
+            AudioManager.PlaySound(DropIntoSlot);
+        }
+    }
+
+    #endregion
+}
+
+ // ItemStack.cs - end

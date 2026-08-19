@@ -6,6 +6,7 @@ public class IslandStorage : Storage
 
     // For instance, if there are any unique behaviors, you can override the base methods:
 
+    // Overrides - Storage
     public override void AddItem(ItemData itemData, int quantity)
     {
         base.AddItem(itemData, quantity);

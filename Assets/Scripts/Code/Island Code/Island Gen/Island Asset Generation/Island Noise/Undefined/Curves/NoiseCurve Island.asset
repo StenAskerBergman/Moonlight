@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cedaf6f711da9847abc397b64701bbc, type: 3}
+  m_Name: NoiseCurve Island
+  m_EditorClassIdentifier: 
+  curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.05306328
+      value: 0.047814224
+      inSlope: 0.43027848
+      outSlope: 0.43027848
+      tangentMode: 0
+      weightedMode: 2
+      inWeight: 0.86780953
+      outWeight: 0.55204904
+    - serializedVersion: 3
+      time: 0.24617273
+      value: 0.1315684
+      inSlope: 0.73831064
+      outSlope: 0.689445
+      tangentMode: 1
+      weightedMode: 3
+      inWeight: 0.4872596
+      outWeight: 0.35150522
+    - serializedVersion: 3
+      time: 0.40804598
+      value: 0.16938534
+      inSlope: 0.14800367
+      outSlope: 0.21419199
+      tangentMode: 1
+      weightedMode: 3
+      inWeight: 0.3260381
+      outWeight: 0.2614758
+    - serializedVersion: 3
+      time: 0.63868153
+      value: 0.1666189
+      inSlope: 0.04336386
+      outSlope: 0.029779287
+      tangentMode: 1
+      weightedMode: 3
+      inWeight: 0.38838688
+      outWeight: 0.8385794
+    - serializedVersion: 3
+      time: 0.88027227
+      value: 0.34658137
+      inSlope: 1.2702626
+      outSlope: 1.2702626
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.54016066
+      outWeight: 0.6202784
+    - serializedVersion: 3
+      time: 0.99975765
+      value: 0.49997112
+      inSlope: 2.1162736
+      outSlope: 2.1162736
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.35210562
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  PreviewType: 0

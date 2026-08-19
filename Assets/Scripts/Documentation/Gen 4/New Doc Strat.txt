@@ -1,0 +1,5 @@
+The new plan is to keep core documention at its application level but... 
+    
+    "maybe" 
+
+A good idea to keep a extra copy here for a overview of how it all works

@@ -29,7 +29,7 @@ public class TextureBuilder
         Color streamColor = new Color(0f, 0f, 0.9f, 1f); // Light Blue for Stream
         Color seaColor = new Color(0f, 0f, 0.7f, 1f); // Deep Blue for Sea
         Color oceanColor = new Color(0f, 0f, 0.6f, 1f); // Very Deep Blue for Ocean
-        Color shallowColor = new Color(0f, 0.5f, 1f, 1f); // Cyan for Shallow
+        Color shallowColor = new Color(0f, 0.5f, 1f, 1f); // Cyan Blue for Shallow
         Color deepColor = new Color(0f, 0f, 0.5f, 1f); // Very Deep Blue for Deep
         Color plateauColor = new Color(0.5f, 0.5f, 0.8f, 1f); // Light Purple for Plateau
 
@@ -39,6 +39,7 @@ public class TextureBuilder
         Color coastColor = new Color(0.6f, 0.6f, 0.2f, 1f); // Dark Yellow-Green for Coast
         Color desertColor = new Color(1f, 1f, 0f, 1f); // Yellow for Desert
         Color forestColor = new Color(0f, 0.5f, 0f, 1f); // Dark Green for Forest
+        Color abyssColor = new Color(1f, 1f, 0.4f, 1f); // Dark Yellow for Abyss
         Color beachColor = new Color(1f, 1f, 0.6f, 1f); // Light Yellow for Beach
         Color shorefloorColor = new Color(1f, 1f, 0.7f, 1f); // Light Yellow for Beach
 
@@ -53,23 +54,25 @@ public class TextureBuilder
         {
             {Cell.TerrainType.Unknown, unknownColor},
             {Cell.TerrainType.None, noneColor},
-            {Cell.TerrainType.River, riverColor},
-            {Cell.TerrainType.Water, shorefloorColor},
-            {Cell.TerrainType.Stream, streamColor},
             {Cell.TerrainType.Sea, shorefloorColor},
-            {Cell.TerrainType.Ocean, beachColor},
-            {Cell.TerrainType.Shallow, shallowColor},
-            {Cell.TerrainType.Deep, beachColor},
-            {Cell.TerrainType.Plateau, plateauColor},
             {Cell.TerrainType.Land, landColor},
-            {Cell.TerrainType.Shore, beachColor},
+            {Cell.TerrainType.Deep, beachColor},
             {Cell.TerrainType.Coast, coastColor},
-            {Cell.TerrainType.Desert, desertColor},
-            {Cell.TerrainType.Forest, forestColor},
+            {Cell.TerrainType.Shore, beachColor},
+            {Cell.TerrainType.Water, shorefloorColor},
+            {Cell.TerrainType.Ocean, beachColor},
             {Cell.TerrainType.Beach, beachColor},
             {Cell.TerrainType.Plain, plainColor},
             {Cell.TerrainType.Rocky, rockyColor},
+            {Cell.TerrainType.River, riverColor},
+            {Cell.TerrainType.Desert, desertColor},
+            {Cell.TerrainType.Forest, forestColor},
+            {Cell.TerrainType.Stream, streamColor},
+            {Cell.TerrainType.Shallow, beachColor},
+            {Cell.TerrainType.Abyssal, beachColor},
+            {Cell.TerrainType.Plateau, plateauColor},
             {Cell.TerrainType.Mountain, rockyColor},
+
         };
 
         // Iterate through the cells in the grid
@@ -98,8 +101,6 @@ public class TextureBuilder
                 }
             }
         }
-
-
 
         // Set the texture's pixels to the color map
         texture.SetPixels(colorMap);

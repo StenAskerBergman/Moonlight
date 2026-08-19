@@ -1,0 +1,127 @@
+<color=green><b>SUCCESS:</b> UnitStorageManager component found.</color> by id: b62d922b-3fe5-4da9-91f0-c08ab06138bb
+UnityEngine.Debug:Log (object)
+UnitInventory:Awake () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:148)
+
+<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>0</color> - <color=white> Before InitializeItemSlots && Before InitializeStorageManager() </color>
+UnityEngine.Debug:Log (object)
+UnitInventory:Awake () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:151)
+
+<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>0</color> - <color=white> After InitializeItemSlots && Before InitializeStorageManager() </color>
+UnityEngine.Debug:Log (object)
+UnitInventory:Awake () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:153)
+
+<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>0</color> - <color=white> After InitializeItemSlots && After InitializeStorageManager() </color>
+UnityEngine.Debug:Log (object)
+UnitInventory:Awake () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:155)
+
+You are trying to create a MonoBehaviour using the 'new' keyword.  This is not allowed.  MonoBehaviours can only be added using AddComponent(). Alternatively, your script can inherit from ScriptableObject or no base class at all
+UnityEngine.MonoBehaviour:.ctor ()
+Island:.ctor (IslandType) (at Assets/Scripts/Code/Island Code/Island Gen/Island.cs:109)
+MapManager:AddIsland (IslandData) (at Assets/Scripts/Grid System/MapManager.cs:332)
+MapManager:Start () (at Assets/Scripts/Grid System/MapManager.cs:269)
+
+<color=orange>StarterItems: </color><color=yellow><b>ATTEMPT:</b> Rice item added to Boat (Unit Inventory) (1)</color>
+UnityEngine.Debug:Log (object)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:119)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=white> StarterItems: </color><color=orange>UnitInventory: </color><color=white>Boat (Unit Inventory) (1)</color><color=yellow> <b>ATTEMPT:</b> to add </color><color=white>Rice</color><color=yellow> with amount </color><color=white>40</color><color=yellow> to </color> <color=white>Boat (Unit Inventory) (1)</color>
+UnityEngine.Debug:Log (object)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:273)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=red><b>MISSING:</b> Suitable Slot!</color> -><color=white> No suitable slot found. </color> -> <color=orange>Creating a new slot.</color>
+UnityEngine.Debug:Log (object)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:287)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=orange>Creating New ItemSlot: </color><color=lightblue>ItemSlot</color><color=white> 0</color>
+UnityEngine.Debug:Log (object)
+UnitInventory:CreateNewItemSlot () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:255)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:288)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=lightblue>ItemSlot.cs -> </color><color=white>Awake:</color> <color=yellow>Initializing ItemSlot: </color>ItemSlot 0
+UnityEngine.Debug:Log (object)
+ItemSlot:SetupItemStack (string) (at Assets/Scripts/Item System/Userface/ItemSlot.cs:149)
+ItemSlot:Awake () (at Assets/Scripts/Item System/Userface/ItemSlot.cs:72)
+UnityEngine.GameObject:AddComponent<ItemSlot> ()
+UnitInventory:CreateNewItemSlot () (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:260)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:288)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+NullReferenceException: Object reference not set to an instance of an object
+ItemSlot.SetupItemStack (System.String from) (at Assets/Scripts/Item System/Userface/ItemSlot.cs:155)
+ItemSlot.Awake () (at Assets/Scripts/Item System/Userface/ItemSlot.cs:72)
+UnityEngine.GameObject:AddComponent()
+UnitInventory:CreateNewItemSlot() (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:260)
+UnitInventory:AddItem(ItemData, Int32, String) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:288)
+StarterItems:AddToUnitInventory(ItemData, Int32) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start() (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=lightblue>Initializing or updating ItemStack in slot ItemSlot 0 for item Rice</color>
+UnityEngine.Debug:Log (object)
+UnitInventory:InitializeOrUpdateItemStack (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:363)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=red><b>NULL DETECTED:</b> ItemSlot 0 (ItemSlot) ItemStack was <b>null!</b></color><color=yellow> Creating New ItemStack in Slot
+UnityEngine.Debug:Log (object)
+UnitInventory:InitializeOrUpdateItemStack (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:367)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+Creating ItemStack in slot ItemSlot 0 for item Rice
+UnityEngine.Debug:Log (object)
+UnitInventory:CreateItemStackInSlot (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:315)
+UnitInventory:InitializeOrUpdateItemStack (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:368)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+NullReferenceException: Object reference not set to an instance of an object
+ItemStack.Awake () (at Assets/Scripts/Item System/Item Code/ItemStack.cs:32)
+UnityEngine.GameObject:AddComponent()
+UnitInventory:CreateItemStackInSlot(ItemSlot, ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:326)
+UnitInventory:InitializeOrUpdateItemStack(ItemSlot, ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:368)
+UnitInventory:AddItem(ItemData, Int32, String) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory(ItemData, Int32) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start() (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=green><b>Success!</b></color> CreateItemStackInSlot(); Worked!
+UnityEngine.Debug:Log (object)
+UnitInventory:CreateItemStackInSlot (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:338)
+UnitInventory:InitializeOrUpdateItemStack (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:368)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+Stack Content: 0
+UnityEngine.Debug:Log (object)
+ItemStack:UpdateStackUI (int) (at Assets/Scripts/Item System/Item Code/ItemStack.cs:270)
+ItemStack:SetItemData (ItemData,int) (at Assets/Scripts/Item System/Item Code/ItemStack.cs:97)
+UnitInventory:CreateItemStackInSlot (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:341)
+UnitInventory:InitializeOrUpdateItemStack (ItemSlot,ItemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:368)
+UnitInventory:AddItem (ItemData,int,string) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems:AddToUnitInventory (ItemData,int) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems:Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+NullReferenceException: Object reference not set to an instance of an object
+ItemStack.UpdateStackUI (System.Int32 quantity) (at Assets/Scripts/Item System/Item Code/ItemStack.cs:276)
+ItemStack.SetItemData (ItemData data, System.Int32 quantity) (at Assets/Scripts/Item System/Item Code/ItemStack.cs:97)
+UnitInventory.CreateItemStackInSlot (ItemSlot slot, ItemData itemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:341)
+UnitInventory.InitializeOrUpdateItemStack (ItemSlot slot, ItemData itemData) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:368)
+UnitInventory.AddItem (ItemData itemData, System.Int32 amount, System.String from) (at Assets/Scripts/Item System/Inventory/UnitInventory.cs:297)
+StarterItems.AddToUnitInventory (ItemData itemData, System.Int32 amount) (at Assets/Scripts/Item System/StarterItems.cs:120)
+StarterItems.Start () (at Assets/Scripts/Item System/StarterItems.cs:72)
+
+<color=green><b>SUCCESS:</b> Unit has atleast one Inventory component!</color>
+UnityEngine.Debug:Log (object)
+Unit:Start () (at Assets/Scripts/Unit/Unit Scripts/Unit.cs:64)
+

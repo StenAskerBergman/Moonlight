@@ -1,0 +1,38 @@
+
+--------------------------------------------------------------------------------------------
+Script Descriptions
+--------------------------------------------------------------------------------------------
+
+    Item.cs
+
+        Holds Data
+
+
+    ItemData.cs 
+
+        Holds descriptive data about what the items says,
+        looks like and works visually. It also holds alot
+        of other data 
+
+    ItemStack.cs
+
+        Holds Group Data for a inventory / storage space
+        to ensure consistancy, and that interactions work
+        as intended.
+
+        > Max Quantity
+        > Current Quantity
+
+    UniqueIdentifier.cs
+
+        Just a way to ID items for system related actions
+        like Serialization regarding "Saving", "Loading"
+        and so on, etc. form what I can tell. Also can be
+        used to track ownership indirectly but that is yet
+        to be implemented
+
+
+
+--------------------------------------------------------------------------------------------
+Item  
+--------------------------------------------------------------------------------------------

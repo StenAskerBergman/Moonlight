@@ -45,3 +45,15 @@ UIManager script:
 	Subscribers: subscribes to the OnIslandSelected event triggered 
 	by the Island script and updates the visual display of the UI 
 	based on the information provided.
+
+
+---------------------------------------------------------------------------------------------
+
+
+UIManager script:
+	
+	Publisher: none.
+
+	Subscribers: none.
+
+

@@ -4,13 +4,18 @@ using UnityEngine;
 
 public class RiverArea : IFeature
 {
-    private bool isBuildable;
+    private bool isBuildable = false;
     private List<Vector3> riverPoints;
 
     public RiverArea()
     {
         this.isBuildable = false;
         this.riverPoints = new List<Vector3>();
+    }
+
+    public void buildingRoad()
+    {
+        isBuildable = true;
     }
 
     public void GenerateFeature()

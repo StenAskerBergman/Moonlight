@@ -43,7 +43,7 @@ public class SeedSlot : MonoBehaviour
         // Ensure SeedManager and currentIsland are not null before calling UpdateActiveState
         if (seedDisplayManager.currentIsland == null)
         {
-            Debug.LogWarning("currentIsland is null.");
+            // Debug.LogWarning("currentIsland is null.");
         }
         
         UpdateActiveState();

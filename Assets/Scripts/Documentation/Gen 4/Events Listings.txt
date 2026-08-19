@@ -1,0 +1,20 @@
+UnitInventory.Awake()
+    ↓
+InitializeItemSlots()
+    ↓
+CreateNewItemSlot()
+    ↓
+newGameObject.AddComponent<ItemSlot>()
+    ↓
+ItemSlot.Awake() FIRES IMMEDIATELY
+
+----
+
+----
+
+
+ItemSlot.cs
+ItemStack.cs
+UnitInventory.cs
+UnitInventoryUI.cs
+ItemDragHandler.cs

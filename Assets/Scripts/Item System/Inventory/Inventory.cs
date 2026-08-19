@@ -3,14 +3,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
+[System.Serializable]
+public struct ItemEntry
+{
+    public ItemData key;
+    public int value;
+}
+
+// Default Inventory System
+[RequireComponent(typeof(StorageManager), typeof(Storage))]
 public class Inventory : MonoBehaviour, IUniqueIdentifier
 {
     // Unique ID
     public string ID { get; private set; }
 
-    private StorageManager storageManager; // The controller
+    // The controllers for the storage
+    private StorageManager storageManager;
 
-    public StorageManager storageManagerPrefab;  // Drag and drop the prefab in the inspector
+    // Drag and drop the prefab in the inspector
+    public StorageManager storageManagerPrefab;
+
+    // New field for editor visibility
+    public List<ItemEntry> itemListForEditor = new List<ItemEntry>();
+
+    private void UpdateItemListForEditor()
+    {
+        itemListForEditor.Clear();
+        var allItems = storageManager.GetAllItems; // Get the current state from the StorageManager
+        foreach (var kvp in allItems)
+        {
+            itemListForEditor.Add(new ItemEntry { key = kvp.Key, value = kvp.Value });
+        }
+    }
 
     private void Awake()
     {
@@ -19,17 +43,38 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
         if (storageManager == null)
         {
-            // Instantiate the prefab if it's not already on the game object
-            Debug.Log("No manager found, creating one!");
-            storageManager = Instantiate(storageManagerPrefab, transform);
+            Debug.Log("StorageManager component not found, trying to instantiate from prefab.");
+            if (storageManagerPrefab != null)
+            {
+                storageManager = Instantiate(storageManagerPrefab, transform).GetComponent<StorageManager>();
+                if (storageManager != null)
+                {
+                  //Debug.Log("StorageManager instantiated successfully.");
+                    
+                }
+                else
+                {
+                  //Debug.LogError("Failed to instantiate StorageManager from prefab.");
+                }
+            }
+            else
+            {
+                //Debug.LogError("StorageManager prefab is not assigned.");
+            }
+        }
+        else
+        {
+            //Debug.Log("StorageManager component found.");
         }
     }
+
 
     private void Start()
     {
         if (storageManager == null)
         {
-            GetComponent<StorageManager>();
+            // Not sure why we are randomly getting this but not assigning it, ok?
+            storageManager = GetComponent<StorageManager>();
         }
     }
 
@@ -43,20 +88,44 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
     #endregion
 
-    #region Public Interaction Methods
+    #region Item Management - Public Interaction Methods
 
     //  Print all items in the inventory rather than Get all items
     public void PrintAllItems()
     {
-        foreach (KeyValuePair<ItemData, int> itemEntry in storageManager.GetAllItemsA)
+        foreach (KeyValuePair<ItemData, int> itemEntry in storageManager.GetAllItems)
         {
             Debug.Log(itemEntry.Key.name);
         }
     }
 
+    /// <summary>
+    /// Returns all items of a specific inventory.
+    /// </summary>
+    /// <param name="itemData"></param>
+    /// <returns>Dictionary<ItemData, int></returns>
     public Dictionary<ItemData, int> GetAllItems()
     {
-        return storageManager.GetAllItemsA;
+        if (storageManager == null)
+        {
+            Debug.LogWarning("StorageManager is being lazily initialized.");
+            storageManager = GetComponent<StorageManager>();
+            if (storageManager == null && storageManagerPrefab != null)
+            {
+                storageManager = Instantiate(storageManagerPrefab, transform).GetComponent<StorageManager>();
+            }
+        }
+
+        if (storageManager != null)
+        {
+            UpdateItemListForEditor(); // Ensure the editor list is updated
+            return storageManager.GetAllItems;
+        }
+        else
+        {
+            Debug.LogError("StorageManager is still not initialized.");
+            return new Dictionary<ItemData, int>();
+        }
     }
 
     /// <summary>
@@ -82,10 +151,33 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
         return GetItemAmount(itemData) >= amount;
     }
 
+    public bool CanRemove(ItemData item, int quantity)
+    {
+        // Implement logic to check if the item can be removed
+        // For example, check if the inventory contains enough of the item
+        return GetItemAmount(item) >= quantity;
+    }
+
+    public bool CanAdd(ItemData item, int quantity)
+    {
+        // Implement logic to check if the item can be added
+        // For example, check if there's enough space in the inventory
+
+        // Empty Placeholder
+        
+        // return true; if logic is correct else return false
+        return GetItemAmount(item) >= quantity;
+    }
+
     public void AddItem(ItemData itemData, int amount)
     {
         storageManager.AddItem(itemData, amount);
         OnInventoryChanged?.Invoke(); // Notify change
+
+        // After adding the item, update the editor list
+        UpdateItemListForEditor();
+
+        Debug.Log($"Added {amount} of {itemData.name} to the Inventory of {this.transform.name}.");
     }
 
     public bool RemoveItem(ItemData itemData, int amount)

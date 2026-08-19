@@ -149,8 +149,10 @@ public class BuildingChecker : MonoBehaviour
             currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
 
             Debug.Log("Update: canPlace is " + canPlace);
-            
-            InputCheck();
+
+            // Display Build Conditions + Cost 
+            // InputCheck(out string Conditions_Status
+            // Debug.Log("Conditions: " + Conditions_Status);
 
         }
     }
@@ -158,7 +160,8 @@ public class BuildingChecker : MonoBehaviour
 
     #region Base Requirement Methods
 
-    // A
+    // A - Nobody Remembers the Past something you will learn one day,
+    // along the way to the end of your life.
     private BaseStorageManager FetchBaseStorageManager()
     {
 
@@ -189,7 +192,13 @@ public class BuildingChecker : MonoBehaviour
 
     public bool isVerified;
 
-    private void InputCheck()
+
+    //TODO: this method to return with infomation regarding the request made
+    //SOLV: out string str_Conditions_Status - Would be cool!
+    //ISUE: but I fail to remember how InputCheck reads the "actual" conditions 
+
+
+    private void InputCheck() 
     {
         // Left-click actions
         if (Input.GetMouseButtonDown(0))
@@ -201,6 +210,10 @@ public class BuildingChecker : MonoBehaviour
             }
             else
             {
+
+                // Scenario Cases 
+
+                // Can Place && building requirements is Verified
                 if (IC || canPlace && isVerified)
                 {
                     HandleBuildingPlacement();

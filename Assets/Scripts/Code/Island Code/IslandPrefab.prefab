@@ -1,0 +1,301 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7038287545543584486
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7038287545543584487}
+  - component: {fileID: 5251832945145122524}
+  - component: {fileID: 7038287545543584482}
+  - component: {fileID: 7038287545543584485}
+  - component: {fileID: 8759952300726135397}
+  - component: {fileID: 7275386674525251660}
+  - component: {fileID: 5057614848020755654}
+  - component: {fileID: 3016585312015665423}
+  - component: {fileID: 1430667336206208412}
+  - component: {fileID: 8836174090640963313}
+  - component: {fileID: 6881203944584505237}
+  - component: {fileID: 8062848879954129166}
+  - component: {fileID: 7468944127729193773}
+  m_Layer: 6
+  m_Name: IslandPrefab
+  m_TagString: Ground
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 8
+  m_IsActive: 1
+--- !u!4 &7038287545543584487
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5251832945145122524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27c9b461ae824054d87ee9cf0b7afa47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hasMountainsGenerated: 0
+  treePrefabs: []
+  edgeMaterial: {fileID: 2100000, guid: 0eba097ae0ca2cf4aa14f7a6bb46df16, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: 8203fa58b2d25bd4dbc00bfa4736b9e6, type: 2}
+  hillEdgeMaterial: {fileID: 2100000, guid: aadd5a709a48466c887296bb5b1b8110, type: 2}
+  oceanEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
+  coastEdgeMaterial: {fileID: 2100000, guid: 152ae44750e3c814a891ed4c1e6e3a67, type: 2}
+  beachEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
+  riverEdgeMaterial: {fileID: 2100000, guid: aadd5a709a48466c887296bb5b1b8110, type: 2}
+  shallowEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
+  deepSeaEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
+  plateauEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
+  abyssalEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
+  mountainEdgeMaterial: {fileID: 2100000, guid: bffa15793aaa4bf4f8ed7d1b89f5f982, type: 2}
+  cookingOptions: -1
+  meshCollider: {fileID: 0}
+  ref_navMeshGameManager: {fileID: 0}
+  mountainThreshold: 0.8
+  landLevel: 0.6
+  waterLevel: 0.4
+  CoastThreshold: 0.35
+  shallowWaterThreshold: 0.3
+  plateauThreshold: 0.2
+  deepSeaThreshold: 0.2
+  abyssThreshold: 0
+  scale: 0.025
+  treeNoiseScale: 0.05
+  treeDensity: 0.5
+  size: 60
+  terrainType: 1
+  cellCollider: {fileID: 0}
+  _showLogs: 0
+  currentGridType: 0
+  minMountains: 1
+  maxMountains: 5
+  minMountainHeight: 1
+  maxMountainHeight: 2
+--- !u!33 &7038287545543584482
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &7038287545543584485
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 7404ab7fff4422745a8b0664ca47a04c, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8759952300726135397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b258ac6a7a4636459b30670ea8e7a73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  islandConfig: {fileID: 11400000, guid: 642faf1ae9207db46a90e5609b48ea3a, type: 2}
+  id: 0
+  islandName: 
+  islandType: 0
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  buildings: []
+  PotentialSeeds: []
+  ActiveSeeds: []
+--- !u!114 &7275386674525251660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0c4021630c7ed45b49f86a9ad0f8b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  storageManagerPrefab: {fileID: 0}
+  itemListForEditor: []
+--- !u!114 &5057614848020755654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35b4cb9c1ebe70d4799bf23ce4411b37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  items: []
+--- !u!114 &3016585312015665423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78dc3c956d225e540ae1f008caeda510, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  storage: {fileID: 1430667336206208412}
+--- !u!114 &1430667336206208412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83cb0669bfa35984f9a02782777f1a55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8836174090640963313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22a8bf083823af64e8309979beb2f9fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Settled: 1
+  PowerSpent: 0
+  PowerOutput: 0
+  CurrentPower: 1
+  TotalPower: 1
+--- !u!114 &6881203944584505237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e6289ebbdce60b478d2b64ec47ab403, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnPositiveEco:
+    m_PersistentCalls:
+      m_Calls: []
+  OnNegativeEco:
+    m_PersistentCalls:
+      m_Calls: []
+  OnEcoChange:
+    m_PersistentCalls:
+      m_Calls: []
+  NegEco: 0
+  PosEco: 0
+  EcoValue: 0
+  DefaultEcoValue: 10
+--- !u!114 &8062848879954129166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6738e662e1c665d4e958a07bb251f952, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapManager: {fileID: 0}
+  buildings:
+    serializedVersion: 2
+    m_Bits: 0
+  gridSize: 10
+  cellSize: 1
+  gridPosition: {x: 0, y: 0, z: 0}
+  offset: {x: 5, y: 0, z: 5}
+  bank: {fileID: 0}
+  buildingChecker: {fileID: 0}
+  localBuildings: []
+  globalBuildings: []
+  gridBounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+--- !u!114 &7468944127729193773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd57111f966a4a94eabe0683b13ced03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  islandConfig: {fileID: 11400000, guid: 642faf1ae9207db46a90e5609b48ea3a, type: 2}
+  initialSeeds: []
+  initialResources: []
+  _showLogs: 0

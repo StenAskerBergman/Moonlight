@@ -20,7 +20,7 @@ public class SideScript : MonoBehaviour {
 
 		if (x > 89 || x < -89 || y > 89 || y < -89) {
 		
-			bool FellOver = true;
+			//bool FellOver = true;
 
 		}
 	}

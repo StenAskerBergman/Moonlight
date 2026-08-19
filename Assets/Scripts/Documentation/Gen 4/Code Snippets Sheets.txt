@@ -1,0 +1,248 @@
+
+
+
+
+
+    private void Awake()
+    {
+        EnsureItemStack();
+    }
+
+    public void Initialize(UnitInventory inventory, UnitStorageManager manager)
+    {
+        unitInventory = inventory;
+        storageManager = manager;
+        unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
+
+        EnsureItemStack().BindSlot(this);
+    }
+
+    public ItemStack EnsureItemStack()
+    {
+        if (itemStack == null)
+            itemStack = GetComponentInChildren<ItemStack>(true);
+
+        if (itemStack == null)
+            itemStack = ItemStackFactory.CreateItemStack(this);
+
+        return itemStack;
+    }
+
+    public void BindSlot(ItemSlot slot)
+    {
+        itemSlot = slot;
+
+        if (itemSlot != null && itemSlot.storageManager != null)
+            item = itemSlot.storageManager.GetComponent<Item>();
+    }
+
+    private ItemSlot CreateInitializedSlot(string slotName)
+    {
+        // 1. Create slot object
+        GameObject slotGO = CreateSlotGameObject(slotName);
+
+        // 2. Create slot component
+        ItemSlot slot = slotGO.AddComponent<ItemSlot>();
+
+        // 3. Bind its owning inventory/storage
+        slot.Initialize(this, unitStorageManager);
+
+        // 4. ItemSlot guarantees its persistent ItemStack
+        ItemStack stack = slot.EnsureItemStack();
+
+        // 5. Stack begins empty
+        stack.ClearStack();
+
+        return slot;
+    }
+
+    public static ItemStack CreateItemStack(ItemSlot owner)
+    {
+        GameObject stackGO = new GameObject("ItemStack");
+        stackGO.transform.SetParent(owner.transform, false);
+
+        Image icon = stackGO.AddComponent<Image>();
+        Text quantityText = stackGO.AddComponent<Text>();
+
+        ItemStack stack = stackGO.AddComponent<ItemStack>();
+
+        stack.InitializeUIComponents(icon, quantityText);
+        stack.BindSlot(owner);
+
+        owner.itemStack = stack;
+
+        return stack;
+    }
+
+
+
+    private void Awake()
+    {
+        EnsurePresentation();
+    }
+
+    
+    private void EnsurePresentation()
+    {
+        if (itemIcon == null)
+            itemIcon = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
+
+        if (itemQuantityText == null)
+            itemQuantityText =
+                GetComponentInChildren<Text>(true) ??
+                gameObject.AddComponent<Text>();
+    }
+
+
+
+
+    public void SetItemData(ItemData data)
+    {
+        EnsurePresentation();
+
+        itemData = data;
+        UpdateStackUI(quantity);
+    }
+
+
+
+
+private ItemSlot CreateNewItemSlot(bool resizeArray = false)
+{
+    string slotName = $"ItemSlot {itemSlots.Length}";
+
+    GameObject slotGO = CreateSlotGameObject(slotName);
+    ItemSlot slot = slotGO.AddComponent<ItemSlot>();
+
+    slot.Initialize(this, unitStorageManager);
+
+    if (resizeArray)
+    {
+        Array.Resize(ref itemSlots, itemSlots.Length + 1);
+        itemSlots[itemSlots.Length - 1] = slot;
+    }
+
+    return slot;
+}
+
+
+
+
+public bool IsEmpty()
+{
+    return itemData == null || quantity <= 0;
+}
+
+public void ClearStack()
+{
+    item = null;
+    itemData = null;
+    quantity = 0;
+
+    UpdateStackUI(0);
+}
+
+
+
+
+
+
+
+
+
+public void CheckAndClearSlotIfEmpty()
+{
+    if (itemStack != null && itemStack.GetQuantity() <= 0)
+        itemStack.ClearStack();
+}
+
+
+
+
+
+
+public void ClearSlot()
+{
+    EnsureItemStack().ClearStack();
+
+    UpdateSlotName();
+
+    Debug.Log($"{gameObject.name} cleared.");
+}
+
+
+
+
+
+
+public void SetItemData(ItemData data, int newQuantity)
+{
+    EnsurePresentation();
+
+    itemData = data;
+
+    if (data == null)
+    {
+        quantity = 0;
+    }
+    else if (maxQuantity > 0)
+    {
+        quantity = Mathf.Clamp(newQuantity, 0, maxQuantity);
+    }
+    else
+    {
+        quantity = Mathf.Max(0, newQuantity);
+    }
+
+    UpdateStackUI(quantity);
+}
+
+
+
+
+
+private ItemSlot CreateInitializedSlot(string slotName)
+{
+    // 1. Create slot object
+    GameObject slotGO = CreateSlotGameObject(slotName);
+
+    // 2. Create slot component
+    ItemSlot slot = slotGO.AddComponent<ItemSlot>();
+
+    // 3. Bind its owning inventory/storage
+    slot.Initialize(this, unitStorageManager);
+
+    // 4. ItemSlot guarantees its persistent ItemStack
+    ItemStack stack = slot.EnsureItemStack();
+
+    // 5. Stack begins empty
+    stack.ClearStack();
+
+    return slot;
+}
+
+
+ItemStack stack = slot.EnsureItemStack();
+
+stack.SetMaxQuantity(itemData.maxStackSize);
+stack.SetItemData(itemData, amount);
+
+
+
+Create ItemSlot
+      ↓
+Ensure exactly one ItemStack
+      ↓
+Bind Slot <-> Stack
+      ↓
+Initialize stack dependencies/UI
+      ↓
+Stack starts empty
+      ↓
+Later assign ItemData + quantity
+      ↓
+Clear contents when empty
+      ↓
+Reuse the same Stack
+
+

@@ -76,8 +76,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d566975300f55a4789f5e05454e61c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  groundMarker: {fileID: 0}
   unitList: []
   unitsSelected: []
+  hasSelected: 0
+  hasHouses: 0
+  hasCharacters: 0
+  selectionChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  hasInventory: 0
+  inventoryUIPanel: {fileID: 0}
+  builderUIPanel: {fileID: 0}
 --- !u!1 &7938213535207471553
 GameObject:
   m_ObjectHideFlags: 0
@@ -166,6 +176,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   groundMarker: {fileID: 0}
+  Blinked: 0
+  GroundMarkerGraphics: {fileID: 0}
   clickable:
     serializedVersion: 2
     m_Bits: 512

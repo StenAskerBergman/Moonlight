@@ -29,7 +29,6 @@ public class GridSystem : MonoBehaviour
         localBuildings.Add(building);
     }
 
-
     // Global List Methods
     [HideInInspector] public List<Building> globalBuildings; // NEW: A list of Building objects.
     private void AddBuilding(BuildingCost buildingCost)

@@ -3,6 +3,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "New Item Data", menuName = "Data/Item/Item Data")]
+[System.Serializable]
 public class ItemData : ScriptableObject
 {
     // Item Data
@@ -12,6 +13,10 @@ public class ItemData : ScriptableObject
     public float baseValue;     // Base value of the item
     public ItemType type;       // Generic Type of the item
     public Sprite Icon;         // Default Icon of the item
+
+    // Slot Data
+    public ItemSlot oldSlot;    // The old slot of the item
+    public ItemSlot newSlot;    // The new slot of the item
 
     // Item Properties
     public int factor;          // 1 is low factor, 10 is high factor, or any scale you choose.

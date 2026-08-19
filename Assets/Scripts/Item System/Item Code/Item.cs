@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System;
+using UnityEngine.UI;
 using UnityEngine;
+
 
 public enum Perishability
 {
@@ -27,11 +29,13 @@ public enum Usability
     // Add other usability flags as needed
 }
 
+[System.Serializable][ExecuteAlways]
 public class Item : MonoBehaviour, IUniqueIdentifier
 {
+    // public int quantity { get; set; } // Note: unsure if I should add this or not?
+
     public ItemData itemData; // Description Reference of the item.
     public string ID { get; private set; }
-    // public int quantity { get; set; }
     public ItemType Type { get; set; }
     public Perishability PerishabilityStatus { get; set; }
     public Usability UsabilityStatus { get; set; }
@@ -42,11 +46,13 @@ public class Item : MonoBehaviour, IUniqueIdentifier
     public virtual Item Refine() { return this; }
     public virtual Item Craft(Item otherItem) { return this; }
     public virtual void Consume() { }
-
+    public virtual void Spawn() { }
 
     private void Awake()
     {
         ID = Guid.NewGuid().ToString(); // Generate a unique ID for this item. ( Using IUniqueIdentifier interface )
+        Image icon = GetComponent<Image>();
+        if (itemData != null ) icon.sprite = itemData.Icon;
     }
 }
 
@@ -64,6 +70,12 @@ public enum ItemType
 public enum ItemStatus
 {
 
+    New,
+    Old,
+
+    Spoiled,
+    Rotten,
+    Fresh,
 
     Deactivate,
     Activated,

@@ -3,7 +3,6 @@
   
    // Open
       // Open: Menu System ERROR: The Menu isn't showing the correct options according to what I've selected
-      // Open: GUI System ERROR: Clicking on options in the selections menu de-selects the intended target and removes the menu 
       
       
        
@@ -13,6 +12,7 @@
          -> Parent is active but Child isn't active, techniclly 
 
    // Done
+      // Done: GUI System ERROR: Clicking on options in the selections menu de-selects the intended target and removes the menu 
       // Done: UC#1 ERROR: Selection is out of bound? -> Set a Constant Selection Range 
       // Done: UC#2 ERROR: Ground Marker isn't Active? -> I made it so it blinks notifying the user the feedback information. 
       // Done: UC#2.1 ERROR: Ground Marker's Graphic Child doesn't Active OnClick? -> I change the way it reacts to clicking

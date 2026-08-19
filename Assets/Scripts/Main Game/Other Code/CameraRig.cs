@@ -4,32 +4,41 @@ using UnityEngine;
 
 public class CameraRig : MonoBehaviour
 {
-    public Transform cameraTransform;
-    public GameBorder gameBorder;
-    
-    // Camera Speed Value
-    public float normalSpeed = 0.5f;                // Camera Speed Rate
-    public float fastSpeed = 3f;                    // Fast Camera Speed
-    public float movementSpeed = 1f;                // Default Camera Speed 
-    public float movementTime = 5f;                 // IMPORTANT: The Higher the Value the Snappier the Camera Move
-    public float zoomTime = 5f;                     // IMPORTANT: The Higher the Value the Faster the Zoom
-    public float rotationAmount;                    // IMPORTANT: Amount of Rotation Per Time Unit
-    public float maxZoomDistance = 25f;             // IMPORTANT: Zoom in Range
-    public float minZoomDistance = 10f;             // IMPORTANT: Zoom Out Range
-    
-    // Note: Should be based off the current Map Size
-    public Vector2 _range = new Vector2(100,100);   // IMPORTANT: Map Boarder
+    #region Variables
 
-    public Vector3 zoomAmount; 
-    public Vector3 newZoom;
-    public Vector3 newPosition;
-    public Quaternion newRotation;
-    public Vector3 rotateStartPosition;
-    public Vector3 rotateCurrentPosition;
+        // Camera Refs.
+        public Transform cameraTransform;
+        public GameBorder gameBorder;
+    
+        // Camera Int Value
+        public float normalSpeed = 0.5f;                // Camera Speed Rate
+        public float fastSpeed = 3f;                    // Fast Camera Speed
+        public float movementSpeed = 1f;                // Default Camera Speed 
+        public float movementTime = 5f;                 // IMPORTANT: The Higher the Value the Snappier the Camera Move
+        public float zoomTime = 5f;                     // IMPORTANT: The Higher the Value the Faster the Zoom
+        public float rotationAmount;                    // IMPORTANT: Amount of Rotation Per Time Unit
+        public float maxZoomDistance = 25f;             // IMPORTANT: Zoom in Range
+        public float minZoomDistance = 10f;             // IMPORTANT: Zoom Out Range
+        public float zoomDistance;
+
+        // Note: Should be based off the current Map Size
+        public Vector2 _range = new Vector2(100,100);   // IMPORTANT: Map Boarder
+
+        public Vector3 zoomAmount; 
+        public Vector3 newZoom;
+        public Vector3 newPosition;
+        public Quaternion newRotation;
+        public Vector3 rotateStartPosition;
+        public Vector3 rotateCurrentPosition;
+
     //public BlueprintScript blueprintScript;
     //public Vector3 dragStartPosition;
     //public Vector3 dragCurrentPosition;
     //bool rotationMode;
+
+    #endregion
+
+    #region Awake + Start Method
     void Awake()
     {
         BuildingPreview buildingPreview = FindObjectOfType<BuildingPreview>(); // Find Solution Tmr
@@ -41,8 +50,10 @@ public class CameraRig : MonoBehaviour
         newPosition = transform.position;
         newRotation = transform.rotation;
         newZoom = cameraTransform.localPosition;
-        
     }
+    #endregion
+
+    #region Fixed + Update Method
 
     // Update is called once per frame
     void Update()
@@ -51,42 +62,41 @@ public class CameraRig : MonoBehaviour
         HandleMouseInput();
         HandleMovementInput();
     }
-    
+    void FixedUpdate()
+    {
+
+    }
+
+    #endregion
+
+    #region HandleMouse Method
     void HandleMouseInput()
-    {   
+    {
         #region Scrolling 
 
-            // // Ref to BlueprintScript
-            // BuildingPreview buildingPreview = FindObjectOfType<BuildingPreview>();
+        Vector3 CameraStartOffset = cameraTransform.localPosition - newPosition;
+   
+        var tempMax = (maxZoomDistance + CameraStartOffset.y);
+        var tempMin = (minZoomDistance + CameraStartOffset.y);
+        var tempPos = cameraTransform.gameObject.transform.position.y;
+
+        if (Input.mouseScrollDelta.y != 0)
+        {   
+            newZoom += Input.mouseScrollDelta.y * zoomAmount;            
+            newZoom += Input.GetAxis("Mouse ScrollWheel") * zoomAmount;   
+
+            float distance = Vector3.Distance(Vector3.zero, newZoom); zoomDistance = distance;
+
+            if (distance > maxZoomDistance && tempPos < tempMax)
+            {
+                newZoom = newZoom.normalized * maxZoomDistance;
+            }
+            else if (distance < minZoomDistance && tempPos > tempMin)
+            {
+                newZoom = newZoom.normalized * minZoomDistance;
+            }
+        }
             
-            // if(buildingPreview != null) 
-            // {
-            //     // Do Nothing
-            //     //Debug.Log(buildingPreview); // get triggered correctly
-            // } 
-            // else 
-            // {   
-            //     // Debug.Log("Building...");
-                if (Input.mouseScrollDelta.y != 0)
-                {   
-                    // Issue: Can't Scroll Up or Down
-                    //newZoom += Input.mouseScrollDelta.y * zoomAmount;             // <-- Not Working 
-                    //newZoom += Input.GetAxis("Mouse ScrollWheel") * zoomAmount;   // <-- Not Working 
-
-                    float distance = Vector3.Distance(Vector3.zero, newZoom);
-
-                    if (distance > maxZoomDistance)
-                    {
-                        newZoom = newZoom.normalized * maxZoomDistance;
-                    }
-                    else if (distance < minZoomDistance)
-                    {
-                        newZoom = newZoom.normalized * minZoomDistance;
-                    }
-                }
-                
-            // }
-
         #endregion
 
         #region Click to Rotate 
@@ -140,21 +150,9 @@ public class CameraRig : MonoBehaviour
         #endregion
 
     }
-    private bool IsInBounds(Vector3 position)
-    {
-        return position.x > -_range.x &&
-            position.x < _range.x &&
-            position.z > -_range.y &&
-            position.z < _range.y;
-    }
+    #endregion
 
-    private Vector3 GetNearestPointOnBounds(Vector3 position)
-    {
-        position.x = Mathf.Clamp(position.x, -_range.x, _range.x);
-        position.z = Mathf.Clamp(position.z, -_range.y, _range.y);
-        return position;
-    }
-    
+    #region HandleMovement Method
     void HandleMovementInput() 
     { 
         #region Shift input
@@ -208,7 +206,7 @@ public class CameraRig : MonoBehaviour
 
 
         #endregion
-
+        
         #region Rotate Input
 
             if (Input.GetKey(KeyCode.Q))
@@ -244,5 +242,26 @@ public class CameraRig : MonoBehaviour
 
         #endregion
     }
+    #endregion
+
+    #region IsInBounds Method
+    private bool IsInBounds(Vector3 position)
+    {
+        return position.x > -_range.x &&
+            position.x < _range.x &&
+            position.z > -_range.y &&
+            position.z < _range.y;
+    }
+    #endregion
+
+    #region GetNearestPintOnBounds
+    private Vector3 GetNearestPointOnBounds(Vector3 position)
+    {
+        position.x = Mathf.Clamp(position.x, -_range.x, _range.x);
+        position.z = Mathf.Clamp(position.z, -_range.y, _range.y);
+        return position;
+    }
+    #endregion
+    
     
 }

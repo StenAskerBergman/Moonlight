@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cd399036eb138b4ebe387ba4b37b8ce, type: 3}
+  m_Name: NoiseStack Island
+  m_EditorClassIdentifier: 
+  layers:
+  - {fileID: 11400000, guid: 2d1ae957dff81cd40aa2109c55ad4bfb, type: 2}
+  - {fileID: 11400000, guid: e2df19fb9cd1be04aabc14a5dcc36770, type: 2}
+  - {fileID: 11400000, guid: 116c13bcc4193cc42bf80fef98f9fd75, type: 2}
+  layerWeights:
+  - 0.6
+  - 0.2
+  - 0.2

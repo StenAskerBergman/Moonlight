@@ -1,12 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class NormalGame : MonoBehaviour
 {
+    // Session Time
+    public int time = 0;
+
     // Game Time
-    public float timeStart = 0;
+    private float timeStart = 0;
+    private float timeEnd = 0;
+
+      
     public Text textBox;
 
     public int Score;
@@ -27,6 +35,10 @@ public class NormalGame : MonoBehaviour
 
         // Round Up Number
         textBox.text = Mathf.Round(timeStart).ToString();
+        time = (int)timeStart;
 
+        // Ending 
+        if (VictoryConditions) {}
+        if (time > timeEnd) {} 
     }
 }

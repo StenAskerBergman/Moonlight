@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,7 +16,53 @@ public class Cell
 
     public TerrainType currentTerrainType { get; private set; }
 
+    // Cell Neighbors
     public List<Cell> neighbors { get; private set; }
+
+    // River Tuples
+    Tuple<int, int> riverSource, riverMouth, riverEnd;
+
+    // River Status
+    public RiverStatus riverStatus { get; private set; }
+    public RiverDirection riverDirection { get; private set; }
+
+    // Height
+    public float height { get; private set; }
+
+    public (EdgeTypes, EdgeType) Edges { get; set; }
+
+    public Dictionary<EdgeTypes, EdgeType> CellEdgeType;
+
+    public enum EdgeTypes
+    {
+        // No Edge - Default
+        None,
+
+        // has Edge - (Max 4, Min 1)
+        North,
+        East,
+        South,
+        West
+    }
+
+    public enum EdgeType
+    {
+        // No Edge - Default
+        None,
+
+        // One Block Type
+        beach,
+        river,
+        deep,
+
+        // Two Block Type
+        coast,
+        ocean,
+        abyssal,
+        
+        // Block Type
+        plateau
+    }
 
     public enum CellStatus
     {
@@ -25,7 +72,6 @@ public class Cell
         Water,
         Ocean,
     }
-
 
     #region River Section
     public enum RiverStatus
@@ -62,6 +108,7 @@ public class Cell
         None,
 
         // Water Types
+        Abyssal,
         River,
         Water,
         Stream, 
@@ -115,6 +162,7 @@ public class Cell
             Debug.LogWarning("Water Cell is already occupied.");
         }
     }
+
     public void OccupyCellWithBuilding(Building building)
     {
         if (this.occupyingBuilding == null)
@@ -128,6 +176,7 @@ public class Cell
             Debug.LogWarning("Cell is already occupied.");
         }
     }
+
     public void ChangeTerrainType(TerrainType newTerrainType)
     {
         currentTerrainType = newTerrainType;
@@ -162,6 +211,9 @@ public class Cell
         int y = cellPosition.y;
 
         // Add the neighbors
+        // Debug.Log("x: " + x + " y: " + y);
+
+        // orthogonal neighbors
         if (x > 0 && y >= 0 && y < size) neighbors.Add(grid[x - 1, y]);
         if (x < size - 1 && y >= 0 && y < size) neighbors.Add(grid[x + 1, y]);
         if (y > 0 && x >= 0 && x < size) neighbors.Add(grid[x, y - 1]);
@@ -173,7 +225,5 @@ public class Cell
         if (x > 0 && y < size - 1) neighbors.Add(grid[x - 1, y + 1]);
         if (x < size - 1 && y < size - 1) neighbors.Add(grid[x + 1, y + 1]);
     }
-
-
 }
 

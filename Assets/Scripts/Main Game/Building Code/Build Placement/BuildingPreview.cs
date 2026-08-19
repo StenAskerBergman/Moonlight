@@ -18,8 +18,11 @@ public class BuildingPreview : MonoBehaviour
     public Vector3 offset = new Vector3(5, 0, 5);
     [SerializeField]private float offsetY; // Can Add offsetY variable
     public float size = 1f;
+    
+    // Mats.
     [SerializeField] private Material truePlacement;
     [SerializeField] private Material falsePlacement;
+
     // Building Data
     public BuildingData buildingData;
     public BuildingProperties buildingProperties;

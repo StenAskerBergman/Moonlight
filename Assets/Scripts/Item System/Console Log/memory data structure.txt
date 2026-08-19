@@ -1,0 +1,6 @@
+NEWER / UNIT-SPECIFIC
+Storage
+  -> UnitStorage
+      -> UnitStorageManager
+          -> ItemSlot
+              -> ItemStack
