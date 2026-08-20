@@ -13,8 +13,11 @@ public abstract class InventoryUserface : MonoBehaviour
     // These are read-only windows onto the subclass's own fields, not backing state,
     // so there is exactly one source of truth per reference and no serialized field
     // name is declared twice in the hierarchy.
+    // Inventory only. UnitInventory is deliberately absent: nothing in this base needs
+    // it, and requiring it would force non-unit subclasses such as BuildingInventoryUI
+    // to implement unit members they have no use for. A subclass that displays a unit
+    // declares that itself - see UnitInventoryUI.
     protected abstract Inventory DisplayedInventory { get; }
-    protected abstract UnitInventory DisplayedUnitInventory { get; }
 
     protected UnitSelections unitSelections;
 
@@ -55,13 +58,15 @@ public abstract class InventoryUserface : MonoBehaviour
     // Abstract, not virtual with an empty body: the subclass owns the reference, so it
     // must also own assigning it and moving the change-event subscription with it. An
     // inherited no-op would silently swallow the call.
-    public abstract void SetUnitInventory(UnitInventory newUnitInventory);
-
+    //
+    // There is no SetUnitInventory here. Every caller holds a UnitInventoryUI-typed
+    // reference, so routing it through this base bought nothing and only forced
+    // non-unit subclasses to implement it.
     public abstract void SetInventory(Inventory newInventory);
 
     protected bool HasInventory()
     {
-        return DisplayedInventory != null || DisplayedUnitInventory != null;
+        return DisplayedInventory != null;
     }
 
     protected virtual void OnEnable()

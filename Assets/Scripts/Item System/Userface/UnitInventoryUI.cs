@@ -30,7 +30,6 @@ public class UnitInventoryUI : InventoryUserface
     // they are not additional state. This class owns its display context, while
     // UnitInventory / UnitStorageManager remain the authority over item movement.
     protected override Inventory DisplayedInventory => inventory;
-    protected override UnitInventory DisplayedUnitInventory => unitInventory;
 
     // Current Stack Positions
     protected Dictionary<ItemStack, Vector2> stacksPos = new Dictionary<ItemStack, Vector2>();
@@ -71,7 +70,9 @@ public class UnitInventoryUI : InventoryUserface
         }
     }
 
-    public override void SetUnitInventory(UnitInventory newUnitInventory)
+    // Not an override - SetUnitInventory is specific to this class, not part of the
+    // shared presentation contract. Every caller already holds a UnitInventoryUI.
+    public void SetUnitInventory(UnitInventory newUnitInventory)
     {
         if (this.unitInventory != null)
         {

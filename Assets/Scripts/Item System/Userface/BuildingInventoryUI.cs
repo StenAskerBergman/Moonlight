@@ -4,23 +4,15 @@ using UnityEngine;
 
 public class BuildingInventoryUI : InventoryUserface
 {
-    // A building UI has no unit and, as yet, no display context of its own - the rest
-    // of this class is still unimplemented. These are stubbed explicitly rather than
-    // inherited so the decision stays visible: when buildings get a displayable
-    // inventory, give this class its own serialized field and return it here.
-    // Nothing below the UI layer changes; item authority stays with the storage
-    // services either way.
+    // The rest of this class is still unimplemented, so there is no display context to
+    // return yet. When buildings get a displayable inventory, give this class its own
+    // serialized field and return it here. It has no unit members to implement,
+    // because a building has no unit inventory.
     protected override Inventory DisplayedInventory => null;
-    protected override UnitInventory DisplayedUnitInventory => null;
 
     public override void SetInventory(Inventory newInventory)
     {
         Debug.LogWarning($"{name}: BuildingInventoryUI.SetInventory is not implemented yet.");
-    }
-
-    public override void SetUnitInventory(UnitInventory newUnitInventory)
-    {
-        Debug.LogWarning($"{name}: BuildingInventoryUI has no unit inventory to display.");
     }
 /*
 
