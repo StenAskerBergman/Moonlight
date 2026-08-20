@@ -36,12 +36,10 @@ public class ItemStackFactory
 
         ItemStack itemStack = stackGO.AddComponent<ItemStack>();
 
-        // Create UI components
-        Image itemIcon = stackGO.AddComponent<Image>();
-        Text itemQuantityText = stackGO.AddComponent<Text>();
-
-        // Initialize UI components via method
-        itemStack.InitializeUIComponents(itemIcon, itemQuantityText);
+        // AddComponent<ItemStack>() above already ran Awake -> InitializeUIComponents(),
+        // which owns Image/Text creation. Adding them again here is refused by Unity
+        // (both derive from Graphic, which is [DisallowMultipleComponent]) and returns null.
+        itemStack.InitializeUIComponents();
 
         // Set up other necessary components
         ItemSlot slot = parent != null ? parent.GetComponent<ItemSlot>() : null;

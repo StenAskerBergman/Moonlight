@@ -93,7 +93,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
             itemQuantityText = GetComponentInChildren<Text>() ?? GetComponent<Text>();
             if (itemQuantityText == null)
             {
-                itemQuantityText = gameObject.AddComponent<Text>();
+                itemQuantityText = CreateQuantityTextChild();
             }
         }
 
@@ -101,6 +101,20 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         {
             itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
         }
+    }
+
+    // Text and Image both derive from Graphic, which is [DisallowMultipleComponent].
+    // AddComponent<Text>() on a GameObject that already carries the icon Image is
+    // refused by Unity and returns null, so the quantity label needs its own child.
+    private Text CreateQuantityTextChild()
+    {
+        GameObject textGO = new GameObject("Quantity Text", typeof(RectTransform));
+        textGO.transform.SetParent(transform, false);
+
+        Text text = textGO.AddComponent<Text>();
+        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf"); // without a font nothing renders
+        text.raycastTarget = false;                                   // must not intercept drag/drop
+        return text;
     }
 
     // directly infers a reference to use
