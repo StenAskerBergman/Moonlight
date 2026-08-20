@@ -149,9 +149,12 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         if (maxQuantity <= 0) UpdateMaxQuantity();
         return maxQuantity; 
     }
-    public Item GetItem() { if (item != null) return item; Debug.Log("ItemStack: No Item In Stack"); return null; } // No item state -> NullReferenceException
-    public ItemData GetItemData() { if (itemData != null) return itemData; Debug.Log("ItemStack: No item data"); return null; } // No item data -> NullReferenceException
-    public ItemSlot GetItemSlot() { if (itemSlot != null && !isAboard) return itemSlot; Debug.Log("ItemStack: No item slot"); return null; } // No item slot -> NullReferenceException
+    // Empty is a NORMAL state for all three of these - an unfilled cargo slot reads
+    // them on every UI refresh - so they return null quietly instead of logging.
+    // Callers already null-check; nothing here treats null as an error.
+    public Item GetItem() { if (item != null) return item; return null; }
+    public ItemData GetItemData() { if (itemData != null) return itemData; return null; }
+    public ItemSlot GetItemSlot() { if (itemSlot != null && !isAboard) return itemSlot; return null; }
     #endregion
 
     #region Set - Quantity, MaxQuantity, ItemData
