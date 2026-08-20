@@ -58,7 +58,7 @@ public class SeedManager : MonoBehaviour
 
     private bool CheckIslandConditions(Island island, ResourceProductionInfo productionInfo)
     {
-        // Logic to check if the island’s condition (temperature, ecology, etc.) allows for the production.
+        // Logic to check if the islandâ€™s condition (temperature, ecology, etc.) allows for the production.
         // Example: 
         // return island.Temperature >= productionInfo.minTemperature && island.Temperature <= productionInfo.maxTemperature;
 

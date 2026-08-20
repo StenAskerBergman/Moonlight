@@ -56,13 +56,13 @@ public class BankUIManager : MonoBehaviour
 
     public void UpdateBankUI()
     {
-        LicenseText.text = " £ " + bank.GetLicense();   // License
-        BudgetsText.text = " € " + bank.GetBudget();    // Budget
+        LicenseText.text = " Â£ " + bank.GetLicense();   // License
+        BudgetsText.text = " â‚¬ " + bank.GetBudget();    // Budget
 
-        BalanceText.text = " € " + bank.GetBalance();   // Balance
-        RevenueText.text = " € " + bank.GetRevenue();   // Revenue
+        BalanceText.text = " â‚¬ " + bank.GetBalance();   // Balance
+        RevenueText.text = " â‚¬ " + bank.GetRevenue();   // Revenue
 
-        ExpenseText.text = " € " + bank.GetExpense();   // Expense
-        IncomeText.text = " € " + bank.GetIncome();     // Income  
+        ExpenseText.text = " â‚¬ " + bank.GetExpense();   // Expense
+        IncomeText.text = " â‚¬ " + bank.GetIncome();     // Income  
     }
 }

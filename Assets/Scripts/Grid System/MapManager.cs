@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -49,9 +49,9 @@ public class MapManager : MonoBehaviour
         Normal,
     }
 
-    [Header("Spawn Patterns")]
     public static event System.Action OnMapGenerated;
 
+    [Header("Spawn Patterns")]
     public List<PatternData> patternDataList;
     [Space]
     public SpawnPattern selectedSpawnPattern;
@@ -332,17 +332,29 @@ public class MapManager : MonoBehaviour
         if (shouldAddIsland || shouldAddOcean)
         {
 
-            // Proceed with adding the island as it's not being skipped
-            Island island = new Island(data.islandType);
+            // Instantiate first: Island is a MonoBehaviour, so the prefab's own component
+            // is the island. Building one with 'new' created a second, orphaned instance
+            // that took all the data, while the component the rest of the game reaches
+            // through GetComponent - raycasts, GridSystem, BuildingPlacer - kept defaults.
+            GameObject islandGO = Instantiate(islandPrefab);
+            islandGO.transform.position = data.bounds.center;
+            islandGO.name = data.name;
+
+            Island island = islandGO.GetComponent<Island>();
+            if (island == null)
+            {
+                Debug.LogError($"MapManager: '{islandPrefab.name}' has no Island component - cannot add island '{data.name}'.");
+                Destroy(islandGO);
+                nextIslandID++;
+                return;
+            }
+
+            island.Initialize(data.islandType);
             island.islandConfig = islandConfig;
             island.buildings = data.buildings;
             island.IslandItems = data.items;
             island.bounds = data.bounds;
             island.id = GetNextIslandID();
-
-            GameObject islandGO = Instantiate(islandPrefab);
-            islandGO.transform.position = island.bounds.center;
-            islandGO.name = data.name;
             island.islandObject = islandGO;
 
             islands.Add(island);

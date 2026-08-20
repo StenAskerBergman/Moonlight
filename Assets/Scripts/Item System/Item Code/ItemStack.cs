@@ -112,7 +112,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         textGO.transform.SetParent(transform, false);
 
         Text text = textGO.AddComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf"); // without a font nothing renders
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // without a font nothing renders
         text.raycastTarget = false;                                   // must not intercept drag/drop
         return text;
     }

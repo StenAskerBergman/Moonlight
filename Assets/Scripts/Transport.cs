@@ -54,7 +54,7 @@ public class Transport : MonoBehaviour
 }
 
 
-// Maybe Legacy?´Maybe Not, Not Sure!
+// Maybe Legacy?Â´Maybe Not, Not Sure!
 
 // Initialize transports
 //transports.Add(TransportEnums.TransportType.Boat, new Transport(10)); // Change the capacity as needed

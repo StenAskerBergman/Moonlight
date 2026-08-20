@@ -35,8 +35,11 @@ public class Island : MonoBehaviour, IUniqueIdentifier
     public void Start()
     {
         islandInventory = gameObject.GetComponent<Inventory>();
-        bounds.center = this.transform.position;
-        bounds.extents = new Vector3(5.0f, 5.0f, 5.0f); // Change these values to your desired size
+
+        // bounds is owned by GridSystem.SetIslandBounds(), which derives it from the
+        // real grid size. Seeding it here raced that call - Start() order between two
+        // components on the same GameObject is undefined - and the placeholder extents
+        // collapsed the island to a 10x10x10 box whenever this happened to run last.
 
         // Old Code
         // MapManager As Island Parent
@@ -105,8 +108,14 @@ public class Island : MonoBehaviour, IUniqueIdentifier
         return GetComponent<BaseStorageManager>();
     }
 
-    // Island Constructor
-    public Island(IslandType type)
+    /// <summary>
+    /// Sets up a freshly instantiated island. This replaces what used to be a
+    /// constructor: Island is a MonoBehaviour, so only Unity may create it (via the
+    /// prefab or AddComponent). Calling 'new Island(...)' produced a second, orphaned
+    /// instance that held all the data while the component actually on the GameObject
+    /// held none. Call this on the Island component of the instantiated prefab.
+    /// </summary>
+    public void Initialize(IslandType type)
     {
         // Initialize the required fields
         this.islandType = type;
@@ -155,7 +164,7 @@ public class Island : MonoBehaviour, IUniqueIdentifier
         // Ensure the seed is available on the island (using SeedManager).
         // Seeds are activated using the Harbour Building or Island Intialization
         // Ensure the seed has not been previously activated.
-        // Activate the seed which should update related buildings’ production.
+        // Activate the seed which should update related buildingsâ€™ production.
 
         // Example:
         foreach (var building in buildings)

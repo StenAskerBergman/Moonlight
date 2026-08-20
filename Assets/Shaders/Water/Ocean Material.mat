@@ -2,20 +2,24 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Ocean Material
   m_Shader: {fileID: -6465566751694194690, guid: 63aed545823a68a4e9840604a6acf7e9, type: 3}
-  m_ShaderKeywords: 
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -43,6 +47,7 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
     - Vector1_155bd1e1c6e04da783022e4cf6bfc830: 5.48
     - Vector1_29f6d30a37cd4924925e8992162b0a26: 0.12
@@ -57,6 +62,8 @@ Material:
     - Vector1_c63116a4dcb1429989f571c8d0e22e73: 0.04
     - Vector1_c7e9e173373d46c9bd8cdc7e223a6709: 0.05
     - Vector1_cb2bfb8664664a6991795d8558a11363: 0.45
+    - _QueueControl: 0
+    - _QueueOffset: 0
     m_Colors:
     - Color_5fa25475c6b549649429ef92430355be: {r: 0.46262014, g: 0.6996175, b: 0.8679245, a: 0}
     - Color_9916976ca18a4916a8f835dad9ce0f63: {r: 1, g: 1, b: 1, a: 0}
@@ -65,3 +72,16 @@ Material:
     - Vector4_0cff33ec7b864365b54bdfdf64563965: {r: 50, g: 50, b: 0, a: 0}
     - Vector4_fb71c1404f4a435f9ed20dff5b8091d6: {r: 50, g: 50, b: -0.03, a: -1.75}
   m_BuildTextureStacks: []
+--- !u!114 &1832627571447765122
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 7

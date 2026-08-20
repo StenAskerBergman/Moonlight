@@ -2,20 +2,24 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: SkyDepth
   m_Shader: {fileID: -6465566751694194690, guid: cc32cf9b6f4749f4a85f16e28a2379e1, type: 3}
-  m_ShaderKeywords: 
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -75,8 +79,16 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
+    - Vector1_0870d8fefe3a42a78e7d9d6a8efe17c1: 0
+    - Vector1_1d0607cfe5204257810c7254f6cf9ae1: 0
+    - Vector1_55f43b614e53409b8c618327c5c38dc1: 0.5
+    - Vector1_7903ddfc4bbd4f49a019defad1756c14: 0
+    - Vector1_a62d7642d3cd461f9bb464d531824901: 0
     - Vector1_ad6d391aeb9e47b69a2ec2a7e0da7e01: 10
+    - Vector1_b78caed7c0c84edd84304e0d00016339: 0
+    - Vector1_ea26ae461bdd4748b038616e9db86d5f: 100
     - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1
@@ -94,6 +106,7 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
+    - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Smoothness: 0.5
@@ -104,6 +117,9 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
+    - Color_33ac973c63214630a627e95eadf3f616: {r: 0, g: 0.9802117, b: 1, a: 0.5882353}
+    - Color_4989e8cedf484d68ae252e708b564a18: {r: 0, g: 0.1359539, b: 1, a: 0.7176471}
+    - Color_89bb60e170b1469894e1b05656b42569: {r: 1, g: 1, b: 1, a: 0.7294118}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
@@ -121,4 +137,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 4
+  version: 7

@@ -683,16 +683,16 @@ public class MapGrid : MonoBehaviour
         (Mesh coastMesh, Mesh oceanMesh, Mesh mountainMesh, Mesh beachMesh, Mesh shallowMesh, Mesh deepMesh, Mesh plateauMesh, Mesh abyssalMesh) = edgeMeshBuilder.Build(); // 2023: Receive "four" meshes - 2024: Now its "eight"
 
         // Apply the mountain edge mesh
-        if (hasMountainsGenerated) ApplyMountainEdgeMesh(mountainMesh, transform_target);    // Apply the mountain edge mesh
+        if (hasMountainsGenerated && HasGeometry(mountainMesh)) ApplyMountainEdgeMesh(mountainMesh, transform_target);
 
         // Apply the normal edge meshes ( Order of execution probably does not matter )
-        ApplyDeepEdgeMesh(deepMesh, transform_target);            // Apply the deep edge mesh
-        ApplyCoastEdgeMesh(coastMesh, transform_target);          // Apply the coast edge mesh
-        ApplyOceanEdgeMesh(oceanMesh, transform_target);          // Apply the ocean edge mesh
-        ApplyBeachEdgeMesh(beachMesh, transform_target);          // Apply the beach edge mesh
-        ApplyShallowEdgeMesh(shallowMesh, transform_target);      // Apply the shallow edge mesh
-        ApplyPlateauEdgeMesh(plateauMesh, transform_target);      // Apply the plateau edge mesh
-        ApplyAbyssalEdgeMesh(abyssalMesh, transform_target);      // Apply the abyssal edge mesh
+        if (HasGeometry(deepMesh)) ApplyDeepEdgeMesh(deepMesh, transform_target);            // Apply the deep edge mesh
+        if (HasGeometry(coastMesh)) ApplyCoastEdgeMesh(coastMesh, transform_target);         // Apply the coast edge mesh
+        if (HasGeometry(oceanMesh)) ApplyOceanEdgeMesh(oceanMesh, transform_target);         // Apply the ocean edge mesh
+        if (HasGeometry(beachMesh)) ApplyBeachEdgeMesh(beachMesh, transform_target);         // Apply the beach edge mesh
+        if (HasGeometry(shallowMesh)) ApplyShallowEdgeMesh(shallowMesh, transform_target);   // Apply the shallow edge mesh
+        if (HasGeometry(plateauMesh)) ApplyPlateauEdgeMesh(plateauMesh, transform_target);   // Apply the plateau edge mesh
+        if (HasGeometry(abyssalMesh)) ApplyAbyssalEdgeMesh(abyssalMesh, transform_target);   // Apply the abyssal edge mesh
 
 
         // Responsible for setting the final Edge position
@@ -700,6 +700,15 @@ public class MapGrid : MonoBehaviour
     }
 
     #endregion
+
+    /// <summary>
+    /// True when the builder actually emitted geometry for this edge type.
+    /// EdgeMeshBuilder always returns all eight meshes, but an island only has the
+    /// edge types its terrain produced, so the rest come back with zero vertices.
+    /// Handing one of those to a MeshFilter makes the NavMesh builder reject it with
+    /// "Source mesh has invalid vertex data" - once per empty mesh, per island.
+    /// </summary>
+    private static bool HasGeometry(Mesh mesh) => mesh != null && mesh.vertexCount > 0;
 
     #region Set Child Position
 
