@@ -38,12 +38,19 @@ public class UnitMovement : MonoBehaviour
 
     private void OnEnable()
     {
-        RuntimeNavMeshBaker.OnNavMeshBaked += TryPlaceOnNavMesh;
+        RuntimeNavMeshBaker.OnNavMeshBaked += HandleNavMeshBaked;
     }
 
     private void OnDisable()
     {
-        RuntimeNavMeshBaker.OnNavMeshBaked -= TryPlaceOnNavMesh;
+        RuntimeNavMeshBaker.OnNavMeshBaked -= HandleNavMeshBaked;
+    }
+
+    // Action is void, TryPlaceOnNavMesh returns bool, so the event needs a wrapper.
+    // A named method rather than a lambda so OnDisable can actually unsubscribe it.
+    private void HandleNavMeshBaked()
+    {
+        TryPlaceOnNavMesh();
     }
 
     /// <summary>
