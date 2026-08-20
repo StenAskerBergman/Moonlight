@@ -160,22 +160,24 @@ public class UnitSelections : MonoBehaviour
 
     public void DragSelect(Unit unitToAdd)
     {
+        // unitToAdd was dereferenced below its own null check; bail out up front
+        // instead, so a null/destroyed entry cannot throw out of the selection sweep.
+        if (unitToAdd == null) return;
+
         if (!unitsSelected.Contains(unitToAdd))
-        {           
-            if (unitToAdd != null) 
+        {
+            if (unitToAdd.type == UnitType.Character)
             {
-                if (unitToAdd.type == UnitType.Character)
-                {
-
-                    // Call OnSelect on the Selected Character Units 
-                    (unitToAdd as ISelectable)?.OnSelect();
-
-                };
+                // Call OnSelect on the Selected Character Units
+                (unitToAdd as ISelectable)?.OnSelect();
             }
 
             // Add any new Units to Current Selection
             unitsSelected.Add(unitToAdd);
-            unitToAdd.transform.GetChild(0).gameObject.SetActive(true);
+            if (unitToAdd.transform.childCount > 0)
+            {
+                unitToAdd.transform.GetChild(0).gameObject.SetActive(true);
+            }
             selectionChanged.Invoke(unitsSelected);
         }
 

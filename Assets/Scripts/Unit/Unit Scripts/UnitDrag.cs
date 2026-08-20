@@ -54,10 +54,19 @@ public class UnitDrag : MonoBehaviour
             //When released click
             if (Input.GetMouseButtonUp(0))
             {
-                SelectUnits();
-                startPosition = Vector2.zero;
-                endPosition = Vector2.zero;
-                DrawVisual();
+                // The box is presentation state and must always be cleared. If anything
+                // inside SelectUnits() throws, skipping these three lines leaves the
+                // selection rectangle frozen on screen for the rest of the session.
+                try
+                {
+                    SelectUnits();
+                }
+                finally
+                {
+                    startPosition = Vector2.zero;
+                    endPosition = Vector2.zero;
+                    DrawVisual();
+                }
             }
         }
         else if(isHolding)
@@ -108,8 +117,21 @@ public class UnitDrag : MonoBehaviour
     void SelectUnits()
     {
         //loop thru all the units
-        foreach (var unit in UnitSelections.Instance.unitList)
+        var unitList = UnitSelections.Instance.unitList;
+
+        // Reverse index loop so destroyed entries can be dropped while iterating.
+        for (int i = unitList.Count - 1; i >= 0; i--)
         {
+            Unit unit = unitList[i];
+
+            // Destroyed Units compare equal to null; drop them rather than
+            // dereferencing .transform, which would throw and abort the sweep.
+            if (unit == null)
+            {
+                unitList.RemoveAt(i);
+                continue;
+            }
+
             if (selectionBox.Contains(myCam.WorldToScreenPoint(unit.transform.position)))
             {
                 UnitSelections.Instance.DragSelect(unit);

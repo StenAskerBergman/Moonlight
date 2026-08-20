@@ -372,7 +372,12 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         // Custom logic for when the unit is deselected
 
         // Disables the Selections first Childs GameObject
-        transform.GetChild(0).gameObject.SetActive(false);
+        // Guarded: during OnDestroy the child may already be gone, and a throw here
+        // used to abort OnDestroy before the unit deregistered from unitList.
+        if (transform.childCount > 0)
+        {
+            transform.GetChild(0).gameObject.SetActive(false);
+        }
 
         // Hide this unit's specific UI elements
         // DisplayManager.Instance.Unfocus(true);
@@ -415,12 +420,17 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 
     void OnDestroy()
     {
+        // Deregister FIRST. OnDeselect() touches child GameObjects and UI that may
+        // already be torn down; if it throws, a dead Unit would otherwise stay in
+        // unitList forever and break every later drag-select.
+        if (UnitSelections.Instance != null)
+        {
+            UnitSelections.Instance.unitList.Remove(this);
+            UnitSelections.Instance.unitsSelected.Remove(this);
+        }
 
         // Reset Any Flags
         OnDeselect();
-
-        // Removes Unit from List
-        UnitSelections.Instance.unitList.Remove(this);
 
         // Removes Unit from Game
         this.gameObject.SetActive(false);
