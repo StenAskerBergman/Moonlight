@@ -15,5 +15,5 @@ MonoBehaviour:
   displayName: Rice
   itemName: rawRice
   baseValue: 2
-  type: 2
+  type: 0
   Icon: {fileID: 21300000, guid: 13c745b75b2d0e944bd6d533c87395ef, type: 3}

@@ -15,5 +15,5 @@ MonoBehaviour:
   displayName: Building Modules
   itemName: buildingModules
   baseValue: 0
-  type: 1
+  type: 0
   Icon: {fileID: 21300000, guid: 9454be0044739cf40b9b4ac19622ab7e, type: 3}

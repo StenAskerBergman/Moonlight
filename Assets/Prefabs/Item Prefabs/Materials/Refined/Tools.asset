@@ -15,5 +15,5 @@ MonoBehaviour:
   displayName: Tools
   itemName: tools
   baseValue: 12
-  type: 1
+  type: 0
   Icon: {fileID: 21300000, guid: 0c9578037d3ed7e428ed80c85f89011d, type: 3}
