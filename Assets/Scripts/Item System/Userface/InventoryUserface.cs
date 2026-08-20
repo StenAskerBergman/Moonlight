@@ -6,8 +6,14 @@ using UnityEngine.Events;
 public abstract class InventoryUserface : MonoBehaviour
 {
     // Inventories
-    private Inventory inventory;
-    private UnitInventory unitInventory;
+    // Declared once, here. UnitInventoryUI used to re-declare both as public fields,
+    // which shadowed these and made Unity refuse to serialize either ("the same field
+    // name is serialized multiple times"). It also meant the derived setters wrote the
+    // derived copies while this base class kept reading its own always-null ones, so
+    // Start() never subscribed to inventory change events and HasInventory() was
+    // always false. Protected + SerializeField keeps them visible in the Inspector.
+    [SerializeField] protected Inventory inventory;
+    [SerializeField] protected UnitInventory unitInventory;
     protected UnitSelections unitSelections;
 
     public Transform itemSlotContainer; // Parent Obj. to all item Slots 
@@ -163,7 +169,7 @@ public abstract class InventoryUserface : MonoBehaviour
 
     protected virtual void OnItemSlotClicked(ItemData clickedItem)
     {
-        Debug.Log("Clicked on item: " + clickedItem.displayName);
+        Debug.Log($"<color=white>InventoryUserface:</color> <color=yellow>Clicked on item: </color><color=white>{clickedItem.displayName}</color>");
         // Implementation for what should happen when a slot is clicked
         // This might involve showing item details, selecting the item, etc.
     }

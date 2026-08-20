@@ -14,7 +14,6 @@ public class UnitInventoryUI : InventoryUserface
     [Space(10)]
 
     public Text unitDisplayText;
-    public Inventory inventory;
     public GameObject Inspected;
     [Space(10)]
 
@@ -22,7 +21,8 @@ public class UnitInventoryUI : InventoryUserface
     public string CurrentDisplayText;
     
     // Current Selection Displayed
-    public UnitInventory unitInventory;
+    // inventory and unitInventory are declared on InventoryUserface - re-declaring
+    // them here shadowed the base fields and broke Unity serialization.
     public ItemSlot[] itemSlots;
     public Unit unit;
 
@@ -54,7 +54,7 @@ public class UnitInventoryUI : InventoryUserface
                 }
                 else
                 {
-                    Debug.LogError("No UnitInventory found");
+                    Debug.LogError("<color=red>UnitInventoryUI: No UnitInventory found</color>");
                     ClearSlots();
                 }
             }
@@ -167,7 +167,7 @@ public class UnitInventoryUI : InventoryUserface
         {
 
             // Log Name
-            Debug.Log($"Requesting Name Change: {key}");
+            Debug.Log($"<color=white>UnitInventoryUI:</color> <color=yellow>Requesting Name Change: </color><color=white>{key}</color>");
 
             // Set Name
             UpdateDisplayName(key);
@@ -177,7 +177,7 @@ public class UnitInventoryUI : InventoryUserface
     public void SetInspection(GameObject gameObject)
     {
         this.Inspected = gameObject;
-        Debug.Log("Inspected GameObject Updated: " + Inspected.name);
+        Debug.Log($"<color=white>UnitInventoryUI:</color> <color=green>Inspected GameObject Updated: </color><color=white>{Inspected.name}</color>");
 
     }
 
@@ -232,11 +232,11 @@ public class UnitInventoryUI : InventoryUserface
         {
             unitDisplayText.text = unitName;
             CurrentDisplayText = unitName;
-            Debug.Log("Unit name updated: " + CurrentDisplayText);
+            Debug.Log($"<color=white>UnitInventoryUI:</color> <color=green>Unit name updated: </color><color=white>{CurrentDisplayText}</color>");
         }
         else
         {
-            Debug.LogError("Unit name text UI element not set!");
+            Debug.LogError("<color=red>UnitInventoryUI: Unit name text UI element not set!</color>");
         }
     }
 
@@ -290,7 +290,7 @@ public class UnitInventoryUI : InventoryUserface
 
         if (unitInventory == null && inventory == null)
         {
-            Debug.LogError("No inventory found.");
+            Debug.LogError("<color=red>UnitInventoryUI: No inventory found.</color>");
             return;
         }
 
@@ -303,7 +303,7 @@ public class UnitInventoryUI : InventoryUserface
             var items = inventory.GetAllItems();
             if (items == null)
             {
-                Debug.LogError("No items to display.");
+                Debug.LogError("<color=red>UnitInventoryUI: No items to display.</color>");
                 return;
             }
             UpdateSlotsWithItems(items);
@@ -317,14 +317,14 @@ public class UnitInventoryUI : InventoryUserface
     {
         if (unitInventory == null)
         {
-            Debug.LogError("No UnitInventory set.");
+            Debug.LogError("<color=red>UnitInventoryUI: No UnitInventory set.</color>");
             return;
         }
 
         SyncSlots();
         UpdateSlotsWithItems(unitInventory.itemSlots);
 
-        Debug.Log("Slots have been set based on UnitInventory.");
+        Debug.Log("<color=white>UnitInventoryUI:</color> <color=green>Slots have been set based on UnitInventory.</color>");
     }
 
     public void DestroyInventory()
@@ -417,7 +417,7 @@ public class UnitInventoryUI : InventoryUserface
 
     protected override void OnItemSlotClicked(ItemData clickedItem)
     {
-        Debug.Log($"Clicked on item: {clickedItem.displayName}, Quantity: {currentTradeQuantity}");
+        Debug.Log($"<color=white>UnitInventoryUI:</color> <color=yellow>Clicked on item: </color><color=white>{clickedItem.displayName}</color><color=yellow>, Quantity: </color><color=white>{currentTradeQuantity}</color>");
         // Logic for handling item slot clicks based on the selected trade quantity
     }
 
