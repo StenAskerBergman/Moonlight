@@ -30,17 +30,44 @@ public class UnitMovement : MonoBehaviour
         cam = Camera.main;
         agent = GetComponent<NavMeshAgent>();
 
+        // With a runtime-baked map the NavMesh usually does not exist yet at Start,
+        // so a failure here is expected rather than fatal - RuntimeNavMeshBaker will
+        // tell us when there is something to land on.
+        TryPlaceOnNavMesh();
+    }
+
+    private void OnEnable()
+    {
+        RuntimeNavMeshBaker.OnNavMeshBaked += TryPlaceOnNavMesh;
+    }
+
+    private void OnDisable()
+    {
+        RuntimeNavMeshBaker.OnNavMeshBaked -= TryPlaceOnNavMesh;
+    }
+
+    /// <summary>
+    /// Snaps the unit onto the nearest point of its agent type's NavMesh and enables
+    /// the agent. Safe to call repeatedly; it is the recovery path for units that
+    /// spawned before the map was baked.
+    /// </summary>
+    public bool TryPlaceOnNavMesh()
+    {
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (agent == null) return false;
+
+        // Already placed - nothing to recover.
+        if (agent.enabled && agent.isOnNavMesh) return true;
+
         if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
         {
-            //Debug.Log("closestHit.position " + closestHit.position);
             gameObject.transform.position = closestHit.position;
             agent.enabled = true;
+            return true;
         }
-        else
-        {
-            Debug.LogError("Could not find position on NavMesh!");
-            agent.enabled = false; // Disable the agent if a position is not found
-        }
+
+        agent.enabled = false; // No NavMesh to stand on yet; retry when one is baked.
+        return false;
     }
 
 
