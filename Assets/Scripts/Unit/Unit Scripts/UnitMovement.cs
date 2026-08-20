@@ -138,9 +138,14 @@ public class UnitMovement : MonoBehaviour
                     {
                         if (!agent.isOnNavMesh)
                         {
-                            Debug.LogError("Agent is not a Humanoid Bug");
-                            Debug.LogError("Agent is not on Nav Mesh - HMO");
-                            return;
+                            // Not an agent-type problem despite the old wording - the
+                            // agent simply has no NavMesh under it. Try to recover in
+                            // case one was baked after this unit spawned.
+                            if (!TryPlaceOnNavMesh())
+                            {
+                                Debug.LogWarning($"{name}: no NavMesh for agent type {agent.agentTypeID} - movement order ignored.");
+                                return;
+                            }
                         }
                         destinationQueue.Clear();
                         agent.ResetPath();

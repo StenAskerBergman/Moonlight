@@ -122,7 +122,7 @@ NavMeshSettings:
     preserveTilesOutsideBounds: 0
     debug:
       m_Flags: 0
-  m_NavMeshData: {fileID: 0}
+  m_NavMeshData: {fileID: 23800000, guid: a52f09e0f5e766748a3df9d8311a4536, type: 2}
 --- !u!1 &6769754
 GameObject:
   m_ObjectHideFlags: 0
@@ -20653,6 +20653,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -25824,7 +25826,7 @@ MonoBehaviour:
   - {fileID: 1581088408077754349}
   - {fileID: 1581088409153107154}
   - {fileID: 1581088408876463838}
-  itemSlot: {fileID: 0}
+  log_from: 0
 --- !u!114 &392200388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25861,9 +25863,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b71935de7ef8b514b93d1de63d52d9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  storage: {fileID: 392200389}
-  storage: {fileID: 392200389}
-  unitStorage: {fileID: 392200389}
 --- !u!114 &392200391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75319,7 +75318,7 @@ MonoBehaviour:
   - {fileID: 1581088408077754349}
   - {fileID: 1581088409153107154}
   - {fileID: 1581088408876463838}
-  itemSlot: {fileID: 0}
+  log_from: 0
 --- !u!114 &876687675
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75356,9 +75355,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b71935de7ef8b514b93d1de63d52d9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  storage: {fileID: 876687676}
-  storage: {fileID: 876687676}
-  unitStorage: {fileID: 876687676}
 --- !u!114 &876687678
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120803,13 +120799,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20b9488e8346e6445b175d59f4d2cd5c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Offset: 9.7
-  m_LayerMask: -1
-  m_Scope: 0
-  m_Renderers: []
-  m_TextureScale: 1
-  m_AllowHDR: 0
-  m_AllowMSAA: 0
 --- !u!114 &1522198941
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161344,6 +161333,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -161798,6 +161789,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -161982,6 +161975,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -162358,6 +162353,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -162424,6 +162421,8 @@ MonoBehaviour:
   unitInventory: {fileID: 0}
   icon: {fileID: 0}
   quantity: 0
+  cargoSlot: {fileID: 0}
+  slotIndex: -1
   canTrade: 0
   canTransfer: 0
   InRange: 0
@@ -163687,7 +163686,7 @@ Canvas:
   m_TargetDisplay: 0
 --- !u!95 &2642307809313631731
 Animator:
-  serializedVersion: 3
+  serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -163700,10 +163699,12 @@ Animator:
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorControllerStateOnDisable: 0
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &2642307809313631740
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165334,7 +165335,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6478490497927722965}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ead9dbe5963c81246be701356ebe861d, type: 3}
   m_Name: 
@@ -165639,7 +165640,7 @@ NavMeshAgent:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6478490497927722965}
   m_Enabled: 1
-  m_AgentTypeID: 0
+  m_AgentTypeID: -1372625422
   m_Radius: 0.5
   m_Speed: 3.5
   m_Acceleration: 8
@@ -165651,7 +165652,7 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 2
   m_BaseOffset: 0.25
-  m_WalkableMask: 4294967295
+  m_WalkableMask: 656
   m_ObstacleAvoidanceType: 4
 --- !u!1001 &4512831748298757976
 PrefabInstance:
@@ -168824,7 +168825,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6180889983732191362}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -169895,7 +169896,7 @@ MonoBehaviour:
   - {fileID: 1581088409153107154}
   - {fileID: 1581088408876463838}
   itemSlots: []
-  itemSlot: {fileID: 0}
+  log_from: 0
 --- !u!114 &6478490497927722967
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -169908,9 +169909,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b71935de7ef8b514b93d1de63d52d9e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  storage: {fileID: 6026962417769673182}
-  storage: {fileID: 6026962417769673182}
-  unitStorage: {fileID: 6026962417769673182}
 --- !u!114 &6478490497927722968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -172124,7 +172122,7 @@ MeshRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6819912828002416864}
   m_Enabled: 1
-  m_CastShadows: 1
+  m_CastShadows: 2
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_MotionVectors: 1
@@ -174385,3 +174383,170 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!1 &771000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 771000002}
+  - component: {fileID: 771000003}
+  m_Layer: 0
+  m_Name: NavMeshSurface - Ship
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &771000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &771000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_AgentTypeID: -1372625422
+  m_CollectObjects: 0
+  m_Size: {x: 1000, y: 200, z: 1000}
+  m_Center: {x: 0, y: 0, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 16
+  m_UseGeometry: 2
+  m_DefaultArea: 9
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0
+  m_BuildHeightMesh: 0
+  m_NavMeshData: {fileID: 0}
+--- !u!1 &771000011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 771000012}
+  - component: {fileID: 771000013}
+  m_Layer: 0
+  m_Name: NavMeshSurface - Humanoid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &771000012
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000011}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &771000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 1000, y: 200, z: 1000}
+  m_Center: {x: 0, y: 0, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  m_UseGeometry: 2
+  m_DefaultArea: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0
+  m_BuildHeightMesh: 0
+  m_NavMeshData: {fileID: 0}
+--- !u!1 &771000021
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 771000022}
+  - component: {fileID: 771000023}
+  m_Layer: 0
+  m_Name: Runtime NavMesh Baker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &771000022
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000021}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &771000023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 771000021}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b1e4c9a2f3d5e6a8c0b1d2e3f4a5b6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  surfaces:
+  - {fileID: 771000003}
+  - {fileID: 771000013}
+  bakeOnStart: 1

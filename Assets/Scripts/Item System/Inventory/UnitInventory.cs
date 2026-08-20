@@ -476,11 +476,11 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     // Create ItemStack component
     private bool CreateItemStackInSlot(ItemSlot slot, ItemData itemData)
     {
-        Debug.Log($"Creating ItemStack in slot {slot.name} for item {itemData?.name ?? "undefined"}");
+        Debug.Log($"<color=orange>UnitInventory: </color><color=lightblue>Creating ItemStack in slot </color><color=white>{slot.name}</color><color=lightblue> for item </color><color=white>{itemData?.name ?? "undefined"}</color>");
 
         if (itemData == null)
         {
-            Debug.LogError("CreateItemStackInSlot: ItemData is null.");
+            Debug.LogError("<color=red><b>MISSING:</b> UnitInventory: CreateItemStackInSlot: ItemData is null.</color>");
             return false;
         }
 
@@ -492,7 +492,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (itemStack == null)
         {
-            Debug.LogError("Failed to create ItemStack.");
+            Debug.LogError("<color=red><b>FAILED:</b> UnitInventory: Failed to create ItemStack.</color>");
             return false;
         }
 
@@ -511,7 +511,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (slot.itemStack == null)
         {
-            Debug.Log($"<color=red><b>NULL DETECTED:</b> "+ slot + $" ItemStack was <b>null!</b></color><color=yellow> Creating New ItemStack in Slot");
+            Debug.Log($"<color=red><b>NULL DETECTED:</b> {slot.name} ItemStack was <b>null!</b></color><color=yellow> Creating New ItemStack in Slot</color>");
             return CreateItemStackInSlot(slot, itemData);
         }
         else
@@ -524,11 +524,11 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     // Update the ItemStack with new data
     private bool UpdateItemData(ItemStack stack, ItemData newData)
     {
-        Debug.Log($"Updating ItemStack with new item data for {newData?.name ?? "undefined"}");
+        Debug.Log($"<color=orange>UnitInventory: </color><color=lightblue>Updating ItemStack with new item data for </color><color=white>{newData?.name ?? "undefined"}</color>");
 
         if (newData == null)
         {
-            Debug.LogError("UpdateItemData: New ItemData is null.");
+            Debug.LogError("<color=red><b>MISSING:</b> UnitInventory: UpdateItemData: New ItemData is null.</color>");
             return false;
         }
 
@@ -547,11 +547,14 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     // Validate addition of item and add it
     private bool ValidateAndAddItem(ItemSlot slot, ItemData itemData, int amount)
     {
-        Debug.Log($"Validating and adding item {itemData.name} with amount {amount} to slot {slot.name}");
+        Debug.Log($"<color=orange>UnitInventory: </color><color=yellow>Validating and adding item </color><color=white>{itemData.name}</color><color=yellow> with amount </color><color=white>{amount}</color><color=yellow> to slot </color><color=white>{slot.name}</color>");
 
         if (unitStorageManager != null && !unitStorageManager.CanAddItem(itemData, amount))
         {
-            Debug.LogError($"Cannot add {itemData.name} with amount {amount} to slot: {slot.name}");
+            // A full hold is normal gameplay, not a fault - the caller decides what to
+            // do with the refusal. LogError here made every legitimate "cargo is full"
+            // look like a crash in the console.
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Cannot add {itemData.name} with amount {amount} to slot: {slot.name}</color>");
             return false;
         }
 
@@ -579,25 +582,25 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (!cargoSlot.CanHoldItemType(itemData.type))
         {
-            Debug.LogWarning($"Slot {cargoSlot.name} cannot hold item type {itemData.type}");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Slot {cargoSlot.name} cannot hold item type {itemData.type}</color>");
             return false;
         }
 
         if (cargoSlot.IsOccupied() && cargoSlot.itemStack.GetItemData() != itemData)
         {
-            Debug.LogWarning($"Slot {cargoSlot.name} is occupied by {cargoSlot.itemStack.GetItemData().name}, cannot add {itemData.name}");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Slot {cargoSlot.name} is occupied by {cargoSlot.itemStack.GetItemData().name}, cannot add {itemData.name}</color>");
             return false;
         }
 
         if (cargoSlot.IsOccupied() && cargoSlot.itemStack.IsFull())
         {
-            Debug.LogWarning($"Slot {cargoSlot.name} is full.");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Slot {cargoSlot.name} is full.</color>");
             return false;
         }
 
         if (unitStorageManager != null && !unitStorageManager.CanAddItem(itemData, amount))
         {
-            Debug.LogWarning($"UnitStorageManager cannot add {amount} of {itemData.name}");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: UnitStorageManager cannot add {amount} of {itemData.name}</color>");
             return false;
         }
 
@@ -638,7 +641,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (cargoSlot.itemStack == null || !cargoSlot.itemStack.HasItem() || cargoSlot.itemStack.GetQuantity() <= 0)
         {
-            Debug.LogWarning($"Slot {cargoSlot.name} is empty, cannot remove items.");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Slot {cargoSlot.name} is empty, cannot remove items.</color>");
             return false;
         }
 
@@ -648,7 +651,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         if (unitStorageManager != null && !unitStorageManager.CanRemoveItem(itemData, toRemove))
         {
-            Debug.LogWarning($"UnitStorageManager cannot remove {toRemove} of {itemData.name}");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: UnitStorageManager cannot remove {toRemove} of {itemData.name}</color>");
             return false;
         }
 
@@ -838,8 +841,8 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             if (slot != null || !slot.IsSlotFull())
             {
                 // Log slot details - replace Debug.Log with your logic
-                Debug.Log("Slot: " + slot.name);
-                Debug.Log("Index: " + SetSlotNumber(slot));
+                Debug.Log($"<color=orange>UnitInventory: </color><color=white>Slot: {slot.name}</color>");
+                Debug.Log($"<color=orange>UnitInventory: </color><color=yellow>Index: {SetSlotNumber(slot)}</color>");
                 return;
             }
         }
@@ -853,8 +856,8 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             if (slot != null || !slot.IsSlotFull())
             {
                 // Log slot details - replace Debug.Log with your logic
-                Debug.Log("Slot: " + slot.name);
-                Debug.Log("Index: " + GetSlotNumber(slot));
+                Debug.Log($"<color=orange>UnitInventory: </color><color=white>Slot: {slot.name}</color>");
+                Debug.Log($"<color=orange>UnitInventory: </color><color=yellow>Index: {GetSlotNumber(slot)}</color>");
                 return;
 
             }
@@ -886,7 +889,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
                     }
                     catch (NullReferenceException nre)
                     {
-                        Debug.Log($"Unable to rename slot due to null reference: {nre.Message}. Investigating further may be required.");
+                        Debug.Log($"<color=orange>UnitInventory: </color><color=red>Unable to rename slot due to null reference: {nre.Message}. Investigating further may be required.</color>");
                         localTestBool = false;
                     }
                 }

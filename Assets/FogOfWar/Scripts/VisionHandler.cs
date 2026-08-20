@@ -51,8 +51,19 @@ public class VisionHandler
 
     public void RemoveVision(Vision visionPoint)
     {
-        m_Visions.Remove(visionPoint);
-        m_VisionPoints.RemoveAt(0);
+        // m_Visions and m_VisionPoints are parallel lists filled together by AddVision.
+        // This used to Remove() the right vision but RemoveAt(0) the wrong point, which
+        // both desynced the two lists and threw ArgumentOutOfRangeException once the
+        // point list ran empty (every unit destroyed after the first).
+        int index = m_Visions.IndexOf(visionPoint);
+        if (index < 0) return;
+
+        m_Visions.RemoveAt(index);
+
+        if (index < m_VisionPoints.Count)
+        {
+            m_VisionPoints.RemoveAt(index);
+        }
     }
 
 }
