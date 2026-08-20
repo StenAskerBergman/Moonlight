@@ -160,13 +160,13 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
     public bool CanAdd(ItemData item, int quantity)
     {
-        // Implement logic to check if the item can be added
-        // For example, check if there's enough space in the inventory
-
-        // Empty Placeholder
-        
-        // return true; if logic is correct else return false
-        return GetItemAmount(item) >= quantity;
+        // Was a copy of CanRemove (GetItemAmount(item) >= quantity), so it asked
+        // "do I already hold this much?" and therefore refused every add into an
+        // inventory that did not already contain the item - which made
+        // TradeInteraction.ExecuteTrade fail against any empty inventory.
+        // Capacity is the storage manager's business, so ask it.
+        if (item == null || quantity <= 0) return false;
+        return storageManager != null && storageManager.CanAddItem(item, quantity);
     }
 
     public void AddItem(ItemData itemData, int amount)
