@@ -11,10 +11,11 @@ public abstract class InventoryUserface : MonoBehaviour
     // name is serialized multiple times"). It also meant the derived setters wrote the
     // derived copies while this base class kept reading its own always-null ones, so
     // Start() never subscribed to inventory change events and HasInventory() was
-    // always false. Protected + SerializeField keeps them visible in the Inspector.
-    // Public, not protected: these were public on UnitInventoryUI before being pulled
-    // up here, and StarterUnit and ItemSlot read unitInventory from outside the
-    // hierarchy. Keeping them public preserves that existing contract.
+    // always false.
+    //
+    // Public rather than protected: they were public on UnitInventoryUI before being
+    // pulled up, and StarterUnit and ItemSlot read unitInventory from outside the
+    // hierarchy, so public preserves the contract that already existed.
     public Inventory inventory;
     public UnitInventory unitInventory;
     protected UnitSelections unitSelections;
