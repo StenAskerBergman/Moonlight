@@ -5,19 +5,17 @@ using UnityEngine.Events;
 
 public abstract class InventoryUserface : MonoBehaviour
 {
-    // Inventories
-    // Declared once, here. UnitInventoryUI used to re-declare both as public fields,
-    // which shadowed these and made Unity refuse to serialize either ("the same field
-    // name is serialized multiple times"). It also meant the derived setters wrote the
-    // derived copies while this base class kept reading its own always-null ones, so
-    // Start() never subscribed to inventory change events and HasInventory() was
-    // always false.
+    // This base owns reusable PRESENTATION behaviour only. It deliberately holds no
+    // inventory reference of its own: the display context (which unit/inventory is
+    // currently inspected) belongs to the concrete subclass, and item authority
+    // belongs below the UI layer entirely, in UnitInventory / UnitStorageManager.
     //
-    // Public rather than protected: they were public on UnitInventoryUI before being
-    // pulled up, and StarterUnit and ItemSlot read unitInventory from outside the
-    // hierarchy, so public preserves the contract that already existed.
-    public Inventory inventory;
-    public UnitInventory unitInventory;
+    // These are read-only windows onto the subclass's own fields, not backing state,
+    // so there is exactly one source of truth per reference and no serialized field
+    // name is declared twice in the hierarchy.
+    protected abstract Inventory DisplayedInventory { get; }
+    protected abstract UnitInventory DisplayedUnitInventory { get; }
+
     protected UnitSelections unitSelections;
 
     public Transform itemSlotContainer; // Parent Obj. to all item Slots 
@@ -40,15 +38,12 @@ public abstract class InventoryUserface : MonoBehaviour
         //    inventory = UnitSelections.Instance.GetSelectedInventory();
         //}
 
-        if (inventory != null)
-        {
-            inventory.OnInventoryChanged += RefreshInventoryDisplay;
-        }
-        
-        if (unitInventory != null)
-        {
-            unitInventory.OnUnitInventoryChanged += RefreshInventoryDisplay;
-        }
+        // Deliberately does NOT subscribe here. The inspected inventory changes long
+        // after Start(), and SetInventory/SetUnitInventory already unsubscribe the old
+        // reference and subscribe the new one on every change. Subscribing here as well
+        // would add a second handler whenever the scene ships a non-null reference
+        // (Match.unity does), making RefreshInventoryDisplay fire twice per change.
+        // Subscription lifecycle lives in exactly one place: the setters.
 
         //if (unitInventory == null && inventory == null)
         //{
@@ -57,19 +52,16 @@ public abstract class InventoryUserface : MonoBehaviour
         //}
     }
 
-    public virtual void SetUnitInventory(UnitInventory newUnitInventory)
-    {
-        this.unitInventory = newUnitInventory;
-    }
+    // Abstract, not virtual with an empty body: the subclass owns the reference, so it
+    // must also own assigning it and moving the change-event subscription with it. An
+    // inherited no-op would silently swallow the call.
+    public abstract void SetUnitInventory(UnitInventory newUnitInventory);
 
-    public virtual void SetInventory(Inventory newInventory)
-    {
-        this.inventory = newInventory;
-    }
+    public abstract void SetInventory(Inventory newInventory);
 
-    private bool HasInventory()
+    protected bool HasInventory()
     {
-        return inventory != null || unitInventory != null;
+        return DisplayedInventory != null || DisplayedUnitInventory != null;
     }
 
     protected virtual void OnEnable()
@@ -117,7 +109,7 @@ public abstract class InventoryUserface : MonoBehaviour
         // Clear previous slots
         ClearSlots();
 
-        Dictionary<ItemData, int> items = inventory.GetAllItems();
+        Dictionary<ItemData, int> items = DisplayedInventory.GetAllItems();
         int slotsUsed = 0;
 
         foreach (var item in items)

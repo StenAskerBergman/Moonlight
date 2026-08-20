@@ -14,6 +14,7 @@ public class UnitInventoryUI : InventoryUserface
     [Space(10)]
 
     public Text unitDisplayText;
+    public Inventory inventory;
     public GameObject Inspected;
     [Space(10)]
 
@@ -21,10 +22,15 @@ public class UnitInventoryUI : InventoryUserface
     public string CurrentDisplayText;
     
     // Current Selection Displayed
-    // inventory and unitInventory are declared on InventoryUserface - re-declaring
-    // them here shadowed the base fields and broke Unity serialization.
+    public UnitInventory unitInventory;
     public ItemSlot[] itemSlots;
     public Unit unit;
+
+    // Read-only windows for shared base behaviour. These expose the fields above;
+    // they are not additional state. This class owns its display context, while
+    // UnitInventory / UnitStorageManager remain the authority over item movement.
+    protected override Inventory DisplayedInventory => inventory;
+    protected override UnitInventory DisplayedUnitInventory => unitInventory;
 
     // Current Stack Positions
     protected Dictionary<ItemStack, Vector2> stacksPos = new Dictionary<ItemStack, Vector2>();
