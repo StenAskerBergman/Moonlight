@@ -125,7 +125,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
                 default:
                     // Optional: Handle other cases
-                    Debug.LogError("Unknown tag: " + tag);
+                    Debug.LogError($"<color=red>ItemDragHandler: Unknown tag: {tag}</color>");
                     break;
             }
         }
@@ -134,7 +134,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private void HandleOceanDrop()
     {
         // Logic for dropping the item into the ocean
-        Debug.Log("Dropped item into the ocean.");
+        Debug.Log("<color=lightblue>ItemDragHandler: </color><color=yellow>Dropped item into the ocean.</color>");
         if (AudioManager != null && AudioManager.DropIntoSea != null)
         {
             AudioManager.PlaySound(AudioManager.DropIntoSea);
@@ -144,7 +144,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private void HandlePlayerDrop(PointerEventData eventData)
     {
         // Logic for dropping the item into another slot
-        Debug.Log("Placed item into another slot.");
+        Debug.Log("<color=lightblue>ItemDragHandler: </color><color=green>Placed item into another slot.</color>");
     }
 }
 

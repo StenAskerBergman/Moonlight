@@ -66,7 +66,13 @@ public class UnitMovement : MonoBehaviour
         // Already placed - nothing to recover.
         if (agent.enabled && agent.isOnNavMesh) return true;
 
-        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, NavMesh.AllAreas))
+        var filter = new NavMeshQueryFilter
+        {
+            agentTypeID = agent.agentTypeID,
+            areaMask = agent.areaMask
+        };
+
+        if (NavMesh.SamplePosition(gameObject.transform.position, out closestHit, 500f, filter))
         {
             gameObject.transform.position = closestHit.position;
             agent.enabled = true;
@@ -131,7 +137,13 @@ public class UnitMovement : MonoBehaviour
             {
                 NavMeshHit navHit;
                 // Check if the hit point is close enough to a point on the NavMesh
-                if (NavMesh.SamplePosition(hit.point, out navHit, 1.0f, NavMesh.AllAreas))
+                var filter = new NavMeshQueryFilter
+                {
+                    agentTypeID = agent.agentTypeID,
+                    areaMask = agent.areaMask
+                };
+
+                if (NavMesh.SamplePosition(hit.point, out navHit, 1.0f, filter))
                 {
                     Vector3 validPoint = navHit.position;
                     //Debug.Log("validPoint: " + validPoint);

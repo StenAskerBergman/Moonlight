@@ -67,3 +67,6 @@ $RECYCLE.BIN/
 *.blend1
 *.blend.meta
 *.blend1.meta
+
+# .NET Core tools
+.dotnet_cli_home/

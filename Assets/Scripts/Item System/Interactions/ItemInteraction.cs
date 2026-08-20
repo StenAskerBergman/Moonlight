@@ -13,7 +13,7 @@ public class ItemInteraction : MonoBehaviour, IItemManagement
     private void Awake()
     {
         inventory = GetComponent<Inventory>();
-        if (inventory == null) Debug.LogError("Unit Inventory not found");
+        if (inventory == null) Debug.LogError("<color=red>ItemInteraction: Unit Inventory not found</color>");
     }
 
     public void AddItem(ItemData item, int quantity)

@@ -43,7 +43,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
         if (storageManager == null)
         {
-            Debug.Log("StorageManager component not found, trying to instantiate from prefab.");
+            Debug.Log("<color=orange>Inventory: </color><color=yellow>StorageManager component not found, trying to instantiate from prefab.</color>");
             if (storageManagerPrefab != null)
             {
                 storageManager = Instantiate(storageManagerPrefab, transform).GetComponent<StorageManager>();
@@ -95,7 +95,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     {
         foreach (KeyValuePair<ItemData, int> itemEntry in storageManager.GetAllItems)
         {
-            Debug.Log(itemEntry.Key.name);
+            Debug.Log($"<color=orange>Inventory: </color><color=white>{itemEntry.Key.name}</color>");
         }
     }
 
@@ -108,7 +108,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     {
         if (storageManager == null)
         {
-            Debug.LogWarning("StorageManager is being lazily initialized.");
+            Debug.LogWarning("<color=orange>Inventory: StorageManager is being lazily initialized.</color>");
             storageManager = GetComponent<StorageManager>();
             if (storageManager == null && storageManagerPrefab != null)
             {
@@ -123,7 +123,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
         }
         else
         {
-            Debug.LogError("StorageManager is still not initialized.");
+            Debug.LogError("<color=red>Inventory: StorageManager is still not initialized.</color>");
             return new Dictionary<ItemData, int>();
         }
     }
@@ -147,7 +147,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     /// <returns>Bools: True: if has amount - False: if has nothing </returns>
     public bool HasItem(ItemData itemData, int amount)
     {
-        if (itemData == null) return false; Debug.Log("ItemData is null"); 
+        if (itemData == null) { Debug.Log("<color=orange>Inventory: </color><color=red>ItemData is null</color>"); return false; } 
         return GetItemAmount(itemData) >= amount;
     }
 
@@ -177,7 +177,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
         // After adding the item, update the editor list
         UpdateItemListForEditor();
 
-        Debug.Log($"Added {amount} of {itemData.name} to the Inventory of {this.transform.name}.");
+        Debug.Log($"<color=orange>Inventory: </color><color=green>Added </color><color=yellow>{amount}</color><color=green> of </color><color=white>{itemData.name}</color><color=green> to the Inventory of </color><color=white>{this.transform.name}</color><color=green>.</color>");
     }
 
     public bool RemoveItem(ItemData itemData, int amount)

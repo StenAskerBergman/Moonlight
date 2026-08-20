@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -50,6 +50,8 @@ public class MapManager : MonoBehaviour
     }
 
     [Header("Spawn Patterns")]
+    public static event System.Action OnMapGenerated;
+
     public List<PatternData> patternDataList;
     [Space]
     public SpawnPattern selectedSpawnPattern;
@@ -311,6 +313,8 @@ public class MapManager : MonoBehaviour
             currentIslandSelection.Add(1);
             currentOceanSelection.Remove(1); // Ensure ID 1 is not considered for oceans
         }
+
+        OnMapGenerated?.Invoke();
     }
     
     #endregion
@@ -516,5 +520,6 @@ public class MapManager : MonoBehaviour
     }
     #endregion
 }
+
 
 

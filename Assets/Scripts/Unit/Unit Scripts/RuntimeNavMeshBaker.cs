@@ -27,14 +27,22 @@ public class RuntimeNavMeshBaker : MonoBehaviour
     /// <summary>True once a bake has completed at least once this session.</summary>
     public static bool IsBaked { get; private set; }
 
-    private IEnumerator Start()
+    private void OnEnable()
     {
-        if (!bakeOnStart) yield break;
+        MapManager.OnMapGenerated += HandleMapGenerated;
+    }
 
-        // Let every other Start() run first so generated islands exist.
-        yield return null;
+    private void OnDisable()
+    {
+        MapManager.OnMapGenerated -= HandleMapGenerated;
+    }
 
-        BakeAll();
+    private void HandleMapGenerated()
+    {
+        if (bakeOnStart)
+        {
+            BakeAll();
+        }
     }
 
     /// <summary>

@@ -338,14 +338,14 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         // If space Left is negative, set to 0 
         if (spaceLeft < 0)
         {
-            Debug.Log("StackMinSpaceCalc: " + spaceLeft);
+            Debug.Log($"<color=lightblue>ItemStack: </color><color=yellow>StackMinSpaceCalc: </color><color=white>{spaceLeft}</color>");
             spaceLeft = 0;
         }
 
         // if space left is to great, set to maxLimit
         if (spaceLeft > maxQuantity) 
         {
-            Debug.Log("StackMaxSpaceCalc: " + spaceLeft);
+            Debug.Log($"<color=lightblue>ItemStack: </color><color=yellow>StackMaxSpaceCalc: </color><color=white>{spaceLeft}</color>");
             spaceLeft = maxQuantity;
         }
 
@@ -417,7 +417,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
     public void UpdateStackUI(int quantity)
     {
-        if (quantity == 0) Debug.Log("Stack Content: 0");
+        if (quantity == 0) Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>Stack Content: </color><color=white>0</color>");
         //OLD: Destroy(this.gameObject); // Destroy the item if quantity is 0 (Empty) 
         //NEW: hold on there soldier might be a better way..
 
@@ -429,7 +429,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
             }
             else
             {
-                Debug.LogError("ItemStack: itemIcon is null.");
+                Debug.LogError("<color=red>ItemStack: itemIcon is null.</color>");
             }
 
             if (itemQuantityText != null)
@@ -438,14 +438,14 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
             }
             else
             {
-                Debug.LogError("ItemStack: itemQuantityText is null.");
+                Debug.LogError("<color=red>ItemStack: itemQuantityText is null.</color>");
             }
 
-            Debug.Log($"UpdateStackUI by {quantity} itemQuantityText:{itemQuantityText?.text}");
+            Debug.Log($"<color=lightblue>ItemStack: </color><color=white>UpdateStackUI by </color><color=yellow>{quantity}</color><color=white> itemQuantityText: </color><color=yellow>{itemQuantityText?.text}</color>");
         }
         else
         {
-            Debug.Log("Stack Content: Null");
+            Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>Stack Content: </color><color=white>Null</color>");
         }
 
         // The Prior Solution:
@@ -454,13 +454,13 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         //    {
         //        itemIcon.sprite = itemData.Icon;                // Ensure itemIcon is assigned in the inspector on the ItemData, that will assign the itemData.icon to the GUI  <-- Null Ref Error
         //        itemQuantityText.text = quantity.ToString();    // Ensure itemQuantityText is assigned in the inspector
-        //        Debug.Log($"UpdateStackUI by {quantity} itemQuantityText:{itemQuantityText.text}");
+        //        Debug.Log($"<color=lightblue>ItemStack: </color><color=white>UpdateStackUI by </color><color=yellow>{quantity}</color><color=white> itemQuantityText: </color><color=yellow>{itemQuantityText.text}</color>");
         //    } 
         //    else 
         //    {
         //        // Null Object Can't Exist Either
         //        // Destroy(this.gameObject); 
-        //        Debug.Log("Stack Content: Null");
+        //        Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>Stack Content: </color><color=white>Null</color>");
         //    }
         //}
     }
@@ -486,7 +486,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         quantity = 0;
         UpdateMaxQuantity();
 
-        Debug.Log("Stack cleared."); // Debugging to confirm the action
+        Debug.Log("<color=lightblue>ItemStack: </color><color=green>Stack cleared.</color>"); // Debugging to confirm the action
         
         // Update the UI
         UpdateStackUI(quantity);
@@ -515,14 +515,14 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Hover Effect: Start
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Stack: Stack: OnMouseEnter");
+        Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>OnMouseEnter</color>");
         // Implement hover effect or tooltip
 
         if (eventData.pointerDrag != null)
         {
             // Check if the dragged item can be added to the slot
             // if () { }
-            Debug.Log("ItemStack: Stack: OnPointerEnter " + eventData.pointerDrag.name);
+            Debug.Log($"<color=lightblue>ItemStack: </color><color=yellow>OnPointerEnter: </color><color=white>{eventData.pointerDrag.name}</color>");
         }
 
         // Temporary Disable Square Selection if clicked on item
@@ -531,14 +531,14 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Hover Effect: End
     public void OnPointerExit(PointerEventData eventData)
     {
-        Debug.Log("ItemStack: Stack: OnMouseExit");
+        Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>OnMouseExit</color>");
         // Remove hover effect or tooltip
 
     }
     // Double Click - Yet to be a defined interaction
     public void OnPointerDoubleClick(PointerEventData eventData)
     {
-        Debug.Log("ItemStack: Stack: OnPointerDoubleClick");
+        Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>OnPointerDoubleClick</color>");
         // Implement logic for double click action on the item stack
         // For example, open item details, use item, etc.
 
@@ -549,7 +549,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // Stack Drop 
     public void OnDrop(PointerEventData eventData)
     {
-        Debug.Log("ItemStack: Stack: OnDrop");
+        Debug.Log("<color=lightblue>ItemStack: </color><color=yellow>OnDrop</color>");
         if (eventData != null && eventData.pointerDrag != null)
         {
             ItemStack droppedItemStack = eventData.pointerDrag.GetComponent<ItemStack>();

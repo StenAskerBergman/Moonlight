@@ -55,18 +55,18 @@ public class InventoryUIManager : MonoBehaviour
         {
             case UnitType.Character:
                 currentActiveTemplate = unitInventoryTemplate;
-                Debug.Log("UI Showing: Unit Inventory Template");
+                Debug.Log("<color=lightblue>InventoryUIManager: </color><color=green>UI Showing: Unit Inventory Template</color>");
                 break;
             case UnitType.House:
                 currentActiveTemplate = buildingInventoryTemplate;
-                Debug.Log("UI Showing: Building Inventory Template");
+                Debug.Log("<color=lightblue>InventoryUIManager: </color><color=green>UI Showing: Building Inventory Template</color>");
                 break;
 
             // ... potentially other cases ...
 
             default:
                 // Log an error and return if there's no suitable inventory template
-                Debug.LogError($"No inventory template found for unit type {selectedUnit.type}");
+                Debug.LogError($"<color=red>InventoryUIManager: No inventory template found for unit type {selectedUnit.type}</color>");
                 return;
         }
 
@@ -89,7 +89,7 @@ public class InventoryUIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("UnitInventoryUI component not found on the template.");
+            Debug.LogError("<color=red>InventoryUIManager: UnitInventoryUI component not found on the template.</color>");
         }
     }
 

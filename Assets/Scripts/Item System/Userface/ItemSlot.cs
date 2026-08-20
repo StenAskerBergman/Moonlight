@@ -178,7 +178,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
         if (debugSlot)
         {
-            Debug.Log($"Slot updated: {this.gameObject.name}");
+            Debug.Log($"<color=lightblue>ItemSlot: </color><color=green>Slot updated: </color><color=white>{this.gameObject.name}</color>");
         }
     }
 
@@ -190,7 +190,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     /// <returns>True / False </returns>
     public bool IsSlotNameGood(string callerName)
     {
-        Debug.Log("NameCheck by "+callerName);
+        Debug.Log($"<color=lightblue>ItemSlot: </color><color=yellow>NameCheck by </color><color=white>{callerName}</color>");
         // if name is equal too the name is has then returns true otherwise returns negative meaning name change required
         if (!this.empty)
         {
@@ -230,7 +230,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // ItemSlot.cs
     private bool IsItemStackSetup(string from)
     {
-        Debug.Log($"<color=yellow>Initializing ItemSlot: </color>" + this.name);
+        Debug.Log($"<color=lightblue>ItemSlot: </color><color=yellow>Initializing ItemSlot: </color><color=white>{this.name}</color>");
 
         // Try to get ItemStack from children
         itemStack = GetComponentInChildren<ItemStack>();
@@ -246,7 +246,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
                 if (itemStack == null)
                 {
-                    Debug.LogError("ItemStack component not found on instantiated prefab.");
+                    Debug.LogError("<color=red><b>MISSING:</b> ItemSlot: ItemStack component not found on instantiated prefab.</color>");
                     return false;
                 }
             }
@@ -257,7 +257,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
                 if (itemStack == null)
                 {
-                    Debug.LogError("Failed to create ItemStack using ItemStackFactory.");
+                    Debug.LogError("<color=red><b>FAILED:</b> ItemSlot: Failed to create ItemStack using ItemStackFactory.</color>");
                     return false;
                 }
             }
@@ -341,14 +341,14 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     private bool CanReceiveRetainReturn(ItemData itemData, ItemType itemType)
     {
         // Logs
-        if (itemData == null) { Debug.Log("ItemData is Null"); return false; }
+        if (itemData == null) { Debug.Log("<color=lightblue>ItemSlot: </color><color=red><b>NULL:</b> ItemData is Null</color>"); return false; }
         else
         {
-            if (CanReceiveItem(itemData)) Debug.Log($"Could Receive! + ItemData: {itemData}"); 
-            else Debug.Log($"Could Not Receive! + ItemData: {itemData}");
+            if (CanReceiveItem(itemData)) Debug.Log($"<color=lightblue>ItemSlot: </color><color=green>Could Receive!</color> <color=white>ItemData: {itemData.itemName}</color>"); 
+            else Debug.Log($"<color=lightblue>ItemSlot: </color><color=orange>Could Not Receive!</color> <color=white>ItemData: {itemData.itemName}</color>");
 
-            if (CanHoldItemType(itemType)) Debug.Log($"Could Retain! / Could Hold! + ItemType: {itemType}" );
-            else Debug.Log($"Could Not Retain! / Could Not Hold! + ItemType: {itemType}");
+            if (CanHoldItemType(itemType)) Debug.Log($"<color=lightblue>ItemSlot: </color><color=green>Could Hold!</color> <color=white>ItemType: {itemType}</color>");
+            else Debug.Log($"<color=lightblue>ItemSlot: </color><color=orange>Could Not Hold!</color> <color=white>ItemType: {itemType}</color>");
 
             if (CanReceiveItem(itemData) && CanHoldItemType(itemType)) { return true; } else { return false; }
         }
@@ -472,13 +472,13 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (droppedItem == null || droppedItem == this.itemStack)
         {
-            Debug.Log("Dropped Item is Null or same stack");
+            Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Dropped Item is Null or same stack</color>");
             return;
         }
 
         if (droppedItem.itemData == null || droppedItem.GetQuantity() <= 0)
         {
-            Debug.Log("Dropped Item has no item data or quantity <= 0");
+            Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Dropped Item has no item data or quantity <= 0</color>");
             return;
         }
 
@@ -493,11 +493,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             // Normal Slot  
             if (droppedItem.itemData.itemName != null)
             {
-                Debug.Log($"Item Wasn't Null On Drop {droppedItem.itemData.itemName}.");
+                Debug.Log($"<color=lightblue>ItemSlot: </color><color=green>Item Valid On Drop: </color><color=white>{droppedItem.itemData.itemName}</color>");
             }
             else
             {
-                Debug.Log($"Item Wasn't Null On Drop but itemData.itemName Was? Trying to get DisplayName! {droppedItem.itemData.displayName}.");
+                Debug.Log($"<color=lightblue>ItemSlot: </color><color=yellow>Item Valid On Drop (using DisplayName): </color><color=white>{droppedItem.itemData.displayName}</color>");
             }
 
             // Example: Swap items if the slot is not empty
@@ -534,7 +534,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                     {
                         // Reject
                         // If slot item isFull - Reject
-                        Debug.Log("Slot is full: Cannot merge dropped item.");
+                        Debug.Log("<color=lightblue>ItemSlot: </color><color=orange><b>REJECTED:</b> Slot is full: Cannot merge dropped item.</color>");
                     }
                 }
                 else
@@ -549,7 +549,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                     }
                     else
                     {
-                        Debug.Log("Cannot swap: Source slot restricted type mismatch.");
+                        Debug.Log("<color=lightblue>ItemSlot: </color><color=orange><b>REJECTED:</b> Cannot swap: Source slot restricted type mismatch.</color>");
                     }
                 }
             }
@@ -665,18 +665,18 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // ISSUES: Never really used kinda of a Major issue
     public void UpdateSlotUI(int quantity)
     {
-        if (quantity == 0) Debug.Log("Stack Content: 0"); // Slot (Empty)
+        if (quantity == 0) Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Stack Content: </color><color=white>0</color>"); // Slot (Empty)
 
         if (itemStack != null && itemStack.itemData != null)
         {
-            Debug.Log($"UpdateSlotUI: Updating Slot UI by {quantity}");
+            Debug.Log($"<color=lightblue>ItemSlot: </color><color=white>UpdateSlotUI: Updating Slot UI by </color><color=yellow>{quantity}</color>");
             if (itemStack.itemIcon != null) itemStack.itemIcon.sprite = itemStack.itemData.Icon;        // Ensure itemIcon is assigned in the inspector
             if (itemStack.itemQuantityText != null) itemStack.itemQuantityText.text = quantity.ToString();      // Ensure itemQuantityText is assigned in the inspector
         }
         else
         {
             // Null Object Can't Exist Either
-            Debug.Log("Stack Content: Null");
+            Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Stack Content: </color><color=white>Null</color>");
         }
     }
 
@@ -742,7 +742,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         else
         {
             // Incase the data is null
-            Debug.LogWarning("No ItemStack found in this slot."); 
+            Debug.LogWarning("<color=orange>ItemSlot: No ItemStack found in this slot.</color>"); 
             return null;
         }
     }
@@ -763,7 +763,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                 itemStack = stackObj.GetComponent<ItemStack>();
                 if (itemStack == null)
                 {
-                    Debug.LogError("Failed to instantiate ItemStack.");
+                    Debug.LogError("<color=red><b>FAILED:</b> ItemSlot: Failed to instantiate ItemStack.</color>");
                     return;
                 }
 
@@ -801,7 +801,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
         UpdateSlotUI(0); // Updates the UI to reflect an empty slot
 
-        Debug.Log($"{gameObject.name} cleared."); // Optional: Logging for debug purposes
+        Debug.Log($"<color=lightblue>ItemSlot: </color><color=white>{gameObject.name}</color> <color=green>cleared.</color>"); // Optional: Logging for debug purposes
     }
 
 
@@ -810,7 +810,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (eventData == null || eventData.pointerDrag == null)
         {
-            Debug.Log("Drop was Null!");
+            Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Drop was Null!</color>");
             return;
         }
 
@@ -824,12 +824,12 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             }
             else
             {
-                Debug.Log("Cannot receive item: Restricted type mismatch.");
+                Debug.Log("<color=lightblue>ItemSlot: </color><color=orange><b>REJECTED:</b> Cannot receive item: Restricted type mismatch.</color>");
             }
         }
         else
         {
-            Debug.Log("Dropped ItemStack was null, same stack, or had no itemData.");
+            Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Dropped ItemStack was null, same stack, or had no itemData.</color>");
         }
     }
 

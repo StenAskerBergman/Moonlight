@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using static Cell;
 using System.Linq;
@@ -107,6 +107,22 @@ public class MapGrid : MonoBehaviour
         // this is the mesh used for cells - we will need to figure out ways to render it more
         // effectivily the way I desire but for now this will do, reading this collider's mesh
         // data might be a nightmare to do later also. 
+
+        #endregion
+
+        #region NavMeshModifier
+        
+        UnityEngine.AI.NavMeshModifier modifier = this.gameObject.AddComponent<UnityEngine.AI.NavMeshModifier>();
+        modifier.overrideArea = true;
+        modifier.area = 1; // Not Walkable
+        
+        // Use reflection to set m_AffectedAgents (no public setter)
+        System.Reflection.FieldInfo field = typeof(UnityEngine.AI.NavMeshModifier).GetField("m_AffectedAgents", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (field != null)
+        {
+            // -1372625422 is the Agent Type ID for Ship
+            field.SetValue(modifier, new System.Collections.Generic.List<int>() { -1372625422 });
+        }
 
         #endregion
     }
@@ -339,7 +355,7 @@ public class MapGrid : MonoBehaviour
         }
 
         Log($"Land cells: {landCount}, Water cells: {waterCount}, Beach cells: {beachCount} ");
-        Log($"Total cells {landCount + waterCount + beachCount},  Size² {size * size}");
+        Log($"Total cells {landCount + waterCount + beachCount},  Sizeï¿½ {size * size}");
 
 
         // Populate neighbors
@@ -589,7 +605,7 @@ public class MapGrid : MonoBehaviour
     // THE EDGES, IT WILL BE USED FOR EVERY TYPE OF TERRAIN LIKE MOUNTAINS
     // BEACHES, WATER, SHORES, ETC.
 
-    // I need to clarify this bc I keep forgetting it after a few months... :-(¬_¬
+    // I need to clarify this bc I keep forgetting it after a few months... :-(ï¿½_ï¿½
 
     // This method determines the specific mountain terrain type based on the noise value
     public float GetHeightForTerrainType(Cell.TerrainType type)
