@@ -100,6 +100,22 @@ public class IslandMesh : MonoBehaviour, IPreviewable
         Initialize();
     }
 
+    /// <summary>
+    /// Mirrors the generated mesh onto the MeshCollider.
+    /// Without this the collider keeps whatever mesh the prefab shipped with (a flat
+    /// built-in Plane), so raycasts and NavMesh baking would see a flat square while
+    /// the island renders as terrain. Reassigning sharedMesh also forces PhysX to
+    /// re-cook, which is required after the vertices change.
+    /// </summary>
+    private void PushMeshToCollider()
+    {
+        MeshCollider meshCollider = GetComponent<MeshCollider>();
+        if (meshCollider == null) return;
+
+        meshCollider.sharedMesh = null;
+        meshCollider.sharedMesh = mesh;
+    }
+
     public void Initialize()
     {
         mesh = new Mesh();
@@ -186,6 +202,8 @@ public class IslandMesh : MonoBehaviour, IPreviewable
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.RecalculateNormals();
+
+        PushMeshToCollider();
 
         Debug.Log($"Vertices length: {vertices.Length}");
         Debug.Log($"Triangles length: {triangles.Length}");

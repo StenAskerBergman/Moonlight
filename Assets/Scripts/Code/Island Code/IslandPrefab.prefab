@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 6881203944584505237}
   - component: {fileID: 8062848879954129166}
   - component: {fileID: 7468944127729193773}
+  - component: {fileID: 6612044399287104512}
   m_Layer: 6
   m_Name: IslandPrefab
   m_TagString: Ground
@@ -299,3 +300,17 @@ MonoBehaviour:
   initialSeeds: []
   initialResources: []
   _showLogs: 0
+--- !u!64 &6612044399287104512
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
