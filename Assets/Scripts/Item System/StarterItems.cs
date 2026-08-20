@@ -124,8 +124,17 @@ public class StarterItems : MonoBehaviour
         {
             // Error here - Time Spent Here: 46h 
             Debug.Log($"<color=orange>StarterItems: </color><color=yellow><b>ATTEMPT:</b> {itemData.displayName} item added to {unitInventory.name}</color>");
-            unitInventory.AddItem(itemData, amount, $" StarterItems: ");
-            Debug.Log($"<color=green><b>SUCCESS:</b> {itemData.displayName} item added to {unitInventory.name}</color>");
+
+            // Report what actually happened. This used to log SUCCESS unconditionally,
+            // so a rejected add (full hold, no free slot) still read as a success.
+            if (unitInventory.AddItem(itemData, amount, $" StarterItems: "))
+            {
+                Debug.Log($"<color=green><b>SUCCESS:</b> {itemData.displayName} item added to {unitInventory.name}</color>");
+            }
+            else
+            {
+                Debug.LogWarning($"<color=orange><b>REJECTED:</b> {itemData.displayName} x{amount} was not added to {unitInventory.name}</color>");
+            }
         }
         else if (unitInventory == null)
         {

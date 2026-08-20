@@ -388,7 +388,8 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     public bool log_from;
 
     // Main method to add items
-    public void AddItem(ItemData itemData, int amount, string? from, bool _log_from = false)
+    /// <returns>True if the amount was actually added; false if it was rejected.</returns>
+    public bool AddItem(ItemData itemData, int amount, string? from, bool _log_from = false)
     {
         // Set _log_from to false if 'from' is not provided
         if (string.IsNullOrEmpty(from))
@@ -455,7 +456,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         if (!InitializeOrUpdateItemStack(slot, itemData))
         {
             Debug.LogError("Stop if we cannot initialize or update the ItemStacks");
-            return;  // Stop if we cannot initialize or update the ItemStacks
+            return false;  // Stop if we cannot initialize or update the ItemStacks
         }
 
         if (ValidateAndAddItem(slot, itemData, amount))
@@ -463,8 +464,13 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             Debug.Log($"<color=green><b>Successfully</b></color> added {amount} of {itemData.name} to {slot.name} in {this.name} Unit Inventory.");
             OnUnitInventoryChanged?.Invoke();
             UpdateItemListForEditor();
-            UpdateUISlots(); 
+            UpdateUISlots();
+            return true;
         }
+
+        // Rejected by ValidateAndAddItem (capacity, slot budget, ...). It has
+        // already logged why; callers must not report this as a success.
+        return false;
     }
 
     // Create ItemStack component
