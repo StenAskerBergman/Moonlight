@@ -407,12 +407,14 @@ public class MapGrid : MonoBehaviour
                 // Time To Shape Edges
                 ApplyBeachEdges();
                 GenerateMountains();
+                MarkDepositCells();
 
                 break;
 
             case GridType.Type.Plateau:
                 // Code for generating plateau terrain
                 ApplyBeachEdges();
+                MarkDepositCells();
 
                 break;
 
@@ -526,6 +528,70 @@ public class MapGrid : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    #endregion
+
+    #region Deposit Marking Methods
+
+    // Stamps ResourceNodeType deposits onto cells based on final terrain, and carves
+    // rivers first so RiverBank/LakeMouth deposits reflect the actual river path.
+    private void MarkDepositCells()
+    {
+        new RiverArea().GenerateRiver(grid, new System.Random());
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Cell cell = grid[x, y];
+
+                switch (cell.currentTerrainType)
+                {
+                    case TerrainType.Mountain:
+                    case TerrainType.MountainPeak:
+                        cell.SetDeposit(ResourceNodeType.Mine);
+                        break;
+
+                    case TerrainType.Beach:
+                        cell.SetDeposit(IsAdjacentToShallow(x, y) ? ResourceNodeType.CoastalDock : ResourceNodeType.CoastalFishery);
+                        break;
+
+                    case TerrainType.Plateau:
+                        if (IsSparseDepositCell(x, y)) cell.SetDeposit(ResourceNodeType.OreSeabed);
+                        break;
+
+                    case TerrainType.Abyssal:
+                        if (IsSparseDepositCell(x, y)) cell.SetDeposit(ResourceNodeType.HydrothermalVent);
+                        break;
+                }
+            }
+        }
+    }
+
+    private bool IsAdjacentToShallow(int x, int y)
+    {
+        foreach (Vector2Int direction in new Vector2Int[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
+        {
+            int nx = x + direction.x;
+            int ny = y + direction.y;
+            if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
+            if (grid[nx, ny].currentTerrainType == TerrainType.Shallow) return true;
+        }
+        return false;
+    }
+
+    // Deterministic ~15% sparse selection for underwater deposits, based on cell
+    // position rather than UnityEngine.Random so the result doesn't depend on
+    // generation order or call history.
+    private bool IsSparseDepositCell(int x, int y)
+    {
+        unchecked
+        {
+            int hash = x * 73856093 ^ y * 19349663;
+            hash ^= hash >> 13;
+            return Mathf.Abs(hash % 100) < 15;
         }
     }
 

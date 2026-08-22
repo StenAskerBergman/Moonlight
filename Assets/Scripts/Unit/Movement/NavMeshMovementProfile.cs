@@ -10,6 +10,18 @@ using UnityEngine.AI;
 ///   Ship Profile     — agentTypeID -1372625422, areaMask 656, TravelMedium Water
 ///   Humanoid Profile — agentTypeID 0, TravelMedium Ground
 ///   Submarine Profile — agentTypeID -334000983
+///
+///   Landcraft Profile (Truck) — ground vehicle, domain MoveType.Landcraft
+///     agentTypeID: -1234567890 placeholder // TODO: replace with the actual baked
+///                  agent type ID once a Landcraft agent type exists in
+///                  Navigation > Agents settings.
+///     areaMask: Walkable (1) — a dedicated road NavMesh area can be added to the
+///               mask once road surfaces are baked with their own area.
+///     TravelMedium: Ground layer
+///   No asset exists yet for this profile — create one via
+///   Data/Unit/Movement/NavMesh Profile with domain set to Landcraft in the
+///   Inspector; Apply() already handles any domain generically, so no code beyond
+///   the asset itself is required.
 /// </summary>
 [CreateAssetMenu(fileName = "New NavMesh Profile", menuName = "Data/Unit/Movement/NavMesh Profile")]
 public class NavMeshMovementProfile : MovementProfile

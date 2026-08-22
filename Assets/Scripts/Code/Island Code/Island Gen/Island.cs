@@ -109,6 +109,29 @@ public class Island : MonoBehaviour, IUniqueIdentifier
     }
 
     /// <summary>
+    /// Returns every deposit cell of the given type on this island's grid, so systems
+    /// like IslandAssignmentManager or UI can ask "does this island have a mine?"
+    /// without scanning the whole grid themselves.
+    /// </summary>
+    public List<Cell> GetDepositCells(ResourceNodeType type)
+    {
+        List<Cell> depositCells = new List<Cell>();
+
+        MapGrid mapGrid = GetComponent<MapGrid>();
+        if (mapGrid == null || mapGrid.Grid == null) return depositCells;
+
+        foreach (Cell cell in mapGrid.Grid)
+        {
+            if (cell.isDeposit && cell.depositNodeType == type)
+            {
+                depositCells.Add(cell);
+            }
+        }
+
+        return depositCells;
+    }
+
+    /// <summary>
     /// Sets up a freshly instantiated island. This replaces what used to be a
     /// constructor: Island is a MonoBehaviour, so only Unity may create it (via the
     /// prefab or AddComponent). Calling 'new Island(...)' produced a second, orphaned

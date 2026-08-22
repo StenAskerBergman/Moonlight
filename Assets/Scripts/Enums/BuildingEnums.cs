@@ -41,5 +41,14 @@ public class BuildingEnums : MonoBehaviour
 
     }
 
+    public enum BuildingState
+    {
+        UnderConstruction,  // placed, not yet complete
+        Active,             // operating normally, producing output
+        Inactive,           // manually disabled or no power/resources
+        Paused,             // temporarily halted (e.g. missing supply)
+        Destroyed           // has been destroyed, pending removal
+    }
+
 
 }

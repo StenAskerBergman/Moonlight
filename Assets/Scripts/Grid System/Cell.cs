@@ -10,7 +10,9 @@ public class Cell
     public Building occupyingBuilding { get; private set; }
     public bool isBlocked { get; private set; }
     public bool isDeposit { get; private set; }
+    public ResourceNodeType depositNodeType { get; private set; }
     public bool isOccupied => occupyingBuilding != null;
+    public bool isRoad { get; private set; }
 
     public CellStatus currentStatus { get; private set; }
 
@@ -66,11 +68,12 @@ public class Cell
 
     public enum CellStatus
     {
-        Full, 
-        Empty, 
+        Full,
+        Empty,
         River,
         Water,
         Ocean,
+        Road,
     }
 
     #region River Section
@@ -183,6 +186,23 @@ public class Cell
 
         // Any other logic that needs to happen when the terrain type changes
         // For example, update the visuals or notify other components
+    }
+
+    public void SetDeposit(ResourceNodeType nodeType)
+    {
+        isDeposit = true;
+        depositNodeType = nodeType;
+    }
+
+    public void SetRoad(bool value)
+    {
+        isRoad = value;
+    }
+
+    public void SetRiverData(RiverStatus status, RiverDirection direction)
+    {
+        riverStatus = status;
+        riverDirection = direction;
     }
 
     public Cell(Vector3 _position, Building building, TerrainType terrainType, bool isBlocked = false, bool isDeposit = false)

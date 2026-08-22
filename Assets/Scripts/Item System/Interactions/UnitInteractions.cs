@@ -23,6 +23,7 @@ public class UnitInteractions : MonoBehaviour
         // Get components if they exist on the unit
         tradableComponent = GetComponent<ITradable>();
         buildableComponent = GetComponent<IBuildable>();
+        diveableComponent = GetComponent<IDiveable>();
 
     }
     public void PerformTrade(UnitInteractions otherUnit, ItemData item, int quantity)

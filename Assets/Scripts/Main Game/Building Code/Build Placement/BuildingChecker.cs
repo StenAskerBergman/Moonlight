@@ -478,13 +478,46 @@ public class BuildingChecker : MonoBehaviour
 
                         // Terrain Validation
                         BuildingData data = buildingProperties.buildingData;
-                        if (data != null && data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
+                        if (data != null)
                         {
-                            if (targetCell.currentTerrainType != Cell.TerrainType.Beach)
+                            if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
                             {
-                                canPlace = false;
-                                break;
+                                if (targetCell.currentTerrainType != Cell.TerrainType.Beach) { canPlace = false; break; }
                             }
+                            else if (data.buildingType == BuildingEnums.BuildingType.OffShore.ToString())
+                            {
+                                if (targetCell.currentTerrainType != Cell.TerrainType.Shallow) { canPlace = false; break; }
+                            }
+                            else if (data.buildingType == BuildingEnums.BuildingType.DeepSea.ToString())
+                            {
+                                if (targetCell.currentTerrainType != Cell.TerrainType.Plateau) { canPlace = false; break; }
+                            }
+
+                            // Resource Node Validation
+                            if (data.requiredNodeType != ResourceNodeType.None)
+                            {
+                                if (!targetCell.isDeposit || targetCell.depositNodeType != data.requiredNodeType)
+                                {
+                                    canPlace = false;
+                                    break;
+                                }
+                            }
+
+                            // Grid Requirement Validation
+                            foreach (BuildingRequirement req in data.BuildingRequirements)
+                            {
+                                if (req is GridRequirement gridReq)
+                                {
+                                    gridReq.SetTargetCell(targetCell);
+                                    if (!gridReq.IsSatisfied())
+                                    {
+                                        canPlace = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!canPlace) break;
                         }
                     }
 

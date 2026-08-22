@@ -14,6 +14,10 @@ public class BuildingData : ScriptableObject
     public Vector3 buildingSize;
     public string[] buildingTags;
 
+    // Resource node the building must sit on top of (e.g. a Mine on Mountain cells).
+    // None means no deposit is required.
+    public ResourceNodeType requiredNodeType = ResourceNodeType.None;
+
     // List of requirements for the building
     public List<BuildingRequirement> BuildingRequirements = new List<BuildingRequirement>();
 }

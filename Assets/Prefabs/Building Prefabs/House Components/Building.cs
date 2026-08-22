@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Resources;
@@ -11,6 +12,16 @@ public class Building : MonoBehaviour
     public List<ItemEnums.ResourceType> Resources { get; set; } = new List<ItemEnums.ResourceType>();
     public bool isSeedBuilding { get; set; }
     public ItemEnums.SeedType currentSeedType { get; set; } = ItemEnums.SeedType.None;
+
+    public BuildingEnums.BuildingState CurrentState { get; private set; } = BuildingEnums.BuildingState.UnderConstruction;
+    public static event Action<Building, BuildingEnums.BuildingState> OnBuildingStateChanged;
+
+    public void SetState(BuildingEnums.BuildingState newState)
+    {
+        if (CurrentState == newState) return;
+        CurrentState = newState;
+        OnBuildingStateChanged?.Invoke(this, newState);
+    }
 
     public ItemData compatibleSeed;
 
@@ -61,6 +72,8 @@ public class Building : MonoBehaviour
             var productionController = GetComponent<BuildingProductionController>();
             // productionController.SetProducedResource(seed.associatedResource);
             // productionController.SetProductionRate(seed.boostedProductionRate);
+
+            SetState(BuildingEnums.BuildingState.Active);
         }
     }
 }
