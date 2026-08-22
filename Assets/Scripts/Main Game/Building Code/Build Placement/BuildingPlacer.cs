@@ -148,8 +148,17 @@ public class BuildingPlacer : MonoBehaviour
             {
                 Debug.Log("Attempt B: No BaseStorageManager found.");
                 return;
-
             }
+        }
+
+        // Get Building Cost from the preview prefab before instantiating
+        BuildingCost buildingCostPrefab = buildingPreview.buildingPrefab.GetComponent<BuildingCost>();
+        
+        // Logic for checking if the player can afford the building
+        if (buildingCostPrefab != null && !currentBaseStorageManager.CanAffordBuilding(buildingCostPrefab))
+        {
+            Debug.Log("Not Enough Resources!");
+            buildingChecker.CancelBuilding();
             return;
         }
 
@@ -162,19 +171,18 @@ public class BuildingPlacer : MonoBehaviour
         }
 
         BuildingProperties buildingProperties = SetBuildingProperties(buildingInstance, buildingPreview);
-        BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>();
+        BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>(); 
 
-        // Logic for checking if the player can afford the building
-        if (!currentBaseStorageManager.CanAffordBuilding(buildingCost))
-        {
-            Debug.Log("Not Enough Resources!");
-            buildingChecker.CancelBuilding();
-            return;
-        }
-
-        // DeductCosts(buildingCost, currentBaseStorageManager); // Keep Future for Reference
-        DeductCosts(buildingCost); 
+        DeductCosts(buildingCost, currentBaseStorageManager); 
         MarkGridCells(buildingInstance, buildingProperties.buildingSize);
+
+        // Register Influence Zone (Phase 3)
+        InfluenceZone zone = buildingInstance.GetComponent<InfluenceZone>();
+        if (zone != null)
+        {
+            InfluenceManager manager = islandTransform.GetComponent<InfluenceManager>();
+            if (manager != null) manager.RegisterZone(zone);
+        }
 
         // Next Step: Initialize Building!
         buildingChecker.CancelBuilding();
@@ -234,16 +242,10 @@ public class BuildingPlacer : MonoBehaviour
         return costs;
     }
 
-    // Might need this later for reference / if I gotta redo this or something pops up
-    //private void DeductCosts(BuildingCost buildingCost, BaseStorageManager baseStorageManager, Bank bank)
-    //{
-    //    baseStorageManager.DeductBuildingCosts(buildingCost, baseStorageManager.baseStorage, bank);
-    //}
-
-    private void DeductCosts(BuildingCost buildingCost)
+    private void DeductCosts(BuildingCost buildingCost, BaseStorageManager currentBaseStorageManager)
     {
         // Use the local BaseStorageManager directly
-        if (!baseStorageManager.DeductBuildingCosts(buildingCost, bank))
+        if (!currentBaseStorageManager.DeductBuildingCosts(buildingCost, bank))
         {
             Debug.LogError("Failed to deduct costs for building.");
         }

@@ -49,9 +49,10 @@ public class GridSystem : MonoBehaviour
 
     public Vector3Int WorldToCell(Vector3 position)
     {
-        int x = Mathf.FloorToInt((position.x - gridPosition.x) / cellSize);
-        int y = Mathf.FloorToInt((position.y - gridPosition.y) / cellSize);
-        int z = Mathf.FloorToInt((position.z - gridPosition.z) / cellSize);
+        Vector3 localPos = transform.InverseTransformPoint(position);
+        int x = Mathf.FloorToInt(localPos.x / cellSize);
+        int y = Mathf.FloorToInt(localPos.y / cellSize);
+        int z = Mathf.FloorToInt(localPos.z / cellSize);
 
         return new Vector3Int(x, y, z);
     }
@@ -127,33 +128,31 @@ public class GridSystem : MonoBehaviour
     {
         // Basic Setup
         bank = FindObjectOfType<Bank>();                        // Find the Bank, if for some reason I forgot
-        grid = new Cell[gridSize, gridSize];                    // determine the islands grid size
         mapManager = FindObjectOfType<MapManager>();            // locate the amount of islands to be generated
         gridCount = mapManager.numberOfIslands;                 // count the amount of island grids that exist (protip: it starts at 0, so always add 1) 
         buildingChecker = FindObjectOfType<BuildingChecker>();
         
-        // Set Bounds Related Information
-        SetIslandBounds();
-        //gridPosition = transform.position;
-        //SetCurrentIsland(GetComponent<Island>());               // Set Local Island Bounds
-
         // Generate Cell Grid
         GenerateGrid();
-
-        // Log Bounds Island
-        Island gridIsland = GetComponent<Island>();
-
-        // Log Bounds Render
-        Renderer renderer = GetComponent<Renderer>();
         
-        //gridIsland.LogBounds();
-        //Debug.Log("Bounds: " + renderer.bounds);
+        // Set Bounds Related Information
+        SetIslandBounds();
     }
 
     // Grid Generation Method - from GridSystem.cs / Called from Start Method
     public void GenerateGrid()
     {
-        // Create Grid here using the Grid.cs
+        MapGrid mapGrid = GetComponent<MapGrid>();
+        if (mapGrid != null && mapGrid.Grid != null)
+        {
+            grid = mapGrid.Grid;
+            gridSize = mapGrid.Size;
+            cellSize = 1f; // MapGrid generates cells at 1-unit intervals
+        }
+        else
+        {
+            grid = new Cell[gridSize, gridSize];
+        }
     }
 
     /*
@@ -166,8 +165,8 @@ public class GridSystem : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-        Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+        Vector3 gridMinPosition = transform.position;
+        Vector3 gridMaxPosition = transform.position + new Vector3(gridSize * cellSize, 0f, gridSize * cellSize);
 
         Gizmos.color = Color.red;
 
@@ -182,11 +181,8 @@ public class GridSystem : MonoBehaviour
     {
         Island island = GetComponent<Island>();
 
-        // Debug.Log($"Island: {island.islandName + "id: " + island.id} Bounds: {island.bounds}");
-
-
-        Vector3 gridMinPosition = gridPosition - new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-        Vector3 gridMaxPosition = gridPosition + new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
+        Vector3 gridMinPosition = transform.position;
+        Vector3 gridMaxPosition = transform.position + new Vector3(gridSize * cellSize, 0f, gridSize * cellSize);
 
         Vector3 center = (gridMinPosition + gridMaxPosition) / 2;
         Vector3 size = gridMaxPosition - gridMinPosition;
@@ -197,16 +193,18 @@ public class GridSystem : MonoBehaviour
 
     public Cell GetCellAtWorldPosition(Vector3 worldPosition)
     {
-
-        Vector3Int gridPosition = WorldToCell(worldPosition);
-
-        return GetCellAtPosition(gridPosition);
+        return GetCellAtPosition(worldPosition);
     }
 
     public Vector3 SnapToGrid(Vector3 pos)
     {
-        Vector3 snappedPos = new Vector3(Mathf.Round(pos.x / cellSize) * cellSize, pos.y, Mathf.Round(pos.z / cellSize) * cellSize);
-        return snappedPos;
+        Vector3 localPos = transform.InverseTransformPoint(pos);
+        Vector3 snappedLocalPos = new Vector3(
+            Mathf.Round(localPos.x / cellSize) * cellSize, 
+            localPos.y, 
+            Mathf.Round(localPos.z / cellSize) * cellSize
+        );
+        return transform.TransformPoint(snappedLocalPos);
     }
     public Vector3 GetNearestDepositPosition(Vector3 position)
     {
@@ -217,11 +215,13 @@ public class GridSystem : MonoBehaviour
         {
             if (cell.isDeposit)
             {
-                float distance = Vector3.Distance(position, cell.position);
+                // cell.position is local to MapGrid
+                Vector3 worldCellPos = transform.TransformPoint(cell.position);
+                float distance = Vector3.Distance(position, worldCellPos);
                 if (distance < minDistance)
                 {
                     minDistance = distance;
-                    nearestDepositPos = cell.position;
+                    nearestDepositPos = worldCellPos;
                 }
             }
         }
@@ -238,35 +238,11 @@ public class GridSystem : MonoBehaviour
 
         if (cell != null)
         {
-            //Debug.Log("result: " + snappedPos);
             return snappedPos;
         }
         else
         {
-
-            position -= offset; // Subtract the offset before calculating the grid position
-
-            int xCount = Mathf.RoundToInt(position.x / cellSize);
-            int yCount = Mathf.RoundToInt(position.y / cellSize);
-            int zCount = Mathf.RoundToInt(position.z / cellSize);
-
-            Vector3 result = new Vector3(
-                (float)xCount * cellSize,
-                (float)yCount * cellSize,
-                (float)zCount * cellSize);
-
-            result += offset; // Add the offset back to the result
-
-            cell = GetCellAtPosition(result);
-
-            if (cell != null)
-            {
-                //Debug.Log("result 1: " + result);
-                return result;
-            }
-
-            //Debug.Log("result 2: " + result);
-            return result;
+            return snappedPos; // simplified fallback
         }
     }
     // Add the bounds to the GridSystem class
@@ -284,64 +260,32 @@ public class GridSystem : MonoBehaviour
 
     public Cell GetCellAtPosition(Vector3 position)
     {
-
-        // Debug.Log(position);
-        position.y = 0f;
-        // Get Local Island - GridSystem Bounds
-        Island gridIsland = GetComponent<Island>();
-        Bounds islandBounds = gridIsland.bounds;
-
-        // Null Check
-        if (islandBounds == null)
-        {
-            Debug.Log($"Island{gridIsland.islandName} has No Bounds.");
-            return null;
-        }
-        position.y = 0f;
-
         // Calculate the local position within the island's grid
-        Vector3 localPosition = gridIsland.transform.InverseTransformPoint(position);
-
-        // Calculate the grid's local minimum and maximum positions
-        Vector3 gridMinPosition = -new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-        Vector3 gridMaxPosition = new Vector3(gridSize * cellSize * 0.5f, 0f, gridSize * cellSize * 0.5f);
-
-        // Future Note:
-        // Need a Shoreline Case for
-        // Fisheries and vice versa.
-        // Check if Shoreline then Nope
-
-        if (!_ReqShore || _ReqSea || _ReqSub || _ReqLand || _ReqOther) // None Shoreline Buildings
-        {
-            // Bounds Check
-            if (!islandBounds.Contains(localPosition) ||
-            localPosition.x < gridMinPosition.x ||
-            localPosition.x > gridMaxPosition.x ||
-            localPosition.z < gridMinPosition.z ||
-            localPosition.z > gridMaxPosition.z) 
-            {
-                    buildingChecker.canPlace = false;
-                    return null;
-            }
-
-        }
-
-        // Convert the local position to grid indices
-        localPosition -= gridMinPosition;
-        localPosition.y = 0f;
+        Vector3 localPosition = transform.InverseTransformPoint(position);
 
         int x = Mathf.FloorToInt(localPosition.x / cellSize);
         int z = Mathf.FloorToInt(localPosition.z / cellSize);
 
-        x = Mathf.Clamp(x, 0, gridSize - 1);
-        z = Mathf.Clamp(z, 0, gridSize - 1);
-
-        //Debug.LogFormat("GridSize: {0}, CellSize: {1}, LocalPosition: {2} Position:{3} x:{4} z:{5}", gridSize, cellSize, localPosition, position, x, z);
+        if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
+        {
+            return null;
+        }
 
         // Indices are within bounds, so it's safe to access the array
-        Cell cell = grid[x, z];
-        buildingChecker.canPlace = true;
-        return cell;
+        if (grid != null) {
+            return grid[x, z];
+        }
+        
+        return null;
+    }
+
+    public Cell GetCell(int x, int z)
+    {
+        if (x < 0 || x >= gridSize || z < 0 || z >= gridSize)
+            return null;
+        if (grid != null)
+            return grid[x, z];
+        return null;
     }
 
 

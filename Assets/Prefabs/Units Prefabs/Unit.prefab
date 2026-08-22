@@ -312,9 +312,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cam: {fileID: 0}
   agent: {fileID: 0}
-  ground:
+  TravelMedium:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 16
 --- !u!114 &2246813907186537885
 MonoBehaviour:
   m_ObjectHideFlags: 0

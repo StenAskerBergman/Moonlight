@@ -214,7 +214,7 @@ GameObject:
   - component: {fileID: 3849713764603813255}
   - component: {fileID: 6026962419599515492}
   - component: {fileID: 56202009003237457}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Commandship
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -315,7 +315,7 @@ MonoBehaviour:
   agent: {fileID: -4714119704320106204}
   TravelMedium:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 16
   StopFactor: 0.5
 --- !u!114 &902401919917385268
 MonoBehaviour:

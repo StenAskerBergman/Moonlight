@@ -13,6 +13,7 @@ public class DebugConsole : MonoBehaviour
     public List<object> commandList;
 
     public static DebugCommand AddItem;
+    public static DebugCommand SpawnUnit;
 
     private void Awake()
     {
@@ -21,10 +22,19 @@ public class DebugConsole : MonoBehaviour
             Debug.Log("Added Item!");// UnitSelections.GetSelectedUnitInventory(); // Something similar to this Psduo code
         });
 
+        SpawnUnit = new DebugCommand("spawnunit", "Spawns a unit by domain.", "spawnunit <ship|sub|humanoid|aircraft>", () =>
+        {
+            if (UnitService.Instance != null && Camera.main != null)
+            {
+                UnitService.Instance.RequestUnit(MoveType.Watercraft, Camera.main.transform.position + Camera.main.transform.forward * 20f);
+                Debug.Log("Requested Watercraft unit spawn via UnitService.");
+            }
+        });
+
         commandList = new List<object>()
         {
             AddItem,
-
+            SpawnUnit,
         };
     }
 

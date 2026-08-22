@@ -10,6 +10,7 @@ public enum MoveType
     Landcraft,
     Watercraft,
     Hovercraft,
+    Submersible,
 }
 
 public class UnitMovement : MonoBehaviour
@@ -17,8 +18,10 @@ public class UnitMovement : MonoBehaviour
     // Responsibilities: Unit Moving
 
     public Camera cam;                      // Player Ray Camera
-    public NavMeshAgent agent;              // Agent Pre Settings
-    public LayerMask TravelMedium;          // Medium for Travel
+    public UnityEngine.AI.NavMeshAgent agent;              // Agent Pre Settings
+    
+    [field: SerializeField]
+    public LayerMask TravelMedium { get; set; } // Medium for Travel — set by MovementProfile
     public float StopFactor = 0.5f;         // Agent Stop Factor 
     NavMeshHit closestHit;
 

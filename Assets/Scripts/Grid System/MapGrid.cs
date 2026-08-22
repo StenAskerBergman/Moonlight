@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using static Cell;
 using System.Linq;
@@ -66,6 +66,8 @@ public class MapGrid : MonoBehaviour
 
         // Cell Grid
         private Cell[,] grid;
+        public Cell[,] Grid => grid;
+        public int Size => size;
 
         public MeshCollider cellCollider;
     #endregion

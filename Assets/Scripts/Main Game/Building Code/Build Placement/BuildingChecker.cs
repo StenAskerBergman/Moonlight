@@ -148,11 +148,9 @@ public class BuildingChecker : MonoBehaviour
             
             currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
 
-            Debug.Log("Update: canPlace is " + canPlace);
+            // Debug.Log("Update: canPlace is " + canPlace);
 
-            // Display Build Conditions + Cost 
-            // InputCheck(out string Conditions_Status
-            // Debug.Log("Conditions: " + Conditions_Status);
+            InputCheck();
 
         }
     }
@@ -206,33 +204,38 @@ public class BuildingChecker : MonoBehaviour
             if (buildingRequirements == null)
             {
                 buildingRequirements = GetComponent<BuildingRequirements>();
+            }
+
+            if (buildingRequirements != null)
+            {
                 isVerified = buildingRequirements.Verify();
             }
             else
             {
+                isVerified = true;
+            }
 
-                // Scenario Cases 
+            // Scenario Cases 
 
-                // Can Place && building requirements is Verified
-                if (IC || canPlace && isVerified)
-                {
-                    HandleBuildingPlacement();
-                }
-                else if (!canPlace)
-                {
-                    Debug.LogFormat("<color=red>Cant place building - Reason: canPlace: {0}</color>", canPlace);
-                    CancelClick();
-                }
-                else if (!isVerified)
-                {
-                    Debug.LogFormat("<color=red>Cant place building - Reason: isVerified: {0}</color>", isVerified);
-                    CancelClick();
-                }
-                else
-                {
-                    Debug.LogError("Unknown Error: CanPlace is null");
-                    CancelClick();
-                }
+            // Can Place && building requirements is Verified
+            if (IC || (canPlace && isVerified))
+            {
+                HandleBuildingPlacement();
+            }
+            else if (!canPlace)
+            {
+                Debug.LogFormat("<color=red>Cant place building - Reason: canPlace: {0}</color>", canPlace);
+                CancelClick();
+            }
+            else if (!isVerified)
+            {
+                Debug.LogFormat("<color=red>Cant place building - Reason: isVerified: {0}</color>", isVerified);
+                CancelClick();
+            }
+            else
+            {
+                Debug.LogError("Unknown Error: CanPlace is null");
+                CancelClick();
             }
         }
 
@@ -456,9 +459,6 @@ public class BuildingChecker : MonoBehaviour
                 Vector3 buildingSize = buildingProperties.buildingSize;
                 Vector3Int gridPosition = gridSystem.WorldToCell(newPos);
 
-                // canPlace = true; // its bad practic to confirm or deny anything at location where incentives for action is required
-                Vector3 targetCellWorldPosition;
-
                 // Iterate over the entire size of the building.
                 for (int x = 0; x < buildingSize.x; x++)
                 {
@@ -467,14 +467,24 @@ public class BuildingChecker : MonoBehaviour
                         int targetX = gridPosition.x + x;
                         int targetZ = gridPosition.z + z;
 
-                        targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
-
-                        Cell targetCell = gridSystem.GetCellAtPosition(targetCellWorldPosition);
+                        Cell targetCell = gridSystem.GetCell(targetX, targetZ);
+                        
                         // If ANY cell within the footprint of the building is null, blocked, occupied or contains a building, we can't place.
                         if (targetCell == null || targetCell.isBlocked || targetCell.isOccupied)
                         {
                             canPlace = false;
                             break;
+                        }
+
+                        // Terrain Validation
+                        BuildingData data = buildingProperties.buildingData;
+                        if (data != null && data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
+                        {
+                            if (targetCell.currentTerrainType != Cell.TerrainType.Beach)
+                            {
+                                canPlace = false;
+                                break;
+                            }
                         }
                     }
 
@@ -484,8 +494,24 @@ public class BuildingChecker : MonoBehaviour
                     }
                 }
 
-                // Initial assumption is that we can now place the building.
-                // If the building can be placed, then check for additional requirements.
+                if (canPlace)
+                {
+                    InfluenceManager influenceManager = currentIsland.islandObject.GetComponent<InfluenceManager>();
+                    if (influenceManager != null)
+                    {
+                        BuildingData data = buildingProperties.buildingData;
+                        bool isWarehouse = data != null && data.buildingType == BuildingEnums.BuildingType.OnShore.ToString(); 
+
+                        if (isWarehouse)
+                        {
+                            canPlace = canPlace && influenceManager.CanPlaceWarehouse(newPos, gridSystem);
+                        }
+                        else
+                        {
+                            canPlace = canPlace && influenceManager.IsWithinBuildableArea(newPos);
+                        }
+                    }
+                }
 
                 // Check Out isVerified Building Requirements for More!
 

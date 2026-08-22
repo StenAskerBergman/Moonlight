@@ -361,6 +361,7 @@ public class MapManager : MonoBehaviour
 
             GridSystem gridSystem = islandGO.GetComponent<GridSystem>();
             MapGrid mapGrid = islandGO.GetComponent<MapGrid>();
+            InfluenceManager influenceManager = islandGO.AddComponent<InfluenceManager>();
 
             // If the island is actually an ocean, then set the grid type accordingly
             if (shouldAddOcean)
