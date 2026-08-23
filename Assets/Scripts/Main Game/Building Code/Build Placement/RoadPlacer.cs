@@ -31,6 +31,15 @@ public class RoadPlacer : MonoBehaviour
 
     private RoadNetwork ActiveRoadNetwork => roadNetwork != null ? roadNetwork : RoadNetwork.Instance;
 
+    // The cell under a world position on the island currently being played, or null
+    // if that position is off-grid. Input handlers go through this so grid
+    // resolution stays in one place.
+    public Cell GetCellAtWorldPosition(Vector3 worldPosition)
+    {
+        GridSystem grid = ActiveGridSystem;
+        return grid != null ? grid.GetCellAtWorldPosition(worldPosition) : null;
+    }
+
     public bool PlaceRoad(Cell targetCell)
     {
         if (targetCell == null) return false;

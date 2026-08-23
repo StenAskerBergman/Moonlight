@@ -9,6 +9,10 @@ public class BuildingChecker : MonoBehaviour
 
     public bool IC = false;
     [SerializeField] private BuildingPreview currentBuildingPreview;
+
+    // True while a building is being positioned. Other placement modes (roads)
+    // read this so two of them can't both act on the same click.
+    public bool IsPlacingBuilding => currentBuildingPreview != null;
     [SerializeField] private BuildingPlacer buildingPlacer;
     private Island currentIsland;
     private GridSystem gridSystem;
