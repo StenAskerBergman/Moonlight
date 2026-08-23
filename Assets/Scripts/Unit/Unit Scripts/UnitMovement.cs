@@ -20,8 +20,7 @@ public class UnitMovement : MonoBehaviour
     public Camera cam;                      // Player Ray Camera
     public UnityEngine.AI.NavMeshAgent agent;              // Agent Pre Settings
     
-    [field: SerializeField]
-    public LayerMask TravelMedium { get; set; } // Medium for Travel — set by MovementProfile
+    public LayerMask TravelMedium; // Medium for Travel — set by MovementProfile
     public float StopFactor = 0.5f;         // Agent Stop Factor 
     NavMeshHit closestHit;
 
