@@ -6,14 +6,30 @@ using UnityEngine;
 // Places and removes road tiles on the grid and keeps RoadNetwork in sync.
 public class RoadPlacer : MonoBehaviour
 {
+    [Tooltip("Optional. Left empty, the grid of the island the player is currently on is used.")]
     [SerializeField] private GridSystem gridSystem;
+    [Tooltip("Optional. Left empty, the RoadNetwork singleton is used.")]
     [SerializeField] private RoadNetwork roadNetwork;
-    [SerializeField] private GameObject roadTilePrefab; // TODO: assign road tile prefab in Inspector
+    [SerializeField] private GameObject roadTilePrefab;
 
     private Dictionary<Cell, GameObject> _placedRoadTiles = new Dictionary<Cell, GameObject>();
 
     public static event Action<Cell> OnRoadPlaced;
     public static event Action<Cell> OnRoadRemoved;
+
+    // Islands and their grids are built at runtime, so the grid can't be a fixed
+    // scene reference — it changes as the player moves between islands. The
+    // serialized field stays supported as an explicit override for fixed test scenes.
+    private GridSystem ActiveGridSystem
+    {
+        get
+        {
+            if (gridSystem != null) return gridSystem;
+            return IslandManager.instance != null ? IslandManager.instance.GetCurrentGridSystem() : null;
+        }
+    }
+
+    private RoadNetwork ActiveRoadNetwork => roadNetwork != null ? roadNetwork : RoadNetwork.Instance;
 
     public bool PlaceRoad(Cell targetCell)
     {
@@ -32,16 +48,18 @@ public class RoadPlacer : MonoBehaviour
 
         targetCell.SetRoad(true);
 
-        if (roadTilePrefab != null && gridSystem != null)
+        GridSystem grid = ActiveGridSystem;
+        if (roadTilePrefab != null && grid != null)
         {
-            Vector3 worldPosition = gridSystem.transform.TransformPoint(targetCell.position);
-            GameObject roadTileInstance = Instantiate(roadTilePrefab, worldPosition, Quaternion.identity, gridSystem.transform);
+            Vector3 worldPosition = grid.transform.TransformPoint(targetCell.position);
+            GameObject roadTileInstance = Instantiate(roadTilePrefab, worldPosition, Quaternion.identity, grid.transform);
             _placedRoadTiles[targetCell] = roadTileInstance;
         }
 
-        if (roadNetwork != null)
+        RoadNetwork network = ActiveRoadNetwork;
+        if (network != null)
         {
-            roadNetwork.RegisterRoadCell(targetCell);
+            network.RegisterRoadCell(targetCell);
         }
 
         OnRoadPlaced?.Invoke(targetCell);
@@ -63,9 +81,10 @@ public class RoadPlacer : MonoBehaviour
             _placedRoadTiles.Remove(targetCell);
         }
 
-        if (roadNetwork != null)
+        RoadNetwork network = ActiveRoadNetwork;
+        if (network != null)
         {
-            roadNetwork.UnregisterRoadCell(targetCell);
+            network.UnregisterRoadCell(targetCell);
         }
 
         OnRoadRemoved?.Invoke(targetCell);

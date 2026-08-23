@@ -226,9 +226,13 @@ public class Cell
         // Initialize the neighbors list 
         neighbors = new List<Cell>();
 
-        // Coordinates of the cell
+        // Grid coordinates of the cell. The grid is laid out in world XZ, and cells
+        // are built as position = (gridX, terrainHeight, gridZ) — so the second grid
+        // index is cellPosition.z. Reading cellPosition.y here instead would use the
+        // terrain height as a row index, which collapses every cell's neighbours onto
+        // rows -1/0/1 and leaves cells further apart permanently unconnected.
         int x = cellPosition.x;
-        int y = cellPosition.y;
+        int y = cellPosition.z;
 
         // Add the neighbors
         // Debug.Log("x: " + x + " y: " + y);
