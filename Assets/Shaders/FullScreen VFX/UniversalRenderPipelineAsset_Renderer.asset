@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba4d18750c930474c9a2505d9ffdd903, type: 3}
   m_Name: Onfire
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     Event: 500
     blitMaterial: {fileID: 2100000, guid: 821b7c72bbc108847803c9ac92ea0f22, type: 2}
@@ -39,7 +39,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba4d18750c930474c9a2505d9ffdd903, type: 3}
   m_Name: FadeOut
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
     Event: 1000
     blitMaterial: {fileID: 2100000, guid: 58d394e57d52e6c4db090898628ddbf2, type: 2}
@@ -73,7 +73,8 @@ MonoBehaviour:
   - {fileID: 8437529652992694996}
   - {fileID: -7610421148009102366}
   - {fileID: -2913913627462465109}
-  m_RendererFeatureMap: d45a74f483201875e203cca1495a6296ab09ee90feb28fd7
+  - {fileID: 6824190671518843921}
+  m_RendererFeatureMap: d45a74f483201875e203cca1495a6296ab09ee90feb28fd711446a774265b45e
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -115,6 +116,20 @@ MonoBehaviour:
   m_CopyDepthMode: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &6824190671518843921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bdb3a0942594dc388b3372b96e5638c, type: 3}
+  m_Name: Underwater Camera Transition
+  m_EditorClassIdentifier:
+  m_Active: 1
+  injectionPoint: 600
 --- !u!114 &8437529652992694996
 MonoBehaviour:
   m_ObjectHideFlags: 0

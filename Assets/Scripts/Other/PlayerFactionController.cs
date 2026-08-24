@@ -36,9 +36,41 @@ public class PlayerFactionController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Overrides the factions the player starts with. Must be called before
+    /// Start(), which is where ActivateStartingFactions() reads the list -
+    /// MatchBootstrapper does this from Awake().
+    ///
+    /// Faction.None is filtered out: it has no entry in factionDict, so joining
+    /// it would throw. A lobby dropdown can easily produce it.
+    /// </summary>
+    public void SetStartingFactions(List<Faction> factions)
+    {
+        if (factions == null)
+        {
+            return;
+        }
+
+        var filtered = factions.FindAll(f => f != Faction.None);
+        if (filtered.Count == 0)
+        {
+            Debug.LogWarning("PlayerFactionController: SetStartingFactions got no " +
+                             "usable factions - keeping the Inspector's list.");
+            return;
+        }
+
+        startingFactions = filtered;
+    }
+
     public void JoinFaction(Faction faction)
     {
-        factionDict[faction].isActive = true;
+        if (!factionDict.TryGetValue(faction, out var data))
+        {
+            Debug.LogError($"PlayerFactionController: no entry for faction '{faction}' - ignoring.");
+            return;
+        }
+
+        data.isActive = true;
         UpdateFactionDisplay();
     }
 
@@ -46,6 +78,13 @@ public class PlayerFactionController : MonoBehaviour
     {
         foreach (var pair in factionDict)
         {
+            if (pair.Value.gameObject == null)
+            {
+                Debug.LogError($"PlayerFactionController: faction '{pair.Key}' has no " +
+                               "GameObject assigned in the Inspector - skipping.");
+                continue;
+            }
+
             pair.Value.gameObject.SetActive(pair.Value.isActive);
             if (pair.Value.isActive && currentDisplayedFaction == Faction.None) // Only set if there's no current displayed faction
             {

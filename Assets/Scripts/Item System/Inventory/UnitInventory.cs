@@ -554,7 +554,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             // A full hold is normal gameplay, not a fault - the caller decides what to
             // do with the refusal. LogError here made every legitimate "cargo is full"
             // look like a crash in the console.
-            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Cannot add {itemData.name} with amount {amount} to slot: {slot.name}</color>");
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: Cannot add </color><color=white>{itemData.name}</color><color=orange> with amount </color><color=white>{amount}</color><color=orange> to slot: </color><color=white>{slot.name}</color>");
             return false;
         }
 

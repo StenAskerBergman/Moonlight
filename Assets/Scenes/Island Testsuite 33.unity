@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -420,18 +420,6 @@ MonoBehaviour:
   zPub: 0
   invertSelection: 1
   currentIslandSelection: 03000000110000001f00000013000000210000002f000000150000001d000000
---- !u!114 &2259039542040043919
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8128660219939150214}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 114f70c507e127749bc2052438af5179, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &2259039542594956298
 Transform:
   m_ObjectHideFlags: 0
@@ -6141,7 +6129,6 @@ GameObject:
   - component: {fileID: 8128660219939150211}
   - component: {fileID: 8128660219939150208}
   - component: {fileID: 1879259206185296574}
-  - component: {fileID: 2259039542040043919}
   m_Layer: 4
   m_Name: Ocean Cube
   m_TagString: Untagged

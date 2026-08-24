@@ -1,0 +1,29 @@
+=== PHASE A1 CROSS-GRID SEAMS ===
+
+Island <-> Plateau: Not found in scene.
+
+Island <-> Ocean:
+  SourceValue diff = 0.000000
+  Height diff = 0.000000
+  A: SV=-0.0344, H=-4.9995, Type=Deep, Inf=0.0000
+  B: SV=-0.0344, H=-4.9995, Type=Deep, Inf=0.0000
+
+Plateau <-> Ocean: Not found in scene.
+
+Plateau <-> Plateau: Not found in scene.
+
+Island <-> Island:
+  SourceValue diff = 0.000000
+  Height diff = 0.000000
+  A: SV=-0.0147, H=-4.5935, Type=Deep, Inf=0.0000
+  B: SV=-0.0147, H=-4.5935, Type=Deep, Inf=0.0000
+
+--- GridType.Plateau Core ---
+
+=== PHASE A2 ABYSS SEMANTICS ===
+Semantic Boundary (abyssUpper - width): -0.035000
+Val -0.045000 => SV: -0.045000, Type: Abyssal, Height: -5.000000
+Val -0.035000 => SV: -0.035000, Type: Deep, Height: -5.000000
+Val -0.025000 => SV: -0.025000, Type: Deep, Height: -4.889213
+
+Abyssal cells above abyssHeight: 326

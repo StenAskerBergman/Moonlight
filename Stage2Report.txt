@@ -1,0 +1,16 @@
+=== STAGE 2 VERIFICATION REPORT ===
+=== HORIZONTAL SEAM (X=60) ===
+[SEAM EXACT MATCH CHECK]
+Chunk A (lx=60): Source=-0.0245, Height=-4.8791, Type=Abyssal, Plateau=0.0000
+Chunk B (lx=0) : Source=-0.0245, Height=-4.8791, Type=Abyssal, Plateau=0.0000
+
+=== FINITE DIFFERENCE SLOPES ===
+Slope at d=-6: -0.04145
+Slope at d=-4: 0.02212
+Slope at d=-2: 0.03964
+Slope at d=-1: 0.01891
+Slope at d=0: 0.00201
+Slope at d=1: -0.02269
+Slope at d=2: -0.06441
+Slope at d=4: -0.04739
+Slope at d=6: 0.03582

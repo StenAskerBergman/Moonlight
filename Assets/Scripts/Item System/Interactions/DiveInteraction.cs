@@ -1,140 +1,141 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 
+/// <summary>
+/// Submarine dive/surface orders.
+///
+/// The old TODO list here asked for checks on hull type, cooldown and whether the
+/// water is deep enough. Two of those are no longer this script's job:
+///
+///  - "is this hull rated to dive" is the Dive bit in the agent's Area Mask. Clear
+///    it and the planner stops offering dive routes at all.
+///  - "is the water deep enough" is whether the deep layer exists at this XZ.
+///    StackedNavMeshLayers only builds it over deep seabed, so the question answers
+///    itself when the sample fails.
+///
+/// What remains here is the order itself and the cooldown.
+/// </summary>
+[RequireComponent(typeof(NavMeshAgent))]
 public class DiveInteraction : MonoBehaviour, IDiveable
 {
-    // Submarine Profile agentTypeID - see NavMeshMovementProfile.cs header comment.
-    private const int SubmarineAgentTypeID = -334000983;
+    [Tooltip("Height of the deep-sea layer. Must match the Sub - Deep band.")]
+    [SerializeField] private float deepHeight = -30f;
 
-    private Unit unit;
+    [Tooltip("Height of the surface layer.")]
+    [SerializeField] private float surfaceHeight = 0f;
+
+    [Tooltip("Seconds before this hull can change depth again.")]
+    [SerializeField] private float cooldown = 8f;
+
+    [Tooltip("How far from the target layer the unit may be and still reach it.")]
+    [SerializeField] private float sampleTolerance = 8f;
+
+    /// <summary>Raised when an order is refused, with the reason. Hook UI to this.</summary>
+    public event System.Action<string> OnDiveRefused;
+
     private NavMeshAgent agent;
+    private NavLinkTraversal traversal;
+    private float readyAt;
 
-    public bool isSubmerged { get; private set; }
-
-    // Cached so surfacing can restore whatever surface agent type the unit was
-    // configured with (Ship Profile, etc.) instead of hardcoding one.
-    private int surfaceAgentTypeID;
-    private bool hasSurfaceAgentTypeID;
-
-    public delegate void DiveStateChangedHandler(bool isSubmerged);
-    public event DiveStateChangedHandler OnDiveStateChanged;
+    /// <summary>True while the submarine is on the deep layer.</summary>
+    public bool IsSubmerged
+    {
+        get { return NavLayerTransit.CurrentArea(agent) == NavAreas.DeepSea; }
+    }
 
     private void Awake()
     {
-        unit = GetComponent<Unit>();
         agent = GetComponent<NavMeshAgent>();
-    }
-
-    public void Dive()
-    {
-        if (!CanToggleDive(out string failReason))
-        {
-            Debug.Log($"DiveInteraction: Cannot dive - {failReason}");
-            return;
-        }
-
-        isSubmerged = !isSubmerged;
-
-        if (agent != null)
-        {
-            if (isSubmerged)
-            {
-                if (!hasSurfaceAgentTypeID)
-                {
-                    surfaceAgentTypeID = agent.agentTypeID;
-                    hasSurfaceAgentTypeID = true;
-                }
-
-                agent.agentTypeID = SubmarineAgentTypeID;
-            }
-            else if (hasSurfaceAgentTypeID)
-            {
-                agent.agentTypeID = surfaceAgentTypeID;
-            }
-
-            // TODO: project-specific wiring - if the submarine and surface NavMeshes
-            // aren't both baked/available, the agent may need to be re-placed after
-            // switching agentTypeID (see UnitMovement.TryPlaceOnNavMesh).
-        }
-
-        Debug.Log($"DiveInteraction: {(isSubmerged ? "Submerging" : "Surfacing")} {gameObject.name}.");
-        OnDiveStateChanged?.Invoke(isSubmerged);
+        traversal = GetComponent<NavLinkTraversal>();
     }
 
     /// <summary>
-    /// Runs the same checks as Dive() without toggling any state. Used by UI to
-    /// decide whether the dive action should be shown/enabled.
+    /// Whether a dive order would be accepted right now: rated hull, off cooldown,
+    /// not already down, and deep water beneath. UI polls this to show or hide the
+    /// dive button, so it must stay cheap and side-effect free.
     /// </summary>
     public bool CanDive()
     {
-        return CanToggleDive(out _);
+        if (agent == null || !agent.isOnNavMesh) return false;
+        if (traversal != null && traversal.IsTraversing) return false;
+        if (Time.time < readyAt) return false;
+        if (IsSubmerged) return false;
+        if (!NavLayerTransit.IsAreaAllowed(agent, NavAreas.Dive)) return false;
+
+        return NavLayerTransit.LayerExistsHere(agent, deepHeight, NavAreas.DeepSea, sampleTolerance);
     }
 
-    private bool CanToggleDive(out string failReason)
+    /// <summary>The mirror of <see cref="CanDive"/>, for a surface button.</summary>
+    public bool CanSurface()
     {
-        failReason = null;
+        if (agent == null || !agent.isOnNavMesh) return false;
+        if (traversal != null && traversal.IsTraversing) return false;
+        if (Time.time < readyAt) return false;
+        if (!IsSubmerged) return false;
 
-        if (unit == null)
+        return NavLayerTransit.LayerExistsHere(agent, surfaceHeight, NavAreas.Ocean, sampleTolerance);
+    }
+
+    public bool Dive()
+    {
+        if (!Ready("dive")) return false;
+
+        if (IsSubmerged)
         {
-            failReason = "no Unit component found";
+            OnDiveRefused?.Invoke("Already submerged.");
             return false;
         }
 
-        // TODO: if per-unit NameType categorization (ExplorerSub / AttackSub) is
-        // wired onto Unit in the future, prefer checking that here instead - moveType
-        // is the only field currently available that marks a unit as a submarine.
-        if (unit.moveType != MoveType.Submersible)
+        if (!NavLayerTransit.IsAreaAllowed(agent, NavAreas.Dive))
         {
-            failReason = "unit is not a submarine type";
+            OnDiveRefused?.Invoke("This hull is not rated to dive.");
             return false;
         }
 
-        // Surfacing should always be allowed for a submarine; only submerging
-        // requires currently being on water.
-        if (isSubmerged) return true;
-
-        if (!IsOnWater())
+        if (!NavLayerTransit.MoveToLayer(agent, deepHeight, NavAreas.DeepSea, sampleTolerance))
         {
-            failReason = "unit is not on water";
+            OnDiveRefused?.Invoke("The water here is not deep enough to dive.");
+            return false;
+        }
+
+        readyAt = Time.time + cooldown;
+        return true;
+    }
+
+    public bool Surface()
+    {
+        if (!Ready("surface")) return false;
+
+        if (!IsSubmerged)
+        {
+            OnDiveRefused?.Invoke("Already surfaced.");
+            return false;
+        }
+
+        if (!NavLayerTransit.MoveToLayer(agent, surfaceHeight, NavAreas.Ocean, sampleTolerance))
+        {
+            OnDiveRefused?.Invoke("No surface route from here.");
+            return false;
+        }
+
+        readyAt = Time.time + cooldown;
+        return true;
+    }
+
+    private bool Ready(string verb)
+    {
+        if (traversal != null && traversal.IsTraversing)
+        {
+            OnDiveRefused?.Invoke($"Cannot {verb} mid-transit.");
+            return false;
+        }
+
+        if (Time.time < readyAt)
+        {
+            OnDiveRefused?.Invoke($"Cannot {verb} for another {readyAt - Time.time:F1}s.");
             return false;
         }
 
         return true;
-    }
-
-    private bool IsOnWater()
-    {
-        if (IslandManager.instance == null) return false;
-
-        Island island = IslandManager.instance.GetIsland(transform.position);
-        if (island == null) return false;
-
-        GridSystem gridSystem = island.GetComponent<GridSystem>();
-        if (gridSystem == null) return false;
-
-        Cell cell = gridSystem.GetCellAtWorldPosition(transform.position);
-        if (cell == null) return false;
-
-        return IsWaterTerrain(cell.currentTerrainType);
-    }
-
-    private static bool IsWaterTerrain(Cell.TerrainType terrain)
-    {
-        switch (terrain)
-        {
-            case Cell.TerrainType.Water:
-            case Cell.TerrainType.Sea:
-            case Cell.TerrainType.Ocean:
-            case Cell.TerrainType.Shallow:
-            case Cell.TerrainType.Deep:
-            case Cell.TerrainType.Abyssal:
-            case Cell.TerrainType.River:
-            case Cell.TerrainType.Stream:
-                return true;
-            default:
-                return false;
-        }
     }
 }

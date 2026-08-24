@@ -28,8 +28,57 @@ public class Cell
     public RiverStatus riverStatus { get; private set; }
     public RiverDirection riverDirection { get; private set; }
 
+    /// <summary>
+    /// The cell's centre in MapGrid-local space.
+    ///
+    /// position/cellPosition carry the cell's ARRAY INDEX - UpdateNeighbors and
+    /// RiverArea index straight into Cell[,] with them, so they must stay integer.
+    /// Spatially a cell occupies local [x, x+1) x [z, z+1), so anything placing an
+    /// object on a cell or measuring distance to one wants this, not position.
+    /// </summary>
+    public Vector3 localCenter => new Vector3(cellPosition.x + 0.5f, height, cellPosition.z + 0.5f);
+
     // Height
     public float height { get; private set; }
+    public float localHeightVariance { get; private set; }
+    public float deliberatePlateauInfluence { get; private set; }
+    public bool IsSlopeSuitableForBuilding { get; private set; }
+    public bool IsDeliberateUnderwaterPlateau => deliberatePlateauInfluence >= 0.9999f;
+
+    public bool IsUnderwater
+    {
+        get
+        {
+            switch (currentTerrainType)
+            {
+                case TerrainType.Abyssal:
+                case TerrainType.River:
+                case TerrainType.Water:
+                case TerrainType.Stream:
+                case TerrainType.Sea:
+                case TerrainType.Ocean:
+                case TerrainType.Shallow:
+                case TerrainType.Deep:
+                case TerrainType.Plateau:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    public bool IsBuildableFlatRegion => currentTerrainType == TerrainType.Land
+        || currentTerrainType == TerrainType.Beach
+        || currentTerrainType == TerrainType.Plain
+        || currentTerrainType == TerrainType.Plateau;
+
+    public bool IsBuildableSurface => !IsUnderwater
+        && IsBuildableFlatRegion
+        && IsSlopeSuitableForBuilding;
+
+    public bool IsBuildableUnderwaterPlateau => IsDeliberateUnderwaterPlateau
+        && currentTerrainType == TerrainType.Plateau
+        && IsSlopeSuitableForBuilding;
 
     public (EdgeTypes, EdgeType) Edges { get; set; }
 
@@ -205,6 +254,17 @@ public class Cell
         riverDirection = direction;
     }
 
+    public void SetTerrainMetrics(float heightVariance, float maxBuildableHeightVariance)
+    {
+        localHeightVariance = Mathf.Max(0f, heightVariance);
+        IsSlopeSuitableForBuilding = localHeightVariance <= Mathf.Max(0f, maxBuildableHeightVariance);
+    }
+
+    public void SetDeliberatePlateauInfluence(float influence)
+    {
+        deliberatePlateauInfluence = Mathf.Clamp01(influence);
+    }
+
     public Cell(Vector3 _position, Building building, TerrainType terrainType, bool isBlocked = false, bool isDeposit = false)
     {
         this.position = _position;
@@ -213,6 +273,10 @@ public class Cell
         this.isDeposit = isDeposit;
         this.currentStatus = building == null ? CellStatus.Empty : CellStatus.Full;
         this.currentTerrainType = terrainType;
+        this.height = _position.y;
+        this.localHeightVariance = 0f;
+        this.deliberatePlateauInfluence = 0f;
+        this.IsSlopeSuitableForBuilding = true;
 
         // Set the cell position based on the position
         this.cellPosition = new Vector3Int(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), Mathf.RoundToInt(position.z));

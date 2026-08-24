@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,6 +10,7 @@ public class UnitInteractions : MonoBehaviour
     private ITradable tradableComponent;
     private IBuildable buildableComponent;
     private IDiveable diveableComponent;
+    private ILiftable liftableComponent;
     private IBuyable buyableComponent;
     private ISellable sellableComponent;
     private IItemManagement itemManagementComponent;
@@ -24,6 +25,7 @@ public class UnitInteractions : MonoBehaviour
         tradableComponent = GetComponent<ITradable>();
         buildableComponent = GetComponent<IBuildable>();
         diveableComponent = GetComponent<IDiveable>();
+        liftableComponent = GetComponent<ILiftable>();
 
     }
     public void PerformTrade(UnitInteractions otherUnit, ItemData item, int quantity)
@@ -59,6 +61,42 @@ public class UnitInteractions : MonoBehaviour
         else
         {
             OnInteractionOccurred?.Invoke("This unit cannot dive.");
+        }
+    }
+
+    public void PerformSurface()
+    {
+        if (diveableComponent != null)
+        {
+            diveableComponent.Surface();
+        }
+        else
+        {
+            OnInteractionOccurred?.Invoke("This unit cannot dive.");
+        }
+    }
+
+    public void PerformLiftOff()
+    {
+        if (liftableComponent != null)
+        {
+            liftableComponent.LiftOff();
+        }
+        else
+        {
+            OnInteractionOccurred?.Invoke("This unit cannot fly.");
+        }
+    }
+
+    public void PerformLand()
+    {
+        if (liftableComponent != null)
+        {
+            liftableComponent.Land();
+        }
+        else
+        {
+            OnInteractionOccurred?.Invoke("This unit cannot fly.");
         }
     }
 

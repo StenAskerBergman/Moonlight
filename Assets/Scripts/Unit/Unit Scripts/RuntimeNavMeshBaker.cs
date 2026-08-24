@@ -1,70 +1,136 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+// See WaterNavMeshCarver: the scene uses the package NavMeshSurface, and the
+// vendored copy in Assets/NavMeshComponents makes the bare name ambiguous.
+using NavMeshSurface = Unity.AI.Navigation.NavMeshSurface;
+
 /// <summary>
-/// Bakes the scene's NavMeshSurfaces once the procedurally generated map exists.
+/// The map has four independent navigable worlds stacked on top of each other, and
+/// they do not all become bakeable at the same moment. This splits the bake into
+/// ordered phases so each one can be rebuilt on its own trigger:
 ///
-/// MapManager raises OnMapGenerated at the end of its Start(), after every island
-/// has been instantiated, so the geometry is guaranteed to be present by the time
-/// this runs. Subscription happens in OnEnable, which precedes any Start() in the
-/// scene, so the ordering holds without touching Script Execution Order.
+///   Terrain      - land, mountains, rivers, lakes.       Needs island meshes.
+///   SurfaceWater - sea/ocean at the waterline.           Needs the islands carved out.
+///   SubSurface   - submarine surface + deep-sea layers.  Needs the seabed.
+///   Airspace     - low/mid/high altitude bands.          Needs mountains to block Low.
 ///
-/// Assign one NavMeshSurface per agent type (Humanoid for islands, Ship for water).
-/// If the Inspector wiring is missing - which a scene re-serialization can silently
-/// cause, e.g. an editor upgrade that saves the scene while this script is failing
-/// to compile - the surfaces are discovered from the scene instead, so navigation
-/// degrades to a warning rather than dying outright.
+/// A surface's phase is derived from its agent type, so the flat list stays valid
+/// and adding a Submarine or Aircraft surface is enough to bring that phase to life.
+///
+/// MapManager instantiates islands inside Start(), and Unity does not define the
+/// order of Start() between components. Waiting one frame is order independent:
+/// every Start() in the scene has run by the time the first yield resumes, so the
+/// island geometry is guaranteed to be present without touching Script Execution
+/// Order or coupling this to MapManager.
 /// </summary>
 public class RuntimeNavMeshBaker : MonoBehaviour
 {
-    [Tooltip("One NavMeshSurface per agent type. Each bakes its own separate NavMesh. " +
-             "Leave empty to bake every NavMeshSurface found in the scene.")]
+    public enum BakePhase
+    {
+        Terrain,
+        SurfaceWater,
+        SubSurface,
+        Airspace,
+    }
+
+    /// <summary>Phases in the order they must be baked.</summary>
+    private static readonly BakePhase[] PhaseOrder =
+    {
+        BakePhase.Terrain,
+        BakePhase.SurfaceWater,
+        BakePhase.SubSurface,
+        BakePhase.Airspace,
+    };
+
+    /// <summary>
+    /// Agent type name (as configured in Navigation &gt; Agents) to the phase that
+    /// bakes it. Anything unrecognised falls back to Terrain with a warning.
+    /// </summary>
+    private static readonly Dictionary<string, BakePhase> PhaseByAgentType =
+        new Dictionary<string, BakePhase>
+        {
+            { "Humanoid",  BakePhase.Terrain      },
+            { "Ship",      BakePhase.SurfaceWater },
+            { "Submarine", BakePhase.SubSurface   },
+            { "Aircraft",  BakePhase.Airspace     },
+        };
+
+    [Tooltip("Optional override. Leave empty to bake every NavMeshSurface in the scene, " +
+             "which is usually what you want - the bake phase is derived from each " +
+             "surface's agent type, so a new Submarine or Aircraft surface is picked up " +
+             "with no rewiring.")]
     [SerializeField] private NavMeshSurface[] surfaces;
+
+    [Tooltip("Carves the islands out of the water NavMeshes. Runs immediately before " +
+             "the water phases. Found or created automatically if left empty.")]
+    [SerializeField] private WaterNavMeshCarver waterCarver;
+
+    [Tooltip("Builds the submarine deep layer and the aircraft altitude bands before " +
+             "their phases bake. Found or created automatically if left empty.")]
+    [SerializeField] private StackedNavMeshLayers stackedLayers;
+
+    [Tooltip("Builds the dive and lift-off NavMeshLinks after their phases bake. " +
+             "Found or created automatically if left empty.")]
+    [SerializeField] private NavTransitionLinks transitionLinks;
 
     [Tooltip("Bake automatically one frame after the scene starts.")]
     [SerializeField] private bool bakeOnStart = true;
 
-    /// <summary>Raised after every assigned surface has finished baking.</summary>
-    public static event System.Action OnNavMeshBaked;
+    /// <summary>Raised after each phase finishes, in bake order.</summary>
+    public static event Action<BakePhase> OnPhaseBaked;
 
-    /// <summary>True once a bake has completed at least once this session.</summary>
+    /// <summary>Raised after every phase has finished baking.</summary>
+    public static event Action OnNavMeshBaked;
+
+    /// <summary>True once a full bake has completed at least once this session.</summary>
     public static bool IsBaked { get; private set; }
 
-    private void OnEnable()
+    // The water phases share one set of carve volumes, so a full bake must not
+    // rebuild them twice. Cleared once they are current, raised again whenever the
+    // map changes underneath us.
+    private bool carveDirty = true;
+
+    /// <summary>
+    /// Marks the island footprint as changed, so the next water phase recarves.
+    /// Call after terraforming, or after an island is created or destroyed.
+    /// </summary>
+    public void InvalidateCarve()
     {
-        MapManager.OnMapGenerated += HandleMapGenerated;
+        carveDirty = true;
     }
 
-    private void OnDisable()
+    private IEnumerator Start()
     {
-        MapManager.OnMapGenerated -= HandleMapGenerated;
-    }
+        if (!bakeOnStart) yield break;
 
-    private void HandleMapGenerated()
-    {
-        if (bakeOnStart)
-        {
-            BakeAll();
-        }
+        // Let every other Start() run first so generated islands exist.
+        yield return null;
+
+        BakeAll();
     }
 
     /// <summary>
-    /// Rebuilds every assigned surface. Safe to call again after the map changes;
-    /// BuildNavMesh replaces that surface's data rather than accumulating.
+    /// Rebuilds every phase in order. Safe to call again after the map changes;
+    /// BuildNavMesh replaces a surface's data rather than accumulating.
     /// </summary>
     public void BakeAll()
     {
-        NavMeshSurface[] targets = ResolveSurfaces();
-        if (targets.Length == 0)
+        carveDirty = true;
+
+        int baked = 0;
+        foreach (BakePhase phase in PhaseOrder)
         {
-            Debug.LogError("RuntimeNavMeshBaker: no NavMeshSurface exists in the scene - nothing to bake.");
-            return;
+            baked += Bake(phase);
         }
 
-        foreach (NavMeshSurface surface in targets)
+        if (baked == 0)
         {
-            surface.BuildNavMesh();
-            Debug.Log($"<color=green>RuntimeNavMeshBaker:</color> baked '{surface.name}' (agentTypeID {surface.agentTypeID}).");
+            Debug.LogError("RuntimeNavMeshBaker: found no NavMeshSurface to bake.");
+            return;
         }
 
         IsBaked = true;
@@ -72,31 +138,160 @@ public class RuntimeNavMeshBaker : MonoBehaviour
     }
 
     /// <summary>
-    /// The assigned surfaces minus any null slots, or - when that leaves nothing -
-    /// every active NavMeshSurface in the scene.
+    /// Rebuilds a single phase, running that phase's prerequisites first. Use this
+    /// for targeted rebakes - a terraform only needs Terrain and SurfaceWater, not
+    /// the whole map. Returns how many surfaces were rebuilt.
     /// </summary>
-    private NavMeshSurface[] ResolveSurfaces()
+    public int Bake(BakePhase phase)
     {
-        int assigned = 0;
+        RunPrerequisites(phase);
+
+        int baked = 0;
+        foreach (NavMeshSurface surface in SurfacesFor(phase))
+        {
+            surface.BuildNavMesh();
+            baked++;
+            Debug.Log($"<color=green>RuntimeNavMeshBaker:</color> baked '{surface.name}' " +
+                      $"(phase {phase}, agentTypeID {surface.agentTypeID}).");
+        }
+
+        if (baked > 0)
+        {
+            RunPostBake(phase);
+            OnPhaseBaked?.Invoke(phase);
+        }
+
+        return baked;
+    }
+
+    /// <summary>
+    /// Non-blocking version of <see cref="Bake"/> for rebakes during play, so a
+    /// terraform or a destroyed island does not stall the frame.
+    /// </summary>
+    public IEnumerator BakeAsync(BakePhase phase)
+    {
+        RunPrerequisites(phase);
+
+        bool any = false;
+        foreach (NavMeshSurface surface in SurfacesFor(phase))
+        {
+            any = true;
+            yield return surface.UpdateNavMesh(surface.navMeshData);
+        }
+
+        if (any)
+        {
+            RunPostBake(phase);
+            OnPhaseBaked?.Invoke(phase);
+        }
+    }
+
+    /// <summary>Non-blocking full rebake, phase by phase.</summary>
+    public IEnumerator BakeAllAsync()
+    {
+        carveDirty = true;
+
+        foreach (BakePhase phase in PhaseOrder)
+        {
+            yield return BakeAsync(phase);
+        }
+
+        IsBaked = true;
+        OnNavMeshBaked?.Invoke();
+    }
+
+    /// <summary>
+    /// Work a phase needs done before its surfaces are collected. Kept here rather
+    /// than in the callers so every bake path gets it, sync and async alike.
+    /// </summary>
+    private void RunPrerequisites(BakePhase phase)
+    {
+        // The depth and altitude bands have no geometry of their own, so their proxy
+        // quads, surfaces and carve volumes have to exist before the surfaces are
+        // collected - not after.
+        if (phase == BakePhase.SubSurface) Layers().BuildBands(NavAgentTypes.Submarine);
+        if (phase == BakePhase.Airspace) Layers().BuildBands(NavAgentTypes.Aircraft);
+
+        if (phase != BakePhase.SurfaceWater && phase != BakePhase.SubSurface) return;
+        if (!carveDirty) return;
+
+        if (waterCarver == null) waterCarver = FindObjectOfType<WaterNavMeshCarver>();
+
+        // Create one rather than warn: without it the water NavMesh covers the islands
+        // and ships sail straight through them, which is a far worse default than an
+        // auto-added component with sensible values.
+        if (waterCarver == null) waterCarver = gameObject.AddComponent<WaterNavMeshCarver>();
+
+        waterCarver.RebuildCarveVolumes();
+        carveDirty = false;
+    }
+
+    /// <summary>
+    /// Work that can only happen once a phase's NavMesh exists. Links are the whole
+    /// of it: a NavMeshLink needs baked NavMesh at both ends to attach to, so
+    /// building one before the bake silently produces a link joining nothing.
+    /// </summary>
+    private void RunPostBake(BakePhase phase)
+    {
+        if (phase == BakePhase.SubSurface) Links().BuildLinks(NavAgentTypes.Submarine);
+        if (phase == BakePhase.Airspace) Links().BuildLinks(NavAgentTypes.Aircraft);
+    }
+
+    private StackedNavMeshLayers Layers()
+    {
+        if (stackedLayers == null) stackedLayers = FindObjectOfType<StackedNavMeshLayers>();
+        if (stackedLayers == null) stackedLayers = gameObject.AddComponent<StackedNavMeshLayers>();
+        return stackedLayers;
+    }
+
+    private NavTransitionLinks Links()
+    {
+        if (transitionLinks == null) transitionLinks = FindObjectOfType<NavTransitionLinks>();
+        if (transitionLinks == null) transitionLinks = gameObject.AddComponent<NavTransitionLinks>();
+        return transitionLinks;
+    }
+
+    private IEnumerable<NavMeshSurface> SurfacesFor(BakePhase phase)
+    {
+        foreach (NavMeshSurface surface in AllSurfaces())
+        {
+            if (surface == null) continue;
+            if (PhaseOf(surface) == phase) yield return surface;
+        }
+    }
+
+    /// <summary>
+    /// The surfaces to bake: the serialized override when it holds anything real,
+    /// otherwise every NavMeshSurface in the scene.
+    ///
+    /// Discovery is the default because the map is generated at runtime and surfaces
+    /// get added per agent type as the game grows - an inspector list silently rots
+    /// into null slots the moment a scene is reworked, and a null slot bakes nothing
+    /// while looking perfectly fine in the inspector.
+    /// </summary>
+    private IEnumerable<NavMeshSurface> AllSurfaces()
+    {
         if (surfaces != null)
         {
             foreach (NavMeshSurface surface in surfaces)
             {
-                if (surface != null) assigned++;
+                if (surface != null) return surfaces;
             }
         }
 
-        if (assigned > 0 && assigned == surfaces.Length) return surfaces;
+        return FindObjectsOfType<NavMeshSurface>();
+    }
 
-        NavMeshSurface[] found = FindObjectsByType<NavMeshSurface>(FindObjectsSortMode.None);
-        Debug.LogWarning(
-            $"RuntimeNavMeshBaker: {(surfaces == null ? 0 : surfaces.Length) - assigned} of " +
-            $"{(surfaces == null ? 0 : surfaces.Length)} surface slots are empty - re-assign them on " +
-            $"'{name}'. Falling back to the {found.Length} NavMeshSurface(s) found in the scene.");
+    private static BakePhase PhaseOf(NavMeshSurface surface)
+    {
+        string agentType = NavMesh.GetSettingsNameFromID(surface.agentTypeID);
 
-        // Whether some slots are wired or none are, the scene sweep is a superset of
-        // what is assigned, so baking it covers the wired surfaces without baking twice.
-        return found;
+        BakePhase phase;
+        if (PhaseByAgentType.TryGetValue(agentType, out phase)) return phase;
+
+        Debug.LogWarning($"RuntimeNavMeshBaker: agent type '{agentType}' on '{surface.name}' " +
+                         $"has no bake phase - defaulting to {BakePhase.Terrain}.", surface);
+        return BakePhase.Terrain;
     }
 
     private void OnDestroy()

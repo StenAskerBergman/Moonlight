@@ -60,7 +60,9 @@ public class RoadPlacer : MonoBehaviour
         GridSystem grid = ActiveGridSystem;
         if (roadTilePrefab != null && grid != null)
         {
-            Vector3 worldPosition = grid.transform.TransformPoint(targetCell.position);
+            // localCenter, not position: position carries the array index, the cell
+            // physically occupies local [x, x+1) so the tile belongs at x+0.5.
+            Vector3 worldPosition = grid.transform.TransformPoint(targetCell.localCenter);
             GameObject roadTileInstance = Instantiate(roadTilePrefab, worldPosition, Quaternion.identity, grid.transform);
             _placedRoadTiles[targetCell] = roadTileInstance;
         }

@@ -32,7 +32,7 @@ public class BuildingEnums : MonoBehaviour
         OffShore,       // On Shallows
 
         // Below Sea
-        DeepSea,        // On Plateau
+        DeepSea,        // Below-sea category; terrain legality comes from building requirements
 
         // Above Land
         Orbital,        // In Atmosphere

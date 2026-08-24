@@ -138,14 +138,15 @@ public class UnitMovement : MonoBehaviour
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, TravelMedium))
             {
                 NavMeshHit navHit;
-                // Check if the hit point is close enough to a point on the NavMesh
+                // Check if the hit point is close enough to a point on the NavMesh, or find the nearest valid point
                 var filter = new NavMeshQueryFilter
                 {
                     agentTypeID = agent.agentTypeID,
                     areaMask = agent.areaMask
                 };
 
-                if (NavMesh.SamplePosition(hit.point, out navHit, 1.0f, filter))
+                if (NavMesh.SamplePosition(hit.point, out navHit, 1.0f, filter) ||
+                    NavMesh.SamplePosition(hit.point, out navHit, 500f, filter))
                 {
                     Vector3 validPoint = navHit.position;
                     //Debug.Log("validPoint: " + validPoint);
@@ -175,7 +176,10 @@ public class UnitMovement : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError("Hit point is not on NavMesh");
+                    // Nearest possible point should be provided instead then 
+                    // if that is not possible! Then trigger this 
+                    if (hit.point != null) Debug.LogError("Hit point is not on NavMesh - hit.point:" + hit.point);
+                    else Debug.LogError("Hit point is not on NavMesh - hit.point: Null");
                 }
             }
         }

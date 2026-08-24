@@ -181,26 +181,10 @@ public class RiverArea : IFeature
         }
     }
 
-    // Coarse relative elevation used to steer the descent. The real per-cell noise
-    // height isn't persisted on Cell (MapGrid only uses it transiently while
-    // generating), so this ranks by terrain type instead - mountains high, abyssal low.
+    // Terrain generation persists its semantic height on Cell, so river routing and
+    // rendering now consume the same authoritative elevation data.
     private static float ApproximateHeight(Cell cell)
     {
-        switch (cell.currentTerrainType)
-        {
-            case Cell.TerrainType.MountainPeak: return 3f;
-            case Cell.TerrainType.Mountain: return 2f;
-            case Cell.TerrainType.Land: return 1f;
-            case Cell.TerrainType.Beach:
-            case Cell.TerrainType.Shore:
-            case Cell.TerrainType.Coast:
-                return 0.5f;
-            case Cell.TerrainType.Shallow: return 0f;
-            case Cell.TerrainType.Water: return -0.5f;
-            case Cell.TerrainType.Plateau: return -1f;
-            case Cell.TerrainType.Deep: return -1.5f;
-            case Cell.TerrainType.Abyssal: return -2f;
-            default: return 0f;
-        }
+        return cell.height;
     }
 }

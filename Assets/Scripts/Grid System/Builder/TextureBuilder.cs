@@ -4,110 +4,127 @@ using UnityEngine;
 
 public class TextureBuilder
 {
-    private Cell[,] grid;
+    private readonly Cell[,] grid;
+    private readonly IslandTerrainProvider terrainSource;
+    private readonly int visualSamplesPerCell;
+    private readonly ClimateProfile climate;
 
-    public TextureBuilder(Cell[,] grid)
+    public TextureBuilder(Cell[,] grid, ClimateProfile climate = null)
     {
         this.grid = grid;
+        this.visualSamplesPerCell = 1;
+        this.climate = climate != null ? climate : ScriptableObject.CreateInstance<ClimateProfile>();
+    }
+
+    public TextureBuilder(
+        Cell[,] grid,
+        IslandTerrainProvider terrainSource,
+        int visualSamplesPerCell,
+        ClimateProfile climate = null)
+    {
+        this.grid = grid;
+        this.terrainSource = terrainSource;
+        this.visualSamplesPerCell = Mathf.Max(1, visualSamplesPerCell);
+        this.climate = climate != null ? climate : ScriptableObject.CreateInstance<ClimateProfile>();
+    }
+
+    private float FractalNoise(float x, float y, float scale)
+    {
+        float noise = 0f;
+        float frequency = scale;
+        float amplitude = 1f;
+        float maxValue = 0f;
+        for (int i = 0; i < 3; i++)
+        {
+            noise += Mathf.PerlinNoise(x * frequency, y * frequency) * amplitude;
+            maxValue += amplitude;
+            amplitude *= 0.5f;
+            frequency *= 2f;
+        }
+        return noise / maxValue;
     }
 
     public Texture2D Build()
     {
-        // Create a new texture with size x size dimensions
-        int size = grid.GetLength(0);
-        Texture2D texture = new Texture2D(size, size);
+        int gridSize = grid.GetLength(0);
+        bool useFractionalSampling = terrainSource != null && visualSamplesPerCell > 1;
+        int textureSize = useFractionalSampling ? gridSize * visualSamplesPerCell : gridSize;
+        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, true);
 
-        // Create a color map with size x size number of colors
-        Color[] colorMap = new Color[size * size];
+        Color[] colorMap = new Color[textureSize * textureSize];
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
 
-        Color unknownColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey for Unknown
-        Color noneColor = new Color(1f, 1f, 1f, 1f); // White for None
-
-        // Water Types
-        Color riverColor = new Color(0f, 0f, 1f, 1f); // Blue for River
-        Color waterColor = new Color(0f, 0f, 0.8f, 1f); // Dark Blue for Water
-        Color streamColor = new Color(0f, 0f, 0.9f, 1f); // Light Blue for Stream
-        Color seaColor = new Color(0f, 0f, 0.7f, 1f); // Deep Blue for Sea
-        Color oceanColor = new Color(0f, 0f, 0.6f, 1f); // Very Deep Blue for Ocean
-        Color shallowColor = new Color(0f, 0.5f, 1f, 1f); // Cyan Blue for Shallow
-        Color deepColor = new Color(0f, 0f, 0.5f, 1f); // Very Deep Blue for Deep
-        Color plateauColor = new Color(0.5f, 0.5f, 0.8f, 1f); // Light Purple for Plateau
-
-        // Terrain Types
-        Color landColor = new Color(0.2f, 0.8f, 0.2f, 1f); // Green for Land
-        Color shoreColor = new Color(0.8f, 0.8f, 0.2f, 1f); // Yellow-Green for Shore
-        Color coastColor = new Color(0.6f, 0.6f, 0.2f, 1f); // Dark Yellow-Green for Coast
-        Color desertColor = new Color(1f, 1f, 0f, 1f); // Yellow for Desert
-        Color forestColor = new Color(0f, 0.5f, 0f, 1f); // Dark Green for Forest
-        Color abyssColor = new Color(1f, 1f, 0.4f, 1f); // Dark Yellow for Abyss
-        Color beachColor = new Color(1f, 1f, 0.6f, 1f); // Light Yellow for Beach
-        Color shorefloorColor = new Color(1f, 1f, 0.7f, 1f); // Light Yellow for Beach
-
-        Color plainColor = new Color(0.2f, 0.6f, 0.2f, 1f); // Light Green for Plain
-        Color rockyColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey for Rocky
-
-        // Set the texture's filter mode to Point
-        texture.filterMode = FilterMode.Point;
-
-        // Create a dictionary to map terrain types to colors
-        Dictionary<Cell.TerrainType, Color> terrainColorMap = new Dictionary<Cell.TerrainType, Color>
+        for (int y = 0; y < textureSize; y++)
         {
-            {Cell.TerrainType.Unknown, unknownColor},
-            {Cell.TerrainType.None, noneColor},
-            {Cell.TerrainType.Sea, shorefloorColor},
-            {Cell.TerrainType.Land, landColor},
-            {Cell.TerrainType.Deep, beachColor},
-            {Cell.TerrainType.Coast, coastColor},
-            {Cell.TerrainType.Shore, beachColor},
-            {Cell.TerrainType.Water, shorefloorColor},
-            {Cell.TerrainType.Ocean, beachColor},
-            {Cell.TerrainType.Beach, beachColor},
-            {Cell.TerrainType.Plain, plainColor},
-            {Cell.TerrainType.Rocky, rockyColor},
-            {Cell.TerrainType.River, riverColor},
-            {Cell.TerrainType.Desert, desertColor},
-            {Cell.TerrainType.Forest, forestColor},
-            {Cell.TerrainType.Stream, streamColor},
-            {Cell.TerrainType.Shallow, beachColor},
-            {Cell.TerrainType.Abyssal, beachColor},
-            {Cell.TerrainType.Plateau, plateauColor},
-            {Cell.TerrainType.Mountain, rockyColor},
-
-        };
-
-        // Iterate through the cells in the grid
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
+            for (int x = 0; x < textureSize; x++)
             {
-                // Get the current cell
-                Cell cell = grid[x, y];
-
-                // Determine the terrain type of the cell
-                Cell.TerrainType terrainType = cell.currentTerrainType;
-
-                // Check if the terrain type is in the dictionary
-                if (terrainColorMap.ContainsKey(terrainType))
+                Color finalColor = Color.black;
+                if (useFractionalSampling)
                 {
-                    // Set the corresponding color in the color map based on the dictionary
-                    colorMap[y * size + x] = terrainColorMap[terrainType];
-                }
-                else
+                    float localX = -0.5f + (x + 0.5f) / visualSamplesPerCell;
+                    float localZ = -0.5f + (y + 0.5f) / visualSamplesPerCell;
+                    
+                    TerrainSample sample = terrainSource.SampleVisual(localX, localZ);
+                    TerrainGenerationSettings settings = terrainSource.Settings;
+
+                    float height = sample.Height;
+                    
+                    // Generate fractal noise to perturb the boundaries organically
+                    float boundaryNoise = (FractalNoise(x, y, climate.splatNoiseFrequency) - 0.5f) * climate.splatSandNoiseAmplitude;
+
+                    // Apply noise to the THRESHOLDS. 
+                    float rockThreshold = settings.cliffHeight + boundaryNoise;
+                    
+                    // Grass boundary noise is usually restricted so it doesn't cause puddles on flatland
+                    float grassBoundaryNoise = (FractalNoise(x, y, climate.splatNoiseFrequency) - 0.5f) * climate.splatGrassNoiseRestriction;
+                    float grassThreshold = (settings.surfaceFlatlandHeight + climate.splatGrassThresholdOffset) + grassBoundaryNoise; 
+                    
+                    // Sand gets the full wild noise because it's safely on the slope/underwater
+                    float sandThreshold = (settings.waterHeight + climate.splatSandThresholdOffset) + boundaryNoise;
+
+                    if (height >= rockThreshold) 
+                    {
+                        finalColor = new Color(0f, 0f, 1f, 0f); // B channel = Rock
+                    }
+                    else if (height >= grassThreshold) 
+                    {
+                        finalColor = new Color(1f, 0f, 0f, 0f); // R channel = Grass
+                    }
+                    else if (height >= sandThreshold) 
+                    {
+                        finalColor = new Color(0f, 1f, 0f, 0f); // G channel = Sand
+                    }
+                    else 
+                    {
+                        finalColor = new Color(0f, 0f, 0f, 1f); // A channel = Deep Water
+                    }
+
+                    int cellX = Mathf.Clamp(Mathf.FloorToInt(localX + 0.5f), 0, gridSize - 1);
+                    int cellZ = Mathf.Clamp(Mathf.FloorToInt(localZ + 0.5f), 0, gridSize - 1);
+                    if (grid[cellX, cellZ].currentTerrainType == Cell.TerrainType.River)
+                    {
+                        finalColor = new Color(0f, 0f, 0f, 1f);
+                    }
+                }                else
                 {
-                    // If the terrain type is not in the dictionary, set the color to a default
-                    colorMap[y * size + x] = new Color(0.5f, 0.5f, 0.5f, 1f); // Default to gray
-                                                                              // Optionally log a warning to the console
-                    Debug.LogWarning($"Unmapped terrain type '{terrainType}' at {x},{y}. Defaulting to gray.");
+                    Cell.TerrainType tType = grid[x, y].currentTerrainType;
+                    if (tType == Cell.TerrainType.Land || tType == Cell.TerrainType.Plain || tType == Cell.TerrainType.Hill || tType == Cell.TerrainType.Forest)
+                        finalColor = new Color(1f, 0f, 0f, 0f);
+                    else if (tType == Cell.TerrainType.Beach || tType == Cell.TerrainType.Shore || tType == Cell.TerrainType.Coast || tType == Cell.TerrainType.Desert)
+                        finalColor = new Color(0f, 1f, 0f, 0f);
+                    else if (tType == Cell.TerrainType.Mountain || tType == Cell.TerrainType.Cliff || tType == Cell.TerrainType.Rocky)
+                        finalColor = new Color(0f, 0f, 1f, 0f);
+                    else
+                        finalColor = new Color(0f, 0f, 0f, 1f);
                 }
+
+                colorMap[y * textureSize + x] = finalColor;
             }
         }
 
-        // Set the texture's pixels to the color map
         texture.SetPixels(colorMap);
-
-        // Apply the changes to the texture
-        texture.Apply();
-
+        texture.Apply(true);
         return texture;
     }
 }

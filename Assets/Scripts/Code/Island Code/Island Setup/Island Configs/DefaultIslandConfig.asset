@@ -17,6 +17,9 @@ MonoBehaviour:
   - Activated: 1
     itemData: {fileID: 11400000, guid: e710216e443544340a61a0d7211d2ce3, type: 2}
     initialValue: 1
+  - Activated: 1
+    itemData: {fileID: 11400000, guid: 4a42c40f5323e6c409c00542db17ae95, type: 2}
+    initialValue: 1
   resources:
   - Activated: 10
     itemData: {fileID: 11400000, guid: 1532d05600817a441b7f47270bd5ea1e, type: 2}

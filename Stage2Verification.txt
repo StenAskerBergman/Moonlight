@@ -1,0 +1,54 @@
+=== STAGE 2 FINAL VERIFICATION REPORT ===
+
+
+--- HORIZONTAL SEAM (World -60, -90) ---
+Chunk A (Pos (-120.00, 0.00, -120.00)) lx=60 lz=30:
+  sharedBase=-0.0457 localField=-0.4691 edgeWeight=0.0000 finalSource=-0.0457
+  FINAL: SourceValue=-0.0457 TerrainType=Abyssal Height=-5.0000 PlateauInf=0.0000
+Chunk B (Pos (-60.00, 0.00, -120.00)) lx=0 lz=30:
+  sharedBase=-0.0457 localField=-0.5789 edgeWeight=0.0000 finalSource=-0.0457
+  FINAL: SourceValue=-0.0457 TerrainType=Abyssal Height=-5.0000 PlateauInf=0.0000
+Differences:
+  finalSource diff = 0.000000
+  FINAL SourceValue diff = 0.000000
+  FINAL Height diff = 0.000000
+  FINAL PlateauInfluence diff = 0.000000
+
+--- VERTICAL SEAM (World -90, -60) ---
+Chunk A (Pos (-120.00, 0.00, -120.00)) lx=30 lz=60:
+  sharedBase=-0.0400 localField=-0.3620 edgeWeight=0.0000 finalSource=-0.0400
+  FINAL: SourceValue=-0.0400 TerrainType=Abyssal Height=-5.0000 PlateauInf=0.0000
+Chunk B (Pos (-120.00, 0.00, -60.00)) lx=30 lz=0:
+  sharedBase=-0.0400 localField=-0.5788 edgeWeight=0.0000 finalSource=-0.0400
+  FINAL: SourceValue=-0.0400 TerrainType=Abyssal Height=-5.0000 PlateauInf=0.0000
+Differences:
+  finalSource diff = 0.000000
+  FINAL SourceValue diff = 0.000000
+  FINAL Height diff = 0.000000
+  FINAL PlateauInfluence diff = 0.000000
+
+--- 4-CHUNK CORNER TEST ---
+
+--- CORNER BL vs TR (World 60, 60) ---
+Chunk A (Pos (0.00, 0.00, 0.00)) lx=60 lz=60:
+  sharedBase=-0.0284 localField=-0.5634 edgeWeight=0.0000 finalSource=-0.0284
+  FINAL: SourceValue=-0.0284 TerrainType=Deep Height=-4.9501 PlateauInf=0.0000
+Chunk B (Pos (60.00, 0.00, 60.00)) lx=0 lz=0:
+  sharedBase=-0.0284 localField=-0.4095 edgeWeight=0.0000 finalSource=-0.0284
+  FINAL: SourceValue=-0.0284 TerrainType=Deep Height=-4.9501 PlateauInf=0.0000
+Differences:
+  finalSource diff = 0.000000
+  FINAL SourceValue diff = 0.000000
+  FINAL Height diff = 0.000000
+  FINAL PlateauInfluence diff = 0.000000
+
+--- FINITE DIFFERENCE SLOPES (Horizontal Seam) ---
+Slope at d=-6: -0.00246
+Slope at d=-4: 0.00176
+Slope at d=-2: 0.00386
+Slope at d=-1: 0.00348
+Slope at d=0: -0.00006
+Slope at d=1: -0.00121
+Slope at d=2: 0.00115
+Slope at d=4: 0.00277
+Slope at d=6: 0.00138

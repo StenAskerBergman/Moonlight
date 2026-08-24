@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Resources;
 using UnityEngine;
 
-public class Building : MonoBehaviour
+public class Building : MonoBehaviour, ISelectable
 {
     public int MonthlyReturn { get; set; }
     public int BuildingId { get; set; }
@@ -75,5 +75,41 @@ public class Building : MonoBehaviour
 
             SetState(BuildingEnums.BuildingState.Active);
         }
+    }
+
+    // ISelectable — driven by BuildingSelections.ClickSelect/DeselectAll (see
+    // Main Game/Building Code/Building Selection/). Highlight is a stencil-outline
+    // silhouette drawn over every renderer under this GameObject (see
+    // SelectionOutlineTarget/SelectionOutlineRendererFeature), so it works across
+    // modular building hierarchies without combining meshes or relying on a
+    // hand-authored ring prefab.
+    public bool Selected { get; private set; }
+
+    private SelectionOutlineTarget outline;
+
+    // Lazily fetched/added so building prefabs don't each need the component
+    // hand-placed — SelectionOutlineTarget carries no prefab-specific setup.
+    private SelectionOutlineTarget Outline =>
+        outline ??= GetComponent<SelectionOutlineTarget>()
+                   ?? gameObject.AddComponent<SelectionOutlineTarget>();
+
+    public void OnSelect()
+    {
+        Selected = true;
+        Outline.SetSelected(true);
+    }
+
+    // Call after upgrades/modules structurally add or remove renderers under this
+    // building, so the selection outline picks up the change immediately rather than
+    // waiting on the next direct-child hierarchy edit (see SelectionOutlineTarget).
+    public void RefreshOutlineRenderers()
+    {
+        Outline.RefreshRenderers();
+    }
+
+    public void OnDeselect()
+    {
+        Selected = false;
+        Outline.SetSelected(false);
     }
 }

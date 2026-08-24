@@ -215,8 +215,9 @@ public class GridSystem : MonoBehaviour
         {
             if (cell.isDeposit)
             {
-                // cell.position is local to MapGrid
-                Vector3 worldCellPos = transform.TransformPoint(cell.position);
+                // localCenter, not position: position carries the array index, the
+                // cell physically occupies local [x, x+1) and its centre is x+0.5.
+                Vector3 worldCellPos = transform.TransformPoint(cell.localCenter);
                 float distance = Vector3.Distance(position, worldCellPos);
                 if (distance < minDistance)
                 {
@@ -286,6 +287,27 @@ public class GridSystem : MonoBehaviour
         if (grid != null)
             return grid[x, z];
         return null;
+    }
+
+    public bool IsValidSurfaceConstructionCell(Cell cell)
+    {
+        return cell != null
+            && !cell.isBlocked
+            && !cell.isOccupied
+            && cell.IsBuildableSurface;
+    }
+
+    public bool IsValidUnderwaterPlateauCell(Cell cell)
+    {
+        return cell != null
+            && !cell.isBlocked
+            && !cell.isOccupied
+            && cell.IsBuildableUnderwaterPlateau;
+    }
+
+    public bool IsValidUnderwaterPlateauPosition(Vector3 worldPosition)
+    {
+        return IsValidUnderwaterPlateauCell(GetCellAtWorldPosition(worldPosition));
     }
 
 
