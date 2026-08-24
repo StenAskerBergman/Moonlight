@@ -619,7 +619,7 @@ public class MapGrid : MonoBehaviour
     // rivers first so RiverBank/LakeMouth deposits reflect the actual river path.
     private void MarkDepositCells()
     {
-        new RiverArea().GenerateRiver(grid, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
+        new RiverArea().GenerateRiver(grid, TerrainSource?.Reservations, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
 
         for (int y = 0; y < size; y++)
         {

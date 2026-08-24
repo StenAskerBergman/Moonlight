@@ -83,9 +83,30 @@ public class TextureBuilder
                     // Sand gets the full wild noise because it's safely on the slope/underwater
                     float sandThreshold = (settings.waterHeight + climate.splatSandThresholdOffset) + boundaryNoise;
 
-                    if (height >= rockThreshold) 
+                    // Calculate local slope to detect steep dropoff cliffs (both above and below water)
+                    float sampleStep = 0.25f;
+                    float hL = terrainSource.SampleVisual(localX - sampleStep, localZ).Height;
+                    float hR = terrainSource.SampleVisual(localX + sampleStep, localZ).Height;
+                    float hD = terrainSource.SampleVisual(localX, localZ - sampleStep).Height;
+                    float hU = terrainSource.SampleVisual(localX, localZ + sampleStep).Height;
+                    float slope = Mathf.Sqrt((hR - hL) * (hR - hL) + (hU - hD) * (hU - hD)) / (2f * sampleStep);
+
+                    if (sample.TerrainType == Cell.TerrainType.River)
+                    {
+                        finalColor = new Color(0f, 0f, 0f, 1f); // River / Water
+                    }
+                    else if (sample.TerrainType == Cell.TerrainType.Mountain
+                        || sample.TerrainType == Cell.TerrainType.MountainPeak
+                        || sample.TerrainType == Cell.TerrainType.Cliff
+                        || height >= rockThreshold
+                        || slope > 0.6f) 
                     {
                         finalColor = new Color(0f, 0f, 1f, 0f); // B channel = Rock
+                    }
+                    else if (sample.TerrainType == Cell.TerrainType.Beach
+                        || sample.TerrainType == Cell.TerrainType.Shore)
+                    {
+                        finalColor = new Color(0f, 1f, 0f, 0f); // G channel = Sand
                     }
                     else if (height >= grassThreshold) 
                     {
@@ -97,7 +118,7 @@ public class TextureBuilder
                     }
                     else 
                     {
-                        finalColor = new Color(0f, 0f, 0f, 1f); // A channel = Deep Water
+                        finalColor = new Color(0f, 0f, 0f, 1f); // A channel = Deep Water / Seafloor
                     }
 
                     int cellX = Mathf.Clamp(Mathf.FloorToInt(localX + 0.5f), 0, gridSize - 1);

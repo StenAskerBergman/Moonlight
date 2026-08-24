@@ -27,7 +27,179 @@ private TerrainSample ApplyCoastClassification(float x, float z, TerrainSample s
 
 private bool IsNaturalUnderwaterNeighbor(float x, float z)
 {
-    return IsUnderwaterTerrain(SampleLegacyIsland(x, z).TerrainType);
+    return IsUnderwaterTerrain(SampleSynthesizedIsland(x, z).TerrainType);
+}
+
+private FeatureReservationMap BuildFeatureReservations(int seed)
+{
+    FeatureReservationMap map = new FeatureReservationMap();
+    if (gridType != GridType.Type.Island) return map;
+
+    System.Random random = new System.Random(unchecked(seed * 486187739 ^ 0x3F1A4E7D));
+    float halfSize = (size - 1f) * 0.5f;
+    Vector2 mapCenter = new Vector2(halfSize, halfSize);
+
+    // 1. Analyze Coastline by raycasting from center in polar directions
+    const int rayCount = 48;
+    float[] coastRadii = new float[rayCount];
+    Vector2[] coastPoints = new Vector2[rayCount];
+    Vector2[] coastNormals = new Vector2[rayCount];
+
+    for (int i = 0; i < rayCount; i++)
+    {
+        float angle = i / (float)rayCount * Mathf.PI * 2f;
+        Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+        float foundRadius = halfSize * 0.7f;
+
+        // March outward from center to find transition to water
+        for (float r = 1f; r <= halfSize * 1.2f; r += 0.5f)
+        {
+            Vector2 p = mapCenter + dir * r;
+            float field = CalculateLegacyIslandField(p.x, p.y);
+            if (field < settings.waterUpper)
+            {
+                foundRadius = r;
+                break;
+            }
+        }
+
+        coastRadii[i] = foundRadius;
+        coastPoints[i] = mapCenter + dir * foundRadius;
+        coastNormals[i] = dir;
+    }
+
+    // Identify Promontories (convex headlands) and Bays (concave inlets)
+    List<int> headlandRays = new List<int>();
+    List<int> bayRays = new List<int>();
+
+    for (int i = 0; i < rayCount; i++)
+    {
+        int prev = (i - 1 + rayCount) % rayCount;
+        int next = (i + 1) % rayCount;
+        float diff = coastRadii[i] - (coastRadii[prev] + coastRadii[next]) * 0.5f;
+        if (diff > 0.5f) headlandRays.Add(i);
+        else if (diff < -0.5f) bayRays.Add(i);
+    }
+
+    // 2. Harbors / Flat Bays Reservation
+    HarborReservationSettings harborSettings = settings.harborReservations;
+    if (harborSettings.enabled && harborSettings.maxHarbors > 0)
+    {
+        int harborCount = random.Next(harborSettings.minHarbors, harborSettings.maxHarbors + 1);
+        List<int> availableBays = new List<int>(bayRays.Count > 0 ? bayRays : new int[] { 0, rayCount / 2 });
+
+        for (int h = 0; h < harborCount && availableBays.Count > 0; h++)
+        {
+            int pickIdx = random.Next(availableBays.Count);
+            int rayIdx = availableBays[pickIdx];
+            availableBays.RemoveAt(pickIdx);
+
+            Vector2 coastPt = coastPoints[rayIdx];
+            Vector2 normal = coastNormals[rayIdx];
+            Vector2 harborCenter = coastPt - normal * 3f; // slightly inland from shoreline
+            float harborRadius = RandomRange(random, harborSettings.minHarborRadius, harborSettings.maxHarborRadius);
+
+            map.AddHarbor(new FeatureReservationMap.HarborPad(harborCenter, harborRadius, settings.surfaceFlatlandHeight));
+        }
+    }
+
+    // 3. River Corridors Reservation
+    RiverCorridorSettings riverSettings = settings.riverCorridors;
+    if (riverSettings.enabled && riverSettings.maxRivers > 0)
+    {
+        int riverCount = random.Next(riverSettings.minRivers, riverSettings.maxRivers + 1);
+        for (int r = 0; r < riverCount; r++)
+        {
+            // Pick source in interior
+            float sourceAngle = RandomRange(random, 0f, Mathf.PI * 2f);
+            float sourceDist = RandomRange(random, 3f, halfSize * 0.35f);
+            Vector2 source = mapCenter + new Vector2(Mathf.Cos(sourceAngle), Mathf.Sin(sourceAngle)) * sourceDist;
+
+            // Pick exit point along coast (prefer bays or non-mountain sectors)
+            int exitRay = random.Next(rayCount);
+            if (bayRays.Count > 0 && random.NextDouble() < 0.7)
+            {
+                exitRay = bayRays[random.Next(bayRays.Count)];
+            }
+            Vector2 mouth = coastPoints[exitRay] + coastNormals[exitRay] * 2f; // extends out into water
+
+            FeatureReservationMap.RiverCorridor corridor = new FeatureReservationMap.RiverCorridor(
+                riverSettings.channelRadius,
+                riverSettings.clearanceRadius,
+                riverSettings.valleyDepth);
+
+            // Generate meandering waypoints
+            int waypointCount = Mathf.Clamp(Mathf.RoundToInt(Vector2.Distance(source, mouth) / 4f), 4, 12);
+            Vector2 riverDir = (mouth - source).normalized;
+            Vector2 riverPerp = new Vector2(-riverDir.y, riverDir.x);
+
+            corridor.Waypoints.Add(new FeatureReservationMap.RiverWaypoint(source, riverSettings.channelRadius));
+            for (int w = 1; w < waypointCount - 1; w++)
+            {
+                float t = w / (float)(waypointCount - 1);
+                float meander = Mathf.Sin(t * Mathf.PI * 2f + (float)random.NextDouble()) * RandomRange(random, -3f, 3f);
+                Vector2 wp = Vector2.Lerp(source, mouth, t) + riverPerp * meander;
+                corridor.Waypoints.Add(new FeatureReservationMap.RiverWaypoint(wp, riverSettings.channelRadius));
+            }
+            corridor.Waypoints.Add(new FeatureReservationMap.RiverWaypoint(mouth, riverSettings.channelRadius * 1.3f));
+
+            map.AddRiver(corridor);
+        }
+    }
+
+    // 4. Coastal Mountain Ridges Allocation
+    CoastalMountainSettings mountainSettings = settings.coastalMountains;
+    if (mountainSettings.enabled && mountainSettings.maxRidges > 0)
+    {
+        int ridgeCount = random.Next(mountainSettings.minRidges, mountainSettings.maxRidges + 1);
+        List<int> candidateHeadlands = new List<int>(headlandRays.Count > 0 ? headlandRays : new int[] { rayCount / 4, rayCount * 3 / 4 });
+
+        for (int m = 0; m < ridgeCount && candidateHeadlands.Count > 0; m++)
+        {
+            int pickIdx = random.Next(candidateHeadlands.Count);
+            int rayIdx = candidateHeadlands[pickIdx];
+            candidateHeadlands.RemoveAt(pickIdx);
+
+            Vector2 coastPt = coastPoints[rayIdx];
+            Vector2 normal = coastNormals[rayIdx];
+            Vector2 tangent = new Vector2(-normal.y, normal.x);
+
+            // Ridge origin sits on or near the headland/coast
+            float ridgeLength = RandomRange(random, mountainSettings.minRidgeLength, mountainSettings.maxRidgeLength);
+            float ridgeWidth = RandomRange(random, mountainSettings.minRidgeWidth, mountainSettings.maxRidgeWidth);
+            float peakHeight = mountainSettings.ridgePeakHeight * RandomRange(random, 0.9f, 1.25f);
+
+            // Direction can follow the shoreline tangent or reach from interior out onto the headland
+            Vector2 ridgeDir = (tangent * RandomRange(random, 0.4f, 1f) + normal * RandomRange(random, 0.2f, 0.6f)).normalized;
+            Vector2 origin = coastPt - ridgeDir * (ridgeLength * 0.4f);
+
+            map.AddRidge(new FeatureReservationMap.CoastalRidge(
+                origin,
+                ridgeDir,
+                ridgeLength,
+                ridgeWidth,
+                peakHeight,
+                mountainSettings.cliffSharpness));
+        }
+
+        // Also add 1-2 interior mountain ridges
+        int interiorRidges = random.Next(1, 3);
+        for (int ir = 0; ir < interiorRidges; ir++)
+        {
+            float angle = RandomRange(random, 0f, Mathf.PI * 2f);
+            float dist = RandomRange(random, 2f, halfSize * 0.35f);
+            Vector2 origin = mapCenter + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
+            float dirAngle = RandomRange(random, 0f, Mathf.PI * 2f);
+            Vector2 dir = new Vector2(Mathf.Cos(dirAngle), Mathf.Sin(dirAngle));
+            float len = RandomRange(random, mountainSettings.minRidgeLength * 0.8f, mountainSettings.maxRidgeLength);
+            float wid = RandomRange(random, mountainSettings.minRidgeWidth, mountainSettings.maxRidgeWidth);
+            float h = mountainSettings.ridgePeakHeight * RandomRange(random, 0.95f, 1.3f);
+
+            map.AddRidge(new FeatureReservationMap.CoastalRidge(origin, dir, len, wid, h, mountainSettings.cliffSharpness));
+        }
+    }
+
+    return map;
 }
 
 

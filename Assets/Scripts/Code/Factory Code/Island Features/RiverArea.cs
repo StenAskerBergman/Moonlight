@@ -58,13 +58,26 @@ public class RiverArea : IFeature
     /// </summary>
     public void GenerateRiver(Cell[,] grid, System.Random rng)
     {
+        GenerateRiver(grid, null, rng);
+    }
+
+    public void GenerateRiver(Cell[,] grid, FeatureReservationMap reservations, System.Random rng)
+    {
         this.grid = grid;
-        this.rng = rng;
+        this.rng = rng ?? new System.Random();
 
         int size = grid.GetLength(0);
 
-        // Prefer the tallest available terrain (peaks) as river sources; fall back to
-        // regular mountain cells if no peaks were generated on this island.
+        if (reservations != null && reservations.Rivers.Count > 0)
+        {
+            foreach (var river in reservations.Rivers)
+            {
+                ApplyReservedRiver(grid, size, river);
+            }
+            return;
+        }
+
+        // Fallback: Prefer the tallest available terrain (peaks) as river sources
         List<Cell> peakCandidates = new List<Cell>();
         List<Cell> mountainCandidates = new List<Cell>();
         for (int x = 0; x < size; x++)
@@ -80,12 +93,81 @@ public class RiverArea : IFeature
         List<Cell> sourcePool = peakCandidates.Count > 0 ? peakCandidates : mountainCandidates;
         if (sourcePool.Count == 0) return; // No mountains generated - nothing to carve a river from
 
-        int riverCount = Mathf.Min(sourcePool.Count, 1 + rng.Next(3)); // 1-3 rivers
-        List<Cell> sources = PickRandomDistinct(sourcePool, riverCount, rng);
+        int riverCount = Mathf.Min(sourcePool.Count, 1 + this.rng.Next(3)); // 1-3 rivers
+        List<Cell> sources = PickRandomDistinct(sourcePool, riverCount, this.rng);
 
         foreach (Cell source in sources)
         {
             CarveRiver(grid, size, source);
+        }
+    }
+
+    private void ApplyReservedRiver(Cell[,] grid, int size, FeatureReservationMap.RiverCorridor river)
+    {
+        if (river.Waypoints.Count < 2) return;
+
+        List<Vector2Int> pathCells = new List<Vector2Int>();
+        for (int i = 0; i < river.Waypoints.Count - 1; i++)
+        {
+            Vector2 start = river.Waypoints[i].Position;
+            Vector2 end = river.Waypoints[i + 1].Position;
+            float dist = Vector2.Distance(start, end);
+            int steps = Mathf.Max(1, Mathf.CeilToInt(dist * 2f));
+
+            for (int s = 0; s <= steps; s++)
+            {
+                Vector2 pt = Vector2.Lerp(start, end, s / (float)steps);
+                int gx = Mathf.Clamp(Mathf.RoundToInt(pt.x), 0, size - 1);
+                int gz = Mathf.Clamp(Mathf.RoundToInt(pt.y), 0, size - 1);
+                Vector2Int cellCoord = new Vector2Int(gx, gz);
+                if (pathCells.Count == 0 || pathCells[pathCells.Count - 1] != cellCoord)
+                {
+                    pathCells.Add(cellCoord);
+                }
+            }
+        }
+
+        for (int i = 0; i < pathCells.Count; i++)
+        {
+            Vector2Int coord = pathCells[i];
+            Cell cell = grid[coord.x, coord.y];
+
+            Cell.RiverDirection dir = Cell.RiverDirection.None;
+            if (i < pathCells.Count - 1)
+            {
+                Vector2Int nextCoord = pathCells[i + 1];
+                int dx = nextCoord.x - coord.x;
+                int dz = nextCoord.y - coord.y;
+                foreach (var offset in NeighborOffsets)
+                {
+                    if (offset.dx == dx && offset.dz == dz)
+                    {
+                        dir = offset.direction;
+                        break;
+                    }
+                }
+            }
+
+            bool isLast = (i == pathCells.Count - 1);
+            bool isFirst = (i == 0);
+
+            if (isFirst)
+            {
+                cell.SetRiverData(Cell.RiverStatus.RiverSource, dir);
+                cell.ChangeTerrainType(Cell.TerrainType.River);
+                MarkRiverBank(cell, grid, size);
+            }
+            else if (isLast || cell.IsUnderwater)
+            {
+                cell.SetRiverData(Cell.RiverStatus.RiverMouth, Cell.RiverDirection.None);
+                cell.SetDeposit(ResourceNodeType.LakeMouth);
+            }
+            else
+            {
+                cell.SetRiverData(Cell.RiverStatus.River, dir);
+                cell.ChangeTerrainType(Cell.TerrainType.River);
+                MarkRiverBank(cell, grid, size);
+            }
         }
     }
 

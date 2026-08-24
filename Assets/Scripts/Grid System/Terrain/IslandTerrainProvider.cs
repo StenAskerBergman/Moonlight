@@ -35,11 +35,13 @@ public sealed partial class IslandTerrainProvider
     private const float FullPlateauInfluence = 0.9999f;
 
     public TerrainGenerationSettings Settings => settings;
+    public FeatureReservationMap Reservations => featureReservations;
     private readonly TerrainGenerationSettings settings;
     private readonly GridType.Type gridType;
     private readonly int size;
     private readonly List<RuntimeNoiseLayer> layers;
     private readonly List<UnderwaterPlateauRegion> plateauRegions;
+    private readonly FeatureReservationMap featureReservations;
     private readonly float legacyOffsetX;
     private readonly float legacyOffsetZ;
     private readonly int chunkSeed;
@@ -59,7 +61,10 @@ public sealed partial class IslandTerrainProvider
         System.Random legacyRandom = new System.Random(unchecked(chunkSeed * 486187739 ^ 0x51ED270B));
         legacyOffsetX = RandomRange(legacyRandom, -10000f, 10000f);
         legacyOffsetZ = RandomRange(legacyRandom, -10000f, 10000f);
-        plateauRegions = new List<UnderwaterPlateauRegion>();
+        plateauRegions = gridType == GridType.Type.Island
+            ? BuildUnderwaterPlateauRegions(chunkSeed)
+            : new List<UnderwaterPlateauRegion>();
+        featureReservations = BuildFeatureReservations(chunkSeed);
     }
 
     public TerrainSample[,] GenerateGameplaySamples()
@@ -94,8 +99,8 @@ public sealed partial class IslandTerrainProvider
         switch (gridType)
         {
             case GridType.Type.Island:
-                // 1. Base terrain (without coast)
-                TerrainSample baseSample = SampleLegacyIsland(localX, localZ);
+                // 1. Synthesized base terrain with feature reservations
+                TerrainSample baseSample = SampleSynthesizedIsland(localX, localZ);
                 // 2. Plateau height adjustments
                 TerrainSample adjustedSample = ApplyUnderwaterPlateauRegions(localX, localZ, baseSample);
                 // 3. Coast classification

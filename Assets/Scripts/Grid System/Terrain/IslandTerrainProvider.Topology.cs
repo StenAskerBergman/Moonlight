@@ -28,6 +28,83 @@ private float EvaluateSharedBaseField(float worldX, float worldZ, int worldSeed)
     return (globalNoise * 0.2f) - 0.15f;
 }
 
+private void EvaluateDomainWarp(float worldX, float worldZ, int seed, out float warpX, out float warpZ)
+{
+    DomainWarpSettings warp = settings.domainWarp;
+    if (!warp.enabled || warp.amplitude <= 0f)
+    {
+        warpX = 0f;
+        warpZ = 0f;
+        return;
+    }
+
+    float frequency = 1f / warp.scale;
+    float currentAmplitude = warp.amplitude;
+    float totalWarpX = 0f;
+    float totalWarpZ = 0f;
+    float maxAmp = 0f;
+
+    // Deterministic seed-derived offsets for the orthogonal warp dimensions
+    float offsetX1 = (seed * 198491317 & 0x7FFFFFFF) % 10000f;
+    float offsetZ1 = (seed * 6542989 & 0x7FFFFFFF) % 10000f;
+    float offsetX2 = (seed * 87654323 & 0x7FFFFFFF) % 10000f;
+    float offsetZ2 = (seed * 91827364 & 0x7FFFFFFF) % 10000f;
+
+    for (int octave = 0; octave < warp.octaves; octave++)
+    {
+        float sampleX1 = (worldX + offsetX1 + octave * 53.1f) * frequency;
+        float sampleZ1 = (worldZ + offsetZ1 + octave * 37.7f) * frequency;
+        float sampleX2 = (worldX + offsetX2 + octave * 71.3f) * frequency;
+        float sampleZ2 = (worldZ + offsetZ2 + octave * 91.9f) * frequency;
+
+        float nx = Mathf.PerlinNoise(sampleX1, sampleZ1) * 2f - 1f;
+        float nz = Mathf.PerlinNoise(sampleX2, sampleZ2) * 2f - 1f;
+
+        totalWarpX += nx * currentAmplitude;
+        totalWarpZ += nz * currentAmplitude;
+        maxAmp += currentAmplitude;
+
+        frequency *= warp.lacunarity;
+        currentAmplitude *= warp.persistence;
+    }
+
+    warpX = totalWarpX;
+    warpZ = totalWarpZ;
+}
+
+private float EvaluateRidgedMultifractal(float worldX, float worldZ, int seed)
+{
+    RidgedMultifractalSettings ridged = settings.ridgedMultifractal;
+    if (!ridged.enabled || ridged.peakStrength <= 0f) return 0f;
+
+    float frequency = 1f / ridged.scale;
+    float amplitude = 1f;
+    float totalValue = 0f;
+    float maxAmplitude = 0f;
+
+    float seedOffsetX = (seed * 73856093 & 0x7FFFFFFF) % 10000f;
+    float seedOffsetZ = (seed * 19349663 & 0x7FFFFFFF) % 10000f;
+
+    for (int octave = 0; octave < ridged.octaves; octave++)
+    {
+        float sx = (worldX + seedOffsetX + octave * 31.7f) * frequency;
+        float sz = (worldZ + seedOffsetZ + octave * 17.3f) * frequency;
+
+        // Map Perlin from [0, 1] to [-1, 1], then calculate sharp ridge n = 1 - abs(raw)
+        float raw = Mathf.PerlinNoise(sx, sz) * 2f - 1f;
+        float n = 1f - Mathf.Abs(raw);
+        float ridge = Mathf.Pow(n, ridged.power);
+
+        totalValue += ridge * amplitude;
+        maxAmplitude += amplitude;
+
+        frequency *= ridged.lacunarity;
+        amplitude *= ridged.persistence;
+    }
+
+    if (maxAmplitude <= 0f) return 0f;
+    return (totalValue / maxAmplitude) * ridged.peakStrength;
+}
 
 private float EvaluateLocalIslandField(float localX, float localZ)
 {
@@ -43,14 +120,17 @@ private float EvaluateLocalIslandField(float localX, float localZ)
     return noise - falloff;
 }
 
-
 private float CalculateLegacyIslandField(float localX, float localZ)
 {
     float worldX = chunkWorldOrigin.x + localX;
     float worldZ = chunkWorldOrigin.y + localZ;
 
     float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
-    float localField = EvaluateLocalIslandField(localX, localZ);
+
+    // Evaluate low-frequency domain warp in world coordinates
+    EvaluateDomainWarp(worldX, worldZ, worldSeed, out float warpX, out float warpZ);
+
+    float localField = EvaluateLocalIslandField(localX + warpX, localZ + warpZ);
 
     float W = 8f;
     float dx = Mathf.Min(localX, size - localX);

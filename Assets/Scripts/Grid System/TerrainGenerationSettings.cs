@@ -96,10 +96,114 @@ public sealed class UnderwaterPlateauGenerationSettings
 }
 
 [Serializable]
+public sealed class CoastalMountainSettings
+{
+    public bool enabled = true;
+    [Range(0, 8)] public int minRidges = 2;
+    [Range(0, 8)] public int maxRidges = 4;
+    [Min(3f)] public float minRidgeLength = 12f;
+    [Min(3f)] public float maxRidgeLength = 24f;
+    [Min(2f)] public float minRidgeWidth = 4f;
+    [Min(2f)] public float maxRidgeWidth = 8f;
+    [Range(1f, 5f)] public float ridgePeakHeight = 2.4f;
+    [Range(0.5f, 3f)] public float cliffSharpness = 1.4f;
+
+    public void Validate()
+    {
+        minRidges = Mathf.Max(0, minRidges);
+        maxRidges = Mathf.Max(minRidges, maxRidges);
+        minRidgeLength = Mathf.Max(3f, minRidgeLength);
+        maxRidgeLength = Mathf.Max(minRidgeLength, maxRidgeLength);
+        minRidgeWidth = Mathf.Max(2f, minRidgeWidth);
+        maxRidgeWidth = Mathf.Max(minRidgeWidth, maxRidgeWidth);
+    }
+}
+
+[Serializable]
+public sealed class RiverCorridorSettings
+{
+    public bool enabled = true;
+    [Range(0, 4)] public int minRivers = 1;
+    [Range(0, 4)] public int maxRivers = 2;
+    [Range(0.5f, 3f)] public float channelRadius = 1.2f;
+    [Range(2f, 12f)] public float clearanceRadius = 5.5f;
+    [Range(0.5f, 4f)] public float valleyDepth = 1.8f;
+
+    public void Validate()
+    {
+        minRivers = Mathf.Max(0, minRivers);
+        maxRivers = Mathf.Max(minRivers, maxRivers);
+        channelRadius = Mathf.Max(0.5f, channelRadius);
+        clearanceRadius = Mathf.Max(channelRadius + 1f, clearanceRadius);
+        valleyDepth = Mathf.Max(0.5f, valleyDepth);
+    }
+}
+
+[Serializable]
+public sealed class HarborReservationSettings
+{
+    public bool enabled = true;
+    [Range(0, 4)] public int minHarbors = 1;
+    [Range(0, 4)] public int maxHarbors = 2;
+    [Range(4f, 20f)] public float minHarborRadius = 7f;
+    [Range(4f, 20f)] public float maxHarborRadius = 11f;
+
+    public void Validate()
+    {
+        minHarbors = Mathf.Max(0, minHarbors);
+        maxHarbors = Mathf.Max(minHarbors, maxHarbors);
+        minHarborRadius = Mathf.Max(3f, minHarborRadius);
+        maxHarborRadius = Mathf.Max(minHarborRadius, maxHarborRadius);
+    }
+}
+
+[Serializable]
+public sealed class DomainWarpSettings
+{
+    public bool enabled = true;
+    [Min(1f)] public float scale = 45f;
+    [Range(0f, 40f)] public float amplitude = 14f;
+    [Range(1, 4)] public int octaves = 2;
+    [Range(0.1f, 1f)] public float persistence = 0.5f;
+    [Min(1f)] public float lacunarity = 2.0f;
+
+    public void Validate()
+    {
+        scale = Mathf.Max(1f, scale);
+        amplitude = Mathf.Max(0f, amplitude);
+        octaves = Mathf.Clamp(octaves, 1, 4);
+    }
+}
+
+[Serializable]
+public sealed class RidgedMultifractalSettings
+{
+    public bool enabled = true;
+    [Min(0.1f)] public float scale = 18f;
+    [Range(0f, 4f)] public float peakStrength = 1.8f;
+    [Range(1, 6)] public int octaves = 3;
+    [Range(0.1f, 1f)] public float persistence = 0.5f;
+    [Min(1f)] public float lacunarity = 2.1f;
+    [Range(0.5f, 4f)] public float power = 2.0f;
+
+    public void Validate()
+    {
+        scale = Mathf.Max(0.1f, scale);
+        peakStrength = Mathf.Max(0f, peakStrength);
+        octaves = Mathf.Clamp(octaves, 1, 6);
+        power = Mathf.Max(0.5f, power);
+    }
+}
+
+[Serializable]
 public sealed class TerrainGenerationSettings
 {
     [Header("Determinism")]
     public int seed = 1337;
+
+    [Header("Geological Deformation & Detail")]
+    public DomainWarpSettings domainWarp = new DomainWarpSettings();
+    public RidgedMultifractalSettings ridgedMultifractal = new RidgedMultifractalSettings();
 
     [Header("Composed procedural fields")]
     public List<TerrainNoiseLayerSettings> noiseLayers = new List<TerrainNoiseLayerSettings>
@@ -127,10 +231,6 @@ public sealed class TerrainGenerationSettings
 
     [Header("Island shape")]
     [Min(0.0001f)] public float legacyIslandScale = 0.025f;
-    // VESTIGIAL for island classification: the semantic ladder now uses cliffUpper and
-    // mountainUpper instead. legacyMountainThreshold is still written every generation
-    // by MapGrid.ApplyLegacyIslandTuning from the prefab's mountainThreshold, so it is
-    // kept to avoid breaking that call, but nothing reads it any more.
     public float legacyMountainThreshold = 0.8f;
     public float legacyMountainPeakThreshold = 1.1f;
     [Range(0f, 1f)] public float noiseContribution = 0.55f;
@@ -146,15 +246,16 @@ public sealed class TerrainGenerationSettings
     [Range(-1f, 1f)] public float underwaterPlateauUpper = 0.2f;
     [Range(-1f, 1f)] public float shallowUpper = 0.3f;
     [Range(-1f, 1f)] public float waterUpper = 0.4f;
-    // Above-water bands. These are not touched by ApplyLegacyIslandTuning, so they are
-    // the semantic ladder's own tuning. Retuned downward because the legacy island
-    // field rarely exceeds ~0.86: at the previous values Mountain and MountainPeak sat
-    // beyond the field's practical range and never occurred.
     [Range(0f, 1f)] public float beachUpper = 0.46f;
     [Range(0f, 1f)] public float surfaceFlatlandUpper = 0.66f;
     [Range(0f, 1f)] public float hillUpper = 0.74f;
     [Range(0f, 1f)] public float cliffUpper = 0.80f;
     [Range(0f, 1f)] public float mountainUpper = 0.86f;
+
+    [Header("Feature Reservation & Space Allocation")]
+    public CoastalMountainSettings coastalMountains = new CoastalMountainSettings();
+    public RiverCorridorSettings riverCorridors = new RiverCorridorSettings();
+    public HarborReservationSettings harborReservations = new HarborReservationSettings();
 
     [Header("Deliberate underwater plateau regions")]
     public UnderwaterPlateauGenerationSettings underwaterPlateaus = new UnderwaterPlateauGenerationSettings();
@@ -185,6 +286,18 @@ public sealed class TerrainGenerationSettings
 
     public void Validate()
     {
+        domainWarp ??= new DomainWarpSettings();
+        domainWarp.Validate();
+        ridgedMultifractal ??= new RidgedMultifractalSettings();
+        ridgedMultifractal.Validate();
+
+        coastalMountains ??= new CoastalMountainSettings();
+        coastalMountains.Validate();
+        riverCorridors ??= new RiverCorridorSettings();
+        riverCorridors.Validate();
+        harborReservations ??= new HarborReservationSettings();
+        harborReservations.Validate();
+
         underwaterPlateaus ??= new UnderwaterPlateauGenerationSettings();
         underwaterPlateaus.Validate();
         underwaterPlateauHeight = Mathf.Min(-0.01f, underwaterPlateauHeight);
