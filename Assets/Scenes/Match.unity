@@ -64050,8 +64050,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   surfaces:
-  - {fileID: 771000003}
-  - {fileID: 771000013}
+  - {fileID: 0}
+  - {fileID: 0}
   bakeOnStart: 1
 --- !u!1 &775342899
 GameObject:
@@ -65508,7 +65508,7 @@ GameObject:
   - component: {fileID: 791700257}
   - component: {fileID: 791700258}
   m_Layer: 0
-  m_Name: == GameObject =====================
+  m_Name: == GameObject =================
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
