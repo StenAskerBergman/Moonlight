@@ -146,18 +146,40 @@ public class RoadNetwork : MonoBehaviour
         return path;
     }
 
-    public bool HasRoadAccess(Cell buildingCell)
+    // The first registered road cell adjacent to buildingCell, or null if nothing
+    // next to it is a road. Buildings never stand on a road cell themselves, so this
+    // is the cell a vehicle actually drives to when serving them.
+    public Cell GetAdjacentRoadCell(Cell buildingCell)
     {
-        if (buildingCell == null || buildingCell.neighbors == null) return false;
+        if (buildingCell == null || buildingCell.neighbors == null) return null;
 
         foreach (Cell neighbor in buildingCell.neighbors)
         {
             if (neighbor != null && _roadCells.Contains(neighbor))
             {
-                return true;
+                return neighbor;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    public bool HasRoadAccess(Cell buildingCell)
+    {
+        return GetAdjacentRoadCell(buildingCell) != null;
+    }
+
+    // Drivable route between the road cells serving two buildings. GetPath only
+    // accepts road cells as endpoints, so each building's adjacent road cell is
+    // resolved first. Null when either building lacks road access, or when the two
+    // sit on disconnected stretches of road.
+    public List<Cell> GetRouteBetween(Cell fromBuildingCell, Cell toBuildingCell)
+    {
+        Cell fromRoad = GetAdjacentRoadCell(fromBuildingCell);
+        Cell toRoad = GetAdjacentRoadCell(toBuildingCell);
+
+        if (fromRoad == null || toRoad == null) return null;
+
+        return GetPath(fromRoad, toRoad);
     }
 }

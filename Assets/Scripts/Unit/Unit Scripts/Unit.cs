@@ -26,6 +26,14 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     // Unique ID
     public string ID { get; private set; }
 
+    private SelectionOutlineTarget outline;
+
+    // Lazily fetched/added so unit prefabs don't each need the component
+    // hand-placed — SelectionOutlineTarget carries no prefab-specific setup.
+    private SelectionOutlineTarget Outline =>
+        outline ??= GetComponent<SelectionOutlineTarget>()
+                   ?? gameObject.AddComponent<SelectionOutlineTarget>();
+
     // Unit Types
     public UnitType type;
     public MoveType moveType;
@@ -131,6 +139,11 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     {
         // Enable the Selection's first child GameObject
         transform.GetChild(0).gameObject.SetActive(true);
+
+        // Stencil-outline silhouette over this unit's renderers (see
+        // SelectionOutlineTarget/SelectionOutlineRendererFeature). Additive to the
+        // ground-marker child above, not a replacement for it.
+        Outline.SetSelected(true);
 
 
         // Handle Specific Type Logic on a Case by Case basis
@@ -378,6 +391,9 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         {
             transform.GetChild(0).gameObject.SetActive(false);
         }
+
+
+        if (Outline != null) Outline.SetSelected(false); // Does cause error
 
         // Hide this unit's specific UI elements
         // DisplayManager.Instance.Unfocus(true);

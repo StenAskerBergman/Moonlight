@@ -14,7 +14,16 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) Instance = this;
+        // The comparison used to end in "Instance = this", which adopted the
+        // duplicate instead of rejecting it and never assigned Instance on the
+        // first, non-duplicate Awake - so Instance stayed null forever.
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+
+        Instance = this;
     }
     private void OnDestroy()
     {

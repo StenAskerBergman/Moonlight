@@ -1,0 +1,999 @@
+2026-08-23T23:16:12.878Z|0xa7fc|[Licensing::Module] Trying to connect to existing licensing client channel...
+2026-08-23T23:16:12.879Z|0xa7fc|[Licensing::IpcConnector] Channel LicenseClient-stena doesn't exist
+2026-08-23T23:16:12.886Z|0xa7fc|[Licensing::Module] Successfully launched the LicensingClient (PId: 58116)
+2026-08-23T23:16:13.740Z|0xa7fc|[Licensing::IpcConnector] Successfully connected to: "LicenseClient-stena" at "2026-08-23T23:16:13.7401976Z"
+2026-08-23T23:16:13.807Z|0xa7fc|[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 58116, path: "C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+2026-08-23T23:16:13.807Z|0xa7fc|[Licensing::Module] LicensingClient has failed validation; ignoring
+2026-08-23T23:16:13.870Z|0xa7fc|[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.16.2+bdef8f5
+  Session Id:              6aebe7ab0acd4981bd382d03c09e3105
+  Correlation Id:          0f8f1e566560b3a5f76c08632e92102a
+  External correlation Id: 2331250981078214749
+  Machine Id:              Jdomp40oVtypmDkS4jA4R7Y87lU=
+2026-08-23T23:16:13.870Z|0xa7fc|[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-stena" (connect: 0.85s, validation: 0.06s, handshake: 0.07s)
+2026-08-23T23:16:13.870Z|0xa7fc|[Licensing::IpcConnector] Successfully connected to: "LicenseClient-stena-notifications" at "2026-08-23T23:16:13.8705713Z"
+2026-08-23T23:16:13.870Z|0xa7fc|[Licensing::Module] Connected to LicensingClient (PId: 58116, launch time: 0.01, total connection time: 0.98s)
+2026-08-23T23:16:13.871Z|0xa7fc|[Licensing::Module] Error: Access token is unavailable; failed to update
+2026-08-23T23:16:15.311Z|0xa7fc|[Licensing::Client] Successfully updated license
+2026-08-23T23:16:15.311Z|0xa7fc|Built from '2022.3/respin/2022.3.62f2-4af31df585-v2' branch; Version is '2022.3.62f3 (96770f904ca7) revision 9860879'; Using compiler version '192829333'; Build Type 'Release'
+2026-08-23T23:16:15.312Z|0xa7fc|OS: 'Windows 11  (10.0.26200) 64bit Core' Language: 'en' Physical Memory: 16334 MB
+2026-08-23T23:16:15.337Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:15.338Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:15.338Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:15.338Z|0xa7fc|BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1, IsPro: 0
+2026-08-23T23:16:15.357Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:15.357Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:15.357Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:15.366Z|0xa7fc|
+COMMAND LINE ARGUMENTS:
+2026-08-23T23:16:15.366Z|0xa7fc|C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Unity.exe
+2026-08-23T23:16:15.366Z|0xa7fc|-batchmode
+2026-08-23T23:16:15.366Z|0xa7fc|-nographics
+2026-08-23T23:16:15.366Z|0xa7fc|-projectPath
+2026-08-23T23:16:15.366Z|0xa7fc|e:\GitHub\Moonlight
+2026-08-23T23:16:15.366Z|0xa7fc|-executeMethod
+2026-08-23T23:16:15.366Z|0xa7fc|TestSeamContinuity.RunTests
+2026-08-23T23:16:15.366Z|0xa7fc|-quit
+2026-08-23T23:16:15.366Z|0xa7fc|-logFile
+2026-08-23T23:16:15.366Z|0xa7fc|e:\GitHub\Moonlight\unity_batch.log
+2026-08-23T23:16:15.366Z|0xa7fc|Successfully changed project path to: e:\GitHub\Moonlight
+2026-08-23T23:16:15.415Z|0xa7fc|E:/GitHub/Moonlight
+2026-08-23T23:16:15.422Z|0xa7fc|[UnityMemory] Configuration Parameters - Can be set up in boot.config
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-bucket-allocator-granularity=16"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-bucket-allocator-bucket-count=8"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-bucket-allocator-block-size=33554432"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-bucket-allocator-block-count=8"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-main-allocator-block-size=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-thread-allocator-block-size=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-gfx-main-allocator-block-size=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-gfx-thread-allocator-block-size=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-cache-allocator-block-size=4194304"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-typetree-allocator-block-size=2097152"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-bucket-allocator-granularity=16"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-bucket-allocator-block-count=8"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-allocator-block-size=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-profiler-editor-allocator-block-size=1048576"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-main=16777216"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-job-temp-allocator-block-size=2097152"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-job-temp-allocator-block-size-background=1048576"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-allocator-temp-initial-block-size-main=262144"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-background-worker=32768"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-job-worker=262144"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-preload-manager=33554432"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-audio-worker=65536"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-cloud-worker=32768"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+2026-08-23T23:16:15.422Z|0xa7fc|    "memorysetup-temp-allocator-size-gfx=262144"
+2026-08-23T23:16:15.434Z|0xa7fc|Player connection [43004]  Target information:
+
+2026-08-23T23:16:15.434Z|0xa7fc|Player connection [43004]  * "[IP] 192.168.1.100 [Port] 55504 [Flags] 2 [Guid] 1072920498 [EditorId] 1072920498 [Version] 1048832 [Id] WindowsEditor(7,Diana) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+2026-08-23T23:16:15.434Z|0xa7fc|Player connection [43004]  * "[IP] 172.17.176.1 [Port] 55504 [Flags] 2 [Guid] 1072920498 [EditorId] 1072920498 [Version] 1048832 [Id] WindowsEditor(7,Diana) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+2026-08-23T23:16:15.438Z|0xa7fc|Player connection [43004] Host joined multi-casting on [225.0.0.222:54997]...
+2026-08-23T23:16:15.438Z|0xa7fc|Player connection [43004] Host joined alternative multi-casting on [225.0.0.222:34997]...
+2026-08-23T23:16:15.443Z|0xa7fc|Input System module state changed to: Initialized.
+2026-08-23T23:16:15.446Z|0xa7fc|[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+2026-08-23T23:16:15.932Z|0xa7fc|[Package Manager] UpmClient::Connect -- Connected to IPC stream "Upm-3164" after 0.4 seconds.
+2026-08-23T23:16:16.013Z|0xa7fc|[Package Manager] Restoring resolved packages state from cache
+2026-08-23T23:16:16.059Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:16.059Z|0xa7fc|[Package Manager] Registered 56 packages:
+2026-08-23T23:16:16.059Z|0xa7fc|  Packages from [https://packages.unity.com]:
+2026-08-23T23:16:16.059Z|0xa7fc|    com.unity.ai.navigation@1.1.7 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ai.navigation@1.1.7)
+2026-08-23T23:16:16.059Z|0xa7fc|    com.unity.collab-proxy@2.7.1 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.collab-proxy@2.7.1)
+2026-08-23T23:16:16.059Z|0xa7fc|    com.unity.ide.visualstudio@2.0.28 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ide.visualstudio@2.0.28)
+2026-08-23T23:16:16.059Z|0xa7fc|    com.unity.ide.vscode@1.2.5 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ide.vscode@1.2.5)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.ml-agents@2.0.1 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ml-agents@2.0.1)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.postprocessing@3.4.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.postprocessing@3.4.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.scriptablebuildpipeline@1.21.25 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.scriptablebuildpipeline@1.21.25)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.test-framework@1.1.33 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.test-framework@1.1.33)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.textmeshpro@3.0.7 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.textmeshpro@3.0.7)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.timeline@1.7.7 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.timeline@1.7.7)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.ext.nunit@1.0.6 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ext.nunit@1.0.6)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.mathematics@1.2.6 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.mathematics@1.2.6)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.burst@1.8.21 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.burst@1.8.21)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.barracuda@3.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.barracuda@3.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.nuget.newtonsoft-json@3.2.1 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.searcher@4.9.2 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.searcher@4.9.2)
+2026-08-23T23:16:16.060Z|0xa7fc|  Built-in packages:
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.2d.tilemap@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.2d.tilemap@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.render-pipelines.universal@14.0.12 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.render-pipelines.universal@14.0.12)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.ugui@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.ugui@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.visualeffectgraph@14.0.12 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.visualeffectgraph@14.0.12)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.ai@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.ai@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.androidjni@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.androidjni@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.animation@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.animation@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.assetbundle@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.assetbundle@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.audio@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.audio@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.cloth@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.cloth@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.director@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.director@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.imageconversion@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.imageconversion@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.imgui@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.imgui@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.jsonserialize@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.jsonserialize@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.particlesystem@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.particlesystem@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.physics@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.physics@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.physics2d@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.physics2d@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.screencapture@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.screencapture@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.terrain@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.terrain@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.terrainphysics@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.terrainphysics@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.tilemap@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.tilemap@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.ui@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.ui@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.uielements@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.uielements@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.umbra@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.umbra@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.unityanalytics@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unityanalytics@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.unitywebrequest@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unitywebrequest@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle@1.0.0)
+2026-08-23T23:16:16.060Z|0xa7fc|    com.unity.modules.unitywebrequestaudio@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unitywebrequestaudio@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.unitywebrequesttexture@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unitywebrequesttexture@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.unitywebrequestwww@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.unitywebrequestwww@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.vehicles@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.vehicles@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.video@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.video@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.vr@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.vr@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.wind@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.wind@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.xr@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.xr@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.modules.subsystems@1.0.0 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.modules.subsystems@1.0.0)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.shadergraph@14.0.12 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.shadergraph@14.0.12)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.render-pipelines.core@14.0.12 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.render-pipelines.core@14.0.12)
+2026-08-23T23:16:16.061Z|0xa7fc|    com.unity.render-pipelines.universal-config@14.0.10 (location: E:\GitHub\Moonlight\Library\PackageCache\com.unity.render-pipelines.universal-config@14.0.10)
+2026-08-23T23:16:16.061Z|0xa7fc|  Git packages:
+2026-08-23T23:16:16.061Z|0xa7fc|    com.coplaydev.unity-mcp@https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main (location: E:\GitHub\Moonlight\Library\PackageCache\com.coplaydev.unity-mcp@4ce7dd3cc5)
+2026-08-23T23:16:16.157Z|0xa7fc|[Subsystems] No new subsystems found in resolved package list.
+2026-08-23T23:16:16.157Z|0xa7fc|Package Manager log level set to [2]
+2026-08-23T23:16:16.157Z|0xa7fc|[Package Manager] Done registering packages in 0.14 seconds
+2026-08-23T23:16:16.310Z|0xa7fc|Refreshing native plugins compatible for Editor in 37.46 ms, found 3 plugins.
+2026-08-23T23:16:16.310Z|0xa7fc|Preloading 0 native plugins for Editor in 0.00 ms.
+2026-08-23T23:16:16.310Z|0xa7fc|Initialize engine version: 2022.3.62f3 (96770f904ca7)
+2026-08-23T23:16:16.310Z|0xa7fc|[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/Resources/UnitySubsystems
+2026-08-23T23:16:16.311Z|0xa7fc|[Subsystems] Discovering subsystems at path E:/GitHub/Moonlight/Assets
+2026-08-23T23:16:16.312Z|0xa7fc|Forcing GfxDevice: Null
+2026-08-23T23:16:16.312Z|0xa7fc|GfxDevice: creating device client; threaded=0; jobified=0
+2026-08-23T23:16:16.312Z|0xa7fc|NullGfxDevice:
+2026-08-23T23:16:16.312Z|0xa7fc|    Version:  NULL 1.0 [1.0]
+2026-08-23T23:16:16.312Z|0xa7fc|    Renderer: Null Device
+2026-08-23T23:16:16.312Z|0xa7fc|    Vendor:   Unity Technologies
+2026-08-23T23:16:16.555Z|0xa7fc|Shader Hidden/ProbeVolume/VoxelizeScene is not supported: GPU does not support conservative rasterization
+2026-08-23T23:16:16.579Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:16.579Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:16.579Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:16.596Z|0xa7fc|Initialize mono
+2026-08-23T23:16:16.596Z|0xa7fc|Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/Managed'
+2026-08-23T23:16:16.596Z|0xa7fc|Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+2026-08-23T23:16:16.597Z|0xa7fc|Mono config path = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/MonoBleedingEdge/etc'
+2026-08-23T23:16:16.597Z|0xa7fc|Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56164
+2026-08-23T23:16:16.642Z|0xa7fc|Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+2026-08-23T23:16:16.642Z|0xa7fc|Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+2026-08-23T23:16:16.642Z|0xa7fc|ImportWorker Server TCP listen port: 0
+2026-08-23T23:16:16.702Z|0xa7fc|Begin MonoManager ReloadAssembly
+2026-08-23T23:16:17.042Z|0xa7fc|Registering precompiled unity dll's ...
+2026-08-23T23:16:17.054Z|0xa7fc|Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+2026-08-23T23:16:17.078Z|0xa7fc|Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+2026-08-23T23:16:17.110Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:17.110Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:17.110Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:17.115Z|0xa7fc|Register platform support module: C:/Program Files/Unity/Hub/Editor/2022.3.62f3/Editor/Data/PlaybackEngines/MetroSupport/UnityEditor.UWP.Extensions.dll
+2026-08-23T23:16:17.127Z|0xa7fc|Registered in 0.084747 seconds.
+2026-08-23T23:16:17.502Z|0xa7fc|- Loaded All Assemblies, in  0.799 seconds
+2026-08-23T23:16:17.566Z|0xa7fc|Native extension for UWP target not found
+2026-08-23T23:16:17.572Z|0xa7fc|Native extension for WindowsStandalone target not found
+2026-08-23T23:16:17.579Z|0xa7fc|Native extension for WebGL target not found
+2026-08-23T23:16:17.820Z|0xa7fc|Mono: successfully reloaded assembly
+2026-08-23T23:16:17.840Z|0xa7fc|- Finished resetting the current domain, in  0.339 seconds
+2026-08-23T23:16:17.842Z|0xa7fc|Domain Reload Profiling: 1125ms
+	BeginReloadAssembly (249ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (57ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (199ms)
+	LoadAllAssembliesAndSetupDomain (269ms)
+		LoadAssemblies (235ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (263ms)
+			TypeCache.Refresh (262ms)
+				TypeCache.ScanAssembly (239ms)
+			ScanForSourceGeneratedMonoScriptInfo (0ms)
+			ResolveRequiredComponents (1ms)
+	FinalizeReload (340ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (280ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (41ms)
+			SetLoadedEditorAssemblies (6ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (2ms)
+			ProcessInitializeOnLoadAttributes (167ms)
+			ProcessInitializeOnLoadMethodAttributes (64ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+2026-08-23T23:16:17.875Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:17.875Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:17.875Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:17.877Z|0xa7fc|Application.AssetDatabase Initial Refresh Start
+2026-08-23T23:16:18.624Z|0xa7fc|[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files2026-08-23T23:16:18.625Z|0xa7fc|
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:80
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: E:\GitHub\Moonlight\
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 72.5568ms
+2026-08-23T23:16:19.539Z|0xa7fc|Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies2026-08-23T23:16:19.540Z|0xa7fc|
+2026-08-23T23:16:19.540Z|0xa7fc|WorkingDir: E:/GitHub/Moonlight2026-08-23T23:16:19.540Z|0xa7fc|
+2026-08-23T23:16:19.853Z|0xa7fc|DisplayProgressbar: Compiling Scripts
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.runtime.interopservices.windowsruntime has duplicate hint path. Ignoring "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\Facades\System.Runtime.InteropServices.WindowsRuntime.dll" in favor of "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\NetStandard\Extensions\2.0.0\System.Runtime.InteropServices.WindowsRuntime.dll"
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.componentmodel.composition has duplicate hint path. Ignoring "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\System.ComponentModel.Composition.dll" in favor of "C:\Program Files\Unity\Hub\Editor\2022.3.62f3\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.ComponentModel.Composition.dll"
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.burst@1.8.21\Unity.Burst.CodeGen\Unity.Burst.Cecil.dll
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc - - 200 - application/grpc 120.1422ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 118 defines and 283 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil.Rocks, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.burst@1.8.21\Unity.Burst.CodeGen\Unity.Burst.Cecil.Rocks.dll
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc - - 200 - application/grpc 189.0981ms
+2026-08-23T23:16:21.058Z|0xaaf0|ExitCode: 0 Duration: 1s518ms2026-08-23T23:16:21.058Z|0xaaf0|
+2026-08-23T23:16:21.058Z|0xaaf0|[605/787    0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[783/787    0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+[784/787    0s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 118 defines and 283 references
+
+processors: zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[785/787    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[786/787    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (1.42 seconds), 5 items updated, 787 evaluated2026-08-23T23:16:21.058Z|0xaaf0|
+2026-08-23T23:16:21.090Z|0xa7fc|AssetDatabase: script compilation time: 2.467231s
+2026-08-23T23:16:21.216Z|0xa7fc|Begin MonoManager ReloadAssembly
+Total cache size 266802652
+Total cache size after purge 266802652
+Symbol file LoadedFromMemory is not a mono symbol file
+2026-08-23T23:16:22.635Z|0xa7fc|- Loaded All Assemblies, in  1.418 seconds
+2026-08-23T23:16:22.913Z|0xa7fc|Refreshing native plugins compatible for Editor in 11.11 ms, found 3 plugins.
+2026-08-23T23:16:22.913Z|0xa7fc|Preloading 0 native plugins for Editor in 0.00 ms.
+2026-08-23T23:16:27.089Z|0xa7fc|Start importing Assets/Editor/TestSeamContinuity.cs using Guid(e7557db581fe2e84aab2d7709e77f491) Importer(-1,00000000000000000000000000000000) 2026-08-23T23:16:27.090Z|0xa7fc|[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+2026-08-23T23:16:27.112Z|0xa7fc| -> (artifact id: '7ca9f61efd8e75b4f97770dbcbccef0a') in 0.023047 seconds
+2026-08-23T23:16:27.128Z|0xa7fc|Refreshing native plugins compatible for Editor in 13.17 ms, found 3 plugins.
+2026-08-23T23:16:27.376Z|0xa7fc|Native extension for UWP target not found
+2026-08-23T23:16:27.380Z|0xa7fc|Native extension for WindowsStandalone target not found
+2026-08-23T23:16:27.383Z|0xa7fc|Native extension for WebGL target not found
+2026-08-23T23:16:29.651Z|0xa7fc|Mono: successfully reloaded assembly
+2026-08-23T23:16:29.736Z|0xa7fc|- Finished resetting the current domain, in  2.598 seconds
+2026-08-23T23:16:29.736Z|0xa7fc|Domain Reload Profiling: 4004ms
+	BeginReloadAssembly (246ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (5ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (27ms)
+	RebuildCommonClasses (42ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (68ms)
+	LoadAllAssembliesAndSetupDomain (1038ms)
+		LoadAssemblies (947ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (255ms)
+			TypeCache.Refresh (215ms)
+				TypeCache.ScanAssembly (193ms)
+			ScanForSourceGeneratedMonoScriptInfo (25ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (2598ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (2280ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (26ms)
+			SetLoadedEditorAssemblies (4ms)
+			RefreshPlugins (0ms)
+			BeforeProcessingInitializeOnLoad (104ms)
+			ProcessInitializeOnLoadAttributes (2004ms)
+			ProcessInitializeOnLoadMethodAttributes (82ms)
+			AfterProcessingInitializeOnLoad (59ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (14ms)
+2026-08-23T23:16:30.043Z|0xa7fc|Refreshing native plugins compatible for Editor in 14.90 ms, found 3 plugins.
+2026-08-23T23:16:30.043Z|0xa7fc|Preloading 0 native plugins for Editor in 0.00 ms.
+2026-08-23T23:16:30.044Z|0xa7fc|Asset Pipeline Refresh (id=ad461036c46851b4ba14db0b12e1fb19): Total: 12.166 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=1 (actual=1, local cache=0, cache server=0)
+		Asset DB Process Time: managed=5 ms, native=5312 ms
+		Asset DB Callback time: managed=74 ms, native=29 ms
+		Scripting: domain reloads=1, domain reload time=4191 ms, compile time=2469 ms, other=82 ms
+		Project Asset Count: scripts=6685, non-scripts=4734
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeBeforeRefreshCallbacks: 2.879ms
+	ApplyChangesToAssetFolders: 0.087ms
+	Scan: 455.804ms
+	OnSourceAssetsModified: 2.088ms
+	GetAllGuidsForCategorization: 2.452ms
+	CategorizeAssets: 347.271ms
+	ImportOutOfDateAssets: 2713.493ms (179.717ms without children)
+		ImportManagerImport: 28.017ms (4.068ms without children)
+			ImportInProcess: 23.925ms
+			UpdateCategorizedAssets: 0.024ms
+		CompileScripts: 2469.431ms
+		ReloadNativeAssets: 0.034ms
+		UnloadImportedAssets: 28.717ms
+		ReloadImportedAssets: 0.900ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.763ms
+		InitializingProgressBar: 0.599ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
+		OnDemandSchedulerStart: 2.313ms
+	PostProcessAllAssets: 83.089ms
+	Hotreload: 16.641ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.001ms
+	UnloadStreamsBegin: 4.502ms
+	PersistCurrentRevisions: 0.528ms
+	UnloadStreamsEnd: 0.100ms
+	GenerateScriptTypeHashes: 6.858ms
+	Untracked: 8537.155ms
+2026-08-23T23:16:30.044Z|0xa7fc|Application.AssetDatabase Initial Refresh End
+2026-08-23T23:16:30.197Z|0xa7fc|Shader Hidden/ProbeVolume/VoxelizeScene is not supported: GPU does not support conservative rasterization
+2026-08-23T23:16:30.265Z|0xa7fc|Scanning for USB devices : 23.980ms
+2026-08-23T23:16:30.265Z|0xa7fc|Initializing Unity extensions:
+2026-08-23T23:16:31.514Z|0xa7fc|[Licensing::Client] Successfully resolved entitlement details
+2026-08-23T23:16:31.514Z|0xa7fc|[Licensing::Module] Serial number assigned to: "F4-QVMP-3PGZ-XDU6-4KAA-XXXX"
+2026-08-23T23:16:31.514Z|0xa7fc|[Licensing::Module] Serial number assigned to: "1374454495494-UnityPersXXXX"
+2026-08-23T23:16:31.566Z|0xa7fc|[MODES] ModeService[none].Initialize2026-08-23T23:16:31.566Z|0xa7fc|
+2026-08-23T23:16:31.566Z|0xa7fc|[MODES] ModeService[none].LoadModes2026-08-23T23:16:31.566Z|0xa7fc|
+2026-08-23T23:16:31.674Z|0xa7fc|[MODES] Loading mode Default (0) for mode-current-id-RTS System 12026-08-23T23:16:31.675Z|0xa7fc|
+2026-08-23T23:16:32.430Z|0xa7fc|Cannot add menu item 'GameObject/AI/NavMesh Modifier Volume' for method 'Unity.AI.Navigation.Editor.NavMeshModifierVolumeEditor.CreateNavMeshModifierVolume' because a menu item with the same name already exists.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+UnityEditor.MenuItemScriptCommand:Update (UnityEditor.MenuItem,System.Reflection.MethodInfo)
+UnityEditor.MenuService:ExtractMenuItemsFromAttributes ()
+UnityEditor.MenuService:GetMenuItemsFromAttributesById (string)
+UnityEditor.MenuService:GetMenuItemsFromAttributes ()
+
+2026-08-23T23:16:32.431Z|0xa7fc|Cannot add menu item 'GameObject/AI/NavMesh Surface' for method 'Unity.AI.Navigation.Editor.NavMeshSurfaceEditor.CreateNavMeshSurface' because a menu item with the same name already exists.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+UnityEditor.MenuItemScriptCommand:Update (UnityEditor.MenuItem,System.Reflection.MethodInfo)
+UnityEditor.MenuService:ExtractMenuItemsFromAttributes ()
+UnityEditor.MenuService:GetMenuItemsFromAttributesById (string)
+UnityEditor.MenuService:GetMenuItemsFromAttributes ()
+
+2026-08-23T23:16:32.431Z|0xa7fc|Cannot add menu item 'GameObject/AI/NavMesh Link' for method 'Unity.AI.Navigation.Editor.NavMeshLinkEditor.CreateNavMeshLink' because a menu item with the same name already exists.
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:LogWarning (object)
+UnityEditor.MenuItemScriptCommand:Update (UnityEditor.MenuItem,System.Reflection.MethodInfo)
+UnityEditor.MenuService:ExtractMenuItemsFromAttributes ()
+UnityEditor.MenuService:GetMenuItemsFromAttributesById (string)
+UnityEditor.MenuService:GetMenuItemsFromAttributes ()
+
+2026-08-23T23:16:32.447Z|0xa7fc|[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+2026-08-23T23:16:32.452Z|0xa7fc|ProgressiveSceneManager::Cancel()
+2026-08-23T23:16:32.496Z|0x67e0|Unloading 52 Unused Serialized files (Serialized files now loaded: 0)
+2026-08-23T23:16:32.505Z|0xa7fc|Unloading 141 unused Assets / (0.8 MB). Loaded Objects now: 5962.
+Memory consumption went from 190.2 MB to 189.4 MB.
+2026-08-23T23:16:32.505Z|0xa7fc|Total: 8.794600 ms (FindLiveObjects: 0.412500 ms CreateObjectMapping: 0.148100 ms MarkObjects: 7.689000 ms  DeleteObjects: 0.543800 ms)
+
+2026-08-23T23:16:32.893Z|0xa7fc|================================================================================
+                       STAGE 2 COMPILED UNITY VERIFICATION                     
+================================================================================
+
+================================================================================
+1. MULTIPLE REAL HORIZONTAL SEAMS
+================================================================================
+
+--- Horizontal Seam 1: Chunk A (0,0) vs Chunk B (60,0) along World X = 60 ---
+Point World: (60.0, 5.0)
+  Chunk A (Local 60.0, 5.0): sharedBase=-0.057714, localField=-0.161651, edgeWeight=0.000000, baseFinalSource=-0.057714
+    -> FINAL: Source=-0.057714, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk B (Local 0.0, 5.0): sharedBase=-0.057714, localField=-0.690107, edgeWeight=0.000000, baseFinalSource=-0.057714
+    -> FINAL: Source=-0.057714, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 15.0)
+  Chunk A (Local 60.0, 15.0): sharedBase=-0.037604, localField=-0.175089, edgeWeight=0.000000, baseFinalSource=-0.037604
+    -> FINAL: Source=-0.037604, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk B (Local 0.0, 15.0): sharedBase=-0.037604, localField=-0.678502, edgeWeight=0.000000, baseFinalSource=-0.037604
+    -> FINAL: Source=-0.037604, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 30.0)
+  Chunk A (Local 60.0, 30.0): sharedBase=-0.014717, localField=-0.523228, edgeWeight=0.000000, baseFinalSource=-0.014717
+    -> FINAL: Source=-0.014717, Type=Abyssal, Height=-4.593549, PlateauInf=0.000000
+  Chunk B (Local 0.0, 30.0): sharedBase=-0.014717, localField=-0.581112, edgeWeight=0.000000, baseFinalSource=-0.014717
+    -> FINAL: Source=-0.014717, Type=Abyssal, Height=-4.593549, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 45.0)
+  Chunk A (Local 60.0, 45.0): sharedBase=-0.026039, localField=-0.788254, edgeWeight=0.000000, baseFinalSource=-0.026039
+    -> FINAL: Source=-0.026039, Type=Abyssal, Height=-4.910064, PlateauInf=0.000000
+  Chunk B (Local 0.0, 45.0): sharedBase=-0.026039, localField=-0.464437, edgeWeight=0.000000, baseFinalSource=-0.026039
+    -> FINAL: Source=-0.026039, Type=Abyssal, Height=-4.910064, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 55.0)
+  Chunk A (Local 60.0, 55.0): sharedBase=-0.020504, localField=-0.777273, edgeWeight=0.000000, baseFinalSource=-0.020504
+    -> FINAL: Source=-0.020504, Type=Abyssal, Height=-4.778226, PlateauInf=0.000000
+  Chunk B (Local 0.0, 55.0): sharedBase=-0.020504, localField=-0.364665, edgeWeight=0.000000, baseFinalSource=-0.020504
+    -> FINAL: Source=-0.020504, Type=Abyssal, Height=-4.778226, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Horizontal Seam 2: Chunk C (0,60) vs Chunk D (60,60) along World X = 60 ---
+Point World: (60.0, 65.0)
+  Chunk C (Local 60.0, 5.0): sharedBase=-0.048493, localField=-0.533452, edgeWeight=0.000000, baseFinalSource=-0.048493
+    -> FINAL: Source=-0.048493, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 0.0, 5.0): sharedBase=-0.048493, localField=-0.438924, edgeWeight=0.000000, baseFinalSource=-0.048493
+    -> FINAL: Source=-0.048493, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 75.0)
+  Chunk C (Local 60.0, 15.0): sharedBase=-0.059046, localField=-0.626034, edgeWeight=0.000000, baseFinalSource=-0.059046
+    -> FINAL: Source=-0.059046, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 0.0, 15.0): sharedBase=-0.059046, localField=-0.581511, edgeWeight=0.000000, baseFinalSource=-0.059046
+    -> FINAL: Source=-0.059046, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 90.0)
+  Chunk C (Local 60.0, 30.0): sharedBase=-0.030173, localField=-0.555654, edgeWeight=0.000000, baseFinalSource=-0.030173
+    -> FINAL: Source=-0.030173, Type=Abyssal, Height=-4.972781, PlateauInf=0.000000
+  Chunk D (Local 0.0, 30.0): sharedBase=-0.030173, localField=-0.801333, edgeWeight=0.000000, baseFinalSource=-0.030173
+    -> FINAL: Source=-0.030173, Type=Abyssal, Height=-4.972781, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 105.0)
+  Chunk C (Local 60.0, 45.0): sharedBase=-0.016001, localField=-0.384530, edgeWeight=0.000000, baseFinalSource=-0.016001
+    -> FINAL: Source=-0.016001, Type=Abyssal, Height=-4.637978, PlateauInf=0.000000
+  Chunk D (Local 0.0, 45.0): sharedBase=-0.016001, localField=-0.835865, edgeWeight=0.000000, baseFinalSource=-0.016001
+    -> FINAL: Source=-0.016001, Type=Abyssal, Height=-4.637978, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 115.0)
+  Chunk C (Local 60.0, 55.0): sharedBase=-0.030889, localField=-0.480998, edgeWeight=0.000000, baseFinalSource=-0.030889
+    -> FINAL: Source=-0.030889, Type=Abyssal, Height=-4.980113, PlateauInf=0.000000
+  Chunk D (Local 0.0, 55.0): sharedBase=-0.030889, localField=-0.738722, edgeWeight=0.000000, baseFinalSource=-0.030889
+    -> FINAL: Source=-0.030889, Type=Abyssal, Height=-4.980113, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Horizontal Seam 3: Chunk B (60,0) vs Chunk E (120,0) along World X = 120 ---
+Point World: (120.0, 20.0)
+  Chunk B (Local 60.0, 20.0): sharedBase=-0.042597, localField=-0.728708, edgeWeight=0.000000, baseFinalSource=-0.042597
+    -> FINAL: Source=-0.042597, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk E (Local 0.0, 20.0): sharedBase=-0.042597, localField=-0.616467, edgeWeight=0.000000, baseFinalSource=-0.042597
+    -> FINAL: Source=-0.042597, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (120.0, 30.0)
+  Chunk B (Local 60.0, 30.0): sharedBase=-0.030208, localField=-0.549249, edgeWeight=0.000000, baseFinalSource=-0.030208
+    -> FINAL: Source=-0.030208, Type=Abyssal, Height=-4.973160, PlateauInf=0.000000
+  Chunk E (Local 0.0, 30.0): sharedBase=-0.030208, localField=-0.433062, edgeWeight=0.000000, baseFinalSource=-0.030208
+    -> FINAL: Source=-0.030208, Type=Abyssal, Height=-4.973160, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (120.0, 40.0)
+  Chunk B (Local 60.0, 40.0): sharedBase=-0.032967, localField=-0.365543, edgeWeight=0.000000, baseFinalSource=-0.032967
+    -> FINAL: Source=-0.032967, Type=Abyssal, Height=-4.995039, PlateauInf=0.000000
+  Chunk E (Local 0.0, 40.0): sharedBase=-0.032967, localField=-0.243179, edgeWeight=0.000000, baseFinalSource=-0.032967
+    -> FINAL: Source=-0.032967, Type=Abyssal, Height=-4.995039, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+================================================================================
+2. MULTIPLE REAL VERTICAL SEAMS
+================================================================================
+
+--- Vertical Seam 1: Chunk A (0,0) vs Chunk C (0,60) along World Z = 60 ---
+Point World: (5.0, 60.0)
+  Chunk A (Local 5.0, 60.0): sharedBase=-0.046599, localField=-0.502189, edgeWeight=0.000000, baseFinalSource=-0.046599
+    -> FINAL: Source=-0.046599, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 5.0, 0.0): sharedBase=-0.046599, localField=-0.423687, edgeWeight=0.000000, baseFinalSource=-0.046599
+    -> FINAL: Source=-0.046599, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (15.0, 60.0)
+  Chunk A (Local 15.0, 60.0): sharedBase=-0.054749, localField=-0.419007, edgeWeight=0.000000, baseFinalSource=-0.054749
+    -> FINAL: Source=-0.054749, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 15.0, 0.0): sharedBase=-0.054749, localField=-0.475947, edgeWeight=0.000000, baseFinalSource=-0.054749
+    -> FINAL: Source=-0.054749, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (30.0, 60.0)
+  Chunk A (Local 30.0, 60.0): sharedBase=-0.040861, localField=-0.449948, edgeWeight=0.000000, baseFinalSource=-0.040861
+    -> FINAL: Source=-0.040861, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 30.0, 0.0): sharedBase=-0.040861, localField=-0.333930, edgeWeight=0.000000, baseFinalSource=-0.040861
+    -> FINAL: Source=-0.040861, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (45.0, 60.0)
+  Chunk A (Local 45.0, 60.0): sharedBase=-0.034773, localField=-0.483377, edgeWeight=0.000000, baseFinalSource=-0.034773
+    -> FINAL: Source=-0.034773, Type=Abyssal, Height=-4.999937, PlateauInf=0.000000
+  Chunk C (Local 45.0, 0.0): sharedBase=-0.034773, localField=-0.312414, edgeWeight=0.000000, baseFinalSource=-0.034773
+    -> FINAL: Source=-0.034773, Type=Abyssal, Height=-4.999937, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (55.0, 60.0)
+  Chunk A (Local 55.0, 60.0): sharedBase=-0.035840, localField=-0.595022, edgeWeight=0.000000, baseFinalSource=-0.035840
+    -> FINAL: Source=-0.035840, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 55.0, 0.0): sharedBase=-0.035840, localField=-0.455897, edgeWeight=0.000000, baseFinalSource=-0.035840
+    -> FINAL: Source=-0.035840, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Vertical Seam 2: Chunk B (60,0) vs Chunk D (60,60) along World Z = 60 ---
+Point World: (65.0, 60.0)
+  Chunk B (Local 5.0, 60.0): sharedBase=-0.040103, localField=-0.387431, edgeWeight=0.000000, baseFinalSource=-0.040103
+    -> FINAL: Source=-0.040103, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 5.0, 0.0): sharedBase=-0.040103, localField=-0.481236, edgeWeight=0.000000, baseFinalSource=-0.040103
+    -> FINAL: Source=-0.040103, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (75.0, 60.0)
+  Chunk B (Local 15.0, 60.0): sharedBase=-0.066289, localField=-0.373283, edgeWeight=0.000000, baseFinalSource=-0.066289
+    -> FINAL: Source=-0.066289, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 15.0, 0.0): sharedBase=-0.066289, localField=-0.725663, edgeWeight=0.000000, baseFinalSource=-0.066289
+    -> FINAL: Source=-0.066289, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (90.0, 60.0)
+  Chunk B (Local 30.0, 60.0): sharedBase=-0.079393, localField=-0.318296, edgeWeight=0.000000, baseFinalSource=-0.079393
+    -> FINAL: Source=-0.079393, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 30.0, 0.0): sharedBase=-0.079393, localField=-0.855041, edgeWeight=0.000000, baseFinalSource=-0.079393
+    -> FINAL: Source=-0.079393, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (105.0, 60.0)
+  Chunk B (Local 45.0, 60.0): sharedBase=-0.047733, localField=-0.337665, edgeWeight=0.000000, baseFinalSource=-0.047733
+    -> FINAL: Source=-0.047733, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 45.0, 0.0): sharedBase=-0.047733, localField=-0.638132, edgeWeight=0.000000, baseFinalSource=-0.047733
+    -> FINAL: Source=-0.047733, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (115.0, 60.0)
+  Chunk B (Local 55.0, 60.0): sharedBase=-0.050539, localField=-0.441829, edgeWeight=0.000000, baseFinalSource=-0.050539
+    -> FINAL: Source=-0.050539, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 55.0, 0.0): sharedBase=-0.050539, localField=-0.405752, edgeWeight=0.000000, baseFinalSource=-0.050539
+    -> FINAL: Source=-0.050539, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Vertical Seam 3: Chunk C (0,60) vs Chunk F (0,120) along World Z = 120 ---
+Point World: (20.0, 120.0)
+  Chunk C (Local 20.0, 60.0): sharedBase=-0.060221, localField=-0.602000, edgeWeight=0.000000, baseFinalSource=-0.060221
+    -> FINAL: Source=-0.060221, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk F (Local 20.0, 0.0): sharedBase=-0.060221, localField=-0.416064, edgeWeight=0.000000, baseFinalSource=-0.060221
+    -> FINAL: Source=-0.060221, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (30.0, 120.0)
+  Chunk C (Local 30.0, 60.0): sharedBase=-0.052297, localField=-0.563807, edgeWeight=0.000000, baseFinalSource=-0.052297
+    -> FINAL: Source=-0.052297, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk F (Local 30.0, 0.0): sharedBase=-0.052297, localField=-0.575826, edgeWeight=0.000000, baseFinalSource=-0.052297
+    -> FINAL: Source=-0.052297, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (40.0, 120.0)
+  Chunk C (Local 40.0, 60.0): sharedBase=-0.029384, localField=-0.563893, edgeWeight=0.000000, baseFinalSource=-0.029384
+    -> FINAL: Source=-0.029384, Type=Abyssal, Height=-4.963447, PlateauInf=0.000000
+  Chunk F (Local 40.0, 0.0): sharedBase=-0.029384, localField=-0.628174, edgeWeight=0.000000, baseFinalSource=-0.029384
+    -> FINAL: Source=-0.029384, Type=Abyssal, Height=-4.963447, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+================================================================================
+3. FOUR-CHUNK CORNER AUDIT AT WORLD (60, 60)
+================================================================================
+Four chunks meet at World (60, 60):
+  Chunk A (0,0)   at local (60, 60)
+  Chunk B (60,0)  at local (0, 60)
+  Chunk C (0,60)  at local (60, 0)
+  Chunk D (60,60) at local (0, 0)
+  Chunk A (0,0) (Local 60.0, 60.0): sharedBase=-0.028406, localField=-0.674286, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Abyssal, Height=-4.950107, PlateauInf=0.000000
+  Chunk B (60,0) (Local 0.0, 60.0): sharedBase=-0.028406, localField=-0.380712, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Abyssal, Height=-4.950107, PlateauInf=0.000000
+  Chunk C (0,60) (Local 60.0, 0.0): sharedBase=-0.028406, localField=-0.477481, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Abyssal, Height=-4.950107, PlateauInf=0.000000
+  Chunk D (60,60) (Local 0.0, 0.0): sharedBase=-0.028406, localField=-0.404629, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Abyssal, Height=-4.950107, PlateauInf=0.000000
+
+================================================================================
+4. TRANSVERSE PROFILES & FINITE-DIFFERENCE HEIGHT SLOPES (-8 to +8)
+================================================================================
+
+--- Profile 1: Horizontal Cross-Section across X=60 at Z=30 (A -> B) ---
+  d=-8 | World:( 52.0, 30.0) Local:(52.0,30.0) | Source:-0.278841 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-6 | World:( 54.0, 30.0) Local:(54.0,30.0) | Source:-0.403802 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-4 | World:( 56.0, 30.0) Local:(56.0,30.0) | Source:-0.273714 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-2 | World:( 58.0, 30.0) Local:(58.0,30.0) | Source:-0.071282 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-1 | World:( 59.0, 30.0) Local:(59.0,30.0) | Source:-0.023960 Type:Abyssal      Height:-4.866458 Plateau:0.0000
+  d= 0 | World:( 60.0, 30.0) Local:( 0.0,30.0) | Source:-0.014717 Type:Abyssal      Height:-4.593549 Plateau:0.0000
+  d= 1 | World:( 61.0, 30.0) Local:( 1.0,30.0) | Source:-0.024602 Type:Abyssal      Height:-4.880726 Plateau:0.0000
+  d= 2 | World:( 62.0, 30.0) Local:( 2.0,30.0) | Source:-0.076790 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 4 | World:( 64.0, 30.0) Local:( 4.0,30.0) | Source:-0.310056 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 6 | World:( 66.0, 30.0) Local:( 6.0,30.0) | Source:-0.476447 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 8 | World:( 68.0, 30.0) Local:( 8.0,30.0) | Source:-0.356738 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  --- Finite-Difference Slopes (dHeight / dDistance) ---
+    at d=-6: heightSlope =   0.000000, sourceSlope =   0.001282
+    at d=-4: heightSlope =   0.000000, sourceSlope =   0.083130
+    at d=-2: heightSlope =   0.044514, sourceSlope =   0.083251
+    at d=-1: heightSlope =   0.203225, sourceSlope =   0.028283
+    at d= 0: heightSlope =  -0.007134, sourceSlope =  -0.000321
+    at d= 1: heightSlope =  -0.203225, sourceSlope =  -0.031037
+    at d= 2: heightSlope =  -0.039758, sourceSlope =  -0.095151
+    at d= 4: heightSlope =   0.000000, sourceSlope =  -0.099914
+    at d= 6: heightSlope =   0.000000, sourceSlope =  -0.011671
+
+--- Profile 2: Vertical Cross-Section across Z=60 at X=30 (A -> C) ---
+  d=-8 | World:( 30.0, 52.0) Local:(30.0,52.0) | Source:-0.220806 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-6 | World:( 30.0, 54.0) Local:(30.0,54.0) | Source:-0.346907 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-4 | World:( 30.0, 56.0) Local:(30.0,56.0) | Source:-0.246249 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-2 | World:( 30.0, 58.0) Local:(30.0,58.0) | Source:-0.083278 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-1 | World:( 30.0, 59.0) Local:(30.0,59.0) | Source:-0.047330 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 0 | World:( 30.0, 60.0) Local:(30.0, 0.0) | Source:-0.040861 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 1 | World:( 30.0, 61.0) Local:(30.0, 1.0) | Source:-0.044467 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 2 | World:( 30.0, 62.0) Local:(30.0, 2.0) | Source:-0.067632 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 4 | World:( 30.0, 64.0) Local:(30.0, 4.0) | Source:-0.168033 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 6 | World:( 30.0, 66.0) Local:(30.0, 6.0) | Source:-0.183577 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 8 | World:( 30.0, 68.0) Local:(30.0, 8.0) | Source:-0.020714 Type:Abyssal      Height:-4.784089 Plateau:0.0000
+  --- Finite-Difference Slopes (dHeight / dDistance) ---
+    at d=-6: heightSlope =   0.000000, sourceSlope =  -0.006361
+    at d=-4: heightSlope =   0.000000, sourceSlope =   0.065907
+    at d=-2: heightSlope =   0.000000, sourceSlope =   0.066306
+    at d=-1: heightSlope =   0.000000, sourceSlope =   0.021208
+    at d= 0: heightSlope =   0.000000, sourceSlope =   0.001432
+    at d= 1: heightSlope =   0.000000, sourceSlope =  -0.013386
+    at d= 2: heightSlope =   0.000000, sourceSlope =  -0.041189
+    at d= 4: heightSlope =   0.000000, sourceSlope =  -0.028986
+    at d= 6: heightSlope =   0.053978, sourceSlope =   0.036830
+
+================================================================================
+5. PLATEAU BOUNDARY REACH AUDIT & PROOF (Current 4-7 / 0.70-0.92 Settings)
+================================================================================
+Evaluating maximum potential geometric extent of UnderwaterPlateauRegion under CURRENT settings:
+  minimumRadius = 4
+  maximumRadius = 7
+  minimumPlacementDistance = 0.7
+  maximumPlacementDistance = 0.92
+  minimumCoreCells = 24
+  edgeIrregularity = 0.12
+  secondaryLobeOffset = 0.4
+  maximumSecondaryLobeScale = 0.8
+  transitionWidth = 0.22
+
+Empirical Seed Sweep (testing 500 island chunk seeds for border influence):
+
+--- Detailed Case Study: Plateau at Seam (Chunk A vs Chunk B) ---
+Discovered seed with plateau reaching border: Chunk A Seed = 8, Seam Point = (60.0, 40.0)
+Point World: (60.0, 40.0)
+  Chunk A (Seed 8) (Local 60.0, 40.0): sharedBase=-0.037415, localField=-0.525953, edgeWeight=0.000000, baseFinalSource=-0.037415
+    -> FINAL: Source=-0.037415, Type=Abyssal, Height=-4.953539, PlateauInf=0.018584
+  Chunk B (Seed 1007) (Local 0.0, 40.0): sharedBase=-0.037415, localField=-0.291652, edgeWeight=0.000000, baseFinalSource=-0.037415
+    -> FINAL: Source=-0.037415, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=4.65E-002, typeMatch=True, plateauDiff=1.86E-002
+  Status: [Base: PASS] [Final: FAIL]
+
+================================================================================
+FINAL VERDICT SUMMARY
+================================================================================
+STAGE 2 BASE FIELD: PASS
+FINAL TERRAIN SAMPLE SEAMS: FAIL
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+TestSeamContinuity:RunTests () (at Assets/Editor/TestSeamContinuity.cs:160)
+
+(Filename: Assets/Editor/TestSeamContinuity.cs Line: 160)
+
+2026-08-23T23:16:32.894Z|0xa7fc|Batchmode quit successfully invoked - shutting down!
+2026-08-23T23:16:33.041Z|0xa7fc|[PhysX] Initialized MultithreadedTaskDispatcher with 16 workers.
+2026-08-23T23:16:33.178Z|0xa7fc|Input System module state changed to: ShutdownInProgress.
+2026-08-23T23:16:33.178Z|0xa7fc|Input System polling thread exited.
+2026-08-23T23:16:33.178Z|0xa7fc|Input System module state changed to: Shutdown.
+2026-08-23T23:16:33.181Z|0xa7fc|[Licensing::IpcConnector] LicenseClient-stena-notifications channel disconnected successfully.
+2026-08-23T23:16:33.181Z|0xa7fc|[Licensing::IpcConnector] LicenseClient-stena channel disconnected successfully.
+2026-08-23T23:16:33.337Z|0xa7fc|Cleanup mono
+abort_threads: Failed aborting id: 000000000000B4EC, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000007460, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000B4EC, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000007460, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 7036
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain                                                                                                        :        1 samples, Peak.  2.47 s (1.0x), Avg.  2.47 s, Total. 2.471 s (12.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.ConfigureCrashHandler                                                                                  :        1 samples, Peak.  34.0 us (1.0x), Avg.  34.0 us, Total. 34.00 us (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.CurlRequestInitialize                                                                                  :        1 samples, Peak.  5.92 ms (1.0x), Avg.  5.92 ms, Total. 5.920 ms (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.SetupLogFile                                                                                           :        1 samples, Peak.   864 us (1.0x), Avg.   864 us, Total. 864.0 us (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.RunNativeTestsIfRequiredAndExit                                                                        :        1 samples, Peak.   200 ns (1.0x), Avg.   200 ns, Total. 200.0 ns (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.Licensing                                                                                              :        1 samples, Peak.  2.43 s (1.0x), Avg.  2.43 s, Total. 2.432 s (11.8%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.InitializeCrashHandler                                                                                 :        1 samples, Peak.  26.7 ms (1.0x), Avg.  26.7 ms, Total. 26.67 ms (0.1%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] WinEditorMain.CreateApplication                                                                                      :        1 samples, Peak.   499 us (1.0x), Avg.   499 us, Total. 499.0 us (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.InitializeProject                                                                                        :        1 samples, Peak.  16.2 s (1.0x), Avg.  16.2 s, Total. 16.22 s (78.6%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.PackageManager.StartServer                                                                               :        1 samples, Peak.  8.41 ms (1.0x), Avg.  8.41 ms, Total. 8.408 ms (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.AcquireProjectLock                                                                                       :        1 samples, Peak.  30.6 ms (1.0x), Avg.  30.6 ms, Total. 30.63 ms (0.1%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.InitializeEngineNoGraphics                                                                               :        1 samples, Peak.  68.8 ms (1.0x), Avg.  68.8 ms, Total. 68.75 ms (0.3%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.PackageManager.Initialize                                                                                :        1 samples, Peak.   440 ms (1.0x), Avg.   440 ms, Total. 440.2 ms (2.1%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Connecting to Package Manager                                                                                        :       45 samples, Peak.  82.3 us (20.3x), Avg.  4.05 us, Total. 182.4 us (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.EngineGraphics.Initialize                                                                                :        1 samples, Peak.   271 ms (1.0x), Avg.   271 ms, Total. 270.7 ms (1.3%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.GI.Initialize                                                                                            :        1 samples, Peak.  5.29 ms (1.0x), Avg.  5.29 ms, Total. 5.289 ms (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.LoadAllDefaultResourcesFromEditor                                                                        :        1 samples, Peak.  2.53 ms (1.0x), Avg.  2.53 ms, Total. 2.529 ms (0.0%)
+2026-08-23T23:16:33.467Z|0xa7fc|[Performance] Application.LoadMonoAssemblies                                                                                       :        1 samples, Peak.  1.21 s (1.0x), Avg.  1.21 s, Total. 1.211 s (5.9%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] RestoreManagedReferences                                                                                             :        2 samples, Peak.   117 ms (2.0x), Avg.  58.4 ms, Total. 116.9 ms (0.6%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad DrivenRectTransformUndo                                                                             :        2 samples, Peak.   566 us (1.1x), Avg.   511 us, Total. 1.022 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad SceneSearch                                                                                         :        2 samples, Peak.   132 us (1.1x), Avg.   124 us, Total. 248.4 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad CloudBuild                                                                                          :        2 samples, Peak.  5.60 us (1.2x), Avg.  4.70 us, Total. 9.400 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad NativeFormatImporterUtility                                                                         :        2 samples, Peak.  3.56 ms (1.3x), Avg.  2.70 ms, Total. 5.409 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad SearchService                                                                                       :        2 samples, Peak.   145 us (1.1x), Avg.   133 us, Total. 266.8 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad SettingsService                                                                                     :        2 samples, Peak.  11.6 us (1.2x), Avg.  9.30 us, Total. 18.60 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad WindowLayout                                                                                        :        2 samples, Peak.   947 us (1.2x), Avg.   779 us, Total. 1.558 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad AssetStoreContext                                                                                   :        2 samples, Peak.  32.0 ms (1.2x), Avg.  27.6 ms, Total. 55.12 ms (0.3%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad PoolManager                                                                                         :        2 samples, Peak.   706 us (1.1x), Avg.   617 us, Total. 1.234 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad MixerEffectDefinitionReloader                                                                       :        2 samples, Peak.  2.80 ms (1.3x), Avg.  2.17 ms, Total. 4.343 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad ProjectSearch                                                                                       :        2 samples, Peak.   105 us (1.2x), Avg.  84.0 us, Total. 168.0 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad UISystemProfilerRenderService                                                                       :        2 samples, Peak.  8.40 us (1.0x), Avg.  8.10 us, Total. 16.20 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad EditMode                                                                                            :        2 samples, Peak.   437 us (1.1x), Avg.   382 us, Total. 763.7 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad UnityConnect                                                                                        :        2 samples, Peak.  50.7 us (1.1x), Avg.  47.1 us, Total. 94.20 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad ManagedDebugger                                                                                     :        2 samples, Peak.   617 us (1.7x), Avg.   368 us, Total. 736.8 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad ShortcutIntegration                                                                                 :        2 samples, Peak.  57.4 us (1.1x), Avg.  53.2 us, Total. 106.4 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad AddComponentWindow                                                                                  :        2 samples, Peak.   108 us (1.0x), Avg.   104 us, Total. 207.9 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad ManagedDebuggerWindow                                                                               :        2 samples, Peak.   122 us (1.0x), Avg.   117 us, Total. 233.5 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad CacheServerWindow                                                                                   :        2 samples, Peak.  12.0 us (1.3x), Avg.  9.15 us, Total. 18.30 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad PlayModeDownload                                                                                    :        2 samples, Peak.  10.7 ms (2.0x), Avg.  5.45 ms, Total. 10.90 ms (0.1%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad MenuItems                                                                                           :        2 samples, Peak.   144 us (1.3x), Avg.   113 us, Total. 225.2 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad PrefabInstanceChangedListener                                                                       :        2 samples, Peak.   188 us (1.2x), Avg.   160 us, Total. 320.5 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad ObjectSelectorSearch                                                                                :        2 samples, Peak.  57.5 us (1.1x), Avg.  50.1 us, Total. 100.2 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad EditorMonitor                                                                                       :        2 samples, Peak.   658 us (1.0x), Avg.   647 us, Total. 1.295 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad RetainedMode                                                                                        :        2 samples, Peak.  3.10 ms (1.2x), Avg.  2.60 ms, Total. 5.194 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad EditorShaderLoader                                                                                  :        2 samples, Peak.  1.11 ms (1.2x), Avg.   931 us, Total. 1.863 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad EditorDelegateRegistration                                                                          :        2 samples, Peak.   760 us (1.0x), Avg.   734 us, Total. 1.468 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad UIDocumentHierarchyWatcher                                                                          :        2 samples, Peak.   113 us (1.2x), Avg.  94.9 us, Total. 189.7 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad LiveReloadTrackerCreator                                                                            :        2 samples, Peak.   220 us (1.1x), Avg.   202 us, Total. 403.7 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad UxmlObjectEditorFactories                                                                           :        2 samples, Peak.   746 us (1.1x), Avg.   649 us, Total. 1.299 ms (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad UXMLEditorFactories                                                                                 :        2 samples, Peak.  71.2 ms (1.0x), Avg.  69.1 ms, Total. 138.1 ms (0.7%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad PurchasingService                                                                                   :        2 samples, Peak.  8.70 ms (1.1x), Avg.  7.94 ms, Total. 15.87 ms (0.1%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad CloudBuildPoller                                                                                    :        2 samples, Peak.   113 us (1.0x), Avg.   113 us, Total. 226.5 us (0.0%)
+2026-08-23T23:16:33.468Z|0xa7fc|[Performance] InitializeOnLoad EditorGameServicesAnalytics                                                                         :        2 samples, Peak.  1.62 ms (1.6x), Avg.  1.01 ms, Total. 2.021 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad AnalyticsService                                                                                    :        2 samples, Peak.   207 us (1.1x), Avg.   190 us, Total. 380.1 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad BuildService                                                                                        :        2 samples, Peak.   162 us (1.0x), Avg.   160 us, Total. 319.2 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad AdsService                                                                                          :        2 samples, Peak.   421 us (1.0x), Avg.   405 us, Total. 810.3 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad UDPService                                                                                          :        2 samples, Peak.   153 us (1.0x), Avg.   152 us, Total. 303.6 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad CrashService                                                                                        :        2 samples, Peak.   160 us (1.0x), Avg.   160 us, Total. 319.5 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad ServicesRepository                                                                                  :        2 samples, Peak.   600 ns (1.2x), Avg.   500 ns, Total. 1000.0 ns (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad SearchWindow                                                                                        :        2 samples, Peak.   148 us (1.1x), Avg.   131 us, Total. 263.0 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad CustomIndexers                                                                                      :        2 samples, Peak.  20.6 ms (1.2x), Avg.  17.9 ms, Total. 35.73 ms (0.2%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad SearchMonitor                                                                                       :        2 samples, Peak.  1.80 ms (1.4x), Avg.  1.33 ms, Total. 2.661 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad ParameterControllerEditor                                                                           :        2 samples, Peak.  29.2 us (1.2x), Avg.  24.0 us, Total. 48.10 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad LayerSettingsWindow                                                                                 :        2 samples, Peak.  23.9 us (1.7x), Avg.  14.0 us, Total. 27.90 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad PackageManagerHookGUIDConverter.RegisterPackagesEventHandler                                        :        2 samples, Peak.   855 us (1.7x), Avg.   493 us, Total. 985.6 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad EditorDragAndDrop.RegisterEditorClient                                                              :        2 samples, Peak.   525 us (1.3x), Avg.   390 us, Total. 781.0 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad EditorEventCallbacks.InitializeFontAssetResourceChangeCallBacks                                     :        2 samples, Peak.  2.05 ms (1.0x), Avg.  1.98 ms, Total. 3.960 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad SceneTemplateService.Init                                                                           :        2 samples, Peak.  1.84 ms (1.2x), Avg.  1.56 ms, Total. 3.126 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad DiagnosticSwitchesConsoleMessage.Init                                                               :        2 samples, Peak.  11.5 ms (1.8x), Avg.  6.33 ms, Total. 12.66 ms (0.1%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad PackageManagerWindow.EditorInitializedInSafeMode                                                    :        2 samples, Peak.  35.3 ms (2.0x), Avg.  17.8 ms, Total. 35.58 ms (0.2%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad ToolShortcutContext.Init                                                                            :        2 samples, Peak.   211 us (1.1x), Avg.   199 us, Total. 397.3 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad MemoryProfilerCompilationGuard.InjectCompileGuard                                                   :        2 samples, Peak.   222 us (1.5x), Avg.   147 us, Total. 294.5 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad AssetPostprocessingInternal.RefreshCustomDependencies                                               :        2 samples, Peak.  4.12 ms (1.2x), Avg.  3.34 ms, Total. 6.685 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad SysrootManager.Initialize                                                                           :        2 samples, Peak.  23.7 us (1.2x), Avg.  19.0 us, Total. 38.10 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad ScopedRegistryAddedPopup.SubscribeToRegistriesAdded                                                 :        2 samples, Peak.  11.1 ms (2.0x), Avg.  5.59 ms, Total. 11.19 ms (0.1%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad SceneVisibilityManager.Initialize                                                                   :        2 samples, Peak.  5.59 ms (1.6x), Avg.  3.51 ms, Total. 7.019 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] InitializeOnLoad EditorWindow.Initialize                                                                             :        2 samples, Peak.   416 us (1.3x), Avg.   323 us, Total. 645.5 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] AssemblyReloadEvents.afterAssemblyReload: UnityEditor.SceneTemplate.SceneTemplateService.AfterAssemblyReload         :        2 samples, Peak.  5.81 ms (1.8x), Avg.  3.16 ms, Total. 6.326 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] ProcessService.EditorAfterLoadAllAssemblies                                                                          :        2 samples, Peak.   675 us (1.1x), Avg.   595 us, Total. 1.189 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] Application.ReadLicenseInfo                                                                                          :        1 samples, Peak.  20.1 ms (1.0x), Avg.  20.1 ms, Total. 20.12 ms (0.1%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] Application.InitialRefresh                                                                                           :        1 samples, Peak.  12.2 s (1.0x), Avg.  12.2 s, Total. 12.17 s (59.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] ShaderImporter.SourceAssetModified                                                                                   :        2 samples, Peak.  1.20 us (1.5x), Avg.   800 ns, Total. 1.600 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] ShaderIncludeImporter.SourceAssetModified                                                                            :        2 samples, Peak.  1.50 us (1.3x), Avg.  1.15 us, Total. 2.300 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] Compiling Scripts                                                                                                    :        1 samples, Peak.  2.47 s (1.0x), Avg.  2.47 s, Total. 2.467 s (12.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] AssemblyReloadEvents.beforeAssemblyReload: UnityEditor.SceneTemplate.SceneTemplateService.BeforeAssemblyReload       :        1 samples, Peak.   470 us (1.0x), Avg.   470 us, Total. 470.2 us (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] PresetManagerPostProcessor.OnPreprocessAsset                                                                         :        1 samples, Peak.  1.54 ms (1.0x), Avg.  1.54 ms, Total. 1.544 ms (0.0%)
+2026-08-23T23:16:33.469Z|0xa7fc|[Performance] CancelSplashScreenOnAssetChange.OnPreprocessAsset                                                                    :        1 samples, Peak.   646 us (1.0x), Avg.   646 us, Total. 646.3 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] ShaderGraphAssetPostProcessor.OnPreprocessAsset                                                                      :        1 samples, Peak.   215 us (1.0x), Avg.   215 us, Total. 214.6 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] VFXExternalShaderProcessor.OnPreprocessAsset                                                                         :        1 samples, Peak.  1.15 ms (1.0x), Avg.  1.15 ms, Total. 1.154 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad BurstLoader                                                                                         :        1 samples, Peak.   482 ms (1.0x), Avg.   482 ms, Total. 482.1 ms (2.3%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad ShadowCasterGroup2DManager                                                                          :        1 samples, Peak.   169 us (1.0x), Avg.   169 us, Total. 168.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad AutoRunStage2                                                                                       :        1 samples, Peak.   207 us (1.0x), Avg.   207 us, Total. 206.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad MLAgentsSettingsManager                                                                             :        1 samples, Peak.  2.57 ms (1.0x), Avg.  2.57 ms, Total. 2.571 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad ProbeGIBaking                                                                                       :        1 samples, Peak.  2.59 ms (1.0x), Avg.  2.59 ms, Total. 2.592 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad FilterWindow                                                                                        :        1 samples, Peak.  45.9 us (1.0x), Avg.  45.9 us, Total. 45.90 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad RealtimeProbeSubdivisionDebug                                                                       :        1 samples, Peak.   179 us (1.0x), Avg.   179 us, Total. 178.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad NodeClassCache                                                                                      :        1 samples, Peak.  6.70 us (1.0x), Avg.  6.70 us, Total. 6.700 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad ShaderGraphMaterialsUpdater                                                                         :        2 samples, Peak.   372 us (1.5x), Avg.   241 us, Total. 482.7 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VFXGraphPreprocessor                                                                                :        1 samples, Peak.   292 us (1.0x), Avg.   292 us, Total. 292.1 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad SamplesLinkPackageManagerExtension                                                                  :        1 samples, Peak.   394 us (1.0x), Avg.   394 us, Total. 393.7 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VisualEffectAssetEditorUtility                                                                      :        1 samples, Peak.   399 us (1.0x), Avg.   399 us, Total. 399.3 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VFXFilterWindow                                                                                     :        1 samples, Peak.  45.9 us (1.0x), Avg.  45.9 us, Total. 45.90 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad BackgroundWatcher                                                                                   :        1 samples, Peak.   125 us (1.0x), Avg.   125 us, Total. 124.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad UnityTestProtocolStarter                                                                            :        1 samples, Peak.   170 us (1.0x), Avg.   170 us, Total. 170.3 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TestStarter                                                                                         :        1 samples, Peak.   556 us (1.0x), Avg.   556 us, Total. 556.4 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad RerunCallbackInitializer                                                                            :        1 samples, Peak.  5.16 ms (1.0x), Avg.  5.16 ms, Total. 5.157 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad PlasticPlugin                                                                                       :        1 samples, Peak.   321 ms (1.0x), Avg.   321 ms, Total. 321.1 ms (1.6%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad EditorToolManager                                                                                   :        1 samples, Peak.  4.90 ms (1.0x), Avg.  4.90 ms, Total. 4.902 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad Renderer2DAnalytics                                                                                 :        1 samples, Peak.   124 us (1.0x), Avg.   124 us, Total. 124.1 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad ToolbarBootstrap                                                                                    :        1 samples, Peak.  53.8 ms (1.0x), Avg.  53.8 ms, Total. 53.79 ms (0.3%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad StdioBridgeReloadHandler                                                                            :        1 samples, Peak.   679 us (1.0x), Avg.   679 us, Total. 679.4 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad PlayModeOptionsGuard                                                                                :        1 samples, Peak.   390 us (1.0x), Avg.   390 us, Total. 389.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad McpEditorShutdownCleanup                                                                            :        1 samples, Peak.  1.12 ms (1.0x), Avg.  1.12 ms, Total. 1.115 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad AssetGenJobManager                                                                                  :        1 samples, Peak.  1.21 ms (1.0x), Avg.  1.21 ms, Total. 1.214 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad StartupConfigRewrite                                                                                :        1 samples, Peak.   246 us (1.0x), Avg.   246 us, Total. 246.2 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad ProjectIdentityUtility                                                                              :        1 samples, Peak.   229 us (1.0x), Avg.   229 us, Total. 229.0 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad EditorStateCache                                                                                    :        1 samples, Peak.   136 ms (1.0x), Avg.   136 ms, Total. 135.7 ms (0.7%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TestRunnerNoThrottle                                                                                :        1 samples, Peak.   674 us (1.0x), Avg.   674 us, Total. 674.4 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad SetupWindowService                                                                                  :        1 samples, Peak.  97.4 us (1.0x), Avg.  97.4 us, Total. 97.40 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad StdioBridgeHost                                                                                     :        1 samples, Peak.  1.17 ms (1.0x), Avg.  1.17 ms, Total. 1.169 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TransportCommandDispatcher                                                                          :        1 samples, Peak.   815 ms (1.0x), Avg.   815 ms, Total. 814.9 ms (3.9%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad HttpBridgeReloadHandler                                                                             :        1 samples, Peak.  1.31 ms (1.0x), Avg.  1.31 ms, Total. 1.314 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad HttpAutoStartHandler                                                                                :        1 samples, Peak.   191 us (1.0x), Avg.   191 us, Total. 191.3 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad LegacyServerSrcMigration                                                                            :        1 samples, Peak.  62.8 us (1.0x), Avg.  62.8 us, Total. 62.80 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad StdIoVersionMigration                                                                               :        1 samples, Peak.  70.6 us (1.0x), Avg.  70.6 us, Total. 70.60 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VSCodeScriptEditor                                                                                  :        1 samples, Peak.  12.7 ms (1.0x), Avg.  12.7 ms, Total. 12.69 ms (0.1%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VisualStudioIntegration                                                                             :        1 samples, Peak.  13.6 ms (1.0x), Avg.  13.6 ms, Total. 13.64 ms (0.1%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VisualStudioEditor                                                                                  :        1 samples, Peak.  1.30 us (1.0x), Avg.  1.30 us, Total. 1.300 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TestRunnerApiListener                                                                               :        1 samples, Peak.   520 us (1.0x), Avg.   520 us, Total. 520.1 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad PrefabLayoutRebuilder                                                                               :        1 samples, Peak.   254 us (1.0x), Avg.   254 us, Total. 253.9 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad DefineSetter                                                                                        :        1 samples, Peak.  4.08 ms (1.0x), Avg.  4.08 ms, Total. 4.083 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad NavigationWindow                                                                                    :        1 samples, Peak.   762 us (1.0x), Avg.   762 us, Total. 761.6 us (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad SceneViewGridManager.Initialize                                                                     :        1 samples, Peak.  7.82 ms (1.0x), Avg.  7.82 ms, Total. 7.818 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TilemapPrefabStageHelper.Initialize                                                                 :        1 samples, Peak.  2.88 ms (1.0x), Avg.  2.88 ms, Total. 2.876 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad SceneViewOpenTilePaletteHelper.Initialize                                                           :        1 samples, Peak.  3.08 ms (1.0x), Avg.  3.08 ms, Total. 3.083 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad TileDragAndDropManager.Initialize                                                                   :        1 samples, Peak.  2.08 ms (1.0x), Avg.  2.08 ms, Total. 2.080 ms (0.0%)
+2026-08-23T23:16:33.470Z|0xa7fc|[Performance] InitializeOnLoad VisualStudioEditor.LegacyVisualStudioCodePackageDisabler                                            :        1 samples, Peak.  4.55 ms (1.0x), Avg.  4.55 ms, Total. 4.552 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad MaterialReimporter.RegisterUpgraderReimport                                                         :        2 samples, Peak.   496 us (1.7x), Avg.   294 us, Total. 587.7 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad ExecuteCode.OnDomainReload                                                                          :        1 samples, Peak.   711 us (1.0x), Avg.   711 us, Total. 711.4 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad GetMenuItems.BuildCache                                                                             :        1 samples, Peak.  13.1 ms (1.0x), Avg.  13.1 ms, Total. 13.15 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad UnityReflect.OnLoad                                                                                 :        1 samples, Peak.   847 us (1.0x), Avg.   847 us, Total. 846.8 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad McpLogRecord.RefreshFromPrefs                                                                       :        1 samples, Peak.   337 us (1.0x), Avg.   337 us, Total. 337.3 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad TestJobDataHolder.ResumeRunningJobs                                                                 :        1 samples, Peak.  2.29 ms (1.0x), Avg.  2.29 ms, Total. 2.293 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad AnalyticsReporter.RegisterCallbacks                                                                 :        1 samples, Peak.   347 us (1.0x), Avg.   347 us, Total. 346.9 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad VFXLibrary.RegisterSRPChangeCallback                                                                :        1 samples, Peak.   280 us (1.0x), Avg.   280 us, Total. 279.7 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad DebugManagerWindowLifetimeAnalytic.SubscribeToDebugManagerOpenCloseWindows                          :        1 samples, Peak.   514 us (1.0x), Avg.   514 us, Total. 514.2 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad CoreRenderPipelinePreferences.InitPreferenceProviders                                               :        1 samples, Peak.  17.6 ms (1.0x), Avg.  17.6 ms, Total. 17.59 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] InitializeOnLoad VolumeGizmoDrawer.InitVolumeGizmoCallbacks                                                          :        1 samples, Peak.   380 us (1.0x), Avg.   380 us, Total. 379.5 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsEditorUtilities.OnEditorReload                                                                       :        1 samples, Peak.  2.13 ms (1.0x), Avg.  2.13 ms, Total. 2.131 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsTestRunnerWindow.CompilationCallback                                                                 :        1 samples, Peak.   245 us (1.0x), Avg.   245 us, Total. 245.2 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsTestListCache.ScriptReloaded                                                                         :        1 samples, Peak.  2.66 ms (1.0x), Avg.  2.66 ms, Total. 2.660 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsLookDev.OnEditorReload                                                                               :        1 samples, Peak.   323 us (1.0x), Avg.   323 us, Total. 323.0 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsDebugWindow.OnEditorReload                                                                           :        1 samples, Peak.  18.6 ms (1.0x), Avg.  18.6 ms, Total. 18.60 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsVolumeComponentEditor.OnEditorReload                                                                 :        1 samples, Peak.  16.3 ms (1.0x), Avg.  16.3 ms, Total. 16.27 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsPostProcessManager.OnEditorReload                                                                    :        1 samples, Peak.  26.5 ms (1.0x), Avg.  26.5 ms, Total. 26.47 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] DidReloadScriptsAdvancedDropdownWindow.OnScriptReload                                                                :        1 samples, Peak.   369 us (1.0x), Avg.   369 us, Total. 368.6 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssemblyReloadEvents.afterAssemblyReload: MCPForUnity.Editor.Services.StdioBridgeReloadHandler.OnAfterAssemblyReload :        1 samples, Peak.  1.95 ms (1.0x), Avg.  1.95 ms, Total. 1.951 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssemblyReloadEvents.afterAssemblyReload: callback in MCPForUnity.Editor.Services.EditorStateCache                   :        1 samples, Peak.   430 us (1.0x), Avg.   430 us, Total. 429.9 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssemblyReloadEvents.afterAssemblyReload: MCPForUnity.Editor.Services.HttpBridgeReloadHandler.OnAfterAssemblyReload  :        1 samples, Peak.   171 us (1.0x), Avg.   171 us, Total. 171.4 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssemblyReloadEvents.afterAssemblyReload: MCPForUnity.Editor.Tools.UnityReflect.InvalidateCache                      :        1 samples, Peak.   449 us (1.0x), Avg.   449 us, Total. 448.8 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssetDatabase.ImportAssets                                                                                           :        3 samples, Peak.   180 us (3.0x), Avg.  60.4 us, Total. 181.2 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] VersionControl.Task.Wait                                                                                             :        1 samples, Peak.   388 us (1.0x), Avg.   388 us, Total. 388.5 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] TMPro_TexturePostProcessor.OnPostprocessAllAssets                                                                    :        2 samples, Peak.   616 us (1.1x), Avg.   540 us, Total. 1.080 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssetPostprocessor.OnPostprocessAllAssets                                                                            :        2 samples, Peak.  1.58 ms (1.0x), Avg.  1.58 ms, Total. 3.162 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] BuilderAssetPostprocessor.OnPostprocessAllAssets                                                                     :        2 samples, Peak.  3.22 ms (1.0x), Avg.  3.22 ms, Total. 6.438 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] ArtifactBrowserPostProcessor.OnPostprocessAllAssets                                                                  :        2 samples, Peak.   600 us (1.0x), Avg.   597 us, Total. 1.195 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssetEvents.OnPostprocessAllAssets                                                                                   :        4 samples, Peak.   370 us (1.5x), Avg.   241 us, Total. 966.0 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AudioMixerPostprocessor.OnPostprocessAllAssets                                                                       :        2 samples, Peak.   490 us (1.0x), Avg.   488 us, Total. 975.1 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] StyleCatalogPostProcessor.OnPostprocessAllAssets                                                                     :        2 samples, Peak.  32.1 ms (1.0x), Avg.  32.1 ms, Total. 64.28 ms (0.3%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] BuildCatalog                                                                                                         :        1 samples, Peak.  30.5 ms (1.0x), Avg.  30.5 ms, Total. 30.47 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] ModelImporterPostProcessor.OnPostprocessAllAssets                                                                    :        2 samples, Peak.  1.86 ms (1.0x), Avg.  1.85 ms, Total. 3.708 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] MaterialPostprocessor.OnPostprocessAllAssets                                                                         :        4 samples, Peak.   830 us (1.0x), Avg.   814 us, Total. 3.257 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] CubeLutAssetImporter.OnPostprocessAllAssets                                                                          :        2 samples, Peak.   493 us (1.0x), Avg.   492 us, Total. 983.0 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets                                            :        2 samples, Peak.  2.26 ms (1.0x), Avg.  2.26 ms, Total. 4.514 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] RetainedModeAssetPostprocessor.OnPostprocessAllAssets                                                                :        2 samples, Peak.  3.28 ms (1.0x), Avg.  3.28 ms, Total. 6.559 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssetChangedListener.OnPostprocessAllAssets                                                                          :        2 samples, Peak.  1.28 ms (1.0x), Avg.  1.28 ms, Total. 2.562 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] PostProcessor.OnPostprocessAllAssets                                                                                 :        2 samples, Peak.   236 us (1.0x), Avg.   235 us, Total. 469.9 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] ShaderGraphAssetPostProcessor.OnPostprocessAllAssets                                                                 :        2 samples, Peak.  1.36 ms (1.0x), Avg.  1.36 ms, Total. 2.717 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] SpeedTreePostProcessor.OnPostprocessAllAssets                                                                        :        2 samples, Peak.   147 us (1.0x), Avg.   146 us, Total. 291.5 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] TextAssetPostProcessor.OnPostprocessAllAssets                                                                        :        2 samples, Peak.   484 us (1.0x), Avg.   482 us, Total. 964.5 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] AssetProcessor.OnPostprocessAllAssets                                                                                :        6 samples, Peak.  1.60 ms (1.6x), Avg.  1.01 ms, Total. 6.036 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] VFXGraphPreprocessor.OnPostprocessAllAssets                                                                          :        2 samples, Peak.  1.34 ms (1.0x), Avg.  1.34 ms, Total. 2.675 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] SyncVS.PostprocessSyncProject                                                                                        :        1 samples, Peak.  4.24 ms (1.0x), Avg.  4.24 ms, Total. 4.243 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.ImportPackagesAndSetTemplateWhenCreatingProject                                                          :        1 samples, Peak.  81.2 ms (1.0x), Avg.  81.2 ms, Total. 81.15 ms (0.4%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.SyncCurrentColorSpace                                                                                    :        1 samples, Peak.  49.2 ms (1.0x), Avg.  49.2 ms, Total. 49.16 ms (0.2%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.OnUsbDevicesChanged                                                                                      :        1 samples, Peak.  24.1 ms (1.0x), Avg.  24.1 ms, Total. 24.06 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.AssetInstanceCacheUpdate                                                                                 :        1 samples, Peak.   400 ns (1.0x), Avg.   400 ns, Total. 400.0 ns (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.UnityExtensions.Initialize                                                                               :        1 samples, Peak.  5.97 ms (1.0x), Avg.  5.97 ms, Total. 5.969 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] CodeEditorProjectSync.SyncEditorProject                                                                              :        1 samples, Peak.   918 ms (1.0x), Avg.   918 ms, Total. 917.9 ms (4.4%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.ExecuteStartups                                                                                          :        1 samples, Peak.  84.2 ms (1.0x), Avg.  84.2 ms, Total. 84.16 ms (0.4%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Menu.RegisterMenuInterface                                                                                           :       26 samples, Peak.  6.70 us (9.0x), Avg.   742 ns, Total. 19.30 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Gizmo.RebuildRenderers                                                                                               :        1 samples, Peak.  76.2 ms (1.0x), Avg.  76.2 ms, Total. 76.17 ms (0.4%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Gizmo.AddGizmoRenderers                                                                                              :      101 samples, Peak.  1.61 ms (45.7x), Avg.  35.1 us, Total. 3.548 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.editorInitializingProject                                                                                :        1 samples, Peak.   246 ms (1.0x), Avg.   246 ms, Total. 246.4 ms (1.2%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.InitializeMenu                                                                                           :        1 samples, Peak.   883 ms (1.0x), Avg.   883 ms, Total. 883.0 ms (4.3%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Menu.RebuildAll                                                                                                      :        1 samples, Peak.   883 ms (1.0x), Avg.   883 ms, Total. 883.0 ms (4.3%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Menu.BuildRegisteredMenuInterfaces                                                                                   :        1 samples, Peak.   876 ms (1.0x), Avg.   876 ms, Total. 876.1 ms (4.2%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Menu.FilterMenuItem                                                                                                  :     1061 samples, Peak.   111 ms (1056.0x), Avg.   105 us, Total. 111.4 ms (0.5%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] UpdateAllMenus                                                                                                       :        1 samples, Peak.   792 us (1.0x), Avg.   792 us, Total. 791.8 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Menu.RebuildOSMainMenu                                                                                               :        2 samples, Peak.  5.49 ms (1.2x), Avg.  4.61 ms, Total. 9.222 ms (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorSceneManager.sceneClosing: UnityEditor.SceneVisibilityManager.EditorSceneManagerOnSceneClosing                 :        1 samples, Peak.   555 us (1.0x), Avg.   555 us, Total. 555.1 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] GUIView.RepaintAll.PlayerLoopController                                                                              :        1 samples, Peak.   267 us (1.0x), Avg.   267 us, Total. 266.5 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneTemplate.SceneTemplateService.OnNewSceneCreated                 :        1 samples, Peak.   241 us (1.0x), Avg.   241 us, Total. 241.2 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneVisibilityManager.EditorSceneManagerOnNewSceneCreated           :        1 samples, Peak.   547 us (1.0x), Avg.   547 us, Total. 547.0 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorSceneManager.newSceneCreated: UnityEditor.SceneManagement.StageNavigationManager.OnNewSceneCreated             :        1 samples, Peak.  77.7 us (1.0x), Avg.  77.7 us, Total. 77.70 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] Application.InvokeFinishedLoadingProject                                                                             :        1 samples, Peak.  16.7 ms (1.0x), Avg.  16.7 ms, Total. 16.69 ms (0.1%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] ProcessService.OnProjectLoaded                                                                                       :        1 samples, Peak.  46.8 us (1.0x), Avg.  46.8 us, Total. 46.80 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorApplication.quitting: Unity.Burst.Editor.BurstLoader.OnEditorApplicationQuitting                               :        1 samples, Peak.  27.4 us (1.0x), Avg.  27.4 us, Total. 27.40 us (0.0%)
+2026-08-23T23:16:33.471Z|0xa7fc|[Performance] EditorApplication.quitting: MCPForUnity.Editor.Services.StdioBridgeReloadHandler.CancelRetries                       :        1 samples, Peak.  74.9 us (1.0x), Avg.  74.9 us, Total. 74.90 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] EditorApplication.quitting: MCPForUnity.Editor.Services.McpEditorShutdownCleanup.OnEditorQuitting                    :        1 samples, Peak.   296 us (1.0x), Avg.   296 us, Total. 296.0 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] EditorApplication.quitting: UnityEditor.Tilemaps.SceneViewGridManager.EditorQuitting                                 :        1 samples, Peak.  82.4 us (1.0x), Avg.  82.4 us, Total. 82.40 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] EditorApplication.quitting: callback in UnityEditor.TextCore.Text.EditorEventCallbacks                               :        1 samples, Peak.  91.4 ms (1.0x), Avg.  91.4 ms, Total. 91.42 ms (0.4%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.PauseProfilerSession                                                                            :        1 samples, Peak.  1.41 ms (1.0x), Avg.  1.41 ms, Total. 1.412 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.PauseAssetImportWorkers                                                                         :        1 samples, Peak.   909 us (1.0x), Avg.   909 us, Total. 909.5 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.SaveAssets                                                                                      :        1 samples, Peak.  26.0 ms (1.0x), Avg.  26.0 ms, Total. 25.98 ms (0.1%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] PaletteAssetModificationProcessor.OnWillSaveAssets                                                                   :        1 samples, Peak.   241 us (1.0x), Avg.   241 us, Total. 241.3 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] AssetModificationProcessor.OnWillSaveAssets                                                                          :        1 samples, Peak.   341 us (1.0x), Avg.   341 us, Total. 340.6 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] UnityCloudProjectLinkMonitor.OnWillSaveAssets                                                                        :        1 samples, Peak.   339 us (1.0x), Avg.   339 us, Total. 339.2 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] VisualEffectAssetModificationProcessor.OnWillSaveAssets                                                              :        1 samples, Peak.   787 us (1.0x), Avg.   787 us, Total. 786.5 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] BuilderAssetModificationProcessor.OnWillSaveAssets                                                                   :        1 samples, Peak.   363 us (1.0x), Avg.   363 us, Total. 362.6 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] TerrainModificationProcessor.OnWillSaveAssets                                                                        :        1 samples, Peak.   562 us (1.0x), Avg.   562 us, Total. 561.9 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupRenderPipeline                                                                           :        1 samples, Peak.  11.5 us (1.0x), Avg.  11.5 us, Total. 11.50 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.StopPreloadManager                                                                              :        1 samples, Peak.  9.80 ms (1.0x), Avg.  9.80 ms, Total. 9.798 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.DestroyWorld                                                                                    :        1 samples, Peak.   671 us (1.0x), Avg.   671 us, Total. 671.3 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupAfterLoad                                                                                :        1 samples, Peak.  7.63 ms (1.0x), Avg.  7.63 ms, Total. 7.627 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.Progress                                                                                        :        1 samples, Peak.   340 us (1.0x), Avg.   340 us, Total. 339.7 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.GICleanupManagers                                                                               :        1 samples, Peak.  4.46 ms (1.0x), Avg.  4.46 ms, Total. 4.456 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.MenuCleanupClass                                                                                :        1 samples, Peak.   321 us (1.0x), Avg.   321 us, Total. 320.6 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.ADBSaveStateBeforeShutdown                                                                      :        1 samples, Peak.  9.20 us (1.0x), Avg.  9.20 us, Total. 9.200 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.RemoteShutdown                                                                                  :        1 samples, Peak.   800 ns (1.0x), Avg.   800 ns, Total. 800.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupVCProvider                                                                               :        1 samples, Peak.  13.4 us (1.0x), Avg.  13.4 us, Total. 13.40 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.InputShutdown                                                                                   :        1 samples, Peak.  2.30 us (1.0x), Avg.  2.30 us, Total. 2.300 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.GizmoManagerDestroy                                                                             :        1 samples, Peak.   891 us (1.0x), Avg.   891 us, Total. 891.2 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.ProfilerSession                                                                                 :        1 samples, Peak.   857 us (1.0x), Avg.   857 us, Total. 856.5 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.ReleaseGfxWindowOnAllGUIViews                                                                   :        1 samples, Peak.   600 ns (1.0x), Avg.   600 ns, Total. 600.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupEngine                                                                                   :        1 samples, Peak.   213 ms (1.0x), Avg.   213 ms, Total. 212.7 ms (1.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupAssetDatabase                                                                            :        1 samples, Peak.  23.8 ms (1.0x), Avg.  23.8 ms, Total. 23.77 ms (0.1%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.ScriptCompilationCleanUp                                                                        :        1 samples, Peak.  36.9 ms (1.0x), Avg.  36.9 ms, Total. 36.90 ms (0.2%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.DestroyJobSystem                                                                                :        1 samples, Peak.   188 us (1.0x), Avg.   188 us, Total. 187.8 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupPersistentManager                                                                        :        1 samples, Peak.  5.38 ms (1.0x), Avg.  5.38 ms, Total. 5.379 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupAsyncReadManager                                                                         :        1 samples, Peak.   413 us (1.0x), Avg.   413 us, Total. 413.2 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupProgressBar                                                                              :        1 samples, Peak.   500 ns (1.0x), Avg.   500 ns, Total. 500.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupMono                                                                                     :        1 samples, Peak.   128 ms (1.0x), Avg.   128 ms, Total. 128.4 ms (0.6%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupStdConverters                                                                            :        1 samples, Peak.  11.7 us (1.0x), Avg.  11.7 us, Total. 11.70 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.UnloadAllPlatformSupportModuleNativeDlls                                                        :        1 samples, Peak.  1.40 us (1.0x), Avg.  1.40 us, Total. 1.400 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.UnloadAllPlatformSupportNativeLibraries                                                         :        1 samples, Peak.   200 ns (1.0x), Avg.   200 ns, Total. 200.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupAutoDocumentation                                                                        :        1 samples, Peak.  1.08 ms (1.0x), Avg.  1.08 ms, Total. 1.076 ms (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.ShaderNameManagerDestroy                                                                        :        1 samples, Peak.  61.1 us (1.0x), Avg.  61.1 us, Total. 61.10 us (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.CleanupCacheServer                                                                              :        1 samples, Peak.   400 ns (1.0x), Avg.   400 ns, Total. 400.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.Virtualization_Shutdown                                                                         :        1 samples, Peak.   400 ns (1.0x), Avg.   400 ns, Total. 400.0 ns (0.0%)
+2026-08-23T23:16:33.472Z|0xa7fc|[Performance] Application.Shutdown.DevConnections                                                                                  :        1 samples, Peak.   306 us (1.0x), Avg.   306 us, Total. 305.7 us (0.0%)
+2026-08-23T23:16:33.473Z|0xa7fc|Exiting batchmode successfully now!
+2026-08-23T23:16:33.476Z|0xa7fc|Exiting without the bug reporter. Application will terminate with return code 0

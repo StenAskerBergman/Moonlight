@@ -21,9 +21,8 @@ public class InventoryUIManager : MonoBehaviour
 
                 if (_instance == null)
                 {
-                    GameObject instanceObject = new GameObject();
+                    GameObject instanceObject = new GameObject(nameof(InventoryUIManager));
                     _instance = instanceObject.AddComponent<InventoryUIManager>();
-                    DontDestroyOnLoad(instanceObject);
                 }
             }
             return _instance;
@@ -36,11 +35,21 @@ public class InventoryUIManager : MonoBehaviour
         if (_instance == null)
         {
             _instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else if (_instance != this)
         {
             Destroy(gameObject);
+        }
+    }
+
+    void OnDestroy()
+    {
+        // This is match HUD, so it must not outlive the match scene. It used to
+        // DontDestroyOnLoad itself, which carried a gameplay inventory panel into
+        // the main menu and left a stale _instance pointing at it.
+        if (_instance == this)
+        {
+            _instance = null;
         }
     }
 

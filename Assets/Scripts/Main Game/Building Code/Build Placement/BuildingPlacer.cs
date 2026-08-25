@@ -143,23 +143,63 @@ public class BuildingPlacer : MonoBehaviour
         {
             Debug.Log("Attempt A: No BaseStorageManager found.");
             // Fetch Storage Manager B
-            currentBaseStorageManager = FetchBaseStorageManager(islandTransform.GetComponent<Island>().ID);
+            if (islandTransform.GetComponent<Island>() != null)
+            {
+                currentBaseStorageManager = FetchBaseStorageManager(islandTransform.GetComponent<Island>().ID);
+            }
             if (currentBaseStorageManager == null)
             {
-                Debug.Log("Attempt B: No BaseStorageManager found.");
-                return;
+                currentBaseStorageManager = islandTransform.GetComponent<BaseStorageManager>();
+                if (currentBaseStorageManager == null)
+                {
+                    currentBaseStorageManager = islandTransform.gameObject.AddComponent<BaseStorageManager>();
+                }
             }
         }
 
         // Get Building Cost from the preview prefab before instantiating
-        BuildingCost buildingCostPrefab = buildingPreview.buildingPrefab.GetComponent<BuildingCost>();
-        
+        BuildingCost buildingCostPrefab = buildingPreview != null && buildingPreview.buildingPrefab != null 
+            ? buildingPreview.buildingPrefab.GetComponent<BuildingCost>() 
+            : null;
+
+        InfluenceManager influenceManager = islandTransform.GetComponent<InfluenceManager>();
+        bool isUnsettledIsland = influenceManager == null || !influenceManager.HasWarehouse;
+        Unit foundingBoat = null;
+
         // Logic for checking if the player can afford the building
-        if (buildingCostPrefab != null && !currentBaseStorageManager.CanAffordBuilding(buildingCostPrefab))
+        if (isUnsettledIsland)
         {
-            Debug.Log("Not Enough Resources!");
-            buildingChecker.CancelBuilding();
-            return;
+            foundingBoat = InfluenceManager.GetNearestPlayerBoat(buildingPreview.transform.position);
+            if (foundingBoat != null)
+            {
+                UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+                if (buildingCostPrefab != null && buildingCostPrefab.costData != null && boatInv != null)
+                {
+                    Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
+                    Dictionary<ItemData, int> costItems = buildingCostPrefab.costData.GetCostItemsDictionary();
+                    foreach (var kvp in costItems)
+                    {
+                        if (kvp.Key != null && kvp.Value > 0)
+                        {
+                            if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
+                            {
+                                Debug.Log("Boat does not have enough resources to found harbor!");
+                                buildingChecker.CancelBuilding();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (buildingCostPrefab != null && currentBaseStorageManager != null && !currentBaseStorageManager.CanAffordBuilding(buildingCostPrefab))
+            {
+                Debug.Log("Not Enough Resources in Island Storage!");
+                buildingChecker.CancelBuilding();
+                return;
+            }
         }
 
         // Spawn Building
@@ -173,7 +213,25 @@ public class BuildingPlacer : MonoBehaviour
         BuildingProperties buildingProperties = SetBuildingProperties(buildingInstance, buildingPreview);
         BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>(); 
 
-        DeductCosts(buildingCost, currentBaseStorageManager); 
+        if (isUnsettledIsland && foundingBoat != null)
+        {
+            UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+            if (buildingCost != null && buildingCost.costData != null && boatInv != null)
+            {
+                Dictionary<ItemData, int> costItems = buildingCost.costData.GetCostItemsDictionary();
+                foreach (var kvp in costItems)
+                {
+                    if (kvp.Key != null && kvp.Value > 0)
+                    {
+                        boatInv.RemoveItem(kvp.Key, kvp.Value);
+                    }
+                }
+            }
+        }
+        else if (buildingCost != null && currentBaseStorageManager != null)
+        {
+            DeductCosts(buildingCost, currentBaseStorageManager); 
+        }
         MarkGridCells(buildingInstance, buildingProperties.buildingSize);
 
         // Register Influence Zone (Phase 3)
@@ -181,7 +239,11 @@ public class BuildingPlacer : MonoBehaviour
         if (zone != null)
         {
             InfluenceManager manager = islandTransform.GetComponent<InfluenceManager>();
-            if (manager != null) manager.RegisterZone(zone);
+            if (manager == null)
+            {
+                manager = islandTransform.gameObject.AddComponent<InfluenceManager>();
+            }
+            manager.RegisterZone(zone);
         }
 
         // Next Step: Initialize Building!

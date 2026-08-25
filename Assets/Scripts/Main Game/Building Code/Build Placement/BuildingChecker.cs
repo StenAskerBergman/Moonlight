@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -9,6 +10,10 @@ public class BuildingChecker : MonoBehaviour
 
     public bool IC = false;
     [SerializeField] private BuildingPreview currentBuildingPreview;
+
+    // True while a building is being positioned. Other placement modes (roads)
+    // read this so two of them can't both act on the same click.
+    public bool IsPlacingBuilding => currentBuildingPreview != null;
     [SerializeField] private BuildingPlacer buildingPlacer;
     private Island currentIsland;
     private GridSystem gridSystem;
@@ -468,8 +473,6 @@ public class BuildingChecker : MonoBehaviour
                         int targetZ = gridPosition.z + z;
 
                         Cell targetCell = gridSystem.GetCell(targetX, targetZ);
-                        
-                        // If ANY cell within the footprint of the building is null, blocked, occupied or contains a building, we can't place.
                         if (targetCell == null || targetCell.isBlocked || targetCell.isOccupied)
                         {
                             canPlace = false;
@@ -487,10 +490,6 @@ public class BuildingChecker : MonoBehaviour
                             else if (data.buildingType == BuildingEnums.BuildingType.OffShore.ToString())
                             {
                                 if (targetCell.currentTerrainType != Cell.TerrainType.Shallow) { canPlace = false; break; }
-                            }
-                            else if (data.buildingType == BuildingEnums.BuildingType.DeepSea.ToString())
-                            {
-                                if (targetCell.currentTerrainType != Cell.TerrainType.Plateau) { canPlace = false; break; }
                             }
 
                             // Resource Node Validation
@@ -529,15 +528,61 @@ public class BuildingChecker : MonoBehaviour
 
                 if (canPlace)
                 {
-                    InfluenceManager influenceManager = currentIsland.islandObject.GetComponent<InfluenceManager>();
+                    InfluenceManager influenceManager = null;
+                    if (currentIsland != null)
+                    {
+                        influenceManager = currentIsland.GetComponent<InfluenceManager>();
+                        if (influenceManager == null && currentIsland.islandObject != null)
+                        {
+                            influenceManager = currentIsland.islandObject.GetComponent<InfluenceManager>();
+                        }
+                        if (influenceManager == null)
+                        {
+                            influenceManager = currentIsland.gameObject.AddComponent<InfluenceManager>();
+                        }
+                    }
+
                     if (influenceManager != null)
                     {
                         BuildingData data = buildingProperties.buildingData;
-                        bool isWarehouse = data != null && data.buildingType == BuildingEnums.BuildingType.OnShore.ToString(); 
+                        bool isWarehouse = data != null && (
+                            data.buildingType == BuildingEnums.BuildingType.OnShore.ToString() ||
+                            (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag => tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) || tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase))) ||
+                            (data.buildingName != null && (data.buildingName.IndexOf("Warehouse", System.StringComparison.OrdinalIgnoreCase) >= 0 || data.buildingName.IndexOf("Harbor", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                        );
 
                         if (isWarehouse)
                         {
-                            canPlace = canPlace && influenceManager.CanPlaceWarehouse(newPos, gridSystem);
+                            Unit foundingBoat = null;
+                            bool canWarehouse = influenceManager.CanPlaceWarehouse(newPos, gridSystem, out foundingBoat);
+
+                            // If this is the first warehouse on an unsettled island, verify boat cargo
+                            if (canWarehouse && !influenceManager.HasWarehouse && foundingBoat != null)
+                            {
+                                BuildingCost costComponent = currentBuildingPreview.GetBuildingPrefab()?.GetComponent<BuildingCost>();
+                                if (costComponent != null && costComponent.costData != null)
+                                {
+                                    UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+                                    if (boatInv != null)
+                                    {
+                                        Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
+                                        Dictionary<ItemData, int> costItems = costComponent.costData.GetCostItemsDictionary();
+                                        foreach (var kvp in costItems)
+                                        {
+                                            if (kvp.Key != null && kvp.Value > 0)
+                                            {
+                                                if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
+                                                {
+                                                    canWarehouse = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            canPlace = canPlace && canWarehouse;
                         }
                         else
                         {
@@ -546,51 +591,28 @@ public class BuildingChecker : MonoBehaviour
                     }
                 }
 
-                // Check Out isVerified Building Requirements for More!
-
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Should be false unless you can play on boundary
+                currentBuildingPreview.SetPreviewMaterial(canPlace);
                 Debug.LogFormat("<color=pink>UpdateBuildsite - canPlace: </color>" + canPlace);
-
-
             }
             else
             {
-                //Debug.Log("No cell found at the given world position." + newPos);
-                currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
+                canPlace = false;
+                currentBuildingPreview.SetPreviewMaterial(canPlace);
                 return;
             }
-            // Still hit the Ground layer, but no cells found
-            //Debug.Log("Still hit the Ground layer, but no cells found");
-            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
         }
         else
         {
-            // Mouse Mouse off, Island after its selected
-            // Disable the renderer if the raycast does not hit the ground layer
             if (currentBuildingPreview != null)
             {
                 Debug.Log("No Ground Layer");
-
-                // If you do want the building to be insta cancelled
-                // CancelBuilding(); // Only Issue is... You won't ever Reach the island
-
-                // If You don't want the building to be insta cancelled
-                //currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-                currentBuildingPreview.SetPreviewMaterial(false);// canPlace == true && canPlace2 == true); // Placement Indicator
-
-                currentBuildingPreview.SetRendererEnabled(canPlace);
+                canPlace = false;
+                currentBuildingPreview.SetPreviewMaterial(false);
+                currentBuildingPreview.SetRendererEnabled(false);
                 return;
-
-                // Note:
-                // This Determines if you can move mouse off island
-                // and if the building retains it's last selected
-                // location on the island for the building preview
             }
 
-            // No Parent Land Found Yet!
-            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
-            currentBuildingPreview.SetRendererEnabled(false);
-            Debug.Log("No Parents.");
+            canPlace = false;
             return;
         }
     }
@@ -607,32 +629,15 @@ public class BuildingChecker : MonoBehaviour
             }
             currentBuildingPreview = null;
         }
-
-        // No current building preview to cancel
-
     }
 
     public void CancelClick()
     {                     
-        // Right Click to Cancel
         if (Input.GetMouseButtonDown(1))
         {
             CancelBuilding();
         }
     }
-
     #endregion
-
-    // Ref 1: 
-    //
-    // Here is the place for Dockyard Code
-    //
-    // if()
-    // {
-    //      if a building canbe placed onto
-    //      another building than it needs
-    //      to be coded and added here to
-    //      this section.
-    // }
 
 }

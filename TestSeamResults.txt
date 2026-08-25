@@ -1,0 +1,304 @@
+================================================================================
+                       STAGE 2 COMPILED UNITY VERIFICATION                     
+================================================================================
+
+================================================================================
+1. MULTIPLE REAL HORIZONTAL SEAMS
+================================================================================
+
+--- Horizontal Seam 1: Chunk A (0,0) vs Chunk B (60,0) along World X = 60 ---
+Point World: (60.0, 5.0)
+  Chunk A (Local 60.0, 5.0): sharedBase=-0.057714, localField=-0.161651, edgeWeight=0.000000, baseFinalSource=-0.057714
+    -> FINAL: Source=-0.057714, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk B (Local 0.0, 5.0): sharedBase=-0.057714, localField=-0.690107, edgeWeight=0.000000, baseFinalSource=-0.057714
+    -> FINAL: Source=-0.057714, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 15.0)
+  Chunk A (Local 60.0, 15.0): sharedBase=-0.037604, localField=-0.175089, edgeWeight=0.000000, baseFinalSource=-0.037604
+    -> FINAL: Source=-0.037604, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk B (Local 0.0, 15.0): sharedBase=-0.037604, localField=-0.678502, edgeWeight=0.000000, baseFinalSource=-0.037604
+    -> FINAL: Source=-0.037604, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 30.0)
+  Chunk A (Local 60.0, 30.0): sharedBase=-0.014717, localField=-0.523228, edgeWeight=0.000000, baseFinalSource=-0.014717
+    -> FINAL: Source=-0.014717, Type=Deep, Height=-4.593549, PlateauInf=0.000000
+  Chunk B (Local 0.0, 30.0): sharedBase=-0.014717, localField=-0.581112, edgeWeight=0.000000, baseFinalSource=-0.014717
+    -> FINAL: Source=-0.014717, Type=Deep, Height=-4.593549, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 45.0)
+  Chunk A (Local 60.0, 45.0): sharedBase=-0.026039, localField=-0.788254, edgeWeight=0.000000, baseFinalSource=-0.026039
+    -> FINAL: Source=-0.026039, Type=Deep, Height=-4.910064, PlateauInf=0.000000
+  Chunk B (Local 0.0, 45.0): sharedBase=-0.026039, localField=-0.464437, edgeWeight=0.000000, baseFinalSource=-0.026039
+    -> FINAL: Source=-0.026039, Type=Deep, Height=-4.910064, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 55.0)
+  Chunk A (Local 60.0, 55.0): sharedBase=-0.020504, localField=-0.777273, edgeWeight=0.000000, baseFinalSource=-0.020504
+    -> FINAL: Source=-0.020504, Type=Deep, Height=-4.778226, PlateauInf=0.000000
+  Chunk B (Local 0.0, 55.0): sharedBase=-0.020504, localField=-0.364665, edgeWeight=0.000000, baseFinalSource=-0.020504
+    -> FINAL: Source=-0.020504, Type=Deep, Height=-4.778226, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Horizontal Seam 2: Chunk C (0,60) vs Chunk D (60,60) along World X = 60 ---
+Point World: (60.0, 65.0)
+  Chunk C (Local 60.0, 5.0): sharedBase=-0.048493, localField=-0.533452, edgeWeight=0.000000, baseFinalSource=-0.048493
+    -> FINAL: Source=-0.048493, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 0.0, 5.0): sharedBase=-0.048493, localField=-0.438924, edgeWeight=0.000000, baseFinalSource=-0.048493
+    -> FINAL: Source=-0.048493, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 75.0)
+  Chunk C (Local 60.0, 15.0): sharedBase=-0.059046, localField=-0.626034, edgeWeight=0.000000, baseFinalSource=-0.059046
+    -> FINAL: Source=-0.059046, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 0.0, 15.0): sharedBase=-0.059046, localField=-0.581511, edgeWeight=0.000000, baseFinalSource=-0.059046
+    -> FINAL: Source=-0.059046, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 90.0)
+  Chunk C (Local 60.0, 30.0): sharedBase=-0.030173, localField=-0.555654, edgeWeight=0.000000, baseFinalSource=-0.030173
+    -> FINAL: Source=-0.030173, Type=Deep, Height=-4.972781, PlateauInf=0.000000
+  Chunk D (Local 0.0, 30.0): sharedBase=-0.030173, localField=-0.801333, edgeWeight=0.000000, baseFinalSource=-0.030173
+    -> FINAL: Source=-0.030173, Type=Deep, Height=-4.972781, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 105.0)
+  Chunk C (Local 60.0, 45.0): sharedBase=-0.016001, localField=-0.384530, edgeWeight=0.000000, baseFinalSource=-0.016001
+    -> FINAL: Source=-0.016001, Type=Deep, Height=-4.637978, PlateauInf=0.000000
+  Chunk D (Local 0.0, 45.0): sharedBase=-0.016001, localField=-0.835865, edgeWeight=0.000000, baseFinalSource=-0.016001
+    -> FINAL: Source=-0.016001, Type=Deep, Height=-4.637978, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (60.0, 115.0)
+  Chunk C (Local 60.0, 55.0): sharedBase=-0.030889, localField=-0.480998, edgeWeight=0.000000, baseFinalSource=-0.030889
+    -> FINAL: Source=-0.030889, Type=Deep, Height=-4.980113, PlateauInf=0.000000
+  Chunk D (Local 0.0, 55.0): sharedBase=-0.030889, localField=-0.738722, edgeWeight=0.000000, baseFinalSource=-0.030889
+    -> FINAL: Source=-0.030889, Type=Deep, Height=-4.980113, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Horizontal Seam 3: Chunk B (60,0) vs Chunk E (120,0) along World X = 120 ---
+Point World: (120.0, 20.0)
+  Chunk B (Local 60.0, 20.0): sharedBase=-0.042597, localField=-0.728708, edgeWeight=0.000000, baseFinalSource=-0.042597
+    -> FINAL: Source=-0.042597, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk E (Local 0.0, 20.0): sharedBase=-0.042597, localField=-0.616467, edgeWeight=0.000000, baseFinalSource=-0.042597
+    -> FINAL: Source=-0.042597, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (120.0, 30.0)
+  Chunk B (Local 60.0, 30.0): sharedBase=-0.030208, localField=-0.549249, edgeWeight=0.000000, baseFinalSource=-0.030208
+    -> FINAL: Source=-0.030208, Type=Deep, Height=-4.973160, PlateauInf=0.000000
+  Chunk E (Local 0.0, 30.0): sharedBase=-0.030208, localField=-0.433062, edgeWeight=0.000000, baseFinalSource=-0.030208
+    -> FINAL: Source=-0.030208, Type=Deep, Height=-4.973160, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (120.0, 40.0)
+  Chunk B (Local 60.0, 40.0): sharedBase=-0.032967, localField=-0.365543, edgeWeight=0.000000, baseFinalSource=-0.032967
+    -> FINAL: Source=-0.032967, Type=Deep, Height=-4.995039, PlateauInf=0.000000
+  Chunk E (Local 0.0, 40.0): sharedBase=-0.032967, localField=-0.243179, edgeWeight=0.000000, baseFinalSource=-0.032967
+    -> FINAL: Source=-0.032967, Type=Deep, Height=-4.995039, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+================================================================================
+2. MULTIPLE REAL VERTICAL SEAMS
+================================================================================
+
+--- Vertical Seam 1: Chunk A (0,0) vs Chunk C (0,60) along World Z = 60 ---
+Point World: (5.0, 60.0)
+  Chunk A (Local 5.0, 60.0): sharedBase=-0.046599, localField=-0.502189, edgeWeight=0.000000, baseFinalSource=-0.046599
+    -> FINAL: Source=-0.046599, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 5.0, 0.0): sharedBase=-0.046599, localField=-0.423687, edgeWeight=0.000000, baseFinalSource=-0.046599
+    -> FINAL: Source=-0.046599, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (15.0, 60.0)
+  Chunk A (Local 15.0, 60.0): sharedBase=-0.054749, localField=-0.419007, edgeWeight=0.000000, baseFinalSource=-0.054749
+    -> FINAL: Source=-0.054749, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 15.0, 0.0): sharedBase=-0.054749, localField=-0.475947, edgeWeight=0.000000, baseFinalSource=-0.054749
+    -> FINAL: Source=-0.054749, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (30.0, 60.0)
+  Chunk A (Local 30.0, 60.0): sharedBase=-0.040861, localField=-0.449948, edgeWeight=0.000000, baseFinalSource=-0.040861
+    -> FINAL: Source=-0.040861, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 30.0, 0.0): sharedBase=-0.040861, localField=-0.333930, edgeWeight=0.000000, baseFinalSource=-0.040861
+    -> FINAL: Source=-0.040861, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (45.0, 60.0)
+  Chunk A (Local 45.0, 60.0): sharedBase=-0.034773, localField=-0.483377, edgeWeight=0.000000, baseFinalSource=-0.034773
+    -> FINAL: Source=-0.034773, Type=Deep, Height=-4.999937, PlateauInf=0.000000
+  Chunk C (Local 45.0, 0.0): sharedBase=-0.034773, localField=-0.312414, edgeWeight=0.000000, baseFinalSource=-0.034773
+    -> FINAL: Source=-0.034773, Type=Deep, Height=-4.999937, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (55.0, 60.0)
+  Chunk A (Local 55.0, 60.0): sharedBase=-0.035840, localField=-0.595022, edgeWeight=0.000000, baseFinalSource=-0.035840
+    -> FINAL: Source=-0.035840, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk C (Local 55.0, 0.0): sharedBase=-0.035840, localField=-0.455897, edgeWeight=0.000000, baseFinalSource=-0.035840
+    -> FINAL: Source=-0.035840, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Vertical Seam 2: Chunk B (60,0) vs Chunk D (60,60) along World Z = 60 ---
+Point World: (65.0, 60.0)
+  Chunk B (Local 5.0, 60.0): sharedBase=-0.040103, localField=-0.387431, edgeWeight=0.000000, baseFinalSource=-0.040103
+    -> FINAL: Source=-0.040103, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 5.0, 0.0): sharedBase=-0.040103, localField=-0.481236, edgeWeight=0.000000, baseFinalSource=-0.040103
+    -> FINAL: Source=-0.040103, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (75.0, 60.0)
+  Chunk B (Local 15.0, 60.0): sharedBase=-0.066289, localField=-0.373283, edgeWeight=0.000000, baseFinalSource=-0.066289
+    -> FINAL: Source=-0.066289, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 15.0, 0.0): sharedBase=-0.066289, localField=-0.725663, edgeWeight=0.000000, baseFinalSource=-0.066289
+    -> FINAL: Source=-0.066289, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (90.0, 60.0)
+  Chunk B (Local 30.0, 60.0): sharedBase=-0.079393, localField=-0.318296, edgeWeight=0.000000, baseFinalSource=-0.079393
+    -> FINAL: Source=-0.079393, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 30.0, 0.0): sharedBase=-0.079393, localField=-0.855041, edgeWeight=0.000000, baseFinalSource=-0.079393
+    -> FINAL: Source=-0.079393, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (105.0, 60.0)
+  Chunk B (Local 45.0, 60.0): sharedBase=-0.047733, localField=-0.337665, edgeWeight=0.000000, baseFinalSource=-0.047733
+    -> FINAL: Source=-0.047733, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 45.0, 0.0): sharedBase=-0.047733, localField=-0.638132, edgeWeight=0.000000, baseFinalSource=-0.047733
+    -> FINAL: Source=-0.047733, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (115.0, 60.0)
+  Chunk B (Local 55.0, 60.0): sharedBase=-0.050539, localField=-0.441829, edgeWeight=0.000000, baseFinalSource=-0.050539
+    -> FINAL: Source=-0.050539, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk D (Local 55.0, 0.0): sharedBase=-0.050539, localField=-0.405752, edgeWeight=0.000000, baseFinalSource=-0.050539
+    -> FINAL: Source=-0.050539, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+--- Vertical Seam 3: Chunk C (0,60) vs Chunk F (0,120) along World Z = 120 ---
+Point World: (20.0, 120.0)
+  Chunk C (Local 20.0, 60.0): sharedBase=-0.060221, localField=-0.602000, edgeWeight=0.000000, baseFinalSource=-0.060221
+    -> FINAL: Source=-0.060221, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk F (Local 20.0, 0.0): sharedBase=-0.060221, localField=-0.416064, edgeWeight=0.000000, baseFinalSource=-0.060221
+    -> FINAL: Source=-0.060221, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (30.0, 120.0)
+  Chunk C (Local 30.0, 60.0): sharedBase=-0.052297, localField=-0.563807, edgeWeight=0.000000, baseFinalSource=-0.052297
+    -> FINAL: Source=-0.052297, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Chunk F (Local 30.0, 0.0): sharedBase=-0.052297, localField=-0.575826, edgeWeight=0.000000, baseFinalSource=-0.052297
+    -> FINAL: Source=-0.052297, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+Point World: (40.0, 120.0)
+  Chunk C (Local 40.0, 60.0): sharedBase=-0.029384, localField=-0.563893, edgeWeight=0.000000, baseFinalSource=-0.029384
+    -> FINAL: Source=-0.029384, Type=Deep, Height=-4.963447, PlateauInf=0.000000
+  Chunk F (Local 40.0, 0.0): sharedBase=-0.029384, localField=-0.628174, edgeWeight=0.000000, baseFinalSource=-0.029384
+    -> FINAL: Source=-0.029384, Type=Deep, Height=-4.963447, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=0.00E+000, typeMatch=True, plateauDiff=0.00E+000
+  Status: [Base: PASS] [Final: PASS]
+
+================================================================================
+3. FOUR-CHUNK CORNER AUDIT AT WORLD (60, 60)
+================================================================================
+Four chunks meet at World (60, 60):
+  Chunk A (0,0)   at local (60, 60)
+  Chunk B (60,0)  at local (0, 60)
+  Chunk C (0,60)  at local (60, 0)
+  Chunk D (60,60) at local (0, 0)
+  Chunk A (0,0) (Local 60.0, 60.0): sharedBase=-0.028406, localField=-0.674286, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Deep, Height=-4.950107, PlateauInf=0.000000
+  Chunk B (60,0) (Local 0.0, 60.0): sharedBase=-0.028406, localField=-0.380712, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Deep, Height=-4.950107, PlateauInf=0.000000
+  Chunk C (0,60) (Local 60.0, 0.0): sharedBase=-0.028406, localField=-0.477481, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Deep, Height=-4.950107, PlateauInf=0.000000
+  Chunk D (60,60) (Local 0.0, 0.0): sharedBase=-0.028406, localField=-0.404629, edgeWeight=0.000000, baseFinalSource=-0.028406
+    -> FINAL: Source=-0.028406, Type=Deep, Height=-4.950107, PlateauInf=0.000000
+
+================================================================================
+4. TRANSVERSE PROFILES & FINITE-DIFFERENCE HEIGHT SLOPES (-8 to +8)
+================================================================================
+
+--- Profile 1: Horizontal Cross-Section across X=60 at Z=30 (A -> B) ---
+  d=-8 | World:( 52.0, 30.0) Local:(52.0,30.0) | Source:-0.278841 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-6 | World:( 54.0, 30.0) Local:(54.0,30.0) | Source:-0.403802 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-4 | World:( 56.0, 30.0) Local:(56.0,30.0) | Source:-0.273714 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-2 | World:( 58.0, 30.0) Local:(58.0,30.0) | Source:-0.071282 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-1 | World:( 59.0, 30.0) Local:(59.0,30.0) | Source:-0.023960 Type:Deep         Height:-4.866458 Plateau:0.0000
+  d= 0 | World:( 60.0, 30.0) Local:( 0.0,30.0) | Source:-0.014717 Type:Deep         Height:-4.593549 Plateau:0.0000
+  d= 1 | World:( 61.0, 30.0) Local:( 1.0,30.0) | Source:-0.024602 Type:Deep         Height:-4.880726 Plateau:0.0000
+  d= 2 | World:( 62.0, 30.0) Local:( 2.0,30.0) | Source:-0.076790 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 4 | World:( 64.0, 30.0) Local:( 4.0,30.0) | Source:-0.310056 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 6 | World:( 66.0, 30.0) Local:( 6.0,30.0) | Source:-0.476447 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 8 | World:( 68.0, 30.0) Local:( 8.0,30.0) | Source:-0.356738 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  --- Finite-Difference Slopes (dHeight / dDistance) ---
+    at d=-6: heightSlope =   0.000000, sourceSlope =   0.001282
+    at d=-4: heightSlope =   0.000000, sourceSlope =   0.083130
+    at d=-2: heightSlope =   0.044514, sourceSlope =   0.083251
+    at d=-1: heightSlope =   0.203225, sourceSlope =   0.028283
+    at d= 0: heightSlope =  -0.007134, sourceSlope =  -0.000321
+    at d= 1: heightSlope =  -0.203225, sourceSlope =  -0.031037
+    at d= 2: heightSlope =  -0.039758, sourceSlope =  -0.095151
+    at d= 4: heightSlope =   0.000000, sourceSlope =  -0.099914
+    at d= 6: heightSlope =   0.000000, sourceSlope =  -0.011671
+
+--- Profile 2: Vertical Cross-Section across Z=60 at X=30 (A -> C) ---
+  d=-8 | World:( 30.0, 52.0) Local:(30.0,52.0) | Source:-0.220806 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-6 | World:( 30.0, 54.0) Local:(30.0,54.0) | Source:-0.346907 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-4 | World:( 30.0, 56.0) Local:(30.0,56.0) | Source:-0.246249 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-2 | World:( 30.0, 58.0) Local:(30.0,58.0) | Source:-0.083278 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d=-1 | World:( 30.0, 59.0) Local:(30.0,59.0) | Source:-0.047330 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 0 | World:( 30.0, 60.0) Local:(30.0, 0.0) | Source:-0.040861 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 1 | World:( 30.0, 61.0) Local:(30.0, 1.0) | Source:-0.044467 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 2 | World:( 30.0, 62.0) Local:(30.0, 2.0) | Source:-0.067632 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 4 | World:( 30.0, 64.0) Local:(30.0, 4.0) | Source:-0.168033 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 6 | World:( 30.0, 66.0) Local:(30.0, 6.0) | Source:-0.183577 Type:Abyssal      Height:-5.000000 Plateau:0.0000
+  d= 8 | World:( 30.0, 68.0) Local:(30.0, 8.0) | Source:-0.020714 Type:Deep         Height:-4.784089 Plateau:0.0000
+  --- Finite-Difference Slopes (dHeight / dDistance) ---
+    at d=-6: heightSlope =   0.000000, sourceSlope =  -0.006361
+    at d=-4: heightSlope =   0.000000, sourceSlope =   0.065907
+    at d=-2: heightSlope =   0.000000, sourceSlope =   0.066306
+    at d=-1: heightSlope =   0.000000, sourceSlope =   0.021208
+    at d= 0: heightSlope =   0.000000, sourceSlope =   0.001432
+    at d= 1: heightSlope =   0.000000, sourceSlope =  -0.013386
+    at d= 2: heightSlope =   0.000000, sourceSlope =  -0.041189
+    at d= 4: heightSlope =   0.000000, sourceSlope =  -0.028986
+    at d= 6: heightSlope =   0.053978, sourceSlope =   0.036830
+
+================================================================================
+5. PLATEAU BOUNDARY REACH AUDIT & PROOF (Current 4-7 / 0.70-0.92 Settings)
+================================================================================
+Evaluating maximum potential geometric extent of UnderwaterPlateauRegion under CURRENT settings:
+  minimumRadius = 4
+  maximumRadius = 7
+  minimumPlacementDistance = 0.7
+  maximumPlacementDistance = 0.92
+  minimumCoreCells = 24
+  edgeIrregularity = 0.12
+  secondaryLobeOffset = 0.4
+  maximumSecondaryLobeScale = 0.8
+  transitionWidth = 0.22
+
+Empirical Seed Sweep (testing 500 island chunk seeds for border influence):
+
+--- Detailed Case Study: Plateau at Seam (Chunk A vs Chunk B) ---
+Discovered seed with plateau reaching border: Chunk A Seed = 8, Seam Point = (60.0, 40.0)
+Point World: (60.0, 40.0)
+  Chunk A (Seed 8) (Local 60.0, 40.0): sharedBase=-0.037415, localField=-0.525953, edgeWeight=0.000000, baseFinalSource=-0.037415
+    -> FINAL: Source=-0.037415, Type=Abyssal, Height=-4.953539, PlateauInf=0.018584
+  Chunk B (Seed 1007) (Local 0.0, 40.0): sharedBase=-0.037415, localField=-0.291652, edgeWeight=0.000000, baseFinalSource=-0.037415
+    -> FINAL: Source=-0.037415, Type=Abyssal, Height=-5.000000, PlateauInf=0.000000
+  Diffs: baseFieldDiff=0.00E+000, heightDiff=4.65E-002, typeMatch=True, plateauDiff=1.86E-002
+  Status: [Base: PASS] [Final: FAIL]
+
+================================================================================
+FINAL VERDICT SUMMARY
+================================================================================
+STAGE 2 BASE FIELD: PASS
+FINAL TERRAIN SAMPLE SEAMS: FAIL

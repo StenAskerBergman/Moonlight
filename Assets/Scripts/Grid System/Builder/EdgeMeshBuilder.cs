@@ -19,42 +19,42 @@ public class EdgeMeshBuilder
         int size = grid.GetLength(0);
 
         // Cliffs
-        Mesh mountainMesh = new Mesh();
+        Mesh mountainMesh = new Mesh { name = "Generated Mountain Edge" };
         List<Vector3> mountainVertices = new List<Vector3>();
         List<int> mountainTriangles = new List<int>();
 
         // Coast
-        Mesh coastMesh = new Mesh();
+        Mesh coastMesh = new Mesh { name = "Generated Coast Edge" };
         List<Vector3> coastVertices = new List<Vector3>();
         List<int> coastTriangles = new List<int>();
 
         // Ocean
-        Mesh oceanMesh = new Mesh();
+        Mesh oceanMesh = new Mesh { name = "Generated Ocean Edge" };
         List<Vector3> oceanVertices = new List<Vector3>();
         List<int> oceanTriangles = new List<int>();
 
         // Beach
-        Mesh beachMesh = new Mesh();
+        Mesh beachMesh = new Mesh { name = "Generated Beach Edge" };
         List<Vector3> beachVertices = new List<Vector3>();
         List<int> beachTriangles = new List<int>();
 
         // Shallow
-        Mesh shallowMesh = new Mesh();
+        Mesh shallowMesh = new Mesh { name = "Generated Shallow Edge" };
         List<Vector3> shallowVertices = new List<Vector3>();
         List<int> shallowTriangles = new List<int>();
 
         // Deep
-        Mesh deepMesh = new Mesh();
+        Mesh deepMesh = new Mesh { name = "Generated Deep Edge" };
         List<Vector3> deepVertices = new List<Vector3>();
         List<int> deepTriangles = new List<int>();
 
         // Plateau
-        Mesh plateauMesh = new Mesh();
+        Mesh plateauMesh = new Mesh { name = "Generated Plateau Edge" };
         List<Vector3> plateauVertices = new List<Vector3>();
         List<int> plateauTriangles = new List<int>();
 
         // Abyssal
-        Mesh abyssalMesh = new Mesh();
+        Mesh abyssalMesh = new Mesh { name = "Generated Abyssal Edge" };
         List<Vector3> abyssalVertices = new List<Vector3>();
         List<int> abyssalTriangles = new List<int>();
 
@@ -193,7 +193,7 @@ public class EdgeMeshBuilder
     )
     {
         Cell cell = grid[x, y];
-        float cellHeight = GetEdgeHeightForTerrainType(cell.currentTerrainType);
+        float cellHeight = cell.height;
         int nx = x + direction.x;
         int ny = y + direction.y;
         int size = grid.GetLength(0);
@@ -211,7 +211,7 @@ public class EdgeMeshBuilder
         // If neighbor is defined, proceed with edge checks
         if (neighbor != null)
         {
-            float neighborHeight = GetEdgeHeightForTerrainType(neighbor.currentTerrainType);
+            float neighborHeight = neighbor.height;
 
             // Could be modified to account for ocean and mountain edges like so:
             bool isOceanEdge = IsOceanEdge(cell, neighbor);
@@ -324,39 +324,51 @@ public class EdgeMeshBuilder
     // Single Row Conditions
     //
 
-    // IsMountainEdge - From Land, to Mountain
+    // High-ground transitions share the mountain/cliff edge material.
     private bool IsMountainEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == Cell.TerrainType.Land && neighbor.currentTerrainType == Cell.TerrainType.Mountain) ||
-                (cell.currentTerrainType == Cell.TerrainType.Mountain && neighbor.currentTerrainType == Cell.TerrainType.Land);
+        bool cellHigh = IsHighGround(cell.currentTerrainType);
+        bool neighborHigh = IsHighGround(neighbor.currentTerrainType);
+        return (cellHigh || neighborHigh) && !Mathf.Approximately(cell.height, neighbor.height);
+    }
+
+    private static bool IsHighGround(TerrainType type)
+    {
+        return type == TerrainType.Hill
+            || type == TerrainType.HillSide
+            || type == TerrainType.Cliff
+            || type == TerrainType.CliffWall
+            || type == TerrainType.CliffPeak
+            || type == TerrainType.Mountain
+            || type == TerrainType.MountainPeak
+            || type == TerrainType.MountainSummit;
     }
     
     // IsBeachEdge - Beach to Water
     private bool IsBeachEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == TerrainType.Land && neighbor.currentTerrainType == TerrainType.Beach) ||
-                (cell.currentTerrainType == TerrainType.Beach && neighbor.currentTerrainType == TerrainType.Water);
+        return IsPair(cell, neighbor, TerrainType.Land, TerrainType.Beach)
+            || IsPair(cell, neighbor, TerrainType.Beach, TerrainType.Water);
     }
 
     // IsShallowEdge - Water to Shallow
     private bool IsShallowEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == TerrainType.Water && neighbor.currentTerrainType == TerrainType.Shallow) ||
-                (cell.currentTerrainType == TerrainType.Shallow && neighbor.currentTerrainType == TerrainType.Water);
+        return IsPair(cell, neighbor, TerrainType.Water, TerrainType.Shallow);
     }
 
     // IsPlateauEdge - from Plateau to abyss
     private bool IsPlateauEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == TerrainType.Deep && neighbor.currentTerrainType == TerrainType.Plateau) ||
-                (cell.currentTerrainType == TerrainType.Plateau && neighbor.currentTerrainType == TerrainType.Abyssal);
+        return IsPair(cell, neighbor, TerrainType.Plateau, TerrainType.Deep)
+            || IsPair(cell, neighbor, TerrainType.Plateau, TerrainType.Abyssal)
+            || IsPair(cell, neighbor, TerrainType.Plateau, TerrainType.Shallow);
     }
 
     // IsAbyssalEdge    
     private bool IsAbyssalEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == TerrainType.Deep && neighbor.currentTerrainType == TerrainType.Abyssal) ||
-                (cell.currentTerrainType == TerrainType.Abyssal && neighbor.currentTerrainType == TerrainType.Deep);
+        return IsPair(cell, neighbor, TerrainType.Deep, TerrainType.Abyssal);
     }
 
     //
@@ -366,15 +378,19 @@ public class EdgeMeshBuilder
     // IsDeepEdge - from Shallow, to Deep
     private bool IsDeepEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == TerrainType.Shallow && neighbor.currentTerrainType == TerrainType.Deep) ||
-                (cell.currentTerrainType == TerrainType.Deep && neighbor.currentTerrainType == TerrainType.Shallow);
+        return IsPair(cell, neighbor, TerrainType.Shallow, TerrainType.Deep);
     }
 
     // IsOceanEdge - from Water, over Shallow, to Deep
     private bool IsOceanEdge(Cell cell, Cell neighbor)
     {
-        return (cell.currentTerrainType == Cell.TerrainType.Water && neighbor.currentTerrainType == Cell.TerrainType.Deep) ||
-                (cell.currentTerrainType == Cell.TerrainType.Deep && neighbor.currentTerrainType == Cell.TerrainType.Water);
+        return IsPair(cell, neighbor, TerrainType.Water, TerrainType.Deep);
+    }
+
+    private static bool IsPair(Cell cell, Cell neighbor, TerrainType first, TerrainType second)
+    {
+        return (cell.currentTerrainType == first && neighbor.currentTerrainType == second)
+            || (cell.currentTerrainType == second && neighbor.currentTerrainType == first);
     }
 
     // IsCoastEdge - from Beach, over Water, to Shallow - Should Work

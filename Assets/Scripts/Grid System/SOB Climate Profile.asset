@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef35c25057434c04c950e80ce5e7d2da, type: 3}
+  m_Name: SOB Climate Profile
+  m_EditorClassIdentifier: 
+  grassColor1: {r: 0.3, g: 0.45, b: 0.15, a: 1}
+  grassColor2: {r: 0.35, g: 0.5, b: 0.18, a: 1}
+  forestColor1: {r: 0.2, g: 0.35, b: 0.15, a: 1}
+  forestColor2: {r: 0.25, g: 0.4, b: 0.18, a: 1}
+  sandColor1: {r: 0.75, g: 0.75, b: 0.7, a: 1}
+  sandColor2: {r: 0.7, g: 0.7, b: 0.65, a: 1}
+  rockColor1: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  rockColor2: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+  snowColor: {r: 0.95, g: 0.95, b: 0.98, a: 1}
+  riverColor: {r: 0.22, g: 0.52, b: 0.9, a: 1}
+  shallowWaterColor: {r: 0.38, g: 0.74, b: 0.95, a: 1}
+  deepWaterColor: {r: 0.06, g: 0.14, b: 0.45, a: 1}
+  treePrefabs: []
+  forestDensity: 0.85
+  plainsTreeDensity: 0.08
+  treeScaleMin: 0.8
+  treeScaleMax: 1.3
+  splatGrassThresholdOffset: -0.05
+  splatSandThresholdOffset: -0.2
+  splatNoiseFrequency: 0.1
+  splatSandNoiseAmplitude: 0.2
+  splatGrassNoiseRestriction: 0.04

@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using Moonlight.Rendering;
 
 public class CameraRig : MonoBehaviour
 {
@@ -21,6 +20,22 @@ public class CameraRig : MonoBehaviour
         public float minZoomDistance = 10f;             // IMPORTANT: Zoom Out Range
         public float zoomDistance;
 
+        [Header("Ocean Depth Range")]
+        public bool useOceanDepthRange = true;
+        [Tooltip("World-space height of the ocean surface.")]
+        public float seaLevel = 0f;
+        [Tooltip("Lowest world-space height the camera can reach.")]
+        public float abyssFloor = -60f;
+        [Tooltip("Highest world-space height the camera can reach.")]
+        public float skyLimit = 50f;
+
+        [Header("Deliberate Surface Crossing")]
+        public bool pauseAtSeaSurface = true;
+        [Min(0.1f)] public float surfaceRestDistance = 2f;
+        [Min(0f)] public float surfaceRestDuration = 0.4f;
+        [Tooltip("Lower values produce a softer slowdown into the surface shelf.")]
+        [Min(0.1f)] public float surfaceApproachSpeed = 2f;
+
         // Note: Should be based off the current Map Size
         public Vector2 _range = new Vector2(100,100);   // IMPORTANT: Map Boarder
 
@@ -30,6 +45,13 @@ public class CameraRig : MonoBehaviour
         public Quaternion newRotation;
         public Vector3 rotateStartPosition;
         public Vector3 rotateCurrentPosition;
+
+        private UnderwaterTransitionController underwaterTransition;
+        private bool restingAtSurface;
+        private bool crossingInputReleased;
+        private bool crossingCommitted;
+        private float surfaceRestUntil;
+        private int restingSide;
 
     //public BlueprintScript blueprintScript;
     //public Vector3 dragStartPosition;
@@ -42,6 +64,12 @@ public class CameraRig : MonoBehaviour
     void Awake()
     {
         BuildingPreview buildingPreview = FindObjectOfType<BuildingPreview>(); // Find Solution Tmr
+        underwaterTransition = GetComponent<UnderwaterTransitionController>();
+        if (underwaterTransition == null)
+            underwaterTransition = gameObject.AddComponent<UnderwaterTransitionController>();
+
+        Camera controlledCamera = cameraTransform != null ? cameraTransform.GetComponent<Camera>() : GetComponentInChildren<Camera>();
+        underwaterTransition.Configure(controlledCamera, seaLevel);
         // Debug.Log(blueprintScript.RotationMode);
         // Debug.Log(rotationMode);
     }
@@ -58,7 +86,7 @@ public class CameraRig : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        UpdateSurfaceRestState();
         HandleMouseInput();
         HandleMovementInput();
     }
@@ -74,28 +102,9 @@ public class CameraRig : MonoBehaviour
     {
         #region Scrolling 
 
-        Vector3 CameraStartOffset = cameraTransform.localPosition - newPosition;
-   
-        var tempMax = (maxZoomDistance + CameraStartOffset.y);
-        var tempMin = (minZoomDistance + CameraStartOffset.y);
-        var tempPos = cameraTransform.gameObject.transform.position.y;
-
-        if (Input.mouseScrollDelta.y != 0)
-        {   
-            newZoom += Input.mouseScrollDelta.y * zoomAmount;            
-            newZoom += Input.GetAxis("Mouse ScrollWheel") * zoomAmount;   
-
-            float distance = Vector3.Distance(Vector3.zero, newZoom); zoomDistance = distance;
-
-            if (distance > maxZoomDistance && tempPos < tempMax)
-            {
-                newZoom = newZoom.normalized * maxZoomDistance;
-            }
-            else if (distance < minZoomDistance && tempPos > tempMin)
-            {
-                newZoom = newZoom.normalized * minZoomDistance;
-            }
-        }
+        float scroll = Input.mouseScrollDelta.y;
+        if (!Mathf.Approximately(scroll, 0f))
+            ApplyZoomInput(scroll);
             
         #endregion
 
@@ -224,12 +233,12 @@ public class CameraRig : MonoBehaviour
         
             if (Input.GetKey(KeyCode.R))
             {
-                newZoom += zoomAmount;
+                ApplyZoomInput(1f);
             }
             
             if (Input.GetKey(KeyCode.F))
             {
-                newZoom -= zoomAmount;
+                ApplyZoomInput(-1f);
             }
 
         #endregion
@@ -238,11 +247,92 @@ public class CameraRig : MonoBehaviour
 
             transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
             transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * movementTime);
-            cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * zoomTime);
+            float activeZoomSpeed = restingAtSurface ? Mathf.Min(zoomTime, surfaceApproachSpeed) : zoomTime;
+            cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * activeZoomSpeed);
 
         #endregion
     }
     #endregion
+
+    private void ApplyZoomInput(float input)
+    {
+        if (Mathf.Approximately(input, 0f) || cameraTransform == null)
+            return;
+
+        Vector3 proposedZoom = newZoom + input * zoomAmount;
+        if (useOceanDepthRange)
+            proposedZoom = ApplyOceanLimitsAndSurfaceGate(proposedZoom, Mathf.Sign(input * zoomAmount.y));
+        else
+            proposedZoom = ClampLegacyZoom(proposedZoom);
+
+        newZoom = proposedZoom;
+        zoomDistance = newZoom.magnitude;
+    }
+
+    private Vector3 ApplyOceanLimitsAndSurfaceGate(Vector3 proposedZoom, float verticalDirection)
+    {
+        float proposedWorldY = transform.TransformPoint(proposedZoom).y;
+        float currentTargetWorldY = transform.TransformPoint(newZoom).y;
+
+        if (pauseAtSeaSurface && !crossingCommitted && verticalDirection != 0f)
+        {
+            bool divingAcross = currentTargetWorldY > seaLevel && proposedWorldY <= seaLevel;
+            bool surfacingAcross = currentTargetWorldY < seaLevel && proposedWorldY >= seaLevel;
+            if (divingAcross || surfacingAcross)
+            {
+                int side = divingAcross ? 1 : -1;
+                if (!restingAtSurface)
+                {
+                    BeginSurfaceRest(side);
+                    proposedWorldY = seaLevel + side * surfaceRestDistance;
+                }
+                else if (restingSide == side && crossingInputReleased && Time.unscaledTime >= surfaceRestUntil)
+                {
+                    crossingCommitted = true;
+                    restingAtSurface = false;
+                }
+                else
+                {
+                    proposedWorldY = seaLevel + side * surfaceRestDistance;
+                }
+            }
+        }
+
+        proposedWorldY = Mathf.Clamp(proposedWorldY, abyssFloor, skyLimit);
+        Vector3 worldPosition = transform.TransformPoint(proposedZoom);
+        worldPosition.y = proposedWorldY;
+        return transform.InverseTransformPoint(worldPosition);
+    }
+
+    private Vector3 ClampLegacyZoom(Vector3 proposedZoom)
+    {
+        float distance = proposedZoom.magnitude;
+        if (distance > maxZoomDistance)
+            return proposedZoom.normalized * maxZoomDistance;
+        if (distance < minZoomDistance)
+            return proposedZoom.normalized * minZoomDistance;
+        return proposedZoom;
+    }
+
+    private void BeginSurfaceRest(int side)
+    {
+        restingAtSurface = true;
+        crossingInputReleased = false;
+        restingSide = side;
+        surfaceRestUntil = Time.unscaledTime + surfaceRestDuration;
+    }
+
+    private void UpdateSurfaceRestState()
+    {
+        bool hasZoomInput = !Mathf.Approximately(Input.mouseScrollDelta.y, 0f)
+            || Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.F);
+        if (restingAtSurface && !hasZoomInput)
+            crossingInputReleased = true;
+
+        if (crossingCommitted && cameraTransform != null
+            && Mathf.Abs(cameraTransform.position.y - seaLevel) > surfaceRestDistance)
+            crossingCommitted = false;
+    }
 
     #region IsInBounds Method
     private bool IsInBounds(Vector3 position)

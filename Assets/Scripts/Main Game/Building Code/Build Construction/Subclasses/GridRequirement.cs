@@ -6,7 +6,9 @@ using UnityEngine;
 public class GridRequirement : BuildingRequirement
 {
     public GridType gridType;
-    public enum GridType { island, plataeu, coastal, shore, other }; // Add more when ya need
+    // Existing values 0-4 keep their serialized ordinals. Renaming plataeu/shore is
+    // therefore safe for current ScriptableObject assets while making the intent clear.
+    public enum GridType { island, underwaterPlateau, coastal, shallow, other, deep, abyssal };
 
     // When true, the target cell must also have a road cell in its neighbors
     // (checked via RoadNetwork) on top of the gridType terrain check below.
@@ -39,12 +41,20 @@ public class GridRequirement : BuildingRequirement
                     || targetCell.currentTerrainType == Cell.TerrainType.Beach;
                 break;
 
-            case GridType.shore:
+            case GridType.shallow:
                 terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Shallow;
                 break;
 
-            case GridType.plataeu:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Plateau;
+            case GridType.underwaterPlateau:
+                terrainSatisfied = targetCell.IsBuildableUnderwaterPlateau;
+                break;
+
+            case GridType.deep:
+                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Deep;
+                break;
+
+            case GridType.abyssal:
+                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Abyssal;
                 break;
 
             case GridType.other:

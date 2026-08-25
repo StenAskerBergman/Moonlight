@@ -22,6 +22,9 @@ public class UnitActionBarUI : MonoBehaviour
             UnitSelections.Instance.selectionChanged.AddListener(OnSelectionChanged);
         }
 
+        if (buildButton != null) buildButton.onClick.AddListener(OnBuildButtonClicked);
+        if (diveButton != null) diveButton.onClick.AddListener(OnDiveButtonClicked);
+
         RefreshSelectedComponents();
     }
 
@@ -31,6 +34,19 @@ public class UnitActionBarUI : MonoBehaviour
         {
             UnitSelections.Instance.selectionChanged.RemoveListener(OnSelectionChanged);
         }
+
+        if (buildButton != null) buildButton.onClick.RemoveListener(OnBuildButtonClicked);
+        if (diveButton != null) diveButton.onClick.RemoveListener(OnDiveButtonClicked);
+    }
+
+    private void OnBuildButtonClicked()
+    {
+        buildInteraction?.Build(null);
+    }
+
+    private void OnDiveButtonClicked()
+    {
+        diveInteraction?.Dive();
     }
 
     private void OnSelectionChanged(System.Collections.Generic.List<Unit> selectedUnits)

@@ -7,6 +7,8 @@ using UnityEngine.UIElements;
 
 public class MapGrid : MonoBehaviour
 {
+    private static readonly int TerrainBaseMapProperty = Shader.PropertyToID("_BaseMap");
+
 
     #region Variables 
 
@@ -16,6 +18,7 @@ public class MapGrid : MonoBehaviour
 
         // Prefabs
         public GameObject[] treePrefabs;
+        public ClimateProfile climateProfile;
 
         [Header("Base Materials")]
 
@@ -38,7 +41,6 @@ public class MapGrid : MonoBehaviour
         [Header("Nav Mesh Related")]
         public MeshColliderCookingOptions cookingOptions;
         public MeshCollider meshCollider;
-        public NavMeshBuilder ref_navMeshGameManager;
         [Space(10)]
 
         // Terrain & Noise Height thresholds
@@ -52,6 +54,17 @@ public class MapGrid : MonoBehaviour
         public float deepSeaThreshold = 0.1f;
         public float abyssThreshold = 0.0f;
         [Space(10)]
+
+        [Header("Semantic Terrain Generation")]
+        public TerrainGenerationSettings generationSettings = new TerrainGenerationSettings();
+
+        /// <summary>
+        /// Shared procedural source. The gameplay grid samples it at integer cell
+        /// coordinates; a future denser visual mesh can sample the same source at
+        /// fractional coordinates without replacing Cell[,] as gameplay authority.
+        /// </summary>
+        public IslandTerrainProvider TerrainSource { get; private set; }
+        private int activeGenerationSeed;
             
         // More Terrain settings
         public float scale = .1f;
@@ -66,23 +79,23 @@ public class MapGrid : MonoBehaviour
 
         // Cell Grid
         private Cell[,] grid;
+
+        /// <summary>
+        /// The generated cells, or null until InitializeTerrain() has run.
+        /// Exposed so WaterNavMeshCarver can read the land/water footprint straight
+        /// from the source data instead of re-deriving it from the built mesh.
+        /// </summary>
         public Cell[,] Grid => grid;
         public int Size => size;
 
         public MeshCollider cellCollider;
+        [System.NonSerialized] private HashSet<Object> generatedVisualResources;
+        [System.NonSerialized] private bool isReleasingGeneratedVisuals;
     #endregion
 
-    #region Awake + Start Method
-    void Awake()
-    {
-            ref_navMeshGameManager = FindObjectOfType<NavMeshBuilder>();
-            //GenerateTerrain();
-    }
-
+    #region Start Method
     void Start()
     {
-        //ref_navMeshGameManager = FindObjectOfType<NavMeshBuilder>();
-        // ref_navMeshGameManager = this.gameObject.GetComponentInChildren<NavMeshBuilder
         /* Getting it and Setting it
         meshCollider = this.transform.GetComponent<MeshCollider>();
         meshCollider.cookingOptions = cookingOptions;*/
@@ -165,167 +178,234 @@ public class MapGrid : MonoBehaviour
         GenerateTerrain();
     }
 
-    // Grid Type 
+    // Grid Type
     public GridType.Type currentGridType;
-    private void GenerateIslandTerrain()
+
+    // Populates the grid for an island: full threshold ladder from abyssal water up
+    // through mountains, so islands get the full range of land/water terrain types.
+    private void GenerateIslandTerrain(float[,] noiseMap, float[,] falloffMap)
     {
-        // Implementation of island terrain generation
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float noiseValue = noiseMap[x, y] - falloffMap[x, y];
+                TerrainType terrainType;
+
+                // Check against new thresholds to determine terrain type
+                if (noiseValue < abyssThreshold) // 0
+                {
+                    terrainType = TerrainType.Abyssal;
+                }
+                else if (noiseValue < deepSeaThreshold) // 0.1
+                {
+                    terrainType = TerrainType.Deep;
+                }
+                else if (noiseValue < plateauThreshold) // 0.2 - Does not work for some reason
+                {
+                    terrainType = TerrainType.Plateau;
+                }
+                else if (noiseValue < shallowWaterThreshold) // 0.3
+                {
+                    terrainType = TerrainType.Shallow;
+                }
+                //else if (noiseValue < CoastThreshold) // 0.35 - Does not work for some reason
+                //{
+                //    terrainType = TerrainType.Coast;
+                //}
+                else if (noiseValue < waterLevel) // 0.4
+                {
+                    terrainType = TerrainType.Water;
+                }
+                else if (noiseValue > mountainThreshold) // 0.8
+                {
+                    terrainType = DetermineMountainHeight(noiseValue);
+                }
+                else
+                {
+                    terrainType = TerrainType.Land; // 0.6
+                }
+
+                float height = GetHeightForTerrainType(terrainType);
+                Vector3 position = new Vector3(x, height, y);
+                grid[x, y] = new Cell(position, null, terrainType);
+            }
+        }
     }
 
-    private void GeneratePlateauTerrain()
+    // Populates the grid for a plateau: no land/mountain tier, just a shallow
+    // underwater shelf that drops off into deep/abyssal water at the edges.
+    private void GeneratePlateauTerrain(float[,] noiseMap, float[,] falloffMap)
     {
-        // Implementation of plateau terrain generation
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float noiseValue = noiseMap[x, y] - falloffMap[x, y];
+                TerrainType terrainType;
+
+                // Check against new thresholds to determine terrain type
+                if (noiseValue < abyssThreshold) // 0
+                {
+                    terrainType = TerrainType.Abyssal;
+                }
+                else if (noiseValue < deepSeaThreshold) // 0.1
+                {
+                    terrainType = TerrainType.Deep;
+                }
+                else
+                {
+                    terrainType = TerrainType.Plateau; // 0.2
+                }
+
+                float height = GetHeightForTerrainType(terrainType);
+                Vector3 position = new Vector3(x, height, y);
+                grid[x, y] = new Cell(position, null, terrainType);
+            }
+        }
     }
 
-    private void GenerateOceanTerrain()
+    // Populates the grid for open ocean/empty grids: nothing but deep and abyssal
+    // water, since there's no land tier to generate.
+    private void GenerateOceanTerrain(float[,] noiseMap, float[,] falloffMap)
     {
-        // Implementation of ocean terrain generation
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float noiseValue = noiseMap[x, y] - falloffMap[x, y];
+                TerrainType terrainType;
+
+                // Check against new thresholds to determine terrain type
+                if (noiseValue < abyssThreshold) // 0
+                {
+                    terrainType = TerrainType.Abyssal;
+                }
+                else
+                {
+                    terrainType = TerrainType.Deep; // 0.1
+                }
+
+                float height = GetHeightForTerrainType(terrainType);
+                Vector3 position = new Vector3(x, height, y);
+                grid[x, y] = new Cell(position, null, terrainType);
+            }
+        }
     }
 
-    // For Generating the Terrain of a Island  -  incl. Falloff Edges 
+    // Semantic generation is intentionally a small orchestration seam: the source
+    // class owns procedural composition/classification, while MapGrid owns Cell[,].
     private void GenerateTerrain()
+    {
+        generationSettings ??= new TerrainGenerationSettings();
+        generationSettings.ApplyLegacyIslandTuning(
+            scale,
+            abyssThreshold,
+            deepSeaThreshold,
+            plateauThreshold,
+            shallowWaterThreshold,
+            waterLevel,
+            mountainThreshold);
+        activeGenerationSeed = ResolveGenerationSeed();
+        int worldSeed = generationSettings.seed;
+        Vector2 chunkWorldOrigin = new Vector2(transform.position.x, transform.position.z);
+        TerrainSource = new IslandTerrainProvider(generationSettings, currentGridType, size, activeGenerationSeed, worldSeed, chunkWorldOrigin);
+
+        TerrainSample[,] samples = TerrainSource.GenerateGameplaySamples();
+        grid = new Cell[size, size];
+        hasMountainsGenerated = false;
+
+        for (int z = 0; z < size; z++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                TerrainSample sample = samples[x, z];
+                grid[x, z] = new Cell(new Vector3(x, sample.Height, z), null, sample.TerrainType);
+                grid[x, z].SetDeliberatePlateauInfluence(sample.PlateauInfluence);
+
+                if (sample.TerrainType == TerrainType.Hill
+                    || sample.TerrainType == TerrainType.Cliff
+                    || sample.TerrainType == TerrainType.Mountain
+                    || sample.TerrainType == TerrainType.MountainPeak)
+                {
+                    hasMountainsGenerated = true;
+                }
+            }
+        }
+
+        PopulateNeighborsAndTerrainMetrics();
+
+        if (currentGridType == GridType.Type.Island || currentGridType == GridType.Type.Plateau)
+        {
+            MarkDepositCells();
+        }
+
+        BuildMeshesAndTextures();
+    }
+
+    private int ResolveGenerationSeed()
+    {
+        int seed = generationSettings.seed;
+        Island island = GetComponent<Island>();
+
+        if (island != null)
+        {
+            seed = unchecked(seed * 397 ^ island.id);
+        }
+
+        return seed;
+    }
+
+    private void PopulateNeighborsAndTerrainMetrics()
+    {
+        for (int z = 0; z < size; z++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                grid[x, z].UpdateNeighbors(grid, size);
+            }
+        }
+
+        for (int z = 0; z < size; z++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Cell cell = grid[x, z];
+                float maxVariance = 0f;
+
+                foreach (Cell neighbor in cell.neighbors)
+                {
+                    maxVariance = Mathf.Max(maxVariance, Mathf.Abs(cell.height - neighbor.height));
+                }
+
+                cell.SetTerrainMetrics(maxVariance, generationSettings.maxBuildableHeightVariance);
+            }
+        }
+    }
+
+    // Retained temporarily for prefab-data migration/reference. Runtime generation
+    // now goes through IslandTerrainProvider above.
+    private void GenerateLegacyTerrain()
     {
         grid = new Cell[size, size];
         float[,] noiseMap = GenerateNoiseMap();
         float[,] falloffMap = GenerateFalloffMap();
 
-
         // Check the current grid type and generate terrain accordingly
         switch (this.currentGridType)
         {
             case GridType.Type.Island:
-                GenerateIslandTerrain();
+                GenerateIslandTerrain(noiseMap, falloffMap);
                 break;
             case GridType.Type.Plateau:
-                GeneratePlateauTerrain();
+                GeneratePlateauTerrain(noiseMap, falloffMap);
                 break;
             case GridType.Type.Ocean:
-                GenerateOceanTerrain();
-                break;
-            case GridType.Type.Empty:
-                // Possibly clear the area or keep it untouched
-                break;
-        }
-
-
-
-
-        // Debug.Log(currentGridType); // Prints as Plateau
-
-        // Use the current grid type in the switch statement
-        switch (currentGridType)
-        {
-            case GridType.Type.Island:
-                // Code for generating island terrain
-                // Populate grid
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float noiseValue = noiseMap[x, y] - falloffMap[x, y]; // Remember this is a Local Variable
-                        TerrainType terrainType; // Remember this is also a Local Variable
-
-                        // Check against new thresholds to determine terrain type
-                        if (noiseValue < abyssThreshold) // 0
-                        {
-                            terrainType = TerrainType.Abyssal;
-                        }
-                        else if (noiseValue < deepSeaThreshold) // 0.1
-                        {
-                            terrainType = TerrainType.Deep;
-                        }
-                        else if (noiseValue < plateauThreshold) // 0.2 - Does not work for some reason
-                        {
-                            terrainType = TerrainType.Plateau;
-                        }
-                        else if (noiseValue < shallowWaterThreshold) // 0.3
-                        {
-                            terrainType = TerrainType.Shallow;
-                        }
-                        //else if (noiseValue < CoastThreshold) // 0.35 - Does not work for some reason
-                        //{
-                        //    terrainType = TerrainType.Coast; 
-                        //}
-                        else if (noiseValue < waterLevel) // 0.4
-                        {
-                            terrainType = TerrainType.Water;
-                        }
-                        else if (noiseValue > mountainThreshold) // 0.8
-                        {
-                            terrainType = DetermineMountainHeight(noiseValue);
-                        }
-                        else
-                        {
-                            terrainType = TerrainType.Land; // 0.6
-                        }
-
-                        float height = GetHeightForTerrainType(terrainType);
-                        Vector3 position = new Vector3(x, height, y);
-                        grid[x, y] = new Cell(position, null, terrainType);
-                    }
-                }
-                break;
-
-            case GridType.Type.Plateau:
-                // Code for generating plateau terrain
-                // Populate grid
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float noiseValue = noiseMap[x, y] - falloffMap[x, y];
-                        TerrainType terrainType;
-
-                        // Check against new thresholds to determine terrain type
-                        if (noiseValue < abyssThreshold) // 0
-                        {
-                            terrainType = TerrainType.Abyssal;
-                        }
-                        else if (noiseValue < deepSeaThreshold) // 0.1
-                        {
-                            terrainType = TerrainType.Deep;
-                        }
-                        else
-                        {
-                            terrainType = TerrainType.Plateau; // 0.2
-                        }
-
-                        float height = GetHeightForTerrainType(terrainType);
-                        Vector3 position = new Vector3(x, height, y);
-                        grid[x, y] = new Cell(position, null, terrainType);
-                    }
-                }
-                break;
-
-            case GridType.Type.Ocean: // break; // Code for generating ocean 
             case GridType.Type.Empty:
             default:
-                // Code for default case or ocean or empty terrain
-                // Populate grid
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float noiseValue = noiseMap[x, y] - falloffMap[x, y];
-                        TerrainType terrainType;
-
-                        // Check against new thresholds to determine terrain type
-                        if (noiseValue < abyssThreshold) // 0
-                        {
-                            terrainType = TerrainType.Abyssal;
-                        }
-                        else
-                        {
-                            terrainType = TerrainType.Deep; // 0.1
-                        }
-
-                        float height = GetHeightForTerrainType(terrainType);
-                        Vector3 position = new Vector3(x, height, y);
-                        grid[x, y] = new Cell(position, null, terrainType);
-                    }
-                }
-                // IMPORTANT: Assumption, your a smart person who won't spawn anything empty :) rit?
-                // MIGHT CAUSE UN EXPECTED RESULTS -> MIGHT CAUSE GLITCH / ERROR
+                // Empty grids get the same deep/abyssal fill as ocean - there's no
+                // "clear" terrain type, and every other system expects a populated grid.
+                GenerateOceanTerrain(noiseMap, falloffMap);
                 break;
         }
 
@@ -539,7 +619,7 @@ public class MapGrid : MonoBehaviour
     // rivers first so RiverBank/LakeMouth deposits reflect the actual river path.
     private void MarkDepositCells()
     {
-        new RiverArea().GenerateRiver(grid, new System.Random());
+        new RiverArea().GenerateRiver(grid, TerrainSource?.Reservations, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
 
         for (int y = 0; y < size; y++)
         {
@@ -590,6 +670,7 @@ public class MapGrid : MonoBehaviour
         unchecked
         {
             int hash = x * 73856093 ^ y * 19349663;
+            hash ^= activeGenerationSeed;
             hash ^= hash >> 13;
             return Mathf.Abs(hash % 100) < 15;
         }
@@ -628,7 +709,7 @@ public class MapGrid : MonoBehaviour
                 int mountainHeight = Random.Range(minMountainHeight, maxMountainHeight);
 
                 // Generate mountain
-                GenerateMountain(x, y, mountainHeight); // Empty Placeholder Method
+                GenerateMountain(x, y, mountainHeight);
 
                 atLeastOneMountainGenerated = true;
             }
@@ -649,7 +730,7 @@ public class MapGrid : MonoBehaviour
                 if (startCell.currentTerrainType == TerrainType.Land)
                 {
                     int mountainHeight = Random.Range(minMountainHeight, maxMountainHeight);
-                    GenerateMountain(x, y, mountainHeight); // Empty Placeholder Method
+                    GenerateMountain(x, y, mountainHeight);
                     mountainCount++;
                 }
 
@@ -705,13 +786,38 @@ public class MapGrid : MonoBehaviour
         }
     }
 
+    // Carves a mountain into the grid around (x, y): a radial mound that reclassifies
+    // nearby Land cells into Mountain, with a MountainPeak core at the center. Only
+    // reshapes existing Land - water, beach, and other terrain are left untouched so
+    // a mountain can't spill onto the coastline. height controls the mound's radius
+    // (bigger mountains cover more ground), not the Cell's stored height/position -
+    // Mountain/MountainPeak height is applied uniformly by GetHeightForTerrainType and
+    // TerrainMeshBuilder, which is what keeps this safe: neighbors are already computed
+    // from each cell's original height by the time this runs, and ChangeTerrainType
+    // never touches position, so it can't reintroduce the y-index bug described above.
     private void GenerateMountain(int x, int y, int height)
     {
-        // Recursive function to generate a mountain
-        // ... (mountain generation logic)
+        int radius = Mathf.Clamp(height / 2, 2, 6);
+        float peakRadius = radius * 0.4f;
 
-        // its fucking empty but somehow it generates mountains
-        
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
+
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                if (distance > radius) continue;
+
+                Cell cell = grid[nx, ny];
+                if (cell.currentTerrainType != TerrainType.Land) continue;
+
+                cell.ChangeTerrainType(distance <= peakRadius ? TerrainType.MountainPeak : TerrainType.Mountain);
+            }
+        }
+
         // Flag that the mountains have been generated
         hasMountainsGenerated = true;
     }
@@ -722,17 +828,40 @@ public class MapGrid : MonoBehaviour
 
     private void BuildMeshesAndTextures()
     {
+        ReleaseGeneratedVisualResources();
+
+        bool useContinuousMesh = TerrainSource != null;
+
         // Builds and assign Terrain
-        TerrainMeshBuilder terrainMeshBuilder = new TerrainMeshBuilder(grid); // Does Works properly
+        TerrainMeshBuilder terrainMeshBuilder = useContinuousMesh
+            ? new TerrainMeshBuilder(grid, TerrainSource, generationSettings.visualSamplesPerCell)
+            : new TerrainMeshBuilder(grid);
         Mesh terrainMesh = terrainMeshBuilder.Build();
+        TrackGeneratedVisualResource(terrainMesh);
         ApplyTerrainMesh(terrainMesh);
 
         // Build and apply Texture
-        TextureBuilder textureBuilder = new TextureBuilder(grid); // Does Work properly
+        TextureBuilder textureBuilder = useContinuousMesh
+            ? new TextureBuilder(grid, TerrainSource, generationSettings.visualSamplesPerCell, climateProfile)
+            : new TextureBuilder(grid, climateProfile);
         Texture2D texture = textureBuilder.Build();
+        texture.name = "Generated Terrain Texture";
+        TrackGeneratedVisualResource(texture);
         ApplyTexture(texture);
 
-        // Build and add Edges
+        // The continuous heightfield already owns every visible height transition.
+        // Cell-resolution wall meshes would be a second, incompatible interpretation
+        // of those same boundaries, so retain them only for the legacy/debug visual path.
+        // Foliage Placer
+        IslandFoliagePlacer foliagePlacer = GetComponent<IslandFoliagePlacer>();
+        if (foliagePlacer != null) {
+            foliagePlacer.climateProfile = climateProfile;
+            foliagePlacer.ScatterFoliage(grid);
+        }
+
+        if (useContinuousMesh) return;
+
+        // Build and add Edges (Legacy/Debug path only)
         EdgeMeshBuilder edgeMeshBuilder = new EdgeMeshBuilder(grid); // Does Work properly :D
         
         // Create Edge Object
@@ -749,6 +878,14 @@ public class MapGrid : MonoBehaviour
 
         // This is long string is the return type
         (Mesh coastMesh, Mesh oceanMesh, Mesh mountainMesh, Mesh beachMesh, Mesh shallowMesh, Mesh deepMesh, Mesh plateauMesh, Mesh abyssalMesh) = edgeMeshBuilder.Build(); // 2023: Receive "four" meshes - 2024: Now its "eight"
+        TrackGeneratedVisualResource(coastMesh);
+        TrackGeneratedVisualResource(oceanMesh);
+        TrackGeneratedVisualResource(mountainMesh);
+        TrackGeneratedVisualResource(beachMesh);
+        TrackGeneratedVisualResource(shallowMesh);
+        TrackGeneratedVisualResource(deepMesh);
+        TrackGeneratedVisualResource(plateauMesh);
+        TrackGeneratedVisualResource(abyssalMesh);
 
         // Apply the mountain edge mesh
         if (hasMountainsGenerated && HasGeometry(mountainMesh)) ApplyMountainEdgeMesh(mountainMesh, transform_target);
@@ -845,10 +982,10 @@ public class MapGrid : MonoBehaviour
         beachEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter beachMeshFilter = beachEdgeObj.AddComponent<MeshFilter>() ?? beachEdgeObj.AddComponent<MeshFilter>();
-        beachMeshFilter.mesh = beachMesh;
+        beachMeshFilter.sharedMesh = beachMesh;
 
         MeshRenderer beachMeshRenderer = beachEdgeObj.AddComponent<MeshRenderer>() ?? beachEdgeObj.AddComponent<MeshRenderer>();
-        beachMeshRenderer.material = beachEdgeMaterial;
+        beachMeshRenderer.sharedMaterial = beachEdgeMaterial;
     }
 
     // Mountain Edge
@@ -858,10 +995,10 @@ public class MapGrid : MonoBehaviour
         mountainEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter mountainMeshFilter = mountainEdgeObj.AddComponent<MeshFilter>() ?? mountainEdgeObj.AddComponent<MeshFilter>();
-        mountainMeshFilter.mesh = mountainMesh;
+        mountainMeshFilter.sharedMesh = mountainMesh;
 
         MeshRenderer mountainMeshRenderer = mountainEdgeObj.AddComponent<MeshRenderer>() ?? mountainEdgeObj.AddComponent<MeshRenderer>();
-        mountainMeshRenderer.material = mountainEdgeMaterial; 
+        mountainMeshRenderer.sharedMaterial = mountainEdgeMaterial;
     }
 
 
@@ -873,11 +1010,11 @@ public class MapGrid : MonoBehaviour
 
         // Setting up MeshFilter
         MeshFilter oceanMeshFilter = oceanEdgeObj.AddComponent<MeshFilter>() ?? oceanEdgeObj.AddComponent<MeshFilter>();
-        oceanMeshFilter.mesh = oceanMesh;
+        oceanMeshFilter.sharedMesh = oceanMesh;
 
         // Setting up MeshRenderer
         MeshRenderer oceanMeshRenderer = oceanEdgeObj.AddComponent<MeshRenderer>() ?? oceanEdgeObj.AddComponent<MeshRenderer>();
-        oceanMeshRenderer.material = oceanEdgeMaterial;
+        oceanMeshRenderer.sharedMaterial = oceanEdgeMaterial;
 
         //// Adding and setting up MeshCollider
         //MeshCollider oceanMeshCollider = oceanEdgeObj.AddComponent<MeshCollider>() ?? oceanEdgeObj.AddComponent<MeshCollider>();
@@ -886,9 +1023,6 @@ public class MapGrid : MonoBehaviour
         //// Apply the defined cooking options
         //oceanMeshCollider.cookingOptions = cookingOptions;
 
-        //// Async Bake the Island onto the ocean
-        //if (ref_navMeshGameManager != null) ref_navMeshGameManager.BakeNavMeshAsync(); 
-        // else Debug.LogError("No NavMeshBuilder Ref"); 
     }
 
     // Coast Edge
@@ -898,10 +1032,10 @@ public class MapGrid : MonoBehaviour
         coastEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter coastMeshFilter = coastEdgeObj.AddComponent<MeshFilter>() ?? coastEdgeObj.AddComponent<MeshFilter>();
-        coastMeshFilter.mesh = coastMesh;
+        coastMeshFilter.sharedMesh = coastMesh;
 
         MeshRenderer coastMeshRenderer = coastEdgeObj.AddComponent<MeshRenderer>() ?? coastEdgeObj.AddComponent<MeshRenderer>();
-        coastMeshRenderer.material = beachEdgeMaterial; //coastEdgeMaterial;
+        coastMeshRenderer.sharedMaterial = beachEdgeMaterial; //coastEdgeMaterial;
     }
 
     // Shallow Edge
@@ -911,10 +1045,10 @@ public class MapGrid : MonoBehaviour
         shallowEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter shallowMeshFilter = shallowEdgeObj.AddComponent<MeshFilter>() ?? shallowEdgeObj.AddComponent<MeshFilter>();
-        shallowMeshFilter.mesh = shallowMesh;
+        shallowMeshFilter.sharedMesh = shallowMesh;
 
         MeshRenderer shallowMeshRenderer = shallowEdgeObj.AddComponent<MeshRenderer>() ?? shallowEdgeObj.AddComponent<MeshRenderer>();
-        shallowMeshRenderer.material = shallowEdgeMaterial;
+        shallowMeshRenderer.sharedMaterial = shallowEdgeMaterial;
 
     }
 
@@ -925,10 +1059,10 @@ public class MapGrid : MonoBehaviour
         deepEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter deepMeshFilter = deepEdgeObj.AddComponent<MeshFilter>() ?? deepEdgeObj.AddComponent<MeshFilter>();
-        deepMeshFilter.mesh = deepMesh;
+        deepMeshFilter.sharedMesh = deepMesh;
 
         MeshRenderer deepMeshRenderer = deepEdgeObj.AddComponent<MeshRenderer>() ?? deepEdgeObj.AddComponent<MeshRenderer>();
-        deepMeshRenderer.material = deepSeaEdgeMaterial;
+        deepMeshRenderer.sharedMaterial = deepSeaEdgeMaterial;
 
     }
 
@@ -939,10 +1073,10 @@ public class MapGrid : MonoBehaviour
         plateauEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter plateauMeshFilter = plateauEdgeObj.AddComponent<MeshFilter>() ?? plateauEdgeObj.AddComponent<MeshFilter>();
-        plateauMeshFilter.mesh = plateauMesh;
+        plateauMeshFilter.sharedMesh = plateauMesh;
 
         MeshRenderer plateauMeshRenderer = plateauEdgeObj.AddComponent<MeshRenderer>() ?? plateauEdgeObj.AddComponent<MeshRenderer>();
-        plateauMeshRenderer.material = plateauEdgeMaterial;
+        plateauMeshRenderer.sharedMaterial = plateauEdgeMaterial;
 
     }
 
@@ -953,10 +1087,10 @@ public class MapGrid : MonoBehaviour
         abyssalEdgeObj.transform.SetParent(parentObject);
 
         MeshFilter abyssalMeshFilter = abyssalEdgeObj.AddComponent<MeshFilter>() ?? abyssalEdgeObj.AddComponent<MeshFilter>();
-        abyssalMeshFilter.mesh = abyssalMesh;
+        abyssalMeshFilter.sharedMesh = abyssalMesh;
 
         MeshRenderer abyssalMeshRenderer = abyssalEdgeObj.AddComponent<MeshRenderer>() ?? abyssalEdgeObj.AddComponent<MeshRenderer>();
-        abyssalMeshRenderer.material = abyssalEdgeMaterial;
+        abyssalMeshRenderer.sharedMaterial = abyssalEdgeMaterial;
     }
 
 
@@ -966,10 +1100,10 @@ public class MapGrid : MonoBehaviour
     private void ApplyTerrainMesh(Mesh terrainMesh)
     {
         MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() ?? gameObject.AddComponent<MeshFilter>();
-        meshFilter.mesh = terrainMesh;
+        meshFilter.sharedMesh = terrainMesh;
 
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() ?? gameObject.AddComponent<MeshRenderer>();
-        meshRenderer.material = terrainMaterial;
+        meshRenderer.sharedMaterial = terrainMaterial;
     }
 
     private void ApplyTexture(Texture2D texture)
@@ -977,8 +1111,151 @@ public class MapGrid : MonoBehaviour
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
         if (meshRenderer != null)
         {
-            meshRenderer.material.mainTexture = texture;
+            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetTexture(TerrainBaseMapProperty, texture);
+            meshRenderer.SetPropertyBlock(propertyBlock);
         }
+    }
+
+    public void ReleaseGeneratedVisualResources()
+    {
+        if (isReleasingGeneratedVisuals) return;
+        isReleasingGeneratedVisuals = true;
+
+        try
+        {
+            HashSet<Object> ownedResources = new HashSet<Object>();
+            if (generatedVisualResources != null)
+            {
+                ownedResources.UnionWith(generatedVisualResources);
+                generatedVisualResources.Clear();
+            }
+
+            MeshRenderer terrainRenderer = GetComponent<MeshRenderer>();
+            bool hasGeneratedPropertyTexture = false;
+            bool hasLegacyMaterialInstance = false;
+            if (terrainRenderer != null)
+            {
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                terrainRenderer.GetPropertyBlock(propertyBlock);
+                Texture propertyTexture = propertyBlock.GetTexture(TerrainBaseMapProperty);
+                if (propertyTexture != null)
+                {
+                    hasGeneratedPropertyTexture = true;
+                    ownedResources.Add(propertyTexture);
+                }
+                terrainRenderer.SetPropertyBlock(null);
+
+                // Cleans previews generated before the property-block path existed.
+                Material currentMaterial = terrainRenderer.sharedMaterial;
+                if (currentMaterial != null
+                    && currentMaterial != terrainMaterial
+                    && IsDestroyableGeneratedResource(currentMaterial))
+                {
+                    hasLegacyMaterialInstance = true;
+                    if (currentMaterial.HasProperty(TerrainBaseMapProperty))
+                    {
+                        Texture legacyTexture = currentMaterial.GetTexture(TerrainBaseMapProperty);
+                        if (legacyTexture != null) ownedResources.Add(legacyTexture);
+                    }
+
+                    terrainRenderer.sharedMaterial = terrainMaterial;
+                    ownedResources.Add(currentMaterial);
+                }
+            }
+
+            MeshFilter terrainFilter = GetComponent<MeshFilter>();
+            Mesh currentTerrainMesh = terrainFilter != null ? terrainFilter.sharedMesh : null;
+            bool ownsTerrainMesh = currentTerrainMesh != null
+                && (ownedResources.Contains(currentTerrainMesh)
+                    || hasLegacyMaterialInstance
+                    || (hasGeneratedPropertyTexture && IsNamedGeneratedTerrainMesh(currentTerrainMesh)));
+            if (ownsTerrainMesh)
+            {
+                ownedResources.Add(currentTerrainMesh);
+                terrainFilter.sharedMesh = null;
+            }
+
+            Transform edgeRoot = transform.Find("Edge");
+            if (edgeRoot != null)
+            {
+                foreach (MeshFilter edgeFilter in edgeRoot.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (edgeFilter.sharedMesh == null) continue;
+                    ownedResources.Add(edgeFilter.sharedMesh);
+                    edgeFilter.sharedMesh = null;
+                }
+
+                foreach (MeshRenderer edgeRenderer in edgeRoot.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    Material edgeMaterialInstance = edgeRenderer.sharedMaterial;
+                    if (edgeMaterialInstance != null && !IsConfiguredEdgeMaterial(edgeMaterialInstance))
+                    {
+                        ownedResources.Add(edgeMaterialInstance);
+                    }
+                    edgeRenderer.sharedMaterial = null;
+                }
+            }
+
+            foreach (Object resource in ownedResources)
+            {
+                if (!IsDestroyableGeneratedResource(resource)) continue;
+                if (Application.isPlaying) Destroy(resource);
+                else DestroyImmediate(resource);
+            }
+        }
+        finally
+        {
+            isReleasingGeneratedVisuals = false;
+        }
+    }
+
+    private void TrackGeneratedVisualResource(Object resource)
+    {
+        if (resource == null) return;
+        generatedVisualResources ??= new HashSet<Object>();
+        generatedVisualResources.Add(resource);
+    }
+
+    private static bool IsNamedGeneratedTerrainMesh(Mesh mesh)
+    {
+        if (mesh == null) return false;
+        return mesh.name.StartsWith("Generated Terrain")
+            || mesh.name.StartsWith("Fractional Terrain");
+    }
+
+    private static bool IsDestroyableGeneratedResource(Object resource)
+    {
+        if (resource == null) return false;
+
+#if UNITY_EDITOR
+        // Generated preview resources are scene-owned and non-persistent. Never
+        // destroy a material, texture, or mesh that belongs to the project/built-ins.
+        return !UnityEditor.EditorUtility.IsPersistent(resource);
+#else
+        return true;
+#endif
+    }
+
+    private bool IsConfiguredEdgeMaterial(Material material)
+    {
+        return material == edgeMaterial
+            || material == hillEdgeMaterial
+            || material == oceanEdgeMaterial
+            || material == coastEdgeMaterial
+            || material == beachEdgeMaterial
+            || material == riverEdgeMaterial
+            || material == shallowEdgeMaterial
+            || material == deepSeaEdgeMaterial
+            || material == plateauEdgeMaterial
+            || material == abyssalEdgeMaterial
+            || material == mountainEdgeMaterial;
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseGeneratedVisualResources();
     }
 
     private void ApplyEdgeMesh(Mesh edgeMesh, Material edgeMaterial)
@@ -987,10 +1264,10 @@ public class MapGrid : MonoBehaviour
         if (edgeMaterial != null) edgeMaterial = beachEdgeMaterial;
 
         MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() ?? gameObject.AddComponent<MeshFilter>();
-        meshFilter.mesh = edgeMesh;
+        meshFilter.sharedMesh = edgeMesh;
 
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() ?? gameObject.AddComponent<MeshRenderer>();
-        if (meshRenderer != null) meshRenderer.material = edgeMaterial; // ApplyEdgeMaterial(determineEdgeMaterial(grid[x, y,]));
+        if (meshRenderer != null) meshRenderer.sharedMaterial = edgeMaterial; // ApplyEdgeMaterial(determineEdgeMaterial(grid[x, y,]));
     }
 
     private Material determineEdgeMaterial(Cell.TerrainType terrainType)

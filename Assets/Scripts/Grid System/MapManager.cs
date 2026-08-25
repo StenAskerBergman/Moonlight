@@ -25,10 +25,25 @@ using UnityEngine.UIElements;
 
 public class MapManager : MonoBehaviour
 {
-    #region Map Variables
+    public static MapManager instance { get; private set; }
+    private const string GeneratedMapRootName = "Generated Map";
 
-    // Ocean Nav Mesh
-    [SerializeField] private NavMeshBuilder navMeshBuilder;
+    private void Awake()
+    {
+        if (instance != null && instance != this)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+        instance = this;
+
+        if (FindObjectOfType<PlayerSpawnManager>() == null)
+        {
+            gameObject.AddComponent<PlayerSpawnManager>();
+        }
+    }
+
+    #region Map Variables
 
     // Spawn Patterns
     [System.Serializable]
@@ -42,9 +57,11 @@ public class MapManager : MonoBehaviour
         public string patternDescription;
     }
 
+
     public enum SpawnPattern
     {
         Singular,
+        Circlar,
         Square,
         Normal,
     }
@@ -67,6 +84,7 @@ public class MapManager : MonoBehaviour
     public List<Island> islands { get; private set; }
     private int nextIslandID;
     private GameManager gameManager;
+    [SerializeField, HideInInspector] private Transform generatedMapRoot;
     [Space]
     [SerializeField] private bool WaterOnStart;
     [SerializeField] private float waterHeight = 0f; // Replace with the correct height of your water
@@ -75,10 +93,93 @@ public class MapManager : MonoBehaviour
 
 
     [Space]
-    [Header("Square Patterns Only")][Tooltip("Square Patterns Only")]
+    [Header("Square Patterns Only")]
+    // The LATTICE SLOT pitch, not the chunk width. See LatticeSlotSpacing.
     [SerializeField] private float islandSpacing = 20f;
+    [Tooltip("VESTIGIAL. Chunk bounds are now sized from ChunkWorldSize so they match " +
+             "the generated mesh exactly. Nothing reads this.")]
     [SerializeField] private float islandSize = 10f;
     [SerializeField] private int IslandHeight;
+
+    // ---------------------------------------------------------------------------
+    // SPATIAL CONTRACT - the numbers here are not interchangeable, and conflating
+    // them is what produced both the "overlapping chunks" and the "60-unit gaps".
+    //
+    //   gridResolution          = 60 cells per axis        (MapGrid.size)
+    //   cellWorldSize           = 1 world unit             (GridSystem.cellSize)
+    //   chunkWorldSize          = 60 world units           = resolution * cellWorldSize
+    //   latticeSlotSpacing      = 30 world units           (islandSpacing)
+    //   occupied-slot stride    = 2                        (selection fills every other slot)
+    //   generated-neighbour pitch = 60                     = stride * latticeSlotSpacing
+    //
+    // Chunks therefore tile exactly because
+    //     occupied-slot stride * latticeSlotSpacing == chunkWorldSize
+    // NOT because the slot spacing equals the chunk width. A spawn pattern that fills
+    // adjacent slots would overlap by half a chunk - ValidateGeneratedChunkSeparation
+    // below exists to catch exactly that.
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Pitch between adjacent lattice SLOTS. Half a chunk with the current sparse
+    /// selection - it is not the chunk's world width.
+    /// </summary>
+    private float LatticeSlotSpacing => islandSpacing;
+
+    /// <summary>
+    /// World-space width of one generated chunk: gridResolution * cellWorldSize, read
+    /// from the island prefab's MapGrid.size (cells are 1 world unit, per
+    /// GridSystem.cellSize). This is the extent of the terrain mesh and of
+    /// Island.bounds - it is deliberately independent of LatticeSlotSpacing.
+    /// </summary>
+    private float ChunkWorldSize
+    {
+        get
+        {
+            if (islandPrefab != null)
+            {
+                MapGrid prefabGrid = islandPrefab.GetComponent<MapGrid>();
+                if (prefabGrid != null && prefabGrid.Size > 0) return prefabGrid.Size;
+            }
+
+            return islandSpacing;
+        }
+    }
+
+    /// <summary>
+    /// Distance subtracted from every lattice slot position so the lattice's SWEPT MESH
+    /// EXTENT is centred on the world origin.
+    ///
+    /// The chunk transform is the mesh's MINIMUM corner, so before offsetting the
+    /// lattice sweeps [0, (slots-1)*latticeSlotSpacing + chunkWorldSize] - the extra
+    /// chunkWorldSize being the last chunk's own body. Centring the slot POSITIONS
+    /// instead of that swept extent left the terrain half a chunk positive: the map
+    /// read [-90, 150] rather than [-120, 120].
+    ///
+    /// This generalises what the Singular pattern already hardcodes - substituting
+    /// slots = 1 yields exactly its chunkWorldSize/2.
+    /// </summary>
+    private float LatticeCenteringOffset
+    {
+        get
+        {
+            int slots = Mathf.Max(1, numberOfIslands);
+            return ((slots - 1) * LatticeSlotSpacing + ChunkWorldSize) * 0.5f;
+        }
+    }
+
+    /// <summary>
+    /// Bounds for a chunk whose MINIMUM CORNER is at minCorner. The MapGrid transform
+    /// sits on that corner and its mesh spans local 0..ChunkWorldSize, so the bounds
+    /// centre is half a chunk further along X and Z. Keeping this in one place is what
+    /// makes Island.bounds actually enclose the terrain it claims to.
+    /// </summary>
+    private Bounds MakeChunkBounds(Vector3 minCorner)
+    {
+        float width = ChunkWorldSize;
+        return new Bounds(
+            minCorner + new Vector3(width * 0.5f, 0f, width * 0.5f),
+            new Vector3(width, width, width));
+    }
 
     // Calculate the offset needed to start the islands in the center of the scene
     public float xOffset { get; private set; }
@@ -95,18 +196,83 @@ public class MapManager : MonoBehaviour
 
     #endregion
 
+    #region Match Configuration
+
+    /// <summary>
+    /// Overrides this map's generation inputs with the lobby's choices.
+    ///
+    /// Must be called before Start(), which is where generation actually happens -
+    /// MatchBootstrapper does this from Awake(). islandPrefab is deliberately not
+    /// overridable: it is scene wiring, not a match setting.
+    /// </summary>
+    public void ApplyConfig(MatchConfig config)
+    {
+        if (config == null)
+        {
+            return;
+        }
+
+        if (islands != null)
+        {
+            Debug.LogWarning("MapManager: ApplyConfig ran after generation - the map " +
+                             "is already built and these values will not take effect.");
+            return;
+        }
+
+        selectedSpawnPattern = config.spawnPattern;
+        numberOfIslands = config.numberOfIslands;
+
+        // A null islandConfig means "the lobby had no opinion", so keep the
+        // Inspector's asset rather than blanking a working reference.
+        if (config.islandConfig != null)
+        {
+            islandConfig = config.islandConfig;
+        }
+
+        Debug.Log($"<color=lightblue>MapManager:</color> applied {config}");
+    }
+
+    #endregion
+
     #region Start Methods
 
     // Set Island Spawning Settings - Spawn Patterns 
 
     void Start()
     {
-        this.waterObject.SetActive(WaterOnStart); 
-        waterObject.transform.localPosition = new Vector3(0f, waterHeight, 0f);
+        RegenerateMap();
+    }
+
+    public void GenerateMap()
+    {
+        ResolveGeneratedMapRoot();
+        if (generatedMapRoot != null)
+        {
+            Debug.LogWarning("MapManager: a generated map already exists. Use Regenerate Map to replace it.", this);
+            return;
+        }
+
+        // If a lobby handed over a config and nothing consumed it, the match is
+        // about to generate with Inspector values and silently ignore the player's
+        // choices. Almost always means MatchBootstrapper is missing from the scene.
+        if (Application.isPlaying && GameSession.HasPending)
+        {
+            Debug.LogError("MapManager: a MatchConfig is still pending at generation " +
+                           "time - no MatchBootstrapper consumed it. The lobby's " +
+                           "settings are being ignored.");
+        }
+
+        if (waterObject != null)
+        {
+            waterObject.SetActive(WaterOnStart);
+            // waterObject.transform.localPosition = new Vector3(0f, waterHeight, 0f); // Removed so user can position it manually
+        }
 
         islands = new List<Island>();
         nextIslandID = 1;
         gameManager = FindObjectOfType<GameManager>();
+        generatedMapRoot = new GameObject(GeneratedMapRootName).transform;
+        generatedMapRoot.SetParent(transform, false);
 
         // Creates Island Game Object
         // > Start 
@@ -116,9 +282,9 @@ public class MapManager : MonoBehaviour
             case SpawnPattern.Singular: // DEV ONLY
                 // Singular Spawn
                 int singularIslandID = nextIslandID++;
-                float halfSize = islandSize / 2f;
-                float QuarterSize = (halfSize / 2);
-                float Offset = QuarterSize * -1; 
+                // Minimum corner placed half a chunk negative on both axes, so the one
+                // generated chunk is centred on the world origin.
+                float Offset = ChunkWorldSize * -0.5f;
                
                 for (int i = 0; i < 1; i++)
                 {
@@ -130,8 +296,7 @@ public class MapManager : MonoBehaviour
 
                     // Set the position and size of the island's bounds
                     Vector3 islandPosition = new Vector3(Offset, 0, Offset);
-                    Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
-                    islandData.bounds = islandBounds;
+                    islandData.bounds = MakeChunkBounds(islandPosition);
 
                     islandData.islandType = IslandType.None;
                     islandData.id = singularIslandID;  // Use the reserved ID
@@ -183,9 +348,10 @@ public class MapManager : MonoBehaviour
             case SpawnPattern.Square: // DEV ONLY
                 // Square Spawn
                 int currentIsland = 0;
-                float halfIslands = numberOfIslands / 2f;
-                xOffset = (halfIslands - 0.5f) * islandSpacing;
-                zOffset = (halfIslands - 0.5f) * islandSpacing;
+                // Centres the lattice's swept MESH extent on the world origin, not the
+                // slot positions - the transform is each chunk's minimum corner.
+                xOffset = LatticeCenteringOffset;
+                zOffset = LatticeCenteringOffset;
 
                 for (int i = 0; i < numberOfIslands; i++)
                 {
@@ -196,12 +362,11 @@ public class MapManager : MonoBehaviour
                         islandData.islandType = IslandType.None;
                         //islandData.buildings = new List<Building>();
 
-                        // Set the position and size of the island's bounds
-                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset - 30, 0, j * islandSpacing - zOffset - 30);
-                        Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
+                        // Chunk minimum corner, stepped by the LATTICE SLOT pitch.
+                        Vector3 islandPosition = new Vector3(i * LatticeSlotSpacing - xOffset, 0, j * LatticeSlotSpacing - zOffset);
 
                         // Set the remaining data for the island
-                        islandData.bounds = islandBounds;
+                        islandData.bounds = MakeChunkBounds(islandPosition);
                         islandData.id = currentIsland + 1;
                         islandData.name = "Island " + (currentIsland + 1);
 
@@ -218,9 +383,10 @@ public class MapManager : MonoBehaviour
                 // Square Spawn + Normal Sized Orbitor Islands
 
                 currentIsland = 0;
-                halfIslands = numberOfIslands / 2f;
-                xOffset = (halfIslands - 0.5f) * islandSpacing;
-                zOffset = (halfIslands - 0.5f) * islandSpacing;
+                // Centres the lattice's swept MESH extent on the world origin, not the
+                // slot positions - the transform is each chunk's minimum corner.
+                xOffset = LatticeCenteringOffset;
+                zOffset = LatticeCenteringOffset;
                 // Add Islands Loop
                 for (int i = 0; i < numberOfIslands; i++)
                 {
@@ -230,7 +396,10 @@ public class MapManager : MonoBehaviour
                         IslandData islandData = new IslandData(GridType.Type.Island);
 
                         // Set the position
-                        Vector3 islandPosition = new Vector3(i * islandSpacing - xOffset, 0, j * islandSpacing - zOffset);
+                        // Chunk minimum corner - the MapGrid transform goes here and its
+                        // mesh spans local 0..ChunkWorldSize from it. Stepping by the slot
+                        // pitch tiles only because the selection fills every other slot.
+                        Vector3 islandPosition = new Vector3(i * LatticeSlotSpacing - xOffset, 0, j * LatticeSlotSpacing - zOffset);
 
                         // Set Size - Not looking good bro :NAHH:
                         // Yet to be a Fully Written, Use Pre-game "Biome Setting" / Player Setting"
@@ -252,10 +421,8 @@ public class MapManager : MonoBehaviour
                         islandData.items = new Dictionary<ItemData, int>();
 
                         // Set the bounds
-                        Bounds islandBounds = new Bounds(islandPosition, new Vector3(islandSize, islandSize, islandSize));
-
                         // Set the remaining data for the island
-                        islandData.bounds = islandBounds;
+                        islandData.bounds = MakeChunkBounds(islandPosition);
                         islandData.id = currentIsland + 1;
                         islandData.name = "Island " + (currentIsland + 1);
 
@@ -314,7 +481,102 @@ public class MapManager : MonoBehaviour
             currentOceanSelection.Remove(1); // Ensure ID 1 is not considered for oceans
         }
 
+        ValidateGeneratedChunkSeparation();
+
         OnMapGenerated?.Invoke();
+    }
+
+    /// <summary>
+    /// Guards the spatial contract: no two GENERATED chunks may overlap.
+    ///
+    /// Chunks tile only because the current selection fills every other lattice slot,
+    /// so occupied-slot stride (2) * latticeSlotSpacing (30) happens to equal
+    /// chunkWorldSize (60). Nothing structurally enforces that - a spawn pattern or
+    /// selection list that puts two chunks in adjacent slots would silently overlap
+    /// them by half a chunk, which is exactly the failure that produced one chunk's
+    /// abyssal rim being drawn through its neighbour's centre. This reports it loudly
+    /// instead of leaving it to be discovered from a screenshot.
+    ///
+    /// Footprints come from transform + ChunkWorldSize rather than renderer bounds so
+    /// the check is about the spatial contract only, independent of terrain height.
+    /// </summary>
+    private void ValidateGeneratedChunkSeparation()
+    {
+        if (generatedMapRoot == null) return;
+
+        MapGrid[] chunks = generatedMapRoot.GetComponentsInChildren<MapGrid>(true);
+        float width = ChunkWorldSize;
+        int overlaps = 0;
+
+        for (int a = 0; a < chunks.Length; a++)
+        {
+            for (int b = a + 1; b < chunks.Length; b++)
+            {
+                Vector3 pa = chunks[a].transform.position;
+                Vector3 pb = chunks[b].transform.position;
+
+                // Axis-aligned footprints, so an overlap on BOTH axes is a real
+                // intersection. Touching exactly (delta == width) is correct tiling.
+                float overlapX = width - Mathf.Abs(pa.x - pb.x);
+                float overlapZ = width - Mathf.Abs(pa.z - pb.z);
+                if (overlapX <= 0f || overlapZ <= 0f) continue;
+
+                overlaps++;
+                Debug.LogError(
+                    $"MapManager: generated chunks '{chunks[a].name}' and '{chunks[b].name}' OVERLAP by " +
+                    $"{overlapX:F1} x {overlapZ:F1} world units. chunkWorldSize={width}, " +
+                    $"latticeSlotSpacing={LatticeSlotSpacing}. Two selected slots are closer than one " +
+                    $"chunk width apart - the selection must keep an occupied-slot stride of at least " +
+                    $"{Mathf.CeilToInt(width / Mathf.Max(0.0001f, LatticeSlotSpacing))}.", chunks[a]);
+            }
+        }
+
+        if (overlaps > 0)
+        {
+            Debug.LogError($"MapManager: {overlaps} overlapping chunk pair(s) - the map's spatial contract is violated.", this);
+        }
+    }
+
+    public void RegenerateMap()
+    {
+        ClearMap();
+        GenerateMap();
+    }
+
+    public void ClearMap()
+    {
+        ResolveGeneratedMapRoot();
+        if (generatedMapRoot != null)
+        {
+            GameObject rootObject = generatedMapRoot.gameObject;
+            generatedMapRoot = null;
+
+            foreach (MapGrid mapGrid in rootObject.GetComponentsInChildren<MapGrid>(true))
+            {
+                mapGrid.ReleaseGeneratedVisualResources();
+            }
+
+            if (Application.isPlaying) Destroy(rootObject);
+            else DestroyImmediate(rootObject);
+        }
+
+        islands ??= new List<Island>();
+        islands.Clear();
+        oceanGizmoPositions.Clear();
+        nextIslandID = 1;
+
+        if (!Application.isPlaying && waterObject != null)
+        {
+            waterObject.SetActive(false);
+        }
+    }
+
+    private void ResolveGeneratedMapRoot()
+    {
+        if (generatedMapRoot == null && !Application.isPlaying)
+        {
+            generatedMapRoot = transform.Find(GeneratedMapRootName);
+        }
     }
     
     #endregion
@@ -337,8 +599,21 @@ public class MapManager : MonoBehaviour
             // that took all the data, while the component the rest of the game reaches
             // through GetComponent - raycasts, GridSystem, BuildingPlacer - kept defaults.
             GameObject islandGO = Instantiate(islandPrefab);
-            islandGO.transform.position = data.bounds.center;
-            islandGO.name = data.name;
+            islandGO.transform.SetParent(generatedMapRoot, true);
+            // The MapGrid transform is the chunk's MINIMUM CORNER, not its centre: the
+            // terrain mesh spans local 0..ChunkWorldSize from the transform. MakeChunkBounds
+            // put the bounds centre half a chunk past that corner, so undo it here.
+            float halfChunk = ChunkWorldSize * 0.5f;
+            islandGO.transform.position = new Vector3(
+                data.bounds.center.x - halfChunk,
+                data.bounds.center.y,
+                data.bounds.center.z - halfChunk);
+
+            // Ocean macro-grids are built from the same prefab and pipeline as islands,
+            // but calling them "Island N" makes the hierarchy unreadable when half the
+            // map is open water. Only the GameObject is renamed - IslandData.name and
+            // the island id are left alone so nothing that looks them up breaks.
+            islandGO.name = shouldAddOcean ? $"Ocean {data.id}" : data.name;
 
             Island island = islandGO.GetComponent<Island>();
             if (island == null)
@@ -533,6 +808,4 @@ public class MapManager : MonoBehaviour
     }
     #endregion
 }
-
-
 
