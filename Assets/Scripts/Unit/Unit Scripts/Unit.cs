@@ -436,21 +436,16 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 
     void OnDestroy()
     {
-        // Deregister FIRST. OnDeselect() touches child GameObjects and UI that may
-        // already be torn down; if it throws, a dead Unit would otherwise stay in
-        // unitList forever and break every later drag-select.
-        if (UnitSelections.Instance != null)
+        // Destruction is not a normal deselection. Do not call OnDeselect here:
+        // during scene teardown its UI and child objects may already be destroyed,
+        // and the lazy Outline accessor would try to add a component to this dying
+        // GameObject. Only keep the selection registry internally consistent.
+        UnitSelections selections = UnitSelections.Instance;
+        if (selections != null)
         {
-            UnitSelections.Instance.unitList.Remove(this);
-            UnitSelections.Instance.unitsSelected.Remove(this);
+            selections.unitList.Remove(this);
+            selections.unitsSelected.Remove(this);
         }
-
-        // Reset Any Flags
-        OnDeselect();
-
-        // Removes Unit from Game
-        this.gameObject.SetActive(false);
-
     }
 }
 

@@ -7,36 +7,61 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
 {
     #region Default Production
 
-    private BuildingProductionData _data;
+    [SerializeField] private BuildingProductionData _data;
+    [Header("No-input fallback production")]
+    [SerializeField] private ResourceType fallbackResource = ResourceType.RawGravel;
+    [SerializeField, Min(1)] private int fallbackProductionRate = 1;
+    [SerializeField, Min(0.1f)] private float productionIntervalSeconds = 2f;
+
+    private Building building;
+    private BuildingOutput output;
+    private float nextProductionTime;
+
+    private void Awake()
+    {
+        building = GetComponent<Building>();
+        output = GetComponent<BuildingOutput>();
+        if (output == null) output = gameObject.AddComponent<BuildingOutput>();
+    }
+
+    private void Update()
+    {
+        if (building == null || building.CurrentState != BuildingEnums.BuildingState.Active) return;
+        if (Time.time < nextProductionTime) return;
+        nextProductionTime = Time.time + productionIntervalSeconds;
+        output.AddOutput(GetProducedResource(), GetProductionRate());
+    }
 
     public int GetProductionRate()
     {
-        return _data.ProductionRate;
+        return _data != null ? _data.ProductionRate : fallbackProductionRate;
     }
 
     public void SetProductionRate(int rate)
     {
-        _data.ProductionRate = rate;
+        if (_data != null) _data.ProductionRate = rate;
+        else fallbackProductionRate = Mathf.Max(1, rate);
     }
 
     public int GetProductionCapacity()
     {
-        return _data.ProductionCapacity;
+        return _data != null ? _data.ProductionCapacity : output != null ? output.OutputCapacity : 30;
     }
 
     public void SetProductionCapacity(int capacity)
     {
-        _data.ProductionCapacity = capacity;
+        if (_data != null) _data.ProductionCapacity = capacity;
     }
 
     public ResourceType GetProducedResource()
     {
-        return _data.ProducedResource;
+        return _data != null ? _data.ProducedResource : fallbackResource;
     }
 
     public void SetProducedResource(ResourceType resource)
     {
-        _data.ProducedResource = resource;
+        if (_data != null) _data.ProducedResource = resource;
+        else fallbackResource = resource;
     }
 
     #endregion

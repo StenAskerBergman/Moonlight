@@ -24,6 +24,8 @@ public class TransportManager : MonoBehaviour
     private readonly Queue<Truck> _idleTrucks = new Queue<Truck>();
     private readonly Dictionary<Building, float> _lastManualOrderTime = new Dictionary<Building, float>();
 
+    public GameObject TruckPrefab => truckPrefab;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -36,13 +38,11 @@ public class TransportManager : MonoBehaviour
 
     private void OnEnable()
     {
-        BuildingOutput.OnOutputReady += OnOutputReady;
         Truck.OnTruckDelivered += OnTruckDelivered;
     }
 
     private void OnDisable()
     {
-        BuildingOutput.OnOutputReady -= OnOutputReady;
         Truck.OnTruckDelivered -= OnTruckDelivered;
     }
 
@@ -106,37 +106,26 @@ public class TransportManager : MonoBehaviour
         }
 
         BuildingOutput output = building.GetComponent<BuildingOutput>();
-        if (output == null || output.PendingOutput.Count == 0)
+        if (output == null || output.AvailableAmount <= 0)
         {
             Debug.Log($"TransportManager: '{building.name}' has no pending output to collect.");
             return false;
         }
 
-        ItemEnums.ResourceType resource = output.PendingOutput.Keys.First();
-
-        Building consumer = FindConsumer(building, resource);
-        if (consumer == null)
+        Island island = building.GetComponentInParent<Island>();
+        WarehouseLogisticsScheduler[] schedulers = FindObjectsOfType<WarehouseLogisticsScheduler>();
+        foreach (WarehouseLogisticsScheduler scheduler in schedulers
+                     .Where(candidate => candidate != null && candidate.BelongsTo(island) && candidate.HasImmediatelyAvailableDrone)
+                     .OrderBy(candidate => (candidate.transform.position - building.transform.position).sqrMagnitude))
         {
-            Debug.LogWarning($"TransportManager: no consumer found for '{building.name}''s {resource} output.");
-            return false;
+            if (!scheduler.TryQueuePriorityPickup(building)) continue;
+            _lastManualOrderTime[building] = Time.time;
+            return true;
         }
 
-        if (!TryGetPath(building, consumer, out List<Cell> path))
-        {
-            Debug.LogWarning($"TransportManager: no road path between '{building.name}' and '{consumer.name}'.");
-            return false;
-        }
-
-        Truck truck = GetOrSpawnTruck(building.transform.position);
-        if (truck == null)
-        {
-            Debug.LogWarning($"TransportManager: no truck available to dispatch to '{building.name}' (at capacity).");
-            return false;
-        }
-
-        truck.AssignRoute(building, consumer, path);
-        _lastManualOrderTime[building] = Time.time;
-        return true;
+        Debug.LogWarning($"TransportManager: no free road drone can reach '{building.name}'. " +
+                         "An island-owned airborne priority adapter is not configured.");
+        return false;
     }
 
     /// <summary>

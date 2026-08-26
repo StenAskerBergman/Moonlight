@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,6 +56,8 @@ public class MapManager : MonoBehaviour
         public SpawnPattern spawnPattern;
         public string patternName;
         public string patternDescription;
+        [Tooltip("Invert island/ocean selection only while this spawn pattern is selected.")]
+        public bool invertSelection;
     }
 
 
@@ -66,7 +69,25 @@ public class MapManager : MonoBehaviour
         Normal,
     }
 
-    public static event System.Action OnMapGenerated;
+    public static event Action OnMapGenerated;
+    public static event Action<MapManager, string> OnMapGenerationFailed;
+
+    [HideInInspector] public long LastGenerationTimeMs = -1;
+    [HideInInspector] public string LastGenerationBreakStatus = null;
+    [Header("Generation Watchdog Guard")]
+    [Tooltip("Maximum allowed generation time in seconds before auto-breaking")]
+    [SerializeField] private float generationTimeoutSeconds = 15f;
+    public float GenerationTimeoutSeconds => generationTimeoutSeconds;
+
+    public bool IsSelectionInverted
+    {
+        get
+        {
+            PatternData selectedPattern = patternDataList?.FirstOrDefault(
+                pattern => pattern != null && pattern.spawnPattern == selectedSpawnPattern);
+            return selectedPattern != null && selectedPattern.invertSelection;
+        }
+    }
 
     [Header("Spawn Patterns")]
     public List<PatternData> patternDataList;
@@ -75,7 +96,11 @@ public class MapManager : MonoBehaviour
 
 
     // Prefabs ... (and below the rest of your variables)
-    [SerializeField] private GameObject islandPrefab; // The Current Island Object 
+    [Header("Chunk Prefabs")]
+    [SerializeField] private GameObject islandPrefab; // The Current Island Object / Land chunk prefab
+    [SerializeField] private GameObject oceanTilePrefab; // Ocean/Plateau chunk prefab (falls back to islandPrefab if null)
+
+    public GameObject landTilePrefab => islandPrefab;
     [SerializeField] private GameObject waterObject; // Assuming that waterObject is a reference to the water game object
     [SerializeField] private IslandConfiguration islandConfig; // Assuming that IslandConfig is a reference to the IslandConfiguration scriptable object
 
@@ -243,13 +268,32 @@ public class MapManager : MonoBehaviour
         RegenerateMap();
     }
 
+    private void ResolvePrefabReferences()
+    {
+        if (islandPrefab == null)
+        {
+#if UNITY_EDITOR
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("IslandPrefab t:Prefab");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[i]);
+                if (path.EndsWith("IslandPrefab.prefab"))
+                {
+                    islandPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    break;
+                }
+            }
+#endif
+        }
+    }
+
     public void GenerateMap()
     {
+        ResolvePrefabReferences();
         ResolveGeneratedMapRoot();
         if (generatedMapRoot != null)
         {
-            Debug.LogWarning("MapManager: a generated map already exists. Use Regenerate Map to replace it.", this);
-            return;
+            ClearMap();
         }
 
         // If a lobby handed over a config and nothing consumed it, the match is
@@ -587,18 +631,24 @@ public class MapManager : MonoBehaviour
     // IMPORTANT: USES SPAWN PATTERNS 
     public void AddIsland(IslandData data)
     {
-        bool shouldAddIsland = invertSelection ? !currentIslandSelection.Contains(data.id) : currentIslandSelection.Contains(data.id);
+        bool invertSelection = IsSelectionInverted;
+        bool shouldAddIsland = selectedSpawnPattern == SpawnPattern.Singular
+            || (invertSelection ? !currentIslandSelection.Contains(data.id) : currentIslandSelection.Contains(data.id));
         bool shouldAddOcean = !invertSelection && currentOceanSelection.Contains(data.id) && selectedSpawnPattern != SpawnPattern.Singular;
 
         // If we should add this island (or ocean, depending on the list and invertSelection)
         if (shouldAddIsland || shouldAddOcean)
         {
 
-            // Instantiate first: Island is a MonoBehaviour, so the prefab's own component
-            // is the island. Building one with 'new' created a second, orphaned instance
-            // that took all the data, while the component the rest of the game reaches
-            // through GetComponent - raycasts, GridSystem, BuildingPlacer - kept defaults.
-            GameObject islandGO = Instantiate(islandPrefab);
+            GameObject prefabToUse = shouldAddOcean ? (oceanTilePrefab != null ? oceanTilePrefab : islandPrefab) : islandPrefab;
+            if (prefabToUse == null)
+            {
+                Debug.LogError("MapManager: Neither landTilePrefab nor oceanTilePrefab is assigned!");
+                nextIslandID++;
+                return;
+            }
+
+            GameObject islandGO = Instantiate(prefabToUse);
             islandGO.transform.SetParent(generatedMapRoot, true);
             // The MapGrid transform is the chunk's MINIMUM CORNER, not its centre: the
             // terrain mesh spans local 0..ChunkWorldSize from the transform. MakeChunkBounds

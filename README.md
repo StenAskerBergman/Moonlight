@@ -1,79 +1,67 @@
-# Status of the project
+# Moonlight
 
-## Development
-This project is now developed as part of the [AI Navigation](https://docs.unity3d.com/Packages/com.unity.ai.navigation@latest) package. Please add that package to your project in order to continue building the NavMesh using these components and to get access to newer versions.
+Moonlight is a Unity RTS and island-economy prototype built around procedural
+archipelagos, settlement construction, road logistics, shared island storage,
+and multi-domain navigation.
 
-The content of this repository remains available for older Unity versions but no further development will be made here.
+## Current playable goal
 
-## Questions and feature requests
-Please use the [AI & Navigation Previews](https://forum.unity.com/forums/ai-navigation-previews.122/) section of the forum to discuss about the **AI Navigation** package and to stay informed about major releases.
+The first vertical slice is a 10–15 minute loop:
 
-You can learn about the future developments of **AI Navigation** and also share your feature requests in the [Unity Platform Roadmap](https://unity.com/roadmap/unity-platform/navigation-game-ai) portal.
+1. Generate a deterministic island map.
+2. Establish a settlement and warehouse/depot influence area.
+3. Place roads and one producer with no input requirement.
+4. Let the producer accumulate one resource in local output storage.
+5. Watch a warehouse-owned road drone collect the output.
+6. Verify that the cargo reaches the island's shared storage.
 
-## Bug Reporting
-The _Issues_ section of this repository is closed. Please use the [Unity built-in report system](https://unity3d.com/unity/qa/bug-reporting 
-) to report any bugs that you find in the **AI Navigation** package.
+The shared stockpile is currently inspectable through `IslandResourceStorage`.
+A player-facing stockpile UI is deliberately reserved for a later slice.
 
-# Using This Repository
+See [Playable Loop](Documentation/PlayableLoop.md) for rules and acceptance criteria.
 
-## Components for Runtime NavMesh Building
+## Opening the project
 
-Here we introduce four components for the navigation system:
+- Unity: **2022.3.62f3**
+- Render pipeline: Universal Render Pipeline 14
+- Start scene: `Assets/Scenes/Launcher/MainMenu.unity`
+- Direct gameplay scene: `Assets/Scenes/Match.unity`
+- Terrain development scene: `Assets/Scenes/Grid Testing.unity`
 
-* __NavMeshSurface__ – for building and enabling a NavMesh surface for one agent type.
-* __NavMeshModifier__ – affects the NavMesh generation of NavMesh area types, based on the transform hierarchy.
-* __NavMeshModifierVolume__ – affects the NavMesh generation of NavMesh area types, based on volume.
-* __NavMeshLink__ – connects same or different NavMesh surfaces for one agent type.
+Open the repository folder in Unity Hub. The normal flow is Main Menu → Lobby →
+Loading → Match.
 
-These components comprise the high level controls for building and using NavMeshes at runtime as well as edit time.
+## Major modules
 
-Detailed information can be found in the [Documentation](Documentation) section or in the [NavMesh building components](https://docs.unity3d.com/Manual/NavMesh-BuildingComponents.html) section of the Unity Manual.
+- `Assets/Scripts/Grid System` — map layout, procedural terrain, mesh/texture
+  generation, roads, and stacked navigation.
+- `Assets/Scripts/Main Game/Building Code` — placement, influence, construction,
+  production, and local building output.
+- `Assets/Scripts/Unit/Transport` — warehouse assignment, pickup jobs, logistics
+  drones, and shared island resource delivery.
+- `Assets/Scripts/Item System` — general item inventories and storage.
+- `Assets/Scripts/Unit` — selection, movement, and navigation behaviors.
 
-## How To Get Started
+## Terrain acceptance gate
 
-Download and install Unity 5.6 or newer.
+Before expanding the economy slice, validate at least ten deterministic seeds:
 
-Clone or download this repository and open the project in Unity.
-Alternatively, you can copy the contents of `Assets/NavMeshComponents` to an existing project.
+- no visible height, normal, or texture-splat seams at chunk edges or corners;
+- coherent island, coast, river, mountain, and plateau forms;
+- usable settlement terrain and shoreline access;
+- identical results for identical seeds;
+- total generation respects the Inspector-configured timeout (15 seconds by
+  default), with partial objects removed after failure.
 
-Make sure to select a branch of the repository that matches the Unity version:
-> [master](../../tree/master) for 2020.3-LTS, [2019.3](../../tree/2019.3) for up to 2019.4-LTS, [2018.3](../../tree/2018.3) for up to 2018.4-LTS and 2019.2, [2018.2](../../tree/2018.2), [2018.1](../../tree/2018.1), [2017.2](../../tree/2017.2) for up to 2017.4-LTS, [2017.1](../../tree/2017.1), [5.6](../../tree/5.6).
+Visual quality must be checked in Unity; compilation alone does not prove that
+generated islands look or behave correctly.
 
-Additional examples are available in the `Assets/Examples` folder.
-The examples are provided "as is". They are neither generic nor robust, but serve as inspiration.
+## Development status
 
-_Note: During the beta cycle features and API are subject to change.\
-**Make sure to backup an existing project before opening it with a beta build.**_
+Terrain generation and navigation are the most developed systems. Building and
+inventory foundations exist, while the warehouse output-pickup slice is the
+current integration target. Producer-owned input collectors, airborne priority
+pickup, and the stockpile UI are follow-up slices.
 
-## FAQ
-
-Q: Can I bake a NavMesh at runtime?  
-A: Yes.
-
-Q: Can I use NavMesh'es for more than one agent size?  
-A: Yes.
-
-Q: Can I put a NavMesh in a prefab?  
-A: Yes - with some limitations.
-
-Q: How do I connect two NavMesh surfaces?  
-A: Use the NavMeshLink to connect the two sides.
-
-Q: How do I query the NavMesh for one specific size of agent?  
-A: Use the NavMeshQuery filter when querying the NavMesh.
-
-Q: What's the deal with the 'DefaultExecutionOrder' attribute?  
-A: It gives a way of controlling the order of execution of scripts - specifically it allows us to build a NavMesh before the
-(native) NavMeshAgent component is enabled.
-
-Q: What's the use of the new delegate 'NavMesh.onPreUpdate'?  
-A: It allows you to hook in to controlling the NavMesh data and links set up before the navigation update loop is called on the native side.
-
-Q: Can I do moving NavMesh platforms?  
-A: No - new API is required for consistently moving platforms carrying agents.
-
-Q: Is OffMeshLink now obsolete?  
-A: No - you can still use OffMeshLink - however you'll find that NavMeshLink is more flexible and have less overhead.
-
-Q: What happened to HeightMesh and Auto Generated OffMeshLinks?  
-A: They're not supported in the new NavMesh building feature. HeightMesh will be added at some point. Auto OffMeshLink generation will possibly be replaced with a solution that allows better control of placement.
+Imported NavMesh Components documentation remains under `Documentation/` for
+reference, but the project uses Unity's AI Navigation package for current work.

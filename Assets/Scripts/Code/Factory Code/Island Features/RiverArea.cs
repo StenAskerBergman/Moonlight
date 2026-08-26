@@ -68,11 +68,14 @@ public class RiverArea : IFeature
 
         int size = grid.GetLength(0);
 
-        if (reservations != null && reservations.Rivers.Count > 0)
+        if (reservations != null)
         {
-            foreach (var river in reservations.Rivers)
+            if (reservations.Rivers.Count > 0)
             {
-                ApplyReservedRiver(grid, size, river);
+                foreach (var river in reservations.Rivers)
+                {
+                    ApplyReservedRiver(grid, size, river);
+                }
             }
             return;
         }
@@ -155,18 +158,38 @@ public class RiverArea : IFeature
             {
                 cell.SetRiverData(Cell.RiverStatus.RiverSource, dir);
                 cell.ChangeTerrainType(Cell.TerrainType.River);
-                MarkRiverBank(cell, grid, size);
             }
-            else if (isLast || cell.IsUnderwater)
+            else if (isLast)
             {
                 cell.SetRiverData(Cell.RiverStatus.RiverMouth, Cell.RiverDirection.None);
                 cell.SetDeposit(ResourceNodeType.LakeMouth);
+            }
+            else if (cell.IsUnderwater)
+            {
+                cell.SetRiverData(Cell.RiverStatus.RiverMouth, Cell.RiverDirection.None);
             }
             else
             {
                 cell.SetRiverData(Cell.RiverStatus.River, dir);
                 cell.ChangeTerrainType(Cell.TerrainType.River);
-                MarkRiverBank(cell, grid, size);
+
+                // Place 1 discrete RiverBank node periodically along the river
+                int interval = Mathf.Max(4, pathCells.Count / 3);
+                if (i % interval == 2)
+                {
+                    int perpX = -(coord.y - pathCells[i - 1].y);
+                    int perpZ = (coord.x - pathCells[i - 1].x);
+                    int bx = coord.x + perpX;
+                    int bz = coord.y + perpZ;
+                    if (bx >= 0 && bx < size && bz >= 0 && bz < size)
+                    {
+                        Cell bank = grid[bx, bz];
+                        if (bank.currentTerrainType == Cell.TerrainType.Land && !bank.isDeposit)
+                        {
+                            bank.SetDeposit(ResourceNodeType.RiverBank);
+                        }
+                    }
+                }
             }
         }
     }

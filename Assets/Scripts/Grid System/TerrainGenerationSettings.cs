@@ -99,14 +99,23 @@ public sealed class UnderwaterPlateauGenerationSettings
 public sealed class CoastalMountainSettings
 {
     public bool enabled = true;
-    [Range(0, 8)] public int minRidges = 2;
-    [Range(0, 8)] public int maxRidges = 4;
-    [Min(3f)] public float minRidgeLength = 12f;
-    [Min(3f)] public float maxRidgeLength = 24f;
-    [Min(2f)] public float minRidgeWidth = 4f;
-    [Min(2f)] public float maxRidgeWidth = 8f;
-    [Range(1f, 5f)] public float ridgePeakHeight = 2.4f;
+    [Range(0, 8)] public int minRidges = 3;
+    [Range(0, 8)] public int maxRidges = 5;
+    [Min(3f)] public float minRidgeLength = 22f;
+    [Min(3f)] public float maxRidgeLength = 48f;
+    [Min(2f)] public float minRidgeWidth = 8f;
+    [Min(2f)] public float maxRidgeWidth = 16f;
+    [Range(1f, 8f)] public float ridgePeakHeight = 3.2f;
     [Range(0.5f, 3f)] public float cliffSharpness = 1.4f;
+
+    [Header("Structural validation")]
+    [Range(0.1f, 1f)] public float minimumPeakRatio = 0.55f;
+    [Range(0.1f, 1f)] public float minimumWidthRatio = 0.55f;
+    [Range(0.01f, 2f)] public float minimumUsefulSlope = 0.08f;
+    [Range(0.1f, 4f)] public float maximumSlope = 1.25f;
+    [Range(0.1f, 1f)] public float minimumSurvivingMassRatio = 0.45f;
+    [Range(0.5f, 1f)] public float minimumConnectedMassRatio = 0.90f;
+    [Min(4)] public int minimumMountainSamples = 24;
 
     public void Validate()
     {
@@ -116,6 +125,13 @@ public sealed class CoastalMountainSettings
         maxRidgeLength = Mathf.Max(minRidgeLength, maxRidgeLength);
         minRidgeWidth = Mathf.Max(2f, minRidgeWidth);
         maxRidgeWidth = Mathf.Max(minRidgeWidth, maxRidgeWidth);
+        minimumPeakRatio = Mathf.Clamp(minimumPeakRatio, 0.1f, 1f);
+        minimumWidthRatio = Mathf.Clamp(minimumWidthRatio, 0.1f, 1f);
+        minimumUsefulSlope = Mathf.Max(0.01f, minimumUsefulSlope);
+        maximumSlope = Mathf.Max(minimumUsefulSlope, maximumSlope);
+        minimumSurvivingMassRatio = Mathf.Clamp(minimumSurvivingMassRatio, 0.1f, 1f);
+        minimumConnectedMassRatio = Mathf.Clamp(minimumConnectedMassRatio, 0.5f, 1f);
+        minimumMountainSamples = Mathf.Max(4, minimumMountainSamples);
     }
 }
 
@@ -125,9 +141,9 @@ public sealed class RiverCorridorSettings
     public bool enabled = true;
     [Range(0, 4)] public int minRivers = 1;
     [Range(0, 4)] public int maxRivers = 2;
-    [Range(0.5f, 3f)] public float channelRadius = 1.2f;
-    [Range(2f, 12f)] public float clearanceRadius = 5.5f;
-    [Range(0.5f, 4f)] public float valleyDepth = 1.8f;
+    [Range(0.5f, 4f)] public float channelRadius = 1.4f;
+    [Range(2f, 16f)] public float clearanceRadius = 6.0f;
+    [Range(0.5f, 4f)] public float valleyDepth = 1.2f;
 
     public void Validate()
     {
@@ -140,30 +156,12 @@ public sealed class RiverCorridorSettings
 }
 
 [Serializable]
-public sealed class HarborReservationSettings
-{
-    public bool enabled = true;
-    [Range(0, 4)] public int minHarbors = 1;
-    [Range(0, 4)] public int maxHarbors = 2;
-    [Range(4f, 20f)] public float minHarborRadius = 7f;
-    [Range(4f, 20f)] public float maxHarborRadius = 11f;
-
-    public void Validate()
-    {
-        minHarbors = Mathf.Max(0, minHarbors);
-        maxHarbors = Mathf.Max(minHarbors, maxHarbors);
-        minHarborRadius = Mathf.Max(3f, minHarborRadius);
-        maxHarborRadius = Mathf.Max(minHarborRadius, maxHarborRadius);
-    }
-}
-
-[Serializable]
 public sealed class DomainWarpSettings
 {
     public bool enabled = true;
-    [Min(1f)] public float scale = 45f;
-    [Range(0f, 40f)] public float amplitude = 14f;
-    [Range(1, 4)] public int octaves = 2;
+    [Min(1f)] public float scale = 36f;
+    [Range(0f, 40f)] public float amplitude = 22f;
+    [Range(1, 4)] public int octaves = 3;
     [Range(0.1f, 1f)] public float persistence = 0.5f;
     [Min(1f)] public float lacunarity = 2.0f;
 
@@ -176,34 +174,13 @@ public sealed class DomainWarpSettings
 }
 
 [Serializable]
-public sealed class RidgedMultifractalSettings
-{
-    public bool enabled = true;
-    [Min(0.1f)] public float scale = 18f;
-    [Range(0f, 4f)] public float peakStrength = 1.8f;
-    [Range(1, 6)] public int octaves = 3;
-    [Range(0.1f, 1f)] public float persistence = 0.5f;
-    [Min(1f)] public float lacunarity = 2.1f;
-    [Range(0.5f, 4f)] public float power = 2.0f;
-
-    public void Validate()
-    {
-        scale = Mathf.Max(0.1f, scale);
-        peakStrength = Mathf.Max(0f, peakStrength);
-        octaves = Mathf.Clamp(octaves, 1, 6);
-        power = Mathf.Max(0.5f, power);
-    }
-}
-
-[Serializable]
 public sealed class TerrainGenerationSettings
 {
     [Header("Determinism")]
     public int seed = 1337;
 
-    [Header("Geological Deformation & Detail")]
+    [Header("Geological Deformation")]
     public DomainWarpSettings domainWarp = new DomainWarpSettings();
-    public RidgedMultifractalSettings ridgedMultifractal = new RidgedMultifractalSettings();
 
     [Header("Composed procedural fields")]
     public List<TerrainNoiseLayerSettings> noiseLayers = new List<TerrainNoiseLayerSettings>
@@ -246,36 +223,32 @@ public sealed class TerrainGenerationSettings
     [Range(-1f, 1f)] public float underwaterPlateauUpper = 0.2f;
     [Range(-1f, 1f)] public float shallowUpper = 0.3f;
     [Range(-1f, 1f)] public float waterUpper = 0.4f;
-    [Range(0f, 1f)] public float beachUpper = 0.46f;
-    [Range(0f, 1f)] public float surfaceFlatlandUpper = 0.66f;
-    [Range(0f, 1f)] public float hillUpper = 0.74f;
-    [Range(0f, 1f)] public float cliffUpper = 0.80f;
-    [Range(0f, 1f)] public float mountainUpper = 0.86f;
+    [Range(0f, 1f)] public float beachUpper = 0.415f;
+    [Range(0f, 1f)] public float surfaceFlatlandUpper = 0.70f;
+    [Range(0f, 1f)] public float hillUpper = 0.76f;
+    [Range(0f, 1f)] public float cliffUpper = 0.82f;
+    [Range(0f, 1f)] public float mountainUpper = 0.88f;
 
     [Header("Feature Reservation & Space Allocation")]
     public CoastalMountainSettings coastalMountains = new CoastalMountainSettings();
     public RiverCorridorSettings riverCorridors = new RiverCorridorSettings();
-    public HarborReservationSettings harborReservations = new HarborReservationSettings();
 
     [Header("Deliberate underwater plateau regions")]
     public UnderwaterPlateauGenerationSettings underwaterPlateaus = new UnderwaterPlateauGenerationSettings();
 
     [Header("Semantic heights")]
     public float abyssHeight = -5f;
-    public float deepHeight = -3f;
-    public float naturalPlateauHeight = -3f;
-    public float underwaterPlateauHeight = -2.5f;
-    public float shallowHeight = -2f;
-    public float waterHeight = -1f;
-    public float beachHeight = -0.5f;
-    public float surfaceFlatlandHeight = 0f;
-    public float hillHeight = 0.65f;
-    public float cliffHeight = 1.35f;
-    // Must stay above cliffHeight. These were both 1.0, below cliffHeight's 1.35, which
-    // made the height curve descend across the mountain bands and left cliff and peak
-    // geometry unreachable.
-    public float mountainHeight = 2f;
-    public float mountainPeakHeight = 2.6f;
+    public float deepHeight = -3.5f;
+    public float naturalPlateauHeight = -2.5f;
+    public float underwaterPlateauHeight = -1.8f;
+    public float shallowHeight = -1.5f;
+    public float waterHeight = -0.6f;
+    public float beachHeight = 0.25f;
+    public float surfaceFlatlandHeight = 0.85f;
+    public float hillHeight = 1.6f;
+    public float cliffHeight = 2.4f;
+    public float mountainHeight = 3.2f;
+    public float mountainPeakHeight = 4.2f;
 
     [Header("Gameplay suitability")]
     [Min(0f)] public float maxBuildableHeightVariance = 0.2f;
@@ -288,15 +261,11 @@ public sealed class TerrainGenerationSettings
     {
         domainWarp ??= new DomainWarpSettings();
         domainWarp.Validate();
-        ridgedMultifractal ??= new RidgedMultifractalSettings();
-        ridgedMultifractal.Validate();
 
         coastalMountains ??= new CoastalMountainSettings();
         coastalMountains.Validate();
         riverCorridors ??= new RiverCorridorSettings();
         riverCorridors.Validate();
-        harborReservations ??= new HarborReservationSettings();
-        harborReservations.Validate();
 
         underwaterPlateaus ??= new UnderwaterPlateauGenerationSettings();
         underwaterPlateaus.Validate();
@@ -316,7 +285,7 @@ public sealed class TerrainGenerationSettings
         underwaterPlateauUpper = Mathf.Max(deepUpper + MinimumBandSeparation, underwaterPlateauUpper);
         shallowUpper = Mathf.Max(underwaterPlateauUpper + MinimumBandSeparation, shallowUpper);
         waterUpper = Mathf.Max(shallowUpper + MinimumBandSeparation, waterUpper);
-        beachUpper = Mathf.Max(waterUpper + MinimumBandSeparation, beachUpper);
+        beachUpper = Mathf.Clamp(beachUpper, waterUpper + MinimumBandSeparation, waterUpper + 0.02f);
         surfaceFlatlandUpper = Mathf.Max(beachUpper + MinimumBandSeparation, surfaceFlatlandUpper);
         hillUpper = Mathf.Max(surfaceFlatlandUpper + MinimumBandSeparation, hillUpper);
         cliffUpper = Mathf.Max(hillUpper + MinimumBandSeparation, cliffUpper);
@@ -349,12 +318,34 @@ public sealed class TerrainGenerationSettings
         float waterThreshold,
         float mountainThreshold)
     {
-        legacyIslandScale = scale;
+        legacyIslandScale = Mathf.Clamp(scale > 0.03f ? scale * 0.18f : scale, 0.012f, 0.022f);
         abyssUpper = abyssThreshold;
         deepUpper = deepThreshold;
         underwaterPlateauUpper = plateauThreshold;
         shallowUpper = shallowThreshold;
         waterUpper = waterThreshold;
+        beachUpper = waterUpper + 0.015f;
+        surfaceFlatlandUpper = beachUpper + 0.28f;
         legacyMountainThreshold = mountainThreshold;
+
+        // Authoritative physical elevation ladder:
+        EnforceAuthoritativeHeights();
+    }
+
+    public void EnforceAuthoritativeHeights()
+    {
+        surfaceFlatlandHeight = 0.85f;
+        beachHeight = 0.25f;
+        waterHeight = -0.6f;
+        shallowHeight = -1.5f;
+        naturalPlateauHeight = -2.5f;
+        deepHeight = -3.2f;
+        abyssHeight = -4.5f;
+        hillHeight = 1.6f;
+        cliffHeight = 2.4f;
+        mountainHeight = 3.2f;
+        mountainPeakHeight = 4.2f;
+        underwaterPlateauHeight = -2.2f;
+        Validate();
     }
 }

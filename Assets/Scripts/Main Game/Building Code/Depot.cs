@@ -8,6 +8,14 @@ public class Depot : MonoBehaviour
     [SerializeField] private BuildingInventoryData buildingInvData;
     private BuildingInventoryBehaviour behaviour;
 
+    private void Awake()
+    {
+        if (GetComponent<WarehouseLogisticsScheduler>() == null)
+        {
+            gameObject.AddComponent<WarehouseLogisticsScheduler>();
+        }
+    }
+
     private void Start()
     {
         // Check building type and initialize behavior accordingly

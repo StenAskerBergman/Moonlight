@@ -5,6 +5,25 @@ using System.Linq;
 using UnityEngine.AI;
 using UnityEngine.UIElements;
 
+[System.Serializable]
+public sealed class TerrainGenerationProfile
+{
+    public string chunkName;
+    public string gridType;
+    public int gridSize;
+    public int visualSamplesPerCell;
+    public bool completed;
+    public long totalMs;
+    public long featureReservationsMs;
+    public long samplingCacheMs;
+    public long gameplayGridAndMetricsMs;
+    public long meshBuildMs;
+    public long meshUploadMs;
+    public long textureSplatMs;
+    public long textureUploadMs;
+    public long foliageMs;
+}
+
 public class MapGrid : MonoBehaviour
 {
     private static readonly int TerrainBaseMapProperty = Shader.PropertyToID("_BaseMap");
@@ -64,6 +83,7 @@ public class MapGrid : MonoBehaviour
         /// fractional coordinates without replacing Cell[,] as gameplay authority.
         /// </summary>
         public IslandTerrainProvider TerrainSource { get; private set; }
+        public TerrainGenerationProfile LastGenerationProfile { get; private set; }
         private int activeGenerationSeed;
             
         // More Terrain settings
@@ -96,33 +116,24 @@ public class MapGrid : MonoBehaviour
     #region Start Method
     void Start()
     {
-        /* Getting it and Setting it
-        meshCollider = this.transform.GetComponent<MeshCollider>();
-        meshCollider.cookingOptions = cookingOptions;*/
-
-        // Fuck that we tabbin n dabbin n adding raw
-
-        #region Mesh Collider 1 - temp_local_Convex_Trigger_MeshCollider
-
-        // Convex Trigger Mesh Collider - For detection
-        MeshCollider temp_local_Convex_Trigger_MeshCollider = this.gameObject.AddComponent<MeshCollider>();
-         
-        // Convex 
-            temp_local_Convex_Trigger_MeshCollider.convex = true;
-        
-        // Trigger 
-            temp_local_Convex_Trigger_MeshCollider.isTrigger = true;
-
+        #region Island Detection Trigger Collider
+        // Lightweight BoxCollider for chunk boundary detection. Prevents PhysX from attempting
+        // convex hull computation on a 2.56M-vertex mesh, which locks Unity in EnterPlayMode.
+        BoxCollider detectionBox = gameObject.AddComponent<BoxCollider>();
+        detectionBox.isTrigger = true;
+        detectionBox.center = new Vector3(size * 0.5f, 0f, size * 0.5f);
+        detectionBox.size = new Vector3(size, 40f, size);
         #endregion
 
         #region Mesh Collider 2 - Actual Cell Mesh
-        // Mesh Collider
-        MeshCollider temp_local_cell_MeshCollider = this.gameObject.AddComponent<MeshCollider>(); /* Alias */ cellCollider = temp_local_cell_MeshCollider;
-        
-        // this is the mesh used for cells - we will need to figure out ways to render it more
-        // effectivily the way I desire but for now this will do, reading this collider's mesh
-        // data might be a nightmare to do later also. 
-
+        // Standard non-convex MeshCollider for cursor raycasts
+        MeshFilter mf = GetComponent<MeshFilter>();
+        if (mf != null && mf.sharedMesh != null)
+        {
+            MeshCollider temp_local_cell_MeshCollider = gameObject.AddComponent<MeshCollider>();
+            temp_local_cell_MeshCollider.convex = false;
+            cellCollider = temp_local_cell_MeshCollider;
+        }
         #endregion
 
         #region NavMeshModifier
@@ -293,11 +304,27 @@ public class MapGrid : MonoBehaviour
         }
     }
 
+    private long lastReservationsMs;
+    private long lastSamplingMs;
+
     // Semantic generation is intentionally a small orchestration seam: the source
     // class owns procedural composition/classification, while MapGrid owns Cell[,].
     private void GenerateTerrain()
     {
+        System.Diagnostics.Stopwatch totalSw = System.Diagnostics.Stopwatch.StartNew();
+        System.Diagnostics.Stopwatch stageSw = System.Diagnostics.Stopwatch.StartNew();
+
+        LastGenerationProfile = new TerrainGenerationProfile
+        {
+            chunkName = gameObject.name,
+            gridType = currentGridType.ToString(),
+            gridSize = size,
+            visualSamplesPerCell = generationSettings != null ? generationSettings.visualSamplesPerCell : 0,
+            completed = false,
+        };
+
         generationSettings ??= new TerrainGenerationSettings();
+        generationSettings.EnforceAuthoritativeHeights();
         generationSettings.ApplyLegacyIslandTuning(
             scale,
             abyssThreshold,
@@ -309,9 +336,20 @@ public class MapGrid : MonoBehaviour
         activeGenerationSeed = ResolveGenerationSeed();
         int worldSeed = generationSettings.seed;
         Vector2 chunkWorldOrigin = new Vector2(transform.position.x, transform.position.z);
+        
+        GenerationWatchdog.SetPhase(gameObject.name, "Feature Reservations");
         TerrainSource = new IslandTerrainProvider(generationSettings, currentGridType, size, activeGenerationSeed, worldSeed, chunkWorldOrigin);
+        lastReservationsMs = stageSw.ElapsedMilliseconds;
+        LastGenerationProfile.featureReservationsMs = lastReservationsMs;
 
+        stageSw.Restart();
+        GenerationWatchdog.SetPhase(gameObject.name, "Terrain Sampling Cache");
         TerrainSample[,] samples = TerrainSource.GenerateGameplaySamples();
+        lastSamplingMs = stageSw.ElapsedMilliseconds;
+        LastGenerationProfile.samplingCacheMs = lastSamplingMs;
+
+        GenerationWatchdog.SetPhase(gameObject.name, "Gameplay Grid & Metrics");
+        stageSw.Restart();
         grid = new Cell[size, size];
         hasMountainsGenerated = false;
 
@@ -340,7 +378,13 @@ public class MapGrid : MonoBehaviour
             MarkDepositCells();
         }
 
+        LastGenerationProfile.gameplayGridAndMetricsMs = stageSw.ElapsedMilliseconds;
+
         BuildMeshesAndTextures();
+
+        totalSw.Stop();
+        LastGenerationProfile.totalMs = totalSw.ElapsedMilliseconds;
+        LastGenerationProfile.completed = true;
     }
 
     private int ResolveGenerationSeed()
@@ -437,7 +481,7 @@ public class MapGrid : MonoBehaviour
         }
 
         Log($"Land cells: {landCount}, Water cells: {waterCount}, Beach cells: {beachCount} ");
-        Log($"Total cells {landCount + waterCount + beachCount},  Size� {size * size}");
+        Log($"Total cells {landCount + waterCount + beachCount},  Size {size * size}");
 
 
         // Populate neighbors
@@ -482,53 +526,62 @@ public class MapGrid : MonoBehaviour
         switch (currentGridType)
         {
             case GridType.Type.Island:
-                // Code for generating island terrain
-
-                // Time To Shape Edges
                 ApplyBeachEdges();
                 GenerateMountains();
                 MarkDepositCells();
-
                 break;
 
             case GridType.Type.Plateau:
-                // Code for generating plateau terrain
                 ApplyBeachEdges();
                 MarkDepositCells();
-
                 break;
 
             case GridType.Type.Ocean:
-                // Code for generating ocean terrain
-                break;
-
             case GridType.Type.Empty:
             default:
-                // Code for default case or empty terrain
                 break;
         }
 
         // Final Grid Application Procedure
         BuildMeshesAndTextures();
-
     }
 
     #endregion
 
     #region DetermineMountainHeight Method
 
-    // Note: Might be overriding the terrain type for beaches
-
-    // This method determines the specific mountain terrain type based on the noise value
     private TerrainType DetermineMountainHeight(float noiseValue)
     {
-        // Adjust thresholds as necessary
         if (noiseValue > 1.1f) 
             return TerrainType.MountainPeak;
         else if (noiseValue > 0.5f)
             return TerrainType.Mountain;
         else
             return TerrainType.Land;
+    }
+
+    public float GetHeightForTerrainType(Cell.TerrainType type)
+    {
+        switch (type)
+        {
+            case TerrainType.MountainPeak:
+                return 1f;
+            case TerrainType.Mountain:
+                return 1f;
+            case TerrainType.Land:
+                return 0f;
+            case TerrainType.Beach:
+            case TerrainType.Shore:
+                return -0.5f;
+            case TerrainType.Water:
+            case TerrainType.Deep:
+            case TerrainType.Shallow:
+            case TerrainType.Plateau:
+            case TerrainType.Abyssal:
+                return -1f;
+            default:
+                return 0f;
+        }
     }
 
     #endregion
@@ -578,7 +631,6 @@ public class MapGrid : MonoBehaviour
 
     #region Beach Creation Methods
 
-    // Sand Edge
     private void ApplyBeachEdges()
     {
         for (int y = 0; y < size; y++)
@@ -588,19 +640,16 @@ public class MapGrid : MonoBehaviour
                 Cell cell = grid[x, y];
                 if (cell.currentTerrainType == TerrainType.Land)
                 {
-                    // Check the neighbors of the cell
                     foreach (Vector2Int direction in new Vector2Int[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
                     {
                         int newX = x + direction.x;
                         int newY = y + direction.y;
 
-                        // Check if the neighbor is water
                         if (newX >= 0 && newX < size && newY >= 0 && newY < size)
                         {
                             Cell neighbor = grid[newX, newY];
                             if (neighbor.currentTerrainType == TerrainType.Water)
                             {
-                                // If any neighbor is water, change the current cell to beach
                                 cell.ChangeTerrainType(TerrainType.Beach); 
                                 break;
                             }
@@ -615,56 +664,203 @@ public class MapGrid : MonoBehaviour
 
     #region Deposit Marking Methods
 
-    // Stamps ResourceNodeType deposits onto cells based on final terrain, and carves
-    // rivers first so RiverBank/LakeMouth deposits reflect the actual river path.
     private void MarkDepositCells()
     {
-        new RiverArea().GenerateRiver(grid, TerrainSource?.Reservations, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
+        FeatureReservationMap reservations = TerrainSource?.Reservations;
+        new RiverArea().GenerateRiver(grid, reservations, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
 
-        for (int y = 0; y < size; y++)
+        // 1. Mines: Discrete mountain nodes on mountain/mainland boundary with usable flat ground access
+        List<Vector2Int> mineSpots = new List<Vector2Int>();
+        if (reservations != null && reservations.MineAnchors.Count > 0)
         {
-            for (int x = 0; x < size; x++)
+            foreach (var anchor in reservations.MineAnchors)
+            {
+                int ax = Mathf.Clamp(Mathf.RoundToInt(anchor.Position.x), 1, size - 2);
+                int az = Mathf.Clamp(Mathf.RoundToInt(anchor.Position.y), 1, size - 2);
+                for (int dx = -1; dx <= 1 && mineSpots.Count < 3; dx++)
+                {
+                    for (int dz = -1; dz <= 1 && mineSpots.Count < 3; dz++)
+                    {
+                        int cx = ax + dx;
+                        int cz = az + dz;
+                        if (cx < 1 || cx >= size - 1 || cz < 1 || cz >= size - 1) continue;
+                        Cell c = grid[cx, cz];
+                        if (c.currentTerrainType == TerrainType.Mountain || c.currentTerrainType == TerrainType.MountainPeak || c.currentTerrainType == TerrainType.Cliff)
+                        {
+                            bool tooClose = false;
+                            foreach (var s in mineSpots)
+                            {
+                                if (Vector2Int.Distance(new Vector2Int(cx, cz), s) < 8f) { tooClose = true; break; }
+                            }
+                            if (!tooClose)
+                            {
+                                mineSpots.Add(new Vector2Int(cx, cz));
+                                c.SetDeposit(ResourceNodeType.Mine);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (mineSpots.Count < 2)
+        {
+            for (int y = 2; y < size - 2 && mineSpots.Count < 3; y++)
+            {
+                for (int x = 2; x < size - 2 && mineSpots.Count < 3; x++)
+                {
+                    Cell cell = grid[x, y];
+                    if (cell.currentTerrainType == TerrainType.Mountain || cell.currentTerrainType == TerrainType.MountainPeak || cell.currentTerrainType == TerrainType.Cliff)
+                    {
+                        bool hasLandNeighbor = false;
+                        foreach (var dir in new Vector2Int[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
+                        {
+                            Cell n = grid[x + dir.x, y + dir.y];
+                            if (n.currentTerrainType == TerrainType.Land)
+                            {
+                                hasLandNeighbor = true;
+                                break;
+                            }
+                        }
+
+                        if (hasLandNeighbor)
+                        {
+                            bool tooClose = false;
+                            foreach (var s in mineSpots)
+                            {
+                                if (Vector2Int.Distance(new Vector2Int(x, y), s) < 8f) { tooClose = true; break; }
+                            }
+                            if (!tooClose)
+                            {
+                                mineSpots.Add(new Vector2Int(x, y));
+                                cell.SetDeposit(ResourceNodeType.Mine);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Coastal Fishery: 3-5 discrete spaced fishing grounds along suitable coast
+        List<Vector2Int> fishSpots = new List<Vector2Int>();
+        System.Random rng = new System.Random(unchecked(activeGenerationSeed ^ 0x27D4EB2D));
+        List<Vector2Int> beachCandidates = new List<Vector2Int>();
+        for (int y = 1; y < size - 1; y++)
+        {
+            for (int x = 1; x < size - 1; x++)
             {
                 Cell cell = grid[x, y];
-
-                switch (cell.currentTerrainType)
+                if (cell.currentTerrainType == TerrainType.Beach && IsAdjacentToWater(x, y))
                 {
-                    case TerrainType.Mountain:
-                    case TerrainType.MountainPeak:
-                        cell.SetDeposit(ResourceNodeType.Mine);
-                        break;
+                    beachCandidates.Add(new Vector2Int(x, y));
+                }
+            }
+        }
 
-                    case TerrainType.Beach:
-                        cell.SetDeposit(IsAdjacentToShallow(x, y) ? ResourceNodeType.CoastalDock : ResourceNodeType.CoastalFishery);
-                        break;
+        for (int i = beachCandidates.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            var temp = beachCandidates[i];
+            beachCandidates[i] = beachCandidates[j];
+            beachCandidates[j] = temp;
+        }
 
-                    case TerrainType.Plateau:
-                        if (IsSparseDepositCell(x, y)) cell.SetDeposit(ResourceNodeType.OreSeabed);
-                        break;
+        for (int i = 0; i < beachCandidates.Count && fishSpots.Count < 4; i++)
+        {
+            Vector2Int pt = beachCandidates[i];
+            bool tooClose = false;
+            foreach (var f in fishSpots)
+            {
+                if (Vector2Int.Distance(pt, f) < 8f) { tooClose = true; break; }
+            }
+            if (!tooClose)
+            {
+                fishSpots.Add(pt);
+                grid[pt.x, pt.y].SetDeposit(ResourceNodeType.CoastalFishery);
+            }
+        }
 
-                    case TerrainType.Abyssal:
-                        if (IsSparseDepositCell(x, y)) cell.SetDeposit(ResourceNodeType.HydrothermalVent);
-                        break;
+        // 3. Underwater Plateaus ONLY: Hydrothermal Vents and Seabed Ore
+        List<Vector2Int> ventSpots = new List<Vector2Int>();
+        List<Vector2Int> oreSpots = new List<Vector2Int>();
+
+        for (int y = 2; y < size - 2; y++)
+        {
+            for (int x = 2; x < size - 2; x++)
+            {
+                Cell cell = grid[x, y];
+                if (cell.IsDeliberateUnderwaterPlateau || cell.currentTerrainType == TerrainType.Plateau)
+                {
+                    if (ventSpots.Count < 2 && IsSparseDepositCell(x, y))
+                    {
+                        bool tooClose = false;
+                        foreach (var v in ventSpots)
+                        {
+                            if (Vector2Int.Distance(new Vector2Int(x, y), v) < 10f) { tooClose = true; break; }
+                        }
+                        if (!tooClose)
+                        {
+                            ventSpots.Add(new Vector2Int(x, y));
+                            cell.SetDeposit(ResourceNodeType.HydrothermalVent);
+                            continue;
+                        }
+                    }
+
+                    if (oreSpots.Count < 3 && IsSparseDepositCell(x + 13, y + 7))
+                    {
+                        bool tooClose = false;
+                        foreach (var o in oreSpots)
+                        {
+                            if (Vector2Int.Distance(new Vector2Int(x, y), o) < 8f) { tooClose = true; break; }
+                        }
+                        if (!tooClose)
+                        {
+                            oreSpots.Add(new Vector2Int(x, y));
+                            cell.SetDeposit(ResourceNodeType.OreSeabed);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Forest Grove: 1-2 discrete interior fertile groves
+        List<Vector2Int> forestSpots = new List<Vector2Int>();
+        for (int y = 5; y < size - 5 && forestSpots.Count < 2; y += 3)
+        {
+            for (int x = 5; x < size - 5 && forestSpots.Count < 2; x += 3)
+            {
+                Cell cell = grid[x, y];
+                if (cell.currentTerrainType == TerrainType.Land && cell.IsSlopeSuitableForBuilding && !cell.isDeposit && cell.riverStatus == Cell.RiverStatus.None)
+                {
+                    bool tooClose = false;
+                    foreach (var f in forestSpots)
+                    {
+                        if (Vector2Int.Distance(new Vector2Int(x, y), f) < 12f) { tooClose = true; break; }
+                    }
+                    if (!tooClose)
+                    {
+                        forestSpots.Add(new Vector2Int(x, y));
+                        cell.SetDeposit(ResourceNodeType.ForestGrove);
+                    }
                 }
             }
         }
     }
 
-    private bool IsAdjacentToShallow(int x, int y)
+    private bool IsAdjacentToWater(int x, int y)
     {
         foreach (Vector2Int direction in new Vector2Int[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
         {
             int nx = x + direction.x;
             int ny = y + direction.y;
             if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
-            if (grid[nx, ny].currentTerrainType == TerrainType.Shallow) return true;
+            Cell n = grid[nx, ny];
+            if (n.IsUnderwater || n.currentTerrainType == TerrainType.Water || n.currentTerrainType == TerrainType.Shallow) return true;
         }
         return false;
     }
 
-    // Deterministic ~15% sparse selection for underwater deposits, based on cell
-    // position rather than UnityEngine.Random so the result doesn't depend on
-    // generation order or call history.
     private bool IsSparseDepositCell(int x, int y)
     {
         unchecked
@@ -680,21 +876,17 @@ public class MapGrid : MonoBehaviour
 
     #region Mountain Section
 
-    // Mountain Related
     [Space(10)]
-    public int minMountains = 1; // Minimum number of mountains
-    public int maxMountains = 3; // Maximum number of mountains
-    public int minMountainHeight = 3; // Minimum height of mountains
-    public int maxMountainHeight = 10; // Maximum height of mountains
+    public int minMountains = 1;
+    public int maxMountains = 3;
+    public int minMountainHeight = 3;
+    public int maxMountainHeight = 10;
 
     private void GenerateMountains()
     {
-        // Ensure at least one mountain is generated
         bool atLeastOneMountainGenerated = false;
-
-        // Try to generate the mountains up to a reasonable number of attempts
         int attempts = 0;
-        int maxAttempts = size * size; // You can adjust this for efficiency
+        int maxAttempts = size * size;
 
         while (!atLeastOneMountainGenerated && attempts < maxAttempts)
         {
@@ -702,25 +894,19 @@ public class MapGrid : MonoBehaviour
             int y = Random.Range(0, size);
             Cell startCell = grid[x, y];
 
-            // Ensure the start cell is land and not already part of a beach or shore
             if (startCell.currentTerrainType == TerrainType.Land)
             {
-                // Determine mountain height
                 int mountainHeight = Random.Range(minMountainHeight, maxMountainHeight);
-
-                // Generate mountain
                 GenerateMountain(x, y, mountainHeight);
-
                 atLeastOneMountainGenerated = true;
             }
 
             attempts++;
         }
 
-        // Generate additional mountains if needed and if the first mountain was generated
         if (atLeastOneMountainGenerated)
         {
-            int mountainCount = 1; // We've already generated one mountain
+            int mountainCount = 1;
             while (mountainCount < maxMountains && attempts < maxAttempts)
             {
                 int x = Random.Range(0, size);
@@ -739,62 +925,6 @@ public class MapGrid : MonoBehaviour
         }
     }
 
-    // For some reason this affects the neighbour algorithm
-    // Values above +1 will cause the algorithm to not work
-    // Values below -1 will cause the algorithm to not work
-    // Why? I don't know - it just interferes directionally
-
-    // Explainer:
-
-    // BECAUSE THIS FUCKING METHOD IS A 2D SCALE IT WILL AFFECT THE DIRECTIONS
-    // OF THE NEIGHBOURS ALONG THE X AND Y AXIS AND IT WILL CHANGE THE INDEXES
-    // USED FOR ALL THE 2D DIRECTIONS OF THE NEIGHBOURS ALONG THE X AND Y AXIS. 
-    
-    // LATER ANOTHER HEIGHT METHOD WILL BE USED TO DETERMINE THE HEIGHT OF
-    // THE EDGES, IT WILL BE USED FOR EVERY TYPE OF TERRAIN LIKE MOUNTAINS
-    // BEACHES, WATER, SHORES, ETC.
-
-    // I need to clarify this bc I keep forgetting it after a few months... :-(�_�
-
-    // This method determines the specific mountain terrain type based on the noise value
-    public float GetHeightForTerrainType(Cell.TerrainType type)
-    {
-        switch (type)
-        {
-            case TerrainType.MountainPeak:
-                return 1f; // Example value, adjust as needed
-            case TerrainType.Mountain:
-                return 1f; // Example value, adjust as needed
-            case TerrainType.Land:
-                return 0f; // Land level
-            case TerrainType.Beach:
-            case TerrainType.Shore:
-                return -0.5f; // Beach level, slightly below land
-            case TerrainType.Water:
-            case TerrainType.Deep:
-            case TerrainType.Shallow:
-            case TerrainType.Plateau:
-            case TerrainType.Abyssal:
-                return -1f; // Water level, below land
-                /*
-                    return -4f; // Abyssal level
-                    return -2f; // Shallow water level
-                    return -3f; // Plateau level
-                */
-            default:
-                return 0f;
-        }
-    }
-
-    // Carves a mountain into the grid around (x, y): a radial mound that reclassifies
-    // nearby Land cells into Mountain, with a MountainPeak core at the center. Only
-    // reshapes existing Land - water, beach, and other terrain are left untouched so
-    // a mountain can't spill onto the coastline. height controls the mound's radius
-    // (bigger mountains cover more ground), not the Cell's stored height/position -
-    // Mountain/MountainPeak height is applied uniformly by GetHeightForTerrainType and
-    // TerrainMeshBuilder, which is what keeps this safe: neighbors are already computed
-    // from each cell's original height by the time this runs, and ChangeTerrainType
-    // never touches position, so it can't reintroduce the y-index bug described above.
     private void GenerateMountain(int x, int y, int height)
     {
         int radius = Mathf.Clamp(height / 2, 2, 6);
@@ -818,7 +948,6 @@ public class MapGrid : MonoBehaviour
             }
         }
 
-        // Flag that the mountains have been generated
         hasMountainsGenerated = true;
     }
 
@@ -828,36 +957,72 @@ public class MapGrid : MonoBehaviour
 
     private void BuildMeshesAndTextures()
     {
-        ReleaseGeneratedVisualResources();
-
+        bool isOceanChunk = currentGridType == GridType.Type.Ocean || currentGridType == GridType.Type.Empty;
+        int effectiveVisualSamples = isOceanChunk ? 1 : generationSettings.visualSamplesPerCell;
         bool useContinuousMesh = TerrainSource != null;
+        TerrainGenerationProfile profile = LastGenerationProfile;
 
         // Builds and assign Terrain
+        System.Diagnostics.Stopwatch stageSw = System.Diagnostics.Stopwatch.StartNew();
+        GenerationWatchdog.SetPhase(gameObject.name, "Mesh Building");
         TerrainMeshBuilder terrainMeshBuilder = useContinuousMesh
-            ? new TerrainMeshBuilder(grid, TerrainSource, generationSettings.visualSamplesPerCell)
+            ? new TerrainMeshBuilder(grid, TerrainSource, effectiveVisualSamples)
             : new TerrainMeshBuilder(grid);
         Mesh terrainMesh = terrainMeshBuilder.Build();
+        long meshBuildMs = stageSw.ElapsedMilliseconds;
+        if (profile != null) profile.meshBuildMs = meshBuildMs;
+
+        stageSw.Restart();
+        GenerationWatchdog.SetPhase(gameObject.name, "Mesh Upload");
         TrackGeneratedVisualResource(terrainMesh);
         ApplyTerrainMesh(terrainMesh);
+        long meshUploadMs = stageSw.ElapsedMilliseconds;
+        if (profile != null) profile.meshUploadMs = meshUploadMs;
 
         // Build and apply Texture
+        stageSw.Restart();
+        GenerationWatchdog.SetPhase(gameObject.name, "Texture Splat Generation");
         TextureBuilder textureBuilder = useContinuousMesh
-            ? new TextureBuilder(grid, TerrainSource, generationSettings.visualSamplesPerCell, climateProfile)
+            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile)
             : new TextureBuilder(grid, climateProfile);
         Texture2D texture = textureBuilder.Build();
         texture.name = "Generated Terrain Texture";
+        long textureBuildMs = stageSw.ElapsedMilliseconds;
+        if (profile != null) profile.textureSplatMs = textureBuildMs;
+
+        stageSw.Restart();
+        GenerationWatchdog.SetPhase(gameObject.name, "Texture Upload");
         TrackGeneratedVisualResource(texture);
         ApplyTexture(texture);
+        long textureUploadMs = stageSw.ElapsedMilliseconds;
+        if (profile != null) profile.textureUploadMs = textureUploadMs;
 
-        // The continuous heightfield already owns every visible height transition.
-        // Cell-resolution wall meshes would be a second, incompatible interpretation
-        // of those same boundaries, so retain them only for the legacy/debug visual path.
-        // Foliage Placer
-        IslandFoliagePlacer foliagePlacer = GetComponent<IslandFoliagePlacer>();
-        if (foliagePlacer != null) {
-            foliagePlacer.climateProfile = climateProfile;
-            foliagePlacer.ScatterFoliage(grid);
+        // Foliage Placer (Islands only)
+        long foliageMs = 0;
+        if (!isOceanChunk)
+        {
+            stageSw.Restart();
+            GenerationWatchdog.SetPhase(gameObject.name, "Foliage Scattering");
+            IslandFoliagePlacer foliagePlacer = GetComponent<IslandFoliagePlacer>();
+            if (foliagePlacer != null) {
+                foliagePlacer.climateProfile = climateProfile;
+                foliagePlacer.ScatterFoliage(grid);
+            }
+            foliageMs = stageSw.ElapsedMilliseconds;
         }
+        if (profile != null) profile.foliageMs = foliageMs;
+
+        long gameplayMs = profile != null ? profile.gameplayGridAndMetricsMs : 0L;
+        long totalTime = lastReservationsMs + lastSamplingMs + gameplayMs + meshBuildMs + meshUploadMs + textureBuildMs + textureUploadMs + foliageMs;
+        Debug.Log($"<color=cyan>[Terrain Regeneration Profile - {gameObject.name}]</color> Total: <b>{totalTime} ms</b> | " +
+            $"Reservations: {lastReservationsMs} ms | " +
+            $"Sampling Cache: {lastSamplingMs} ms | " +
+            $"Gameplay Grid & Metrics: {gameplayMs} ms | " +
+            $"Mesh Vertices & Topology: {meshBuildMs} ms | " +
+            $"Mesh Upload: {meshUploadMs} ms | " +
+            $"Texture Splatting: {textureBuildMs} ms | " +
+            $"Texture Upload: {textureUploadMs} ms | " +
+            $"Foliage: {foliageMs} ms");
 
         if (useContinuousMesh) return;
 

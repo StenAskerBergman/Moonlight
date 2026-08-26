@@ -14,6 +14,19 @@ public class CityCenter : MonoBehaviour
     public int CurrentResidents;
     private currentUpgradeMode _currentUpgradeMode = currentUpgradeMode.Automatic;
 
+    private void Awake()
+    {
+        InfluenceZone zone = GetComponent<InfluenceZone>();
+        if (zone == null) zone = gameObject.AddComponent<InfluenceZone>();
+        zone.Configure(influenceRadius > 0f ? influenceRadius : 15f,
+            RequirementEnums.RequirementSubTypeZone.DepotZone);
+
+        if (GetComponent<WarehouseLogisticsScheduler>() == null)
+        {
+            gameObject.AddComponent<WarehouseLogisticsScheduler>();
+        }
+    }
+
     // Other properties related to residents, like happiness, needs, etc.
     private void Start()
     {

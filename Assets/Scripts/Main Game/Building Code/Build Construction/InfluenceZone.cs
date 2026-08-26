@@ -15,4 +15,10 @@ public class InfluenceZone : MonoBehaviour
         Vector3 flatCenter = Center; flatCenter.y = 0;
         return Vector3.Distance(flat, flatCenter) <= radius;
     }
+
+    public void Configure(float influenceRadius, RequirementEnums.RequirementSubTypeZone influenceType)
+    {
+        radius = Mathf.Max(0f, influenceRadius);
+        zoneType = influenceType;
+    }
 }

@@ -52,6 +52,9 @@ public class Truck : MonoBehaviour
     // Optional — present only if the Truck prefab also carries a Unit component
     // (e.g. for selection/inspection). Delivery events are only published when set.
     private Unit _unit;
+    private PickupJob _pickupJob;
+    private IslandResourceStorage _sharedStorage;
+    private Action<Truck, PickupJob, bool> _pickupCompletion;
 
     public static event Action<Truck> OnTruckArrived;
     public static event Action<Truck> OnTruckDelivered;
@@ -81,6 +84,26 @@ public class Truck : MonoBehaviour
         _routePath = path;
         _pathIndex = 0;
 
+        SetModel(empty: true);
+        CurrentState = TruckState.DrivingToPickup;
+    }
+
+    public void AssignPickupJob(PickupJob job, List<Cell> path, IslandResourceStorage sharedStorage,
+        Action<Truck, PickupJob, bool> completion)
+    {
+        if (job == null || job.Producer == null || path == null || path.Count == 0 || sharedStorage == null)
+        {
+            completion?.Invoke(this, job, false);
+            return;
+        }
+
+        _pickupJob = job;
+        _sharedStorage = sharedStorage;
+        _pickupCompletion = completion;
+        PickupBuilding = job.Producer;
+        DropoffBuilding = null;
+        _routePath = path;
+        _pathIndex = 0;
         SetModel(empty: true);
         CurrentState = TruckState.DrivingToPickup;
     }
@@ -140,7 +163,26 @@ public class Truck : MonoBehaviour
         yield return new WaitForSeconds(loadUnloadTime);
 
         BuildingOutput output = PickupBuilding != null ? PickupBuilding.GetComponent<BuildingOutput>() : null;
-        if (output != null)
+        if (_pickupJob != null)
+        {
+            _pickupJob.SetState(PickupJob.JobState.Loading);
+            if (output == null || !output.CommitReservation(_pickupJob.Cargo))
+            {
+                CompletePickupJob(false);
+                yield break;
+            }
+
+            foreach (var entry in _pickupJob.Cargo)
+            {
+                if (!_transport.AddResource(entry.Key, entry.Value))
+                {
+                    CompletePickupJob(false);
+                    yield break;
+                }
+                _cargo[entry.Key] = entry.Value;
+            }
+        }
+        else if (output != null)
         {
             Dictionary<ItemEnums.ResourceType, int> collected = output.CollectOutput();
             foreach (var entry in collected)
@@ -173,6 +215,7 @@ public class Truck : MonoBehaviour
         _routePath = reversed;
         _pathIndex = 0;
 
+        _pickupJob?.SetState(PickupJob.JobState.TravelingToWarehouse);
         CurrentState = TruckState.DrivingToDropoff;
     }
 
@@ -180,21 +223,24 @@ public class Truck : MonoBehaviour
     {
         yield return new WaitForSeconds(loadUnloadTime);
 
-        BuildingInventory dropoffInventory = DropoffBuilding != null ? DropoffBuilding.buildingInventory : null;
-        if (dropoffInventory != null)
+        if (_pickupJob != null && _sharedStorage != null)
         {
-            foreach (var entry in _cargo)
-            {
-                for (int i = 0; i < entry.Value; i++)
-                {
-                    dropoffInventory.AddResourceToBuilding(entry.Key);
-                }
-                _transport.RemoveResource(entry.Key, entry.Value);
-            }
+            _pickupJob.SetState(PickupJob.JobState.Unloading);
+            _sharedStorage.Add(_cargo);
+            foreach (var entry in _cargo) _transport.RemoveResource(entry.Key, entry.Value);
         }
         else
         {
-            Debug.LogWarning($"Truck '{name}': dropoff building '{DropoffBuilding?.name}' has no BuildingInventory component.");
+            BuildingInventory dropoffInventory = DropoffBuilding != null ? DropoffBuilding.buildingInventory : null;
+            if (dropoffInventory != null)
+            {
+                foreach (var entry in _cargo)
+                {
+                    for (int i = 0; i < entry.Value; i++) dropoffInventory.AddResourceToBuilding(entry.Key);
+                    _transport.RemoveResource(entry.Key, entry.Value);
+                }
+            }
+            else Debug.LogWarning($"Truck '{name}': dropoff building '{DropoffBuilding?.name}' has no BuildingInventory component.");
         }
 
         _cargo.Clear();
@@ -205,6 +251,12 @@ public class Truck : MonoBehaviour
             GameEventBus.Publish(new OnUnitDelivered(_unit));
         }
 
+        if (_pickupJob != null)
+        {
+            CompletePickupJob(true);
+            yield break;
+        }
+
         OnTruckDelivered?.Invoke(this);
 
         PickupBuilding = null;
@@ -212,6 +264,23 @@ public class Truck : MonoBehaviour
         _routePath = null;
         _pathIndex = 0;
         CurrentState = TruckState.Idle;
+    }
+
+    private void CompletePickupJob(bool succeeded)
+    {
+        PickupJob job = _pickupJob;
+        Action<Truck, PickupJob, bool> completion = _pickupCompletion;
+        _pickupJob = null;
+        _sharedStorage = null;
+        _pickupCompletion = null;
+        _cargo.Clear();
+        PickupBuilding = null;
+        DropoffBuilding = null;
+        _routePath = null;
+        _pathIndex = 0;
+        SetModel(empty: true);
+        CurrentState = TruckState.Idle;
+        completion?.Invoke(this, job, succeeded);
     }
 
     private void SetModel(bool empty)

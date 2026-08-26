@@ -82,28 +82,26 @@ public class TerrainMeshBuilder
         return mesh;
     }
 
-    private Mesh BuildFractionalMesh()
+    private static int cachedQuadsPerAxis = -1;
+    private static int[] cachedTriangles;
+    private static Vector2[] cachedUvs;
+
+    private static (int[] triangles, Vector2[] uvs) GetOrCreateTopology(int quadsPerAxis)
     {
-        int quadsPerAxis = size * visualSamplesPerCell;
+        if (cachedQuadsPerAxis == quadsPerAxis && cachedTriangles != null && cachedUvs != null)
+        {
+            return (cachedTriangles, cachedUvs);
+        }
+
         int verticesPerAxis = quadsPerAxis + 1;
-        float step = 1f / visualSamplesPerCell;
-        Vector3[] vertices = new Vector3[verticesPerAxis * verticesPerAxis];
-        Vector2[] uvs = new Vector2[vertices.Length];
+        Vector2[] uvs = new Vector2[verticesPerAxis * verticesPerAxis];
         int[] triangles = new int[quadsPerAxis * quadsPerAxis * 6];
 
         for (int z = 0; z < verticesPerAxis; z++)
         {
             for (int x = 0; x < verticesPerAxis; x++)
             {
-                // Chunk-local space runs 0..size, with the MapGrid transform sitting on
-                // the chunk's minimum corner. Cell x therefore occupies [x, x+1) and
-                // chunks placed islandSpacing == size apart tile exactly, sharing one
-                // boundary plane with no overlap and no gap.
-                float localX = x * step;
-                float localZ = z * step;
-                TerrainSample sample = terrainSource.SampleVisual(localX, localZ);
                 int index = z * verticesPerAxis + x;
-                vertices[index] = new Vector3(localX, sample.Height, localZ);
                 uvs[index] = new Vector2(x / (float)quadsPerAxis, z / (float)quadsPerAxis);
             }
         }
@@ -126,6 +124,35 @@ public class TerrainMeshBuilder
                 triangles[triangleIndex++] = bottomLeft;
             }
         }
+
+        cachedQuadsPerAxis = quadsPerAxis;
+        cachedTriangles = triangles;
+        cachedUvs = uvs;
+        return (triangles, uvs);
+    }
+
+    private Mesh BuildFractionalMesh()
+    {
+        TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell);
+        int quadsPerAxis = size * visualSamplesPerCell;
+        int verticesPerAxis = quadsPerAxis + 1;
+        float step = cache.Step;
+
+        Vector3[] vertices = new Vector3[verticesPerAxis * verticesPerAxis];
+        float[] heights = cache.Heights;
+
+        System.Threading.Tasks.Parallel.For(0, verticesPerAxis, z =>
+        {
+            float localZ = z * step;
+            int rowOffset = z * verticesPerAxis;
+            for (int x = 0; x < verticesPerAxis; x++)
+            {
+                int index = rowOffset + x;
+                vertices[index] = new Vector3(x * step, heights[index], localZ);
+            }
+        });
+
+        var (triangles, uvs) = GetOrCreateTopology(quadsPerAxis);
 
         Mesh mesh = new Mesh { name = $"Fractional Terrain x{visualSamplesPerCell}" };
         if (vertices.Length > ushort.MaxValue) mesh.indexFormat = IndexFormat.UInt32;

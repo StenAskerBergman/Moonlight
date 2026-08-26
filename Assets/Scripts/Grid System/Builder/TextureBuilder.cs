@@ -55,97 +55,193 @@ public class TextureBuilder
         texture.filterMode = FilterMode.Bilinear;
         texture.wrapMode = TextureWrapMode.Clamp;
 
-        for (int y = 0; y < textureSize; y++)
+        if (useFractionalSampling)
         {
-            for (int x = 0; x < textureSize; x++)
+            TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell);
+            TerrainGenerationSettings settings = terrainSource.Settings;
+
+            System.Threading.Tasks.Parallel.For(0, textureSize, y =>
             {
-                Color finalColor = Color.black;
-                if (useFractionalSampling)
+                int rowOffset = y * textureSize;
+                for (int x = 0; x < textureSize; x++)
                 {
-                    float localX = -0.5f + (x + 0.5f) / visualSamplesPerCell;
-                    float localZ = -0.5f + (y + 0.5f) / visualSamplesPerCell;
-                    
-                    TerrainSample sample = terrainSource.SampleVisual(localX, localZ);
-                    TerrainGenerationSettings settings = terrainSource.Settings;
+                    int idx = cache.GetIndex(x, y);
+                    float height = cache.Heights[idx];
+                    float slope = cache.Slopes[idx];
+                    Cell.TerrainType terrainType = cache.TerrainTypes[idx];
 
-                    float height = sample.Height;
-                    
-                    // Generate fractal noise to perturb the boundaries organically
-                    float boundaryNoise = (FractalNoise(x, y, climate.splatNoiseFrequency) - 0.5f) * climate.splatSandNoiseAmplitude;
+                    // Fine micro-detail noise for natural organic shading
+                    float microNoise = FractalNoise(x * 2.5f, y * 2.5f, 0.08f);
+                    float macroNoise = FractalNoise(x, y, 0.02f);
 
-                    // Apply noise to the THRESHOLDS. 
-                    float rockThreshold = settings.cliffHeight + boundaryNoise;
-                    
-                    // Grass boundary noise is usually restricted so it doesn't cause puddles on flatland
-                    float grassBoundaryNoise = (FractalNoise(x, y, climate.splatNoiseFrequency) - 0.5f) * climate.splatGrassNoiseRestriction;
-                    float grassThreshold = (settings.surfaceFlatlandHeight + climate.splatGrassThresholdOffset) + grassBoundaryNoise; 
-                    
-                    // Sand gets the full wild noise because it's safely on the slope/underwater
-                    float sandThreshold = (settings.waterHeight + climate.splatSandThresholdOffset) + boundaryNoise;
+                    // Material colors from ClimateProfile
+                    Color grass = Color.Lerp(climate.grassColor1, climate.grassColor2, microNoise);
+                    Color sand = Color.Lerp(climate.sandColor1, climate.sandColor2, microNoise);
+                    Color rock = Color.Lerp(climate.rockColor1, climate.rockColor2, macroNoise * 0.7f + microNoise * 0.3f);
+                    Color snow = climate.snowColor;
+                    Color shallowSea = climate.shallowWaterColor;
+                    Color deepSea = climate.deepWaterColor;
+                    Color riverWater = climate.riverColor;
 
-                    // Calculate local slope to detect steep dropoff cliffs (both above and below water)
-                    float sampleStep = 0.25f;
-                    float hL = terrainSource.SampleVisual(localX - sampleStep, localZ).Height;
-                    float hR = terrainSource.SampleVisual(localX + sampleStep, localZ).Height;
-                    float hD = terrainSource.SampleVisual(localX, localZ - sampleStep).Height;
-                    float hU = terrainSource.SampleVisual(localX, localZ + sampleStep).Height;
-                    float slope = Mathf.Sqrt((hR - hL) * (hR - hL) + (hU - hD) * (hU - hD)) / (2f * sampleStep);
+                    Color finalColor;
 
-                    if (sample.TerrainType == Cell.TerrainType.River)
+                    if (terrainType == Cell.TerrainType.River && height <= 0.15f)
                     {
-                        finalColor = new Color(0f, 0f, 0f, 1f); // River / Water
+                        finalColor = Color.Lerp(sand, rock, 0.35f); // Riverbed sand/gravel
                     }
-                    else if (sample.TerrainType == Cell.TerrainType.Mountain
-                        || sample.TerrainType == Cell.TerrainType.MountainPeak
-                        || sample.TerrainType == Cell.TerrainType.Cliff
-                        || height >= rockThreshold
-                        || slope > 0.6f) 
+                    else if (height < 0.15f)
                     {
-                        finalColor = new Color(0f, 0f, 1f, 0f); // B channel = Rock
+                        // Submerged ocean seabed and shallow coastal shelf:
+                        // Natural sand and marine sediment, subtly darkening with ocean depth
+                        float depthT = Mathf.Clamp01((-height) / 4.0f);
+                        Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
+                        finalColor = Color.Lerp(sand, deepSeabedSilt, depthT);
                     }
-                    else if (sample.TerrainType == Cell.TerrainType.Beach
-                        || sample.TerrainType == Cell.TerrainType.Shore)
+                    else
                     {
-                        finalColor = new Color(0f, 1f, 0f, 0f); // G channel = Sand
-                    }
-                    else if (height >= grassThreshold) 
-                    {
-                        finalColor = new Color(1f, 0f, 0f, 0f); // R channel = Grass
-                    }
-                    else if (height >= sandThreshold) 
-                    {
-                        finalColor = new Color(0f, 1f, 0f, 0f); // G channel = Sand
-                    }
-                    else 
-                    {
-                        finalColor = new Color(0f, 0f, 0f, 1f); // A channel = Deep Water / Seafloor
+                        // Dry land & mountain surfaces
+                        // 1. Shoreline Beach vs Inland Grass Plain
+                        // Beach is between waterline (-0.05m) and flatland (0.45m)
+                        float beachToGrass = Mathf.Clamp01((height - 0.15f) / 0.30f);
+                        beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
+                        Color groundColor = Color.Lerp(sand, grass, beachToGrass);
+
+                        // 2. Mountain Rock / Cliff blending based on elevation & slope
+                        // Slopes > 0.45 become rock; heights > 1.6m transition smoothly to mountain rock
+                        float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.30f);
+                        float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
+                        float rockWeight = Mathf.Max(slopeFactor, heightFactor);
+                        rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
+
+                        Color landColor = Color.Lerp(groundColor, rock, rockWeight);
+
+                        // 3. High altitude snow peak
+                        if (height >= 3.8f)
+                        {
+                            float snowWeight = Mathf.Clamp01((height - 3.8f) / 0.8f);
+                            landColor = Color.Lerp(landColor, snow, snowWeight);
+                        }
+
+                        finalColor = landColor;
                     }
 
-                    int cellX = Mathf.Clamp(Mathf.FloorToInt(localX + 0.5f), 0, gridSize - 1);
-                    int cellZ = Mathf.Clamp(Mathf.FloorToInt(localZ + 0.5f), 0, gridSize - 1);
-                    if (grid[cellX, cellZ].currentTerrainType == Cell.TerrainType.River)
-                    {
-                        finalColor = new Color(0f, 0f, 0f, 1f);
-                    }
-                }                else
+                    colorMap[rowOffset + x] = finalColor;
+                }
+            });
+        }
+        else
+        {
+            for (int y = 0; y < textureSize; y++)
+            {
+                int rowOffset = y * textureSize;
+                for (int x = 0; x < textureSize; x++)
                 {
                     Cell.TerrainType tType = grid[x, y].currentTerrainType;
-                    if (tType == Cell.TerrainType.Land || tType == Cell.TerrainType.Plain || tType == Cell.TerrainType.Hill || tType == Cell.TerrainType.Forest)
-                        finalColor = new Color(1f, 0f, 0f, 0f);
-                    else if (tType == Cell.TerrainType.Beach || tType == Cell.TerrainType.Shore || tType == Cell.TerrainType.Coast || tType == Cell.TerrainType.Desert)
-                        finalColor = new Color(0f, 1f, 0f, 0f);
-                    else if (tType == Cell.TerrainType.Mountain || tType == Cell.TerrainType.Cliff || tType == Cell.TerrainType.Rocky)
-                        finalColor = new Color(0f, 0f, 1f, 0f);
+                    Color finalColor;
+                    if (tType == Cell.TerrainType.Land || tType == Cell.TerrainType.Plain)
+                        finalColor = climate.grassColor1;
+                    else if (tType == Cell.TerrainType.Forest)
+                        finalColor = climate.forestColor1;
+                    else if (tType == Cell.TerrainType.Beach || tType == Cell.TerrainType.Shore || tType == Cell.TerrainType.Coast)
+                        finalColor = climate.sandColor1;
+                    else if (tType == Cell.TerrainType.Mountain || tType == Cell.TerrainType.Cliff)
+                        finalColor = climate.rockColor1;
+                    else if (tType == Cell.TerrainType.MountainPeak)
+                        finalColor = climate.snowColor;
+                    else if (tType == Cell.TerrainType.River)
+                        finalColor = Color.Lerp(climate.sandColor1, climate.rockColor1, 0.3f);
                     else
-                        finalColor = new Color(0f, 0f, 0f, 1f);
-                }
+                        finalColor = Color.Lerp(climate.sandColor1 * 0.75f, climate.rockColor2 * 0.6f, 0.5f); // Natural dark seabed
 
-                colorMap[y * textureSize + x] = finalColor;
+                    colorMap[rowOffset + x] = finalColor;
+                }
             }
         }
 
         texture.SetPixels(colorMap);
         texture.Apply(true);
+        return texture;
+    }
+
+    public Texture2D BuildDiagnosticSplatMask()
+    {
+        int gridSize = grid.GetLength(0);
+        bool useFractionalSampling = terrainSource != null && visualSamplesPerCell > 1;
+        int textureSize = useFractionalSampling ? gridSize * visualSamplesPerCell : gridSize;
+        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false);
+
+        Color[] colorMap = new Color[textureSize * textureSize];
+        texture.filterMode = FilterMode.Point;
+        texture.wrapMode = TextureWrapMode.Clamp;
+
+        if (useFractionalSampling)
+        {
+            TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell);
+
+            System.Threading.Tasks.Parallel.For(0, textureSize, y =>
+            {
+                int rowOffset = y * textureSize;
+                for (int x = 0; x < textureSize; x++)
+                {
+                    int idx = cache.GetIndex(x, y);
+                    float height = cache.Heights[idx];
+                    float slope = cache.Slopes[idx];
+                    Cell.TerrainType terrainType = cache.TerrainTypes[idx];
+
+                    Color finalColor;
+                    if (height < -0.10f || (terrainType == Cell.TerrainType.River && height <= 0.05f))
+                    {
+                        finalColor = new Color(0f, 0f, 0f, 1f); // Water / Submerged (Black)
+                    }
+                    else if (terrainType == Cell.TerrainType.Mountain
+                        || terrainType == Cell.TerrainType.MountainPeak
+                        || terrainType == Cell.TerrainType.Cliff
+                        || height >= 2.0f
+                        || (height >= 0.15f && slope > 0.45f))
+                    {
+                        finalColor = new Color(0f, 0f, 1f, 1f); // Mountain / Rock (Blue)
+                    }
+                    else if (terrainType == Cell.TerrainType.Beach
+                        || terrainType == Cell.TerrainType.Shore
+                        || terrainType == Cell.TerrainType.River
+                        || height < 0.45f)
+                    {
+                        finalColor = new Color(0f, 1f, 0f, 1f); // Beach / Sand (Green)
+                    }
+                    else
+                    {
+                        finalColor = new Color(1f, 0f, 0f, 1f); // Mainland / Plain (Red)
+                    }
+
+                    colorMap[rowOffset + x] = finalColor;
+                }
+            });
+        }
+        else
+        {
+            for (int y = 0; y < textureSize; y++)
+            {
+                int rowOffset = y * textureSize;
+                for (int x = 0; x < textureSize; x++)
+                {
+                    Color finalColor;
+                    Cell.TerrainType tType = grid[x, y].currentTerrainType;
+                    if (tType == Cell.TerrainType.Land || tType == Cell.TerrainType.Plain || tType == Cell.TerrainType.Hill || tType == Cell.TerrainType.Forest)
+                        finalColor = new Color(1f, 0f, 0f, 1f);
+                    else if (tType == Cell.TerrainType.Beach || tType == Cell.TerrainType.Shore || tType == Cell.TerrainType.Coast || tType == Cell.TerrainType.Desert)
+                        finalColor = new Color(0f, 1f, 0f, 1f);
+                    else if (tType == Cell.TerrainType.Mountain || tType == Cell.TerrainType.Cliff || tType == Cell.TerrainType.Rocky)
+                        finalColor = new Color(0f, 0f, 1f, 1f);
+                    else
+                        finalColor = new Color(0f, 0f, 0f, 1f);
+
+                    colorMap[rowOffset + x] = finalColor;
+                }
+            }
+        }
+
+        texture.SetPixels(colorMap);
+        texture.Apply(false);
         return texture;
     }
 }

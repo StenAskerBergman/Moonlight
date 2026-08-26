@@ -56,6 +56,20 @@ public sealed partial class IslandTerrainProvider
         this.chunkSeed = chunkSeed;
         this.worldSeed = worldSeed;
         this.chunkWorldOrigin = chunkWorldOrigin;
+
+        // Authoritative physical elevation hierarchy:
+        this.settings.surfaceFlatlandHeight = 0.85f;
+        this.settings.beachHeight = 0.25f;
+        this.settings.waterHeight = -0.6f;
+        this.settings.shallowHeight = -1.5f;
+        this.settings.naturalPlateauHeight = -2.5f;
+        this.settings.deepHeight = -3.2f;
+        this.settings.abyssHeight = -4.5f;
+        this.settings.cliffHeight = 2.4f;
+        this.settings.mountainHeight = 3.2f;
+        this.settings.mountainPeakHeight = 4.2f;
+        this.settings.underwaterPlateauHeight = -2.2f;
+
         this.settings.Validate();
         layers = BuildRuntimeLayers(this.settings.noiseLayers, worldSeed);
         System.Random legacyRandom = new System.Random(unchecked(chunkSeed * 486187739 ^ 0x51ED270B));
@@ -64,21 +78,369 @@ public sealed partial class IslandTerrainProvider
         plateauRegions = gridType == GridType.Type.Island
             ? BuildUnderwaterPlateauRegions(chunkSeed)
             : new List<UnderwaterPlateauRegion>();
-        featureReservations = BuildFeatureReservations(chunkSeed);
+        featureReservations = gridType == GridType.Type.Island
+            ? BuildFeatureReservations(chunkSeed)
+            : null;
+    }
+
+    private TerrainSampleCache sampleCache;
+
+    public TerrainSampleCache GetOrCreateSampleCache(int visualSamplesPerCell)
+    {
+        if (sampleCache != null && sampleCache.VisualSamplesPerCell == visualSamplesPerCell && sampleCache.GridSize == size)
+        {
+            return sampleCache;
+        }
+
+        TerrainSampleCache cache = new TerrainSampleCache(size, visualSamplesPerCell);
+        int resolution = cache.Resolution;
+        float step = cache.Step;
+        float waterUpper = settings.waterUpper;
+        float waterLevel = settings.waterHeight;
+        float flatlandHeight = settings.surfaceFlatlandHeight;
+
+        // Ocean & Empty Chunks: Evaluate flat underwater seabed (0 islands, 0 noise loops)
+        if (gridType == GridType.Type.Ocean || gridType == GridType.Type.Empty)
+        {
+            System.Threading.Tasks.Parallel.For(0, resolution, z =>
+            {
+                float localZ = z * step;
+                float worldZ = chunkWorldOrigin.y + localZ;
+
+                for (int x = 0; x < resolution; x++)
+                {
+                    float localX = x * step;
+                    float worldX = chunkWorldOrigin.x + localX;
+                    int idx = z * resolution + x;
+
+                    float baseField = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
+                    float height = CalculateContinuousHeight(baseField);
+
+                    cache.Heights[idx] = height;
+                    cache.BaseFields[idx] = baseField;
+                    cache.MountainAllowances[idx] = 0f;
+                    cache.MountainBoosts[idx] = 0f;
+                    cache.RiverCarveDepths[idx] = 0f;
+                    cache.PlateauInfluences[idx] = 0f;
+                    cache.Slopes[idx] = 0f;
+                    cache.TerrainTypes[idx] = ClassifyLegacyIsland(baseField).TerrainType;
+                }
+            });
+
+            sampleCache = cache;
+            return cache;
+        }
+
+        // Underwater Plateau Chunks: Evaluate shallow plateau shelf
+        if (gridType == GridType.Type.Plateau)
+        {
+            float W = 8f;
+            System.Threading.Tasks.Parallel.For(0, resolution, z =>
+            {
+                float localZ = z * step;
+                float worldZ = chunkWorldOrigin.y + localZ;
+
+                for (int x = 0; x < resolution; x++)
+                {
+                    float localX = x * step;
+                    float worldX = chunkWorldOrigin.x + localX;
+                    int idx = z * resolution + x;
+
+                    TerrainSample canonicalBase = SampleSharedSeabed(worldX, worldZ);
+                    float plateauNoise = SampleComposedNoise(worldX, worldZ);
+                    float localMask = SampleIslandMask(localX, localZ, plateauNoise);
+
+                    float dx = Mathf.Min(localX, size - localX);
+                    float dz = Mathf.Min(localZ, size - localZ);
+                    float tx = Mathf.Clamp01(dx / W);
+                    float tz = Mathf.Clamp01(dz / W);
+                    float edgeWeight = (tx * tx * tx * (tx * (tx * 6f - 15f) + 10f)) * (tz * tz * tz * (tz * (tz * 6f - 15f) + 10f));
+
+                    float plateauInfluence = localMask * edgeWeight;
+                    float height = Mathf.Lerp(canonicalBase.Height, settings.underwaterPlateauHeight, plateauInfluence);
+                    Cell.TerrainType terrainType = plateauInfluence >= FullPlateauInfluence
+                        ? Cell.TerrainType.Plateau
+                        : canonicalBase.TerrainType;
+
+                    cache.Heights[idx] = height;
+                    cache.BaseFields[idx] = canonicalBase.SourceValue;
+                    cache.MountainAllowances[idx] = 0f;
+                    cache.MountainBoosts[idx] = 0f;
+                    cache.RiverCarveDepths[idx] = 0f;
+                    cache.PlateauInfluences[idx] = plateauInfluence;
+                    cache.Slopes[idx] = 0f;
+                    cache.TerrainTypes[idx] = terrainType;
+                }
+            });
+
+            sampleCache = cache;
+            return cache;
+        }
+
+        // Pass 1: Multi-threaded generation of continuous base field, feature reservations, and heights
+        System.Threading.Tasks.Parallel.For(0, resolution, z =>
+        {
+            float localZ = z * step;
+            for (int x = 0; x < resolution; x++)
+            {
+                float localX = x * step;
+                int idx = z * resolution + x;
+
+                float baseField = CalculateLegacyIslandField(localX, localZ);
+                float baseHeight = CalculateBaseContinuousHeight(baseField);
+
+                float mountainBoost = 0f;
+                float riverCarve = 0f;
+                bool isInRiverChannel = false;
+                float mountainAllowance = 1f;
+
+                if (featureReservations != null)
+                {
+                    var res = featureReservations.EvaluateAll(localX, localZ, baseHeight, waterLevel);
+                    mountainAllowance = res.MountainAllowance;
+                    riverCarve = res.RiverCarveDepth;
+                    isInRiverChannel = res.IsInRiverChannel;
+
+                    float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+                    mountainBoost = CalculateStructuralMountainBoost(smoothField, res);
+                }
+
+                float height = baseHeight + mountainBoost - riverCarve;
+
+                TerrainSample sample = new TerrainSample(Cell.TerrainType.Land, height, baseField);
+                if (gridType == GridType.Type.Island)
+                {
+                    sample = ApplyUnderwaterPlateauRegions(localX, localZ, sample);
+                }
+
+                cache.Heights[idx] = sample.Height;
+                cache.BaseFields[idx] = baseField;
+                cache.MountainAllowances[idx] = mountainAllowance;
+                cache.MountainBoosts[idx] = mountainBoost;
+                cache.RiverCarveDepths[idx] = riverCarve;
+                cache.PlateauInfluences[idx] = sample.PlateauInfluence;
+            }
+        });
+
+        ValidateMountainHeightfield(cache);
+
+        // Pass 2: Fast multi-threaded slope and semantic classification with adjacent cached neighbor reads
+        System.Threading.Tasks.Parallel.For(0, resolution, z =>
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                int idx = z * resolution + x;
+
+                float height = cache.Heights[idx];
+                float baseField = cache.BaseFields[idx];
+                float mountainBoost = cache.MountainBoosts[idx];
+                bool isInRiverChannel = cache.RiverCarveDepths[idx] > 0f && (height <= waterLevel + 0.1f);
+
+                // Compute local slope using adjacent cached samples (zero noise re-sampling!)
+                float hL = cache.GetHeight(x - 1, z);
+                float hR = cache.GetHeight(x + 1, z);
+                float hD = cache.GetHeight(x, z - 1);
+                float hU = cache.GetHeight(x, z + 1);
+                float slope = Mathf.Sqrt((hR - hL) * (hR - hL) + (hU - hD) * (hU - hD)) / (2f * step);
+                cache.Slopes[idx] = slope;
+
+                // Base semantic classification using final heightfield and slope
+                Cell.TerrainType type = ClassifySynthesizedIsland(baseField, height, mountainBoost, isInRiverChannel, slope);
+
+                cache.TerrainTypes[idx] = type;
+            }
+        });
+
+        sampleCache = cache;
+        return cache;
+    }
+
+    private void ValidateMountainHeightfield(TerrainSampleCache cache)
+    {
+        if (featureReservations == null || featureReservations.Ridges.Count == 0) return;
+
+        CoastalMountainSettings validation = settings.coastalMountains;
+        float maximumRequestedPeak = 0f;
+        for (int ridgeIndex = 0; ridgeIndex < featureReservations.Ridges.Count; ridgeIndex++)
+        {
+            maximumRequestedPeak = Mathf.Max(
+                maximumRequestedPeak,
+                featureReservations.Ridges[ridgeIndex].PeakHeight);
+        }
+
+        float maximumAllowedBoost = maximumRequestedPeak * 1.05f;
+        float minimumRidgeWidth = 100f;
+        for (int ridgeIndex = 0; ridgeIndex < featureReservations.Ridges.Count; ridgeIndex++)
+        {
+            minimumRidgeWidth = Mathf.Min(
+                minimumRidgeWidth,
+                featureReservations.Ridges[ridgeIndex].Width);
+        }
+
+        float supportThreshold = maximumRequestedPeak * 0.08f;
+        float maximumObservedSlope = 0f;
+        int maxSlopeX = 0, maxSlopeZ = 0;
+        int resolution = cache.Resolution;
+
+        for (int z = 0; z < resolution; z++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                int index = cache.GetIndex(x, z);
+                float height = cache.Heights[index];
+                float boost = cache.MountainBoosts[index];
+                if (float.IsNaN(height) || float.IsInfinity(height)
+                    || float.IsNaN(boost) || float.IsInfinity(boost))
+                {
+                    throw new InvalidOperationException(
+                        $"Mountain heightfield validation failed for seed {chunkSeed}: non-finite value at ({x}, {z}).");
+                }
+
+                if (boost > maximumAllowedBoost)
+                {
+                    throw new InvalidOperationException(
+                        $"Mountain heightfield validation failed for seed {chunkSeed}: boost {boost:F2} exceeds {maximumAllowedBoost:F2} at ({x}, {z}).");
+                }
+
+                if (boost < supportThreshold) continue;
+                if (x + 1 < resolution)
+                {
+                    float neighbor = cache.MountainBoosts[cache.GetIndex(x + 1, z)];
+                    if (neighbor >= supportThreshold)
+                    {
+                        float slope = Mathf.Abs(neighbor - boost) / cache.Step;
+                        if (slope > maximumObservedSlope)
+                        {
+                            maximumObservedSlope = slope;
+                            maxSlopeX = x;
+                            maxSlopeZ = z;
+                        }
+                    }
+                }
+                if (z + 1 < resolution)
+                {
+                    float neighbor = cache.MountainBoosts[cache.GetIndex(x, z + 1)];
+                    if (neighbor >= supportThreshold)
+                    {
+                        float slope = Mathf.Abs(neighbor - boost) / cache.Step;
+                        if (slope > maximumObservedSlope)
+                        {
+                            maximumObservedSlope = slope;
+                            maxSlopeX = x;
+                            maxSlopeZ = z;
+                        }
+                    }
+                }
+            }
+        }
+
+        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.0f + 0.5f;
+        if (maximumObservedSlope < 0.10f || maximumObservedSlope > maximumAllowedSlope)
+        {
+            float lx = maxSlopeX * cache.Step;
+            float lz = maxSlopeZ * cache.Step;
+            throw new InvalidOperationException(
+                $"Mountain heightfield validation failed for seed {chunkSeed}: combined maximum slope {maximumObservedSlope:F2} at ({maxSlopeX}, {maxSlopeZ}) local ({lx:F2}, {lz:F2}) is outside sanity range [0.10..{maximumAllowedSlope:F2}].");
+        }
+
+        ValidateMountainComponentMass(cache, supportThreshold, validation.minimumMountainSamples);
+    }
+
+    private void ValidateMountainComponentMass(
+        TerrainSampleCache cache,
+        float supportThreshold,
+        int minimumBaseSamples)
+    {
+        int resolution = cache.Resolution;
+        bool[] visited = new bool[cache.MountainBoosts.Length];
+        Queue<int> open = new Queue<int>();
+        List<int> currentComponent = new List<int>();
+        int minimumSamples = Mathf.Max(8, minimumBaseSamples * Mathf.Max(1, cache.VisualSamplesPerCell / 2));
+        int totalMountainSamples = 0;
+        int largestComponent = 0;
+        int validComponentCount = 0;
+
+        for (int start = 0; start < cache.MountainBoosts.Length; start++)
+        {
+            if (visited[start] || cache.MountainBoosts[start] < supportThreshold) continue;
+
+            currentComponent.Clear();
+            visited[start] = true;
+            open.Enqueue(start);
+            while (open.Count > 0)
+            {
+                int current = open.Dequeue();
+                currentComponent.Add(current);
+                int x = current % resolution;
+                int z = current / resolution;
+
+                TryQueueMountainNeighbor(x - 1, z, cache, supportThreshold, visited, open);
+                TryQueueMountainNeighbor(x + 1, z, cache, supportThreshold, visited, open);
+                TryQueueMountainNeighbor(x, z - 1, cache, supportThreshold, visited, open);
+                TryQueueMountainNeighbor(x, z + 1, cache, supportThreshold, visited, open);
+            }
+
+            int componentMass = currentComponent.Count;
+            if (componentMass < minimumSamples)
+            {
+                // Suppress tiny disconnected sliver remnants
+                for (int c = 0; c < currentComponent.Count; c++)
+                {
+                    int idx = currentComponent[c];
+                    cache.Heights[idx] -= cache.MountainBoosts[idx];
+                    cache.MountainBoosts[idx] = 0f;
+                }
+            }
+            else
+            {
+                totalMountainSamples += componentMass;
+                largestComponent = Mathf.Max(largestComponent, componentMass);
+                validComponentCount++;
+            }
+        }
+
+        int maxAllowedComponents = featureReservations != null ? Mathf.Max(1, featureReservations.Ridges.Count + 1) : 1;
+        if (validComponentCount > maxAllowedComponents)
+        {
+            throw new InvalidOperationException(
+                $"Mountain heightfield validation failed for seed {chunkSeed}: excessive fragmented mountain components ({validComponentCount} components, max allowed: {maxAllowedComponents}).");
+        }
+    }
+
+    private static void TryQueueMountainNeighbor(
+        int x,
+        int z,
+        TerrainSampleCache cache,
+        float supportThreshold,
+        bool[] visited,
+        Queue<int> open)
+    {
+        if (x < 0 || x >= cache.Resolution || z < 0 || z >= cache.Resolution) return;
+        int index = cache.GetIndex(x, z);
+        if (visited[index] || cache.MountainBoosts[index] < supportThreshold) return;
+        visited[index] = true;
+        open.Enqueue(index);
     }
 
     public TerrainSample[,] GenerateGameplaySamples()
     {
         TerrainSample[,] samples = new TerrainSample[size, size];
+        TerrainSampleCache cache = GetOrCreateSampleCache(settings.visualSamplesPerCell);
+        int v = settings.visualSamplesPerCell;
 
         for (int z = 0; z < size; z++)
         {
             for (int x = 0; x < size; x++)
             {
-                // Cell [x,z] physically occupies local [x, x+1) x [z, z+1), so its
-                // representative sample is taken at the centre. The array index and
-                // the spatial sample point are deliberately not the same number.
-                samples[x, z] = Sample(x + 0.5f, z + 0.5f);
+                int cx = Mathf.Clamp(x * v + v / 2, 0, cache.Resolution - 1);
+                int cz = Mathf.Clamp(z * v + v / 2, 0, cache.Resolution - 1);
+                int idx = cache.GetIndex(cx, cz);
+
+                samples[x, z] = new TerrainSample(
+                    cache.TerrainTypes[idx],
+                    cache.Heights[idx],
+                    cache.BaseFields[idx],
+                    cache.PlateauInfluences[idx]);
             }
         }
 
@@ -135,7 +497,20 @@ public sealed partial class IslandTerrainProvider
 
     public TerrainSample SampleVisual(float localX, float localZ)
     {
-        return Sample(localX, localZ);
+        switch (gridType)
+        {
+            case GridType.Type.Island:
+                // Fast visual path: computes continuous synthesized height and plateau influence
+                // without redundant 4-neighbor coast resampling
+                TerrainSample baseSample = SampleSynthesizedIsland(localX, localZ);
+                return ApplyUnderwaterPlateauRegions(localX, localZ, baseSample);
+
+            case GridType.Type.Plateau:
+            case GridType.Type.Ocean:
+            case GridType.Type.Empty:
+            default:
+                return Sample(localX, localZ);
+        }
     }
 
     private TerrainSample SampleLegacyIsland(float x, float z)

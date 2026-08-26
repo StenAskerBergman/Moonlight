@@ -68,59 +68,55 @@ private void EvaluateDomainWarp(float worldX, float worldZ, int seed, out float 
         currentAmplitude *= warp.persistence;
     }
 
-    warpX = totalWarpX;
-    warpZ = totalWarpZ;
+    float effectiveAmp = Mathf.Clamp(warp.amplitude, 0f, 7.5f);
+    warpX = maxAmp > 0f ? (totalWarpX / maxAmp) * effectiveAmp : 0f;
+    warpZ = maxAmp > 0f ? (totalWarpZ / maxAmp) * effectiveAmp : 0f;
 }
 
-private float EvaluateRidgedMultifractal(float worldX, float worldZ, int seed)
+private float EvaluateLocalIslandField(float localX, float localZ, float warpX, float warpZ, bool lowFrequencyOnly = false)
 {
-    RidgedMultifractalSettings ridged = settings.ridgedMultifractal;
-    if (!ridged.enabled || ridged.peakStrength <= 0f) return 0f;
+    float scale = settings.legacyIslandScale;
 
-    float frequency = 1f / ridged.scale;
-    float amplitude = 1f;
-    float totalValue = 0f;
-    float maxAmplitude = 0f;
+    // Evaluate 3-octave fractal composite in domain-warped coordinates
+    float wx = localX + warpX;
+    float wz = localZ + warpZ;
 
-    float seedOffsetX = (seed * 73856093 & 0x7FFFFFFF) % 10000f;
-    float seedOffsetZ = (seed * 19349663 & 0x7FFFFFFF) % 10000f;
-
-    for (int octave = 0; octave < ridged.octaves; octave++)
+    float n1 = Mathf.PerlinNoise(wx * scale + legacyOffsetX, wz * scale + legacyOffsetZ);
+    float fractalNoise;
+    if (lowFrequencyOnly)
     {
-        float sx = (worldX + seedOffsetX + octave * 31.7f) * frequency;
-        float sz = (worldZ + seedOffsetZ + octave * 17.3f) * frequency;
-
-        // Map Perlin from [0, 1] to [-1, 1], then calculate sharp ridge n = 1 - abs(raw)
-        float raw = Mathf.PerlinNoise(sx, sz) * 2f - 1f;
-        float n = 1f - Mathf.Abs(raw);
-        float ridge = Mathf.Pow(n, ridged.power);
-
-        totalValue += ridge * amplitude;
-        maxAmplitude += amplitude;
-
-        frequency *= ridged.lacunarity;
-        amplitude *= ridged.persistence;
+        // Skips the n2/n3 high-frequency octaves. Used to gate mountain boost:
+        // sampling those octaves right at the coastline threshold made the boost
+        // mask flicker on/off between adjacent mesh vertices, producing a row of
+        // saw-tooth spikes at the mountain/land boundary.
+        fractalNoise = n1;
+    }
+    else
+    {
+        float n2 = Mathf.PerlinNoise(wx * scale * 2.3f + legacyOffsetX + 127.3f, wz * scale * 2.3f + legacyOffsetZ + 89.1f);
+        float n3 = Mathf.PerlinNoise(wx * scale * 4.8f + legacyOffsetX + 311.7f, wz * scale * 4.8f + legacyOffsetZ + 241.9f);
+        fractalNoise = n1 * 0.58f + n2 * 0.30f + n3 * 0.12f;
     }
 
-    if (maxAmplitude <= 0f) return 0f;
-    return (totalValue / maxAmplitude) * ridged.peakStrength;
+    // Evaluate normalized coordinates in domain-warped space so the perimeter contour is organically sculpted
+    float warpedNormX = (wx / size) * 2f - 1f;
+    float warpedNormZ = (wz / size) * 2f - 1f;
+    float warpedRadius = Mathf.Sqrt(warpedNormX * warpedNormX + warpedNormZ * warpedNormZ);
+
+    // Natural sigmoid falloff in warped space creating the organic multi-lobed / kidney silhouette
+    float radiusCubed = warpedRadius * warpedRadius * warpedRadius;
+    float inv = Mathf.Max(0.001f, 2.05f - 2.05f * warpedRadius);
+    float falloff = radiusCubed / (radiusCubed + inv * inv * inv);
+
+    // Smooth outer suppression near chunk edges to ensure clean ocean framing
+    float outerDrop = Mathf.Pow(Mathf.Clamp01((warpedRadius - 0.65f) / 0.28f), 2f) * 0.35f;
+
+    // Base field sculpted directly by the domain-warped fractal noise
+    float field = fractalNoise - falloff * 0.82f - outerDrop;
+    return field;
 }
 
-private float EvaluateLocalIslandField(float localX, float localZ)
-{
-    float noise = Mathf.PerlinNoise(
-        localX * settings.legacyIslandScale + legacyOffsetX,
-        localZ * settings.legacyIslandScale + legacyOffsetZ);
-    float normalizedX = localX / size * 2f - 1f;
-    float normalizedZ = localZ / size * 2f - 1f;
-    float radius = Mathf.Sqrt(normalizedX * normalizedX + normalizedZ * normalizedZ);
-    float radiusCubed = Mathf.Pow(radius, 3f);
-    float inverse = 2.2f - 2.2f * radius;
-    float falloff = radiusCubed / (radiusCubed + Mathf.Pow(inverse, 3f));
-    return noise - falloff;
-}
-
-private float CalculateLegacyIslandField(float localX, float localZ)
+private float CalculateLegacyIslandField(float localX, float localZ, bool lowFrequencyOnly = false)
 {
     float worldX = chunkWorldOrigin.x + localX;
     float worldZ = chunkWorldOrigin.y + localZ;
@@ -130,7 +126,7 @@ private float CalculateLegacyIslandField(float localX, float localZ)
     // Evaluate low-frequency domain warp in world coordinates
     EvaluateDomainWarp(worldX, worldZ, worldSeed, out float warpX, out float warpZ);
 
-    float localField = EvaluateLocalIslandField(localX + warpX, localZ + warpZ);
+    float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, lowFrequencyOnly);
 
     float W = 8f;
     float dx = Mathf.Min(localX, size - localX);
@@ -183,95 +179,27 @@ private static float SampleLayer(RuntimeNoiseLayer layer, float x, float z)
     TerrainNoiseLayerSettings settings = layer.Settings;
     float scale = Mathf.Max(0.001f, settings.scale);
     int octaveCount = Mathf.Max(1, settings.octaves);
-    
-    Vector2 sample = new Vector2(x + settings.offset.x, z + settings.offset.y) / scale;
-    sample += layer.OctaveOffsets[0]; // Seed offset for variation
 
-    float value = EvaluateGradientTrick(sample, octaveCount, settings.persistence, settings.lacunarity);
-    
-    // EvaluateGradientTrick typically returns values varying roughly around -1 to 1 (or 0 to 1 depending on noise).
-    // Our old SampleLayer expected 0 to 1.
-    // Let's normalize it to 0-1 range roughly. Value noise without offset gives 0 to 1.
-    // With gradient trick, max amplitude is roughly 1 / (1-persistence).
-    float amplitudeTotal = (1f - Mathf.Pow(settings.persistence, octaveCount)) / (1f - settings.persistence);
-    
-    if (amplitudeTotal <= 0f) return 0.5f;
-    return Mathf.Clamp01(value / amplitudeTotal);
-}
-
-private static float EvaluateGradientTrick(Vector2 sample, int octaves, float persistence, float lacunarity)
-{
-    float height = 0f;
+    float total = 0f;
+    float frequency = 1f / scale;
     float amplitude = 1f;
-    Vector2 gradient = Vector2.zero;
+    float maxAmplitude = 0f;
 
-    
-    
-    for (int i = 0; i < octaves; i++)
+    for (int i = 0; i < octaveCount; i++)
     {
-        // x = noise (0 to 1)
-        // y = analytical dNoise/dX
-        // z = analytical dNoise/dY
-        Vector3 n = EvaluateNoiseWithDerivatives(sample);
+        Vector2 offset = layer.OctaveOffsets[i];
+        float sampleX = (x + settings.offset.x) * frequency + offset.x;
+        float sampleZ = (z + settings.offset.y) * frequency + offset.y;
 
-        gradient += new Vector2(n.y, n.z);
+        float perlinValue = Mathf.PerlinNoise(sampleX, sampleZ);
+        total += perlinValue * amplitude;
+        maxAmplitude += amplitude;
 
-        height += amplitude * n.x / (1f + Vector2.Dot(gradient, gradient));
-
-        amplitude *= persistence;
-        
-sample *= lacunarity;
+        amplitude *= settings.persistence;
+        frequency *= settings.lacunarity;
     }
 
-    return height;
-}
-
-private static Vector3 EvaluateNoiseWithDerivatives(Vector2 p)
-{
-    // Integer part
-    Vector2 i = new Vector2(Mathf.Floor(p.x), Mathf.Floor(p.y));
-    // Fractional part
-    Vector2 f = new Vector2(p.x - i.x, p.y - i.y);
-
-    // Quintic interpolation: u = f*f*f*(f*(f*6.0-15.0)+10.0)
-    // First derivative: du = 30.0*f*f*(f*(f-2.0)+1.0)
-    Vector2 u = new Vector2(
-        f.x * f.x * f.x * (f.x * (f.x * 6f - 15f) + 10f),
-        f.y * f.y * f.y * (f.y * (f.y * 6f - 15f) + 10f)
-    );
-
-    Vector2 du = new Vector2(
-        30f * f.x * f.x * (f.x * (f.x - 2f) + 1f),
-        30f * f.y * f.y * (f.y * (f.y - 2f) + 1f)
-    );
-
-    // Random values at the 4 corners
-    float a = Hash(i + new Vector2(0f, 0f));
-    float b = Hash(i + new Vector2(1f, 0f));
-    float c = Hash(i + new Vector2(0f, 1f));
-    float d = Hash(i + new Vector2(1f, 1f));
-
-    // Bilinear interpolation
-    float k0 = a;
-    float k1 = b - a;
-    float k2 = c - a;
-    float k3 = a - b - c + d;
-
-    // Noise value
-    float noise = k0 + k1 * u.x + k2 * u.y + k3 * u.x * u.y;
-    
-    // Analytical derivatives
-    float dNoiseDx = du.x * (k1 + k3 * u.y);
-    float dNoiseDy = du.y * (k2 + k3 * u.x);
-
-    return new Vector3(noise, dNoiseDx, dNoiseDy);
-}
-
-private static float Hash(Vector2 p)
-{
-    float h = Vector2.Dot(p, new Vector2(127.1f, 311.7f));
-    float val = Mathf.Sin(h) * 43758.5453123f;
-    return val - Mathf.Floor(val);
+    return maxAmplitude > 0f ? Mathf.Clamp01(total / maxAmplitude) : 0.5f;
 }
 
 private static List<RuntimeNoiseLayer> BuildRuntimeLayers(List<TerrainNoiseLayerSettings> configuredLayers, int seed)
