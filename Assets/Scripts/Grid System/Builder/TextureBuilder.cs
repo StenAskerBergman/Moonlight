@@ -68,6 +68,7 @@ public class TextureBuilder
                     int idx = cache.GetIndex(x, y);
                     float height = cache.Heights[idx];
                     float slope = cache.Slopes[idx];
+                    float mountainBoost = cache.MountainBoosts != null ? cache.MountainBoosts[idx] : 0f;
                     Cell.TerrainType terrainType = cache.TerrainTypes[idx];
 
                     // Fine micro-detail noise for natural organic shading
@@ -100,18 +101,21 @@ public class TextureBuilder
                     else
                     {
                         // Dry land & mountain surfaces
-                        // 1. Shoreline Beach vs Inland Grass Plain
-                        // Beach is between waterline (-0.05m) and flatland (0.45m)
-                        float beachToGrass = Mathf.Clamp01((height - 0.15f) / 0.30f);
+                        // 1. Broad smooth beach to mainland pasture transition
+                        float beachToGrass = Mathf.Clamp01((height - 0.12f) / 0.28f);
                         beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
                         Color groundColor = Color.Lerp(sand, grass, beachToGrass);
 
-                        // 2. Mountain Rock / Cliff blending based on elevation & slope
-                        // Slopes > 0.45 become rock; heights > 1.6m transition smoothly to mountain rock
-                        float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.30f);
-                        float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
-                        float rockWeight = Mathf.Max(slopeFactor, heightFactor);
+                        // 2. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
+                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.15f) / 0.60f);
+                        float slopeFactor = Mathf.Clamp01((slope - 0.40f) / 0.30f);
+                        float heightFactor = Mathf.Clamp01((height - 1.8f) / 1.2f);
+                        float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
                         rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
+
+                        // Soften rock into beach sand at the immediate waterline to prevent dark submerged borders
+                        float waterlineFade = Mathf.Clamp01((height - 0.05f) / 0.30f);
+                        rockWeight *= waterlineFade;
 
                         Color landColor = Color.Lerp(groundColor, rock, rockWeight);
 

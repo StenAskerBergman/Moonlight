@@ -187,7 +187,9 @@ public sealed partial class IslandTerrainProvider
                 int idx = z * resolution + x;
 
                 float baseField = CalculateLegacyIslandField(localX, localZ);
-                float baseHeight = CalculateBaseContinuousHeight(baseField);
+                float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+                float reservationBaseHeight = CalculateBaseContinuousHeight(baseField);
+                float visualBaseHeight = CalculateBaseContinuousHeight(smoothField);
 
                 float mountainBoost = 0f;
                 float riverCarve = 0f;
@@ -196,16 +198,15 @@ public sealed partial class IslandTerrainProvider
 
                 if (featureReservations != null)
                 {
-                    var res = featureReservations.EvaluateAll(localX, localZ, baseHeight, waterLevel);
+                    var res = featureReservations.EvaluateAll(localX, localZ, reservationBaseHeight, waterLevel);
                     mountainAllowance = res.MountainAllowance;
                     riverCarve = res.RiverCarveDepth;
                     isInRiverChannel = res.IsInRiverChannel;
 
-                    float smoothField = CalculateLegacyIslandField(localX, localZ, true);
                     mountainBoost = CalculateStructuralMountainBoost(smoothField, res);
                 }
 
-                float height = baseHeight + mountainBoost - riverCarve;
+                float height = visualBaseHeight + mountainBoost - riverCarve;
 
                 TerrainSample sample = new TerrainSample(Cell.TerrainType.Land, height, baseField);
                 if (gridType == GridType.Type.Island)
@@ -244,8 +245,19 @@ public sealed partial class IslandTerrainProvider
                 float slope = Mathf.Sqrt((hR - hL) * (hR - hL) + (hU - hD) * (hU - hD)) / (2f * step);
                 cache.Slopes[idx] = slope;
 
+                // mountainCoastWeight must be the smooth [0,1] sector weight, not slope: passing
+                // slope positionally into that parameter (its previous bug) fed an unbounded,
+                // per-vertex-jittery value into the mountainCoastWeight <= 0.45f Beach/Cliff
+                // thresholds, producing a checkerboard-chaotic Beach/Land classification along
+                // the shoreline even though height and mountainCoastWeight are each smooth on
+                // their own. It also silently zeroed the real slope argument, disabling the
+                // slope > 0.45f cliff check for this (cache/mesh/texture) classification path.
+                float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
+                    ? featureReservations.Sectors.GetMountainCoastWeight(x * step, z * step)
+                    : 0f;
+
                 // Base semantic classification using final heightfield and slope
-                Cell.TerrainType type = ClassifySynthesizedIsland(baseField, height, mountainBoost, isInRiverChannel, slope);
+                Cell.TerrainType type = ClassifySynthesizedIsland(baseField, height, mountainBoost, isInRiverChannel, mountainCoastWeight, slope);
 
                 cache.TerrainTypes[idx] = type;
             }
@@ -355,6 +367,7 @@ public sealed partial class IslandTerrainProvider
         bool[] visited = new bool[cache.MountainBoosts.Length];
         Queue<int> open = new Queue<int>();
         List<int> currentComponent = new List<int>();
+        List<int> erodedIndices = new List<int>();
         int minimumSamples = Mathf.Max(8, minimumBaseSamples * Mathf.Max(1, cache.VisualSamplesPerCell / 2));
         int totalMountainSamples = 0;
         int largestComponent = 0;
@@ -389,6 +402,7 @@ public sealed partial class IslandTerrainProvider
                     int idx = currentComponent[c];
                     cache.Heights[idx] -= cache.MountainBoosts[idx];
                     cache.MountainBoosts[idx] = 0f;
+                    erodedIndices.Add(idx);
                 }
             }
             else
@@ -399,11 +413,48 @@ public sealed partial class IslandTerrainProvider
             }
         }
 
+        // The erosion above removes an entire rejected fragment's boost in one shot, which
+        // leaves a hard step in cache.Heights against the untouched terrain just outside the
+        // fragment - this is where the "beach jaggedness" bug traced back to: TextureBuilder
+        // blends rock color straight off cache.MountainBoosts and the slope that Pass 2
+        // computes from this same heightfield, so the same step shows up as both a visible
+        // geometry notch and a sharp rock/grass texture seam. Feather it: relax each eroded
+        // cell's height toward its immediate neighbors over a few passes so the drop ramps
+        // down across a handful of cells instead of happening in one. Only touches cells that
+        // were actually eroded, so kept mountain terrain is untouched.
+        if (erodedIndices.Count > 0)
+        {
+            FeatherErodedHeights(cache, erodedIndices, resolution);
+        }
+
         int maxAllowedComponents = featureReservations != null ? Mathf.Max(1, featureReservations.Ridges.Count + 1) : 1;
         if (validComponentCount > maxAllowedComponents)
         {
             throw new InvalidOperationException(
                 $"Mountain heightfield validation failed for seed {chunkSeed}: excessive fragmented mountain components ({validComponentCount} components, max allowed: {maxAllowedComponents}).");
+        }
+    }
+
+    private static void FeatherErodedHeights(TerrainSampleCache cache, List<int> erodedIndices, int resolution)
+    {
+        const int iterations = 4;
+        for (int pass = 0; pass < iterations; pass++)
+        {
+            for (int i = 0; i < erodedIndices.Count; i++)
+            {
+                int idx = erodedIndices[i];
+                int x = idx % resolution;
+                int z = idx / resolution;
+
+                float sum = cache.Heights[idx];
+                int count = 1;
+                if (x > 0) { sum += cache.Heights[idx - 1]; count++; }
+                if (x < resolution - 1) { sum += cache.Heights[idx + 1]; count++; }
+                if (z > 0) { sum += cache.Heights[idx - resolution]; count++; }
+                if (z < resolution - 1) { sum += cache.Heights[idx + resolution]; count++; }
+
+                cache.Heights[idx] = sum / count;
+            }
         }
     }
 

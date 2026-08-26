@@ -214,10 +214,10 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
             float ridgeWidth = RandomRange(random, 3.2f, maxAllowedWidth);
             float peakHeight = mountainSettings.ridgePeakHeight * RandomRange(random, 1.0f, 1.35f);
 
-            // Orient along the coastal contour and inward towards the headland interior
+            // Orient along the coastal contour and across the headland
             float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
-            Vector2 ridgeDir = (tangent * tanSign * RandomRange(random, 0.75f, 1f) - normal * RandomRange(random, 0.15f, 0.45f)).normalized;
-            Vector2 origin = coastPt - normal * (ridgeWidth * 0.75f);
+            Vector2 ridgeDir = (tangent * tanSign * RandomRange(random, 0.85f, 1f) - normal * RandomRange(random, -0.05f, 0.20f)).normalized;
+            Vector2 origin = coastPt - normal * (ridgeWidth * 0.15f);
 
             FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
                 origin, ridgeDir, ridgeLength, ridgeWidth, peakHeight, mountainSettings.cliffSharpness);
@@ -407,7 +407,7 @@ private bool TryAddValidatedRidge(
                 continue;
             }
 
-            float u = Mathf.Clamp01((baseField - settings.abyssUpper) / Mathf.Max(0.01f, settings.beachUpper - settings.abyssUpper));
+            float u = Mathf.Clamp01((baseField - settings.abyssUpper) / Mathf.Max(0.01f, settings.waterUpper - settings.abyssUpper));
             float landMask = u * u * (3f - 2f * u);
             float boost = rawElevation * map.GetMountainAllowance(point.x, point.y) * landMask;
             if (!float.IsFinite(boost) || boost < supportThreshold)

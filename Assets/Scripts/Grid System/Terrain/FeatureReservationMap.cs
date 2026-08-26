@@ -285,8 +285,19 @@ public sealed class FeatureReservationMap
                 float bankSmooth = v * v * v * (v * (v * 6f - 15f) + 10f); // Quintic S-curve (0 at channel edge, 1 at outer plain)
                 valleySuppression = 1f - bankSmooth;
 
-                // Gentle valley slope: dips by at most 0.20m so riverbanks stay safely dry (+0.65m) above waterLevel
-                float valleyCarveFactor = 1f - bankSmooth;
+                // Gentle valley slope: dips by at most 0.20m so riverbanks stay safely dry (+0.65m) above waterLevel.
+                //
+                // Deliberately NOT the same shape as valleySuppression above (1 - bankSmooth, which
+                // peaks at v=0). The channel branch's own carve is provably 0 at its rim -
+                // targetWaterbedHeight collapses to inlandSurface = Max(0.15, currentBaseHeight),
+                // which is always >= currentBaseHeight, so requiredCarve = Max(0, currentBaseHeight
+                // - targetWaterbedHeight) is always 0 there. A valley-carve factor that peaks at
+                // v=0 disagreed with that guaranteed-zero edge value: a hard discontinuity right on
+                // the channel/bank seam, visible as a sharp notch in the heightfield (and, via
+                // TextureBuilder's slope-driven rock blend, as a jagged texture seam too). This hump
+                // shape is zero at both ends - the channel's rim (v=0) and the undisturbed outer
+                // plain (v=1) - and only rises in between.
+                float valleyCarveFactor = Mathf.Sin(Mathf.Clamp01(v) * Mathf.PI);
                 float maxValleyDip = Mathf.Min(0.20f, Mathf.Max(0f, currentBaseHeight - (waterLevel + 0.50f)));
                 float valleyCarve = maxValleyDip * valleyCarveFactor * sourceFade;
                 eval.RiverCarveDepth = Mathf.Max(eval.RiverCarveDepth, valleyCarve);

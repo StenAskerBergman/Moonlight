@@ -4,10 +4,19 @@ using System.Collections.Generic;
 public partial class IslandTerrainProvider
 {
 
+// Called with two different inputs on purpose (see SampleSynthesizedIsland and the Pass 1
+// loop): baseField for reservationBaseHeight (what featureReservations.EvaluateAll sees -
+// river/mountain reservation logic must keep seeing exactly what it always has, or their
+// outcomes shift and carve holes elsewhere) and the low-frequency-only field for
+// visualBaseHeight (what actually becomes rendered geometry). The waterUpper..beachUpper
+// band is only 0.05 wide, so this S-curve divides by that narrow denominator - any high-
+// frequency noise in `value` gets amplified into visible height ripples on the shoreline
+// ramp. Feeding smoothed input only into visualBaseHeight kills that ripple without moving
+// anything the reservation system depends on.
 private float CalculateBaseContinuousHeight(float value)
 {
     float waterUpper = settings.waterUpper; // 0.40f (Coastline MSL = 0.0m)
-    float beachUpper = settings.beachUpper; // 0.45f (Shoreline to Mainland transition)
+    float coastalUpper = 0.46f;            // Smooth backshore transition up to mainland baseline (+0.85m)
     float abyssUpper = settings.abyssUpper; // 0.05f (Deep ocean floor)
 
     if (value <= waterUpper)
@@ -19,18 +28,18 @@ private float CalculateBaseContinuousHeight(float value)
         float shelfCurve = Mathf.Pow(t, 1.25f);
         return Mathf.Lerp(settings.abyssHeight, 0.0f, shelfCurve);
     }
-    else if (value <= beachUpper)
+    else if (value <= coastalUpper)
     {
-        // Shoreline rise from Mean Sea Level (0.0m) to Mainland baseline (+0.85m)
-        float u = (value - waterUpper) / Mathf.Max(0.01f, beachUpper - waterUpper);
+        // Continuous smooth coastal slope from Mean Sea Level (0.0m) up to Mainland baseline (+0.85m)
+        float u = (value - waterUpper) / (coastalUpper - waterUpper);
         float shoreCurve = u * u * (3f - 2f * u); // Smooth cubic S-curve
         return Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve);
     }
     else
     {
         // Inland mainland: +0.85m baseline with organic rolling topography (rises naturally towards the interior)
-        float excess = value - beachUpper;
-        return settings.surfaceFlatlandHeight + excess * 0.85f;
+        float excess = value - coastalUpper;
+        return settings.surfaceFlatlandHeight + excess * 1.15f;
     }
 }
 
@@ -51,7 +60,9 @@ private float CalculateContinuousHeight(float value)
 private TerrainSample SampleSynthesizedIsland(float localX, float localZ)
 {
     float baseField = CalculateLegacyIslandField(localX, localZ);
-    float baseHeight = CalculateBaseContinuousHeight(baseField);
+    float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+    float reservationBaseHeight = CalculateBaseContinuousHeight(baseField);
+    float visualBaseHeight = CalculateBaseContinuousHeight(smoothField);
 
     float mountainBoost = 0f;
     float riverCarve = 0f;
@@ -59,14 +70,13 @@ private TerrainSample SampleSynthesizedIsland(float localX, float localZ)
 
     if (featureReservations != null)
     {
-        var res = featureReservations.EvaluateAll(localX, localZ, baseHeight, settings.waterHeight);
-        float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+        var res = featureReservations.EvaluateAll(localX, localZ, reservationBaseHeight, settings.waterHeight);
         mountainBoost = CalculateStructuralMountainBoost(smoothField, res);
         riverCarve = res.RiverCarveDepth;
         isInRiverChannel = res.IsInRiverChannel;
     }
 
-    float height = baseHeight + mountainBoost - riverCarve;
+    float height = visualBaseHeight + mountainBoost - riverCarve;
     float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
         ? featureReservations.Sectors.GetMountainCoastWeight(localX, localZ)
         : 0f;
@@ -89,13 +99,9 @@ private float CalculateStructuralMountainBoost(
         return 0f;
     }
 
-    // Smooth continental shelf landMask over [abyssUpper..beachUpper] avoiding sharp cliff cuts.
-    //
-    // Gated on the low-frequency-only field (see CalculateLegacyIslandField's
-    // lowFrequencyOnly flag), not the full multi-octave baseField: the high-frequency
-    // octaves flip landMask on/off between adjacent vertices right at the coastline
-    // threshold, which showed up as a row of saw-tooth spikes along the mountain base.
-    float u = Mathf.Clamp01((smoothField - settings.abyssUpper) / Mathf.Max(0.01f, settings.beachUpper - settings.abyssUpper));
+    // Smooth continental shelf landMask over [abyssUpper..waterUpper] avoiding arbitrary offshore abyss spikes.
+    // Preserves 100% full mountain boost across dry island landmass and into the shallow coastline.
+    float u = Mathf.Clamp01((smoothField - settings.abyssUpper) / Mathf.Max(0.01f, settings.waterUpper - settings.abyssUpper));
     float landMask = u * u * (3f - 2f * u);
     return reservation.RawRidgeElevation * reservation.MountainAllowance * landMask;
 }
@@ -115,13 +121,13 @@ private Cell.TerrainType ClassifySynthesizedIsland(
     // Mountain / Cliff classification: strictly elevated terrain, steep slopes, or mountain coast sector plunging to sea
     if (height >= settings.mountainPeakHeight - 0.4f) return Cell.TerrainType.MountainPeak;
     if (height >= settings.mountainHeight - 0.5f) return Cell.TerrainType.Mountain;
-    if (height >= 1.6f || (height >= 0.15f && slope > 0.45f) || (height >= 0.05f && mountainCoastWeight > 0.45f && mountainBoost > 0.20f))
+    if (height >= 1.6f || (height >= 0.15f && slope > 0.45f) || (height >= 0.05f && mountainBoost > 0.20f))
     {
         return Cell.TerrainType.Cliff;
     }
 
     // Natural shoreline beach: coastal perimeter rising from waterline (0.0m) up to flatland plain (0.85m)
-    if (mountainCoastWeight <= 0.45f && height < 0.48f)
+    if (mountainCoastWeight <= 0.45f && mountainBoost <= 0.20f && height < 0.32f)
     {
         return Cell.TerrainType.Beach;
     }
