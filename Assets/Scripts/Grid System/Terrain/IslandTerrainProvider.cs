@@ -437,6 +437,11 @@ public sealed partial class IslandTerrainProvider
 
     private static void FeatherErodedHeights(TerrainSampleCache cache, List<int> erodedIndices, int resolution)
     {
+        // Heights and MountainBoosts must be feathered together. Blending Heights alone toward
+        // boosted neighbors partially restores the removed bump (that's the point - it's what
+        // kills the hard step), but leaves MountainBoosts pinned at the 0 erosion set it to, and
+        // TextureBuilder's rock blend reads MountainBoosts, not Heights. The mismatch rendered
+        // as a grassy "ghost" mound: a visible bump with no rock texture to match it.
         const int iterations = 4;
         for (int pass = 0; pass < iterations; pass++)
         {
@@ -446,14 +451,16 @@ public sealed partial class IslandTerrainProvider
                 int x = idx % resolution;
                 int z = idx / resolution;
 
-                float sum = cache.Heights[idx];
+                float heightSum = cache.Heights[idx];
+                float boostSum = cache.MountainBoosts[idx];
                 int count = 1;
-                if (x > 0) { sum += cache.Heights[idx - 1]; count++; }
-                if (x < resolution - 1) { sum += cache.Heights[idx + 1]; count++; }
-                if (z > 0) { sum += cache.Heights[idx - resolution]; count++; }
-                if (z < resolution - 1) { sum += cache.Heights[idx + resolution]; count++; }
+                if (x > 0) { heightSum += cache.Heights[idx - 1]; boostSum += cache.MountainBoosts[idx - 1]; count++; }
+                if (x < resolution - 1) { heightSum += cache.Heights[idx + 1]; boostSum += cache.MountainBoosts[idx + 1]; count++; }
+                if (z > 0) { heightSum += cache.Heights[idx - resolution]; boostSum += cache.MountainBoosts[idx - resolution]; count++; }
+                if (z < resolution - 1) { heightSum += cache.Heights[idx + resolution]; boostSum += cache.MountainBoosts[idx + resolution]; count++; }
 
-                cache.Heights[idx] = sum / count;
+                cache.Heights[idx] = heightSum / count;
+                cache.MountainBoosts[idx] = boostSum / count;
             }
         }
     }

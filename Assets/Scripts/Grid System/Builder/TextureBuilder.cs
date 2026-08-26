@@ -90,32 +90,39 @@ public class TextureBuilder
                     {
                         finalColor = Color.Lerp(sand, rock, 0.35f); // Riverbed sand/gravel
                     }
-                    else if (height < 0.15f)
+                    else if (height < 0.0f)
                     {
-                        // Submerged ocean seabed and shallow coastal shelf:
-                        // Natural sand and marine sediment, subtly darkening with ocean depth
+                        // Submerged ocean seabed:
+                        // Natural sand/gravel seabed, transitioning to deep marine silt
                         float depthT = Mathf.Clamp01((-height) / 4.0f);
                         Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
-                        finalColor = Color.Lerp(sand, deepSeabedSilt, depthT);
+
+                        // Underneath mountain cliffs, shallow seabed begins as rocky gravel before fading to deep silt
+                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.10f) / 0.40f);
+                        Color seabedBase = Color.Lerp(sand, rock, mountainFactor * 0.6f);
+                        finalColor = Color.Lerp(seabedBase, deepSeabedSilt, depthT);
                     }
                     else
                     {
                         // Dry land & mountain surfaces
-                        // 1. Broad smooth beach to mainland pasture transition
-                        float beachToGrass = Mathf.Clamp01((height - 0.12f) / 0.28f);
+                        // 1. Shoreline Beach vs Inland Grass Plain
+                        float beachToGrass = Mathf.Clamp01((height - 0.10f) / 0.25f);
                         beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
                         Color groundColor = Color.Lerp(sand, grass, beachToGrass);
 
                         // 2. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
-                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.15f) / 0.60f);
-                        float slopeFactor = Mathf.Clamp01((slope - 0.40f) / 0.30f);
-                        float heightFactor = Mathf.Clamp01((height - 1.8f) / 1.2f);
-                        float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
-                        rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
+                        // On mountain coasts, rock plunges directly into the water without an artificial sand apron
+                        bool isGeologicalMountain = (terrainType == Cell.TerrainType.Mountain || 
+                                                    terrainType == Cell.TerrainType.MountainPeak || 
+                                                    terrainType == Cell.TerrainType.Cliff);
 
-                        // Soften rock into beach sand at the immediate waterline to prevent dark submerged borders
-                        float waterlineFade = Mathf.Clamp01((height - 0.05f) / 0.30f);
-                        rockWeight *= waterlineFade;
+                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.08f) / 0.35f);
+                        float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.25f);
+                        float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
+
+                        float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
+                        if (isGeologicalMountain) rockWeight = Mathf.Max(rockWeight, 0.85f);
+                        rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
 
                         Color landColor = Color.Lerp(groundColor, rock, rockWeight);
 
