@@ -43,6 +43,15 @@ private float CalculateBaseContinuousHeight(float value)
     }
 }
 
+// DO NOT drive terrain height off PerimeterSectorMap weights (GetMountainCoastWeight etc).
+// Tried it to make mountain coasts plunge into the water instead of ending in a sand skirt:
+// those weights are a function of ANGLE about the island centre only, so lerping height
+// against one carves literal pie-slice wedges into the terrain - radial seams running from
+// the shore toward the middle, extremely visible. Sector weights are fine for *classification*
+// (they pick which coastal character a region has) but never for continuous geometry.
+// If mountain coasts need to reach the water, that has to come from the ridge field itself,
+// which is defined in real 2D space and tapers isotropically.
+
 private float CalculateContinuousHeight(float value)
 {
     float baseHeight = CalculateBaseContinuousHeight(value);
@@ -61,6 +70,9 @@ private TerrainSample SampleSynthesizedIsland(float localX, float localZ)
 {
     float baseField = CalculateLegacyIslandField(localX, localZ);
     float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+    float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
+        ? featureReservations.Sectors.GetMountainCoastWeight(localX, localZ)
+        : 0f;
     float reservationBaseHeight = CalculateBaseContinuousHeight(baseField);
     float visualBaseHeight = CalculateBaseContinuousHeight(smoothField);
 
@@ -77,9 +89,6 @@ private TerrainSample SampleSynthesizedIsland(float localX, float localZ)
     }
 
     float height = visualBaseHeight + mountainBoost - riverCarve;
-    float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
-        ? featureReservations.Sectors.GetMountainCoastWeight(localX, localZ)
-        : 0f;
 
     // Semantic Classification
     Cell.TerrainType terrainType = ClassifySynthesizedIsland(

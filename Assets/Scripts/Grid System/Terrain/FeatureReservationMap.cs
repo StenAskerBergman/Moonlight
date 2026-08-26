@@ -118,6 +118,26 @@ public sealed class FeatureReservationMap
         public float CliffSharpness { get; }
         private readonly Vector2 center;
         private readonly float boundingRadiusSq;
+        private readonly float cragOffsetX;
+        private readonly float cragOffsetZ;
+
+        // Surface-detail modulation depth. The ridge envelope alone is an analytic capsule
+        // (sine along the axis, cosine across it), which renders as a smooth extruded pill -
+        // visibly artificial. This breaks the silhouette up into spurs and gullies.
+        // Kept MULTIPLICATIVE against the envelope rather than added on top: the envelope
+        // still drives the value to exactly 0 at the ridge boundary, so detail can never
+        // reintroduce a hard edge where the ridge meets surrounding terrain (the failure mode
+        // that produced saw-tooth spikes and notches elsewhere in this system).
+        private const float CragDepth = 0.34f;   // modulation spans [1-CragDepth .. 1]
+        private const float CragScale = 0.32f;   // ~3 world units per feature
+
+        // Domain warp applied to the ridge's own coordinate frame. Without it the capsule's
+        // parallel sides survive every amount of surface detail: crag modulation changes the
+        // height *inside* the footprint but the footprint edge stays a straight analytic line,
+        // which reads as hard polygonal rock/grass borders once textured. Warping the sample
+        // point before measuring along/perp makes the boundary itself meander.
+        private const float WarpScale = 0.19f;
+        private readonly float warpAmplitude;
 
         public CoastalRidge(Vector2 origin, Vector2 direction, float length, float width, float peakHeight, float cliffSharpness = 1.5f)
         {
@@ -128,18 +148,53 @@ public sealed class FeatureReservationMap
             PeakHeight = Mathf.Max(0.5f, peakHeight);
             CliffSharpness = Mathf.Max(1f, cliffSharpness);
 
+            warpAmplitude = Width * 0.38f;
+
             center = origin + Direction * (Length * 0.5f);
             float maxAlongHalf = (Length + Width) * 0.5f;
             float maxPerpHalf = Width * 1.8f;
-            float radius = Mathf.Sqrt(maxAlongHalf * maxAlongHalf + maxPerpHalf * maxPerpHalf) + 1.0f;
+            // Bounding radius must cover the warped footprint, or the early-out clips the
+            // very boundary meander the warp exists to create (re-introducing a straight edge).
+            float radius = Mathf.Sqrt(maxAlongHalf * maxAlongHalf + maxPerpHalf * maxPerpHalf) + 1.0f + warpAmplitude;
             boundingRadiusSq = radius * radius;
+
+            // Deterministic per-ridge crag offsets derived from the (already seeded) origin, so
+            // regeneration with the same seed reproduces identical mountains.
+            cragOffsetX = Mathf.Repeat(origin.x * 12.9898f + origin.y * 78.233f, 1000f);
+            cragOffsetZ = Mathf.Repeat(origin.x * 39.3468f + origin.y * 11.135f, 1000f);
+        }
+
+        /// <summary>
+        /// Fractal surface detail in [1-CragDepth .. 1]. Multiplied into the ridge envelope.
+        /// </summary>
+        private float EvaluateCragModulation(Vector2 point)
+        {
+            float n1 = Mathf.PerlinNoise(point.x * CragScale + cragOffsetX, point.y * CragScale + cragOffsetZ);
+            float n2 = Mathf.PerlinNoise(point.x * CragScale * 2.7f + cragOffsetX + 41.7f, point.y * CragScale * 2.7f + cragOffsetZ + 93.1f);
+            float fractal = n1 * 0.68f + n2 * 0.32f;
+
+            // Ridged transform: fold the noise about its midpoint so the high values form
+            // narrow crests and spurs rather than smooth rolling bumps.
+            float ridged = 1f - Mathf.Abs(fractal * 2f - 1f);
+
+            return 1f - CragDepth * (1f - ridged);
+        }
+
+        /// <summary>Irregularises the ridge footprint so its silhouette isn't an analytic capsule.</summary>
+        private Vector2 EvaluateFootprintWarp(Vector2 point)
+        {
+            float wx = Mathf.PerlinNoise(point.x * WarpScale + cragOffsetX + 7.3f, point.y * WarpScale + cragOffsetZ + 19.1f) * 2f - 1f;
+            float wz = Mathf.PerlinNoise(point.x * WarpScale + cragOffsetX + 63.7f, point.y * WarpScale + cragOffsetZ + 51.9f) * 2f - 1f;
+            return new Vector2(wx, wz) * warpAmplitude;
         }
 
         public float EvaluateRawElevation(Vector2 point)
         {
             if ((point - center).sqrMagnitude > boundingRadiusSq) return 0f;
 
-            Vector2 delta = point - Origin;
+            // Measure the capsule in warped space; the envelope still reaches exactly 0 at its
+            // (now meandering) boundary, so this adds no discontinuity.
+            Vector2 delta = (point + EvaluateFootprintWarp(point)) - Origin;
             float along = Vector2.Dot(delta, Direction);
             float endcap = Width * 0.5f;
             float totalLen = Length + endcap * 2f;
@@ -172,7 +227,7 @@ public sealed class FeatureReservationMap
                 crossWeight = 0.35f * smooth;
             }
 
-            return PeakHeight * alongWeight * crossWeight;
+            return PeakHeight * alongWeight * crossWeight * EvaluateCragModulation(point);
         }
     }
 

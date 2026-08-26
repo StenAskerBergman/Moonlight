@@ -111,17 +111,21 @@ public class TextureBuilder
                         Color groundColor = Color.Lerp(sand, grass, beachToGrass);
 
                         // 2. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
-                        // On mountain coasts, rock plunges directly into the water without an artificial sand apron
-                        bool isGeologicalMountain = (terrainType == Cell.TerrainType.Mountain || 
-                                                    terrainType == Cell.TerrainType.MountainPeak || 
-                                                    terrainType == Cell.TerrainType.Cliff);
-
+                        // On mountain coasts, rock plunges directly into the water without an artificial sand apron.
+                        //
+                        // Deliberately NOT flooring rockWeight off terrainType (tried: Mathf.Max(rockWeight,
+                        // 0.85f) whenever terrainType is Mountain/MountainPeak/Cliff). terrainType is a
+                        // per-vertex discrete classification - a neighbor just outside that classification
+                        // can have a genuinely low continuous mountainFactor/slopeFactor, so a hard floor
+                        // on one side and none on the other creates a huge rockWeight jump right at the
+                        // classification boundary: hard-edged dark rock blobs sitting on flat sand. Trusting
+                        // the continuous fields alone keeps rockWeight smooth everywhere; they're already
+                        // tuned to track the same thresholds ClassifySynthesizedIsland uses for Cliff.
                         float mountainFactor = Mathf.Clamp01((mountainBoost - 0.08f) / 0.35f);
                         float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.25f);
                         float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
 
                         float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
-                        if (isGeologicalMountain) rockWeight = Mathf.Max(rockWeight, 0.85f);
                         rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
 
                         Color landColor = Color.Lerp(groundColor, rock, rockWeight);
