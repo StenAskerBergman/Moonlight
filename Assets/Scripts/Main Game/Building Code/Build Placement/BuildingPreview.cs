@@ -111,10 +111,7 @@ public class BuildingPreview : MonoBehaviour
 
     #endregion
 
-    /// <summary>
-    /// Sets the Current Preview Accoding to the <b>Building Selectors Component</b> selected Building Preview
-    /// </summary>
-    /// <param name="buildingPrefab"></param>
+    private GameObject _clonedVisuals;
 
     // BUILDING PREFAB RELATED
     public void SetBuildingPrefab(GameObject buildingPrefab)
@@ -124,7 +121,29 @@ public class BuildingPreview : MonoBehaviour
         {
             transform.SetParent(currentIsland.transform); // Set Parent
         }
-        // Debug.Log("Building prefab set to: " + buildingPrefab.name); // Debug line
+
+        // Generate 1:1 visual silhouette clone from target building prefab
+        if (buildingPrefab != null)
+        {
+            if (_clonedVisuals != null)
+            {
+                Destroy(_clonedVisuals);
+            }
+
+            _clonedVisuals = Instantiate(buildingPrefab, transform.position, transform.rotation, transform);
+            _clonedVisuals.name = $"{buildingPrefab.name}_GhostSilhouette";
+
+            // Strip logic, physics, and audio from the visual ghost
+            foreach (var col in _clonedVisuals.GetComponentsInChildren<Collider>(true)) Destroy(col);
+            foreach (var mb in _clonedVisuals.GetComponentsInChildren<MonoBehaviour>(true)) Destroy(mb);
+            foreach (var aud in _clonedVisuals.GetComponentsInChildren<AudioSource>(true)) Destroy(aud);
+
+            // Hide the default placeholder cube renderer so only target geometry shows
+            MeshRenderer baseRenderer = GetComponent<MeshRenderer>();
+            if (baseRenderer != null) baseRenderer.enabled = false;
+        }
+
+        SetPreviewMaterial(localCanPlace);
     }
 
 

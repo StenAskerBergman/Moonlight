@@ -35,6 +35,8 @@ public class BuildingEnums : MonoBehaviour
         DeepSea,        // Below-sea category; terrain legality comes from building requirements
 
         // Above Land
+
+        // Above Land
         Orbital,        // In Atmosphere
         Space,          // In Space
         LunarBased,     // On Moon
@@ -48,6 +50,19 @@ public class BuildingEnums : MonoBehaviour
         Inactive,           // manually disabled or no power/resources
         Paused,             // temporarily halted (e.g. missing supply)
         Destroyed           // has been destroyed, pending removal
+    }
+
+    public enum BuildingShutdownReason
+    {
+        None,
+        UnderConstruction,
+        PausedByPlayer,
+        MissingInput,
+        StorageFull,
+        MissingWorkers,
+        NoRoadAccess,
+        UnsupportedAnchor,
+        Damaged
     }
 
 

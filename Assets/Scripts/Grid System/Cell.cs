@@ -229,6 +229,12 @@ public class Cell
         }
     }
 
+    public void ReleaseCell()
+    {
+        this.occupyingBuilding = null;
+        this.currentStatus = CellStatus.Empty;
+    }
+
     public void ChangeTerrainType(TerrainType newTerrainType)
     {
         currentTerrainType = newTerrainType;
