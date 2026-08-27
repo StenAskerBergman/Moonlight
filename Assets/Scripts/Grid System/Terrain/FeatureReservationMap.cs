@@ -128,8 +128,12 @@ public sealed class FeatureReservationMap
         // still drives the value to exactly 0 at the ridge boundary, so detail can never
         // reintroduce a hard edge where the ridge meets surrounding terrain (the failure mode
         // that produced saw-tooth spikes and notches elsewhere in this system).
-        private const float CragDepth = 0.34f;   // modulation spans [1-CragDepth .. 1]
-        private const float CragScale = 0.32f;   // ~3 world units per feature
+        // Sized to stay inside ValidateMountainHeightfield's existing max-slope envelope rather
+        // than widening that envelope: at 0.34 a minority of seeds tipped just over the bound
+        // (measured 2.32 vs 2.31 allowed) and aborted generation outright. The guard is load
+        // bearing - it is what catches genuine spike artifacts - so the detail yields to it.
+        private const float CragDepth = 0.26f;   // modulation spans [1-CragDepth .. 1]
+        private const float CragScale = 0.28f;   // ~3.5 world units per feature
 
         // Domain warp applied to the ridge's own coordinate frame. Without it the capsule's
         // parallel sides survive every amount of surface detail: crag modulation changes the
@@ -148,7 +152,10 @@ public sealed class FeatureReservationMap
             PeakHeight = Mathf.Max(0.5f, peakHeight);
             CliffSharpness = Mathf.Max(1f, cliffSharpness);
 
-            warpAmplitude = Width * 0.38f;
+            // Bounded well under the ridge's transverse reach (Width * 1.8): at 0.38 the warp
+            // could pinch a narrow ridge into separate blobs, tripping the fragmented-component
+            // validation and aborting generation for some seeds.
+            warpAmplitude = Width * 0.24f;
 
             center = origin + Direction * (Length * 0.5f);
             float maxAlongHalf = (Length + Width) * 0.5f;

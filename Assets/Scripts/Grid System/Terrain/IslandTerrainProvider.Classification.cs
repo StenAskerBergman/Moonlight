@@ -135,8 +135,11 @@ private Cell.TerrainType ClassifySynthesizedIsland(
         return Cell.TerrainType.Cliff;
     }
 
-    // Natural shoreline beach: coastal perimeter rising from waterline (0.0m) up to flatland plain (0.85m)
-    if (mountainCoastWeight <= 0.45f && mountainBoost <= 0.20f && height < 0.32f)
+    // Natural shoreline beach: a narrow strip just above the waterline. The height cut is kept
+    // roughly in step with TextureBuilder's SandLower + SandBand so gameplay Beach cells and the
+    // sand the player can actually see agree; widening this again reintroduces the broad flat
+    // beige apron that made every island look like it sat on a plate rim.
+    if (mountainCoastWeight <= 0.45f && mountainBoost <= 0.20f && slope <= 0.45f && height < 0.18f)
     {
         return Cell.TerrainType.Beach;
     }

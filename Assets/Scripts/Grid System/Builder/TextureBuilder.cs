@@ -4,6 +4,16 @@ using UnityEngine;
 
 public class TextureBuilder
 {
+    // Shoreline sand band, in world height. Sand fades out by SandLower + SandBand.
+    // Kept deliberately narrow: a wide band produced a broad flat beige apron that read as a
+    // "plate rim" around every island. Keep roughly in step with the Beach height cut in
+    // IslandTerrainProvider.ClassifySynthesizedIsland so texture and gameplay cells agree.
+    private const float SandLower = 0.02f;
+    private const float SandBand = 0.14f;
+
+    // Depth over which the submerged shelf fades from sand to silt. See the seabed branch.
+    private const float SeabedSiltDepth = 1.1f;
+
     private readonly Cell[,] grid;
     private readonly IslandTerrainProvider terrainSource;
     private readonly int visualSamplesPerCell;
@@ -93,8 +103,16 @@ public class TextureBuilder
                     else if (height < 0.0f)
                     {
                         // Submerged ocean seabed:
-                        // Natural sand/gravel seabed, transitioning to deep marine silt
-                        float depthT = Mathf.Clamp01((-height) / 4.0f);
+                        // Natural sand/gravel seabed, transitioning to deep marine silt.
+                        //
+                        // SeabedSiltDepth is what actually controls how wide the beach LOOKS. The
+                        // dry sand strip above the waterline is only a fraction of a world unit, but
+                        // the shallow shelf is visible straight through the water, so a slow depth
+                        // ramp (this was 4.0) keeps the shelf bright sand far out to sea and reads as
+                        // one continuous apron - the "plate rim" every island appeared to sit on.
+                        // Darkening to silt within about a unit of depth confines the visible sand to
+                        // the actual shoreline.
+                        float depthT = Mathf.Clamp01((-height) / SeabedSiltDepth);
                         Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
 
                         // Underneath mountain cliffs, shallow seabed begins as rocky gravel before fading to deep silt
@@ -104,13 +122,12 @@ public class TextureBuilder
                     }
                     else
                     {
-                        // Dry land & mountain surfaces
-                        // 1. Shoreline Beach vs Inland Grass Plain
-                        float beachToGrass = Mathf.Clamp01((height - 0.10f) / 0.25f);
-                        beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
-                        Color groundColor = Color.Lerp(sand, grass, beachToGrass);
-
-                        // 2. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
+                        // Dry land & mountain surfaces.
+                        //
+                        // Rock weight is resolved BEFORE the ground layer, because the ground layer
+                        // needs to know about it (see below).
+                        //
+                        // 1. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
                         // On mountain coasts, rock plunges directly into the water without an artificial sand apron.
                         //
                         // Deliberately NOT flooring rockWeight off terrainType (tried: Mathf.Max(rockWeight,
@@ -127,6 +144,24 @@ public class TextureBuilder
 
                         float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
                         rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
+
+                        // 2. Shoreline Beach vs Inland Grass Plain.
+                        //
+                        // Sand is keyed on absolute height, so a mountain flank descending to the
+                        // waterline passes straight through the sand band. Because sand is the base
+                        // layer that rock is blended OVER, a partial rockWeight there (~0.6-0.7 on a
+                        // steep flank) mixed 30-40% sand into the rock and painted a beige collar
+                        // right across the foot of the massif, cutting the mountain texture off.
+                        //
+                        // Suppressing sand by rockWeight fixes that: where the surface reads as rock,
+                        // the layer underneath it is grass rather than sand, so any partial rock blend
+                        // resolves toward rock-on-grass instead of rock-on-beach. It stays fully
+                        // continuous - no threshold on terrainType - so it cannot produce the hard
+                        // rock/sand borders an earlier discrete floor did.
+                        float beachToGrass = Mathf.Clamp01((height - SandLower) / SandBand);
+                        beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
+                        beachToGrass = Mathf.Max(beachToGrass, rockWeight);
+                        Color groundColor = Color.Lerp(sand, grass, beachToGrass);
 
                         Color landColor = Color.Lerp(groundColor, rock, rockWeight);
 
