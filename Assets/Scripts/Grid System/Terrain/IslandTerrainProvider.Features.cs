@@ -212,7 +212,7 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
 
             float ridgeLength = RandomRange(random, 8f, maxAllowedLength);
             float ridgeWidth = RandomRange(random, 3.2f, maxAllowedWidth);
-            float peakHeight = mountainSettings.ridgePeakHeight * RandomRange(random, 1.0f, 1.35f);
+            float peakHeight = CapPeakToWidth(mountainSettings.ridgePeakHeight * RandomRange(random, 1.0f, 1.35f), ridgeWidth);
 
             // Orient along the coastal contour and across the headland
             float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
@@ -266,7 +266,7 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
             Vector2 dir = new Vector2(Mathf.Cos(dirAngle), Mathf.Sin(dirAngle));
             float len = RandomRange(random, 8f, maxAllowedLength);
             float wid = RandomRange(random, 3.2f, maxAllowedWidth);
-            float h = mountainSettings.ridgePeakHeight * RandomRange(random, 1.05f, 1.4f);
+            float h = CapPeakToWidth(mountainSettings.ridgePeakHeight * RandomRange(random, 1.05f, 1.4f), wid);
 
             FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
                 origin - dir * (len * 0.5f), dir, len, wid, h, mountainSettings.cliffSharpness);
@@ -341,6 +341,19 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
     }
 
     return map;
+}
+
+// A ridge's realized gradient scales with peak/width, and ValidateMountainHeightfield bounds the
+// heightfield's max slope by that same ratio. Requesting a tall peak on a narrow ridge therefore
+// asks for a mountain the validator will reject - seeds were aborting by fractions of a percent
+// (2.27 against an allowed 2.26). Capping the request at generation time keeps the guard at its
+// original strictness instead of widening it: a ridge that wants to be taller has to be wider,
+// which is also what stops narrow ridges turning into spikes.
+private const float MaxPeakPerWidth = 0.82f;
+
+private static float CapPeakToWidth(float requestedPeak, float width)
+{
+    return Mathf.Min(requestedPeak, Mathf.Max(2f, width) * MaxPeakPerWidth);
 }
 
 public struct RidgeValidationMetrics

@@ -380,16 +380,27 @@ public sealed partial class IslandTerrainProvider
             }
         }
 
-        // The 2.0 factor was calibrated when coastal ridge axes sat 0.15 * Width inland, i.e. with
-        // the crest ON the waterline and half the ridge submerged, so a good part of each ridge's
-        // gradient was masked away by landMask and never reached the heightfield. Coastal ridges
-        // are now placed crest-on-land (0.55 * Width) so that mountains actually reach the sea,
-        // which legitimately realises the ridge's full gradient and pushed occasional seeds a
-        // fraction over this bound - measured 2.27 against 2.26, and unchanged when crag depth was
-        // cut from 0.26 to 0.21, confirming it is the ridge envelope itself rather than surface
-        // detail. Widened to match the geometry that is now actually generated; this still rejects
-        // genuine spikes, which overshoot by multiples rather than fractions of a percent.
-        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.2f + 0.5f;
+        // Bound the slope by the steepest ratio any SINGLE ridge actually asks for.
+        //
+        // This previously divided the tallest ridge's peak by the NARROWEST ridge's width, and
+        // those are generally not the same ridge - with, say, a 4.3-high ridge and a separate
+        // 3.2-wide one it derived the limit from a ridge that does not exist. The bound was
+        // therefore arbitrarily tight or loose depending on the seed's mix of ridges, which is
+        // why seeds started failing by fractions of a percent (2.27 against 2.26) once coastal
+        // ridges were placed crest-on-land and realised their full gradient.
+        //
+        // Pairing each peak with its own width fixes the bound properly, so the 2.0 factor stands
+        // as originally calibrated instead of being widened to paper over the mismatch.
+        float steepestRidgeRatio = 0f;
+        for (int ridgeIndex = 0; ridgeIndex < featureReservations.Ridges.Count; ridgeIndex++)
+        {
+            FeatureReservationMap.CoastalRidge ridge = featureReservations.Ridges[ridgeIndex];
+            steepestRidgeRatio = Mathf.Max(
+                steepestRidgeRatio,
+                ridge.PeakHeight / Mathf.Max(2f, ridge.Width));
+        }
+
+        float maximumAllowedSlope = steepestRidgeRatio * 2.0f + 0.5f;
         if (maximumObservedSlope < 0.10f || maximumObservedSlope > maximumAllowedSlope)
         {
             float lx = maxSlopeX * cache.Step;

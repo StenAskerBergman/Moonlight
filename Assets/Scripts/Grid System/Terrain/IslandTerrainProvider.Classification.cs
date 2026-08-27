@@ -13,6 +13,31 @@ public partial class IslandTerrainProvider
 // frequency noise in `value` gets amplified into visible height ripples on the shoreline
 // ramp. Feeding smoothed input only into visualBaseHeight kills that ripple without moving
 // anything the reservation system depends on.
+// Buildable terrace shaping. Deliberately coarse: the goal is a few broad platforms with sparse,
+// large-scale grade breaks, not fine stepping. TerraceStep is the vertical rise between benches;
+// the flat window is [0, TerraceFlatLower] and [TerraceFlatUpper, 1] of each band, so roughly
+// two thirds of every level is flat bench and one third is the slope connecting it to the next.
+private const float TerraceStep = 0.26f;
+// TerraceFlatLower also bounds |f - shaped|, which is what the blend weight's derivative
+// multiplies; at 0.45 the remap went slightly non-monotonic (slope -0.081) partway through the
+// blend. 0.30 leaves enough margin while still giving ~45% flat bench per level.
+// Most of each level is bench; the connecting slope band is short and therefore steep, which is
+// the escarpment read in the reference silhouette. Flat fraction = TerraceFlatLower +
+// (1 - TerraceFlatUpper) = 0.38 + 0.38 = 76%, leaving 24% as the grade break.
+private const float TerraceFlatLower = 0.38f;
+private const float TerraceFlatUpper = 0.62f;
+// Terracing engages well above the beach so the shoreline and the coastal slope below it stay a
+// single clean continuous band. Starting at 0.22 stepped the coastal slope too, which read as
+// tight repeated rings around the shore rather than as a few large-scale levels.
+private const float TerraceStartHeight = 0.36f;
+// Wide on purpose: the blend weight's derivative multiplies the gap between the terraced and
+// untouched fraction, so a narrow band drives the remap non-monotonic.
+// Must be comfortably narrower than the height range actually being terraced (buildable land
+// spans roughly 0.40..0.95), or the terracing never reaches full strength before the land runs
+// out and the benches stay vestigial. Balanced against monotonicity: this band's derivative
+// multiplies TerraceFlatLower * TerraceStep, and too narrow a band drives the remap backwards.
+private const float TerraceBlendBand = 0.45f;
+
 private float CalculateBaseContinuousHeight(float value)
 {
     float waterUpper = settings.waterUpper; // 0.40f (Coastline MSL = 0.0m)
@@ -51,14 +76,61 @@ private float CalculateBaseContinuousHeight(float value)
         float m0 = Mathf.Clamp(shelfExitSlope * band / Mathf.Max(0.01f, settings.surfaceFlatlandHeight), 0f, 2f);
 
         float shoreCurve = m0 * (u * u * u - 2f * u * u + u) + (3f * u * u - 2f * u * u * u);
-        return Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve);
+        return ApplyBuildableTerraces(Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve));
     }
     else
     {
         // Inland mainland: +0.85m baseline with organic rolling topography (rises naturally towards the interior)
         float excess = value - coastalUpper;
-        return settings.surfaceFlatlandHeight + excess * 1.15f;
+        return ApplyBuildableTerraces(settings.surfaceFlatlandHeight + excess * 1.15f);
     }
+}
+
+// Buildable elevation platforms.
+//
+// Measured on the generated island: of all non-mountain land, ~2.9% sat in EVERY 0.05 height
+// band from 0.00 to 0.70 - a dead-flat histogram, which is the signature of one unbroken linear
+// ramp. That is roughly 40% of the buildable surface spread across a single featureless
+// gradient (the backshore branch maps field 0.40..0.46 onto height 0.00..0.85), which is what
+// makes the island read as one continuously warped surface rather than as terrain with levels.
+//
+// This remaps that ramp into a few broad benches joined by short slope bands. It is a remap of
+// the height CURVE only:
+//   - the coastline is untouched, because the remap is identity at and below the beach band and
+//     T(h) -> h as h -> 0, so the h=0 contour cannot move;
+//   - mountain boost is added after this and is masked off the low-frequency field, so mountain
+//     placement, shape and coastal contact are unaffected and stay organic;
+//   - reservations and the rendered surface both read this same function, so river carves stay
+//     registered to the ground they are cut into.
+//
+// Shape of one level: flat for the first TerraceFlatLower of the band, a smoothstep ramp, then
+// flat again. Smoothstep has zero derivative at both ends, so consecutive levels join with
+// matching (zero) gradient and the whole function is C1 - no crease at a bench edge, which is
+// the failure mode that has produced every visible artifact in this pipeline so far.
+private static float ApplyBuildableTerraces(float height)
+{
+    if (height <= 0f) return height;
+
+    float level = height / TerraceStep;
+    float index = Mathf.Floor(level);
+    float f = level - index;
+
+    float u = Mathf.Clamp01((f - TerraceFlatLower) / (TerraceFlatUpper - TerraceFlatLower));
+    float shaped = u * u * (3f - 2f * u);
+
+    // Fade the terracing in above the beach so the shoreline keeps its natural continuous slope
+    // and stays a separate low coastal band.
+    float w = Mathf.Clamp01((height - TerraceStartHeight) / TerraceBlendBand);
+    w = w * w * (3f - 2f * w);
+
+    // Blend INSIDE the level coordinate rather than between the two output heights. Lerping the
+    // outputs adds a w' * (T(h) - h) term to the derivative, and since T(h) sits up to
+    // TerraceFlatLower * TerraceStep BELOW h on a bench, that term goes negative: measured a
+    // slope of -0.272, i.e. the remap ran backwards and would have inverted terrain. Blending the
+    // fraction keeps the result exactly (index + something in [0,1]) * step, which is identity at
+    // w = 0 by construction and shrinks the offending term by a factor of TerraceStep.
+    float blendedFraction = Mathf.Lerp(f, shaped, w);
+    return (index + blendedFraction) * TerraceStep;
 }
 
 // DO NOT drive terrain height off PerimeterSectorMap weights (GetMountainCoastWeight etc).
