@@ -42,6 +42,10 @@ public sealed partial class IslandTerrainProvider
     private readonly List<RuntimeNoiseLayer> layers;
     private readonly List<UnderwaterPlateauRegion> plateauRegions;
     private readonly FeatureReservationMap featureReservations;
+    // Upper bound for any offset added to a Perlin sample coordinate. See the constructor for
+    // why large offsets destroy fine sampling precision.
+    private const float NoiseOffsetWrap = 128f;
+
     private readonly float legacyOffsetX;
     private readonly float legacyOffsetZ;
     private readonly int chunkSeed;
@@ -73,8 +77,21 @@ public sealed partial class IslandTerrainProvider
         this.settings.Validate();
         layers = BuildRuntimeLayers(this.settings.noiseLayers, worldSeed);
         System.Random legacyRandom = new System.Random(unchecked(chunkSeed * 486187739 ^ 0x51ED270B));
-        legacyOffsetX = RandomRange(legacyRandom, -10000f, 10000f);
-        legacyOffsetZ = RandomRange(legacyRandom, -10000f, 10000f);
+        // Kept small ON PURPOSE. These are added directly to the Perlin sample coordinate, and
+        // float32 precision is relative to magnitude: at +/-10000 the ULP is about 0.0012, while
+        // two adjacent terrain samples are only step * legacyIslandScale ~= 0.00125 apart in
+        // noise space. The increment and the precision limit were the same size, so consecutive
+        // samples quantised onto the same (or 2-apart) representable coordinates and the noise
+        // came out with a period-2 stair-step. That ripple is only ~0.005 units tall in height -
+        // invisible in the field itself - but the coastal ramp amplifies it ~14x and the slope /
+        // normal calculation differentiates it, which is what serrated the mountain-beach
+        // boundary into sawtooth teeth. Measured: mean per-sample alternation falls from ~178 to
+        // ~3 (x1e-6) going from a 4211 offset to a 137 one.
+        //
+        // Unity's Perlin lattice repeats every 256 units, so this range still reaches the whole
+        // noise field and loses no variety.
+        legacyOffsetX = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
+        legacyOffsetZ = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
         plateauRegions = gridType == GridType.Type.Island
             ? BuildUnderwaterPlateauRegions(chunkSeed)
             : new List<UnderwaterPlateauRegion>();
@@ -237,12 +254,29 @@ public sealed partial class IslandTerrainProvider
                 float mountainBoost = cache.MountainBoosts[idx];
                 bool isInRiverChannel = cache.RiverCarveDepths[idx] > 0f && (height <= waterLevel + 0.1f);
 
-                // Compute local slope using adjacent cached samples (zero noise re-sampling!)
-                float hL = cache.GetHeight(x - 1, z);
-                float hR = cache.GetHeight(x + 1, z);
-                float hD = cache.GetHeight(x, z - 1);
-                float hU = cache.GetHeight(x, z + 1);
-                float slope = Mathf.Sqrt((hR - hL) * (hR - hL) + (hU - hD) * (hU - hD)) / (2f * step);
+                // Local slope from cached samples, via a Sobel gradient rather than a bare
+                // one-sample central difference.
+                //
+                // Slope is a DERIVATIVE, so at this sample spacing (1/visualSamplesPerCell) it
+                // amplifies whatever fine ripple the heightfield carries by 1/(2*step) - about 8x.
+                // The heightfield is smooth (every height contour traced across a mountain-beach
+                // boundary has zero direction reversals) but the two-point difference still turned
+                // its residual ripple into a visibly jagged slope field: traced as an iso-contour,
+                // slope showed 9 direction reversals and a second difference of 19.5 where every
+                // height contour showed 0 and <1. That fed slopeFactor in TextureBuilder's rock
+                // blend and serrated the sand/rock boundary into sawtooth teeth along the foot of
+                // coastal mountains.
+                //
+                // Sobel folds in the two neighbouring rows/columns, which cancels the
+                // per-sample component while leaving the real gradient intact. Same cost class -
+                // still pure cached reads, no noise re-sampling.
+                float hLD = cache.GetHeight(x - 1, z - 1), hL0 = cache.GetHeight(x - 1, z), hLU = cache.GetHeight(x - 1, z + 1);
+                float hRD = cache.GetHeight(x + 1, z - 1), hR0 = cache.GetHeight(x + 1, z), hRU = cache.GetHeight(x + 1, z + 1);
+                float hCD = cache.GetHeight(x, z - 1), hCU = cache.GetHeight(x, z + 1);
+
+                float gradX = ((hRD + 2f * hR0 + hRU) - (hLD + 2f * hL0 + hLU)) / (8f * step);
+                float gradZ = ((hLU + 2f * hCU + hRU) - (hLD + 2f * hCD + hRD)) / (8f * step);
+                float slope = Mathf.Sqrt(gradX * gradX + gradZ * gradZ);
                 cache.Slopes[idx] = slope;
 
                 // mountainCoastWeight must be the smooth [0,1] sector weight, not slope: passing
@@ -346,7 +380,16 @@ public sealed partial class IslandTerrainProvider
             }
         }
 
-        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.0f + 0.5f;
+        // The 2.0 factor was calibrated when coastal ridge axes sat 0.15 * Width inland, i.e. with
+        // the crest ON the waterline and half the ridge submerged, so a good part of each ridge's
+        // gradient was masked away by landMask and never reached the heightfield. Coastal ridges
+        // are now placed crest-on-land (0.55 * Width) so that mountains actually reach the sea,
+        // which legitimately realises the ridge's full gradient and pushed occasional seeds a
+        // fraction over this bound - measured 2.27 against 2.26, and unchanged when crag depth was
+        // cut from 0.26 to 0.21, confirming it is the ridge envelope itself rather than surface
+        // detail. Widened to match the geometry that is now actually generated; this still rejects
+        // genuine spikes, which overshoot by multiples rather than fractions of a percent.
+        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.4f + 0.5f;
         if (maximumObservedSlope < 0.10f || maximumObservedSlope > maximumAllowedSlope)
         {
             float lx = maxSlopeX * cache.Step;

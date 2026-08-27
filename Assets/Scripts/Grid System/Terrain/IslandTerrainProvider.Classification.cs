@@ -30,9 +30,27 @@ private float CalculateBaseContinuousHeight(float value)
     }
     else if (value <= coastalUpper)
     {
-        // Continuous smooth coastal slope from Mean Sea Level (0.0m) up to Mainland baseline (+0.85m)
-        float u = (value - waterUpper) / (coastalUpper - waterUpper);
-        float shoreCurve = u * u * (3f - 2f * u); // Smooth cubic S-curve
+        // Coastal slope from Mean Sea Level (0.0m) up to Mainland baseline (+0.85m).
+        //
+        // This used a plain smoothstep, whose derivative is ZERO at u=0. The shelf branch above
+        // arrives at the waterline with a large slope (-abyssHeight * 1.25 / (waterUpper -
+        // abyssUpper), about 14 in height per field unit), so the two branches agreed on the
+        // value (both 0) but not on the gradient. That left a C1 crease - a sharp fold in the
+        // surface - running along the entire waterline. Values are continuous so it never showed
+        // up in any contour or curvature sweep of the field, but a fold crossing the regular
+        // triangulated mesh makes RecalculateNormals' per-vertex averaging flip from vertex to
+        // vertex, which renders as sawtooth teeth exactly where a mountain flank meets the beach.
+        //
+        // Cubic Hermite with the incoming tangent matched to the shelf's exit slope and a flat
+        // outgoing tangent: f(u) = m0*(u^3 - 2u^2 + u) + (3u^2 - 2u^3), which satisfies f(0)=0,
+        // f(1)=1, f'(1)=0 for any m0, so the join to the inland branch is unaffected.
+        float band = coastalUpper - waterUpper;
+        float u = (value - waterUpper) / band;
+
+        float shelfExitSlope = -settings.abyssHeight * 1.25f / Mathf.Max(0.01f, waterUpper - abyssUpper);
+        float m0 = Mathf.Clamp(shelfExitSlope * band / Mathf.Max(0.01f, settings.surfaceFlatlandHeight), 0f, 2f);
+
+        float shoreCurve = m0 * (u * u * u - 2f * u * u + u) + (3f * u * u - 2f * u * u * u);
         return Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve);
     }
     else

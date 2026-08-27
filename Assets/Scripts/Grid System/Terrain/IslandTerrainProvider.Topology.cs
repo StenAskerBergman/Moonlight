@@ -44,11 +44,15 @@ private void EvaluateDomainWarp(float worldX, float worldZ, int seed, out float 
     float totalWarpZ = 0f;
     float maxAmp = 0f;
 
-    // Deterministic seed-derived offsets for the orthogonal warp dimensions
-    float offsetX1 = (seed * 198491317 & 0x7FFFFFFF) % 10000f;
-    float offsetZ1 = (seed * 6542989 & 0x7FFFFFFF) % 10000f;
-    float offsetX2 = (seed * 87654323 & 0x7FFFFFFF) % 10000f;
-    float offsetZ2 = (seed * 91827364 & 0x7FFFFFFF) % 10000f;
+    // Deterministic seed-derived offsets for the orthogonal warp dimensions.
+    // Wrapped small for the same float32 precision reason as legacyOffsetX/Z: these are added
+    // straight onto the Perlin sample coordinate, and at ~10000 the ULP is comparable to the
+    // per-sample increment, which quantises the warp into a period-2 stair-step and feeds a
+    // Nyquist ripple into every field derived from it.
+    float offsetX1 = (seed * 198491317 & 0x7FFFFFFF) % NoiseOffsetWrap;
+    float offsetZ1 = (seed * 6542989 & 0x7FFFFFFF) % NoiseOffsetWrap;
+    float offsetX2 = (seed * 87654323 & 0x7FFFFFFF) % NoiseOffsetWrap;
+    float offsetZ2 = (seed * 91827364 & 0x7FFFFFFF) % NoiseOffsetWrap;
 
     for (int octave = 0; octave < warp.octaves; octave++)
     {
