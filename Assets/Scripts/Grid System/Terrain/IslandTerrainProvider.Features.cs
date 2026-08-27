@@ -217,7 +217,16 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
             // Orient along the coastal contour and across the headland
             float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
             Vector2 ridgeDir = (tangent * tanSign * RandomRange(random, 0.85f, 1f) - normal * RandomRange(random, -0.05f, 0.20f)).normalized;
-            Vector2 origin = coastPt - normal * (ridgeWidth * 0.15f);
+            // Set the ridge AXIS (its crest line) this far inland of the coast point. The ridge
+            // reaches 1.8 * Width transversely, so at this offset the crest sits comfortably on
+            // land while the seaward flank still overhangs the waterline by roughly 1.2 * Width -
+            // a mountain whose slope runs into the sea, which is the intent.
+            //
+            // At 0.15 the crest landed essentially ON the waterline, so half of it was offshore
+            // and the ridge only realised a fraction of its requested peak over land; those
+            // candidates were then rejected by the realized-peak check and the survivors were
+            // ridges sitting further inland, leaving sand between mountain and water.
+            Vector2 origin = coastPt - normal * (ridgeWidth * 0.55f);
 
             FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
                 origin, ridgeDir, ridgeLength, ridgeWidth, peakHeight, mountainSettings.cliffSharpness);
@@ -399,13 +408,25 @@ private bool TryAddValidatedRidge(
                 continue;
             }
 
-            expectedMass++;
             float baseField = CalculateLegacyIslandField(point.x, point.y);
-            if (baseField <= settings.abyssUpper)
+            if (baseField <= settings.waterUpper)
             {
+                // Submerged footprint is excluded from BOTH the numerator and the denominator.
+                //
+                // This check exists to reject ridges shredded by river-valley suppression or the
+                // mountain-allowance mask - i.e. ridges that failed to occupy land available to
+                // them. Open sea was never available, so counting it as "expected" penalised a
+                // ridge purely for overhanging the water. That is exactly what a mountain
+                // plunging into the sea does, so the more genuinely coastal a candidate was, the
+                // more certainly it was rejected here, and the survivors were the ones sitting
+                // inland. Measured downstream as ridge mass stopping ~1 world unit short of the
+                // waterline with mountainBoost 0.000 at the shore, leaving a sand band between
+                // the mountain and the sea.
                 survivingAcrossRun = 0;
                 continue;
             }
+
+            expectedMass++;
 
             float u = Mathf.Clamp01((baseField - settings.abyssUpper) / Mathf.Max(0.01f, settings.waterUpper - settings.abyssUpper));
             float landMask = u * u * (3f - 2f * u);

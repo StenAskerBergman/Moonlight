@@ -14,6 +14,9 @@ public class TextureBuilder
     // Depth over which the submerged shelf fades from sand to silt. See the seabed branch.
     private const float SeabedSiltDepth = 1.1f;
 
+    // Height by which the coastal rock assist has fully faded out. See the land branch.
+    private const float CoastalRockAssistHeight = 0.75f;
+
     private readonly Cell[,] grid;
     private readonly IslandTerrainProvider terrainSource;
     private readonly int visualSamplesPerCell;
@@ -138,7 +141,23 @@ public class TextureBuilder
                         // classification boundary: hard-edged dark rock blobs sitting on flat sand. Trusting
                         // the continuous fields alone keeps rockWeight smooth everywhere; they're already
                         // tuned to track the same thresholds ClassifySynthesizedIsland uses for Cliff.
-                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.08f) / 0.35f);
+                        // A ridge's outer apron decays to zero boost, so wherever a coastline happens
+                        // to fall inside that apron the boost sits under the 0.43 needed for full
+                        // rock and the last stretch down to the water renders as sand - a beige band
+                        // wedged between the mountain and the sea. Measured at 25% of shore points
+                        // that have mountain mass within ~1 world unit.
+                        //
+                        // So the boost needed to read as rock is relaxed as terrain approaches the
+                        // waterline: a shore lying beneath a mountain is a rocky shore. This is
+                        // continuous in BOTH height and boost, and it scales what is already a
+                        // mountain-only signal - terrain with no boost (an ordinary beach) is
+                        // untouched no matter how close to the water it is.
+                        float coastalRockAssist = 1f - Mathf.Clamp01(height / CoastalRockAssistHeight);
+                        coastalRockAssist = coastalRockAssist * coastalRockAssist * (3f - 2f * coastalRockAssist);
+                        float boostFloor = Mathf.Lerp(0.08f, 0.015f, coastalRockAssist);
+                        float boostRange = Mathf.Lerp(0.35f, 0.13f, coastalRockAssist);
+
+                        float mountainFactor = Mathf.Clamp01((mountainBoost - boostFloor) / boostRange);
                         float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.25f);
                         float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
 
