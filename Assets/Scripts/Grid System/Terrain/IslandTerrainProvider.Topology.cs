@@ -112,8 +112,20 @@ private float EvaluateLocalIslandField(float localX, float localZ, float warpX, 
     float inv = Mathf.Max(0.001f, 2.05f - 2.05f * warpedRadius);
     float falloff = radiusCubed / (radiusCubed + inv * inv * inv);
 
-    // Smooth outer suppression near chunk edges to ensure clean ocean framing
-    float outerDrop = Mathf.Pow(Mathf.Clamp01((warpedRadius - 0.65f) / 0.28f), 2f) * 0.35f;
+    // Smooth outer suppression near chunk edges to ensure clean ocean framing.
+    //
+    // Shaped with smoothstep rather than Pow(x, 2). Both start with zero gradient at x=0, but x^2
+    // arrives at x=1 with gradient 2, and Clamp01 then flattens it to 0 - a derivative
+    // discontinuity right where the clamp saturates, at warpedRadius 0.93. Because that is a
+    // constant radius in warped space it closes into a RING around the island, and because it
+    // lives in the base field - before mountain boost is added on top - the ring rides up and over
+    // the mountains too, which is exactly how it reads: one continuous unnatural crease
+    // encircling the whole island and crossing every landform in its path.
+    //
+    // smoothstep is zero-gradient at both ends, so the suppression now starts and finishes without
+    // stamping a crease at either limit.
+    float outerT = Mathf.Clamp01((warpedRadius - 0.65f) / 0.28f);
+    float outerDrop = outerT * outerT * (3f - 2f * outerT) * 0.35f;
 
     // Base field sculpted directly by the domain-warped fractal noise
     float field = fractalNoise - falloff * 0.82f - outerDrop;
