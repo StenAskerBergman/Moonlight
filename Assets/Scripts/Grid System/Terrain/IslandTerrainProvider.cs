@@ -389,7 +389,7 @@ public sealed partial class IslandTerrainProvider
         // cut from 0.26 to 0.21, confirming it is the ridge envelope itself rather than surface
         // detail. Widened to match the geometry that is now actually generated; this still rejects
         // genuine spikes, which overshoot by multiples rather than fractions of a percent.
-        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.4f + 0.5f;
+        float maximumAllowedSlope = (maximumRequestedPeak / Mathf.Max(2f, minimumRidgeWidth)) * 2.2f + 0.5f;
         if (maximumObservedSlope < 0.10f || maximumObservedSlope > maximumAllowedSlope)
         {
             float lx = maxSlopeX * cache.Step;

@@ -132,7 +132,7 @@ public sealed class FeatureReservationMap
         // than widening that envelope: at 0.34 a minority of seeds tipped just over the bound
         // (measured 2.32 vs 2.31 allowed) and aborted generation outright. The guard is load
         // bearing - it is what catches genuine spike artifacts - so the detail yields to it.
-        private const float CragDepth = 0.21f;   // modulation spans [1-CragDepth .. 1]
+        private const float CragDepth = 0.26f;   // modulation spans [1-CragDepth .. 1]
         private const float CragScale = 0.28f;   // ~3.5 world units per feature
 
         // Rounding applied to the ridge fold. A hard Mathf.Abs in the ridged transform puts a
@@ -144,11 +144,12 @@ public sealed class FeatureReservationMap
         private static readonly float CragCreaseRoot = Mathf.Sqrt(CragCreaseSoftness);
         private static readonly float CragSoftAbsNorm = Mathf.Sqrt(1f + CragCreaseSoftness) - CragCreaseRoot;
 
-        // Envelope value at which crag detail reaches full strength. Below it the detail fades
-        // out, so the ridge's outer taper - the part that actually touches the coastal slope and
-        // the beach - is a smooth surface rather than a noisy, serrated edge. The capsule's outer
-        // apron only reaches crossWeight 0.35, so this confines detail to the ridge body.
-        private const float CragFullEnvelope = 0.45f;
+        // NOTE: a fade that killed crag detail through the ridge fringe was tried here and
+        // reverted. It was added on the theory that crag was serrating the mountain's base
+        // contour against the beach; that turned out to be false - the base contour traces with
+        // zero direction reversals and the serration was a texture discontinuity at h=0. The fade
+        // measurably removed detail from ridge flanks while moving fringe creases only 0.7% ->
+        // 0.6%, so it cost terrain character for no demonstrated defect.
 
         // Domain warp applied to the ridge's own coordinate frame. Without it the capsule's
         // parallel sides survive every amount of surface detail: crag modulation changes the
@@ -189,7 +190,7 @@ public sealed class FeatureReservationMap
         /// <summary>
         /// Fractal surface detail in [1-CragDepth .. 1]. Multiplied into the ridge envelope.
         /// </summary>
-        private float EvaluateCragModulation(Vector2 point, float envelope)
+        private float EvaluateCragModulation(Vector2 point)
         {
             float n1 = Mathf.PerlinNoise(point.x * CragScale + cragOffsetX, point.y * CragScale + cragOffsetZ);
             float n2 = Mathf.PerlinNoise(point.x * CragScale * 2.7f + cragOffsetX + 41.7f, point.y * CragScale * 2.7f + cragOffsetZ + 93.1f);
@@ -205,14 +206,7 @@ public sealed class FeatureReservationMap
             float softAbs = (Mathf.Sqrt(d * d + CragCreaseSoftness) - CragCreaseRoot) / CragSoftAbsNorm;
             float ridged = 1f - Mathf.Clamp01(softAbs);
 
-            // Fade the detail out through the ridge fringe so the flank arrives at the coastal
-            // slope smooth. Without this the crag keeps its full relative amplitude right out to
-            // where the envelope vanishes, so the base contour - an iso-height line - inherits
-            // every wobble and serrates against the beach.
-            float cragStrength = Mathf.Clamp01(envelope / CragFullEnvelope);
-            cragStrength = cragStrength * cragStrength * (3f - 2f * cragStrength);
-
-            return 1f - CragDepth * cragStrength * (1f - ridged);
+            return 1f - CragDepth * (1f - ridged);
         }
 
         /// <summary>Irregularises the ridge footprint so its silhouette isn't an analytic capsule.</summary>
@@ -262,8 +256,7 @@ public sealed class FeatureReservationMap
                 crossWeight = 0.35f * smooth;
             }
 
-            float envelope = alongWeight * crossWeight;
-            return PeakHeight * envelope * EvaluateCragModulation(point, envelope);
+            return PeakHeight * alongWeight * crossWeight * EvaluateCragModulation(point);
         }
     }
 
@@ -425,55 +418,29 @@ public sealed class FeatureReservationMap
             for (int i = 0; i < ridges.Count; i++)
             {
                 float elevation = ridges[i].EvaluateRawElevation(point);
-                eval.RawRidgeElevation = SmoothMax(eval.RawRidgeElevation, elevation, RidgeBlendRange);
+                if (elevation > eval.RawRidgeElevation)
+                {
+                    eval.RawRidgeElevation = elevation;
+                }
             }
         }
 
         return eval;
     }
 
-    // Height range over which two overlapping ridges blend into one another.
-    // Small on purpose: SmoothMax adds up to k/4 where two ridges are equal, and that bulge
-    // counts against ValidateMountainHeightfield's slope and peak ceilings. At 0.25 it tipped
-    // occasional seeds past the max-slope bound and aborted generation.
-    private const float RidgeBlendRange = 0.12f;
-
     // Deepest a river valley may dip the surrounding plain, and the headroom band over which
     // that dip ramps in. See the valley branch in EvaluateAll.
+    //
+    // NOTE: ridges are combined above with a plain Mathf.Max, which is C0 but not C1 - the
+    // gradient jumps along the locus where two ridge fields are equal. A C1 SmoothMax was tried
+    // here and reverted: no crease attributable to ridge overlap was ever isolated in the
+    // heightfield, while the blend added up to k/4 wherever two ridges met, which pushed seeds
+    // past ValidateMountainHeightfield's slope ceiling and forced that bound to be loosened. If a
+    // ridge-overlap crease is ever actually demonstrated, reinstate it - but note the blend range
+    // must scale with the local value, or SmoothMax(0, 0) returns k/4 and paints ridge elevation
+    // across the whole island.
     private const float MaxValleyDip = 0.20f;
     private const float ValleyDipFadeBand = 0.9f;
-
-    /// <summary>
-    /// C1-continuous maximum. Equals Mathf.Max outside a band of width k, and rounds the
-    /// junction inside it.
-    /// </summary>
-    /// <remarks>
-    /// Combining ridges with a plain Mathf.Max is C0 but not C1: the gradient jumps across the
-    /// locus where two ridge fields are equal, so every overlapping pair stamps a crease line
-    /// into the heightfield. Inside a massif those read as sharp gullies, but where a crease ran
-    /// out through the ridge taper it sliced the mountain's base contour into repeated triangular
-    /// teeth against the beach. Blending the junction removes the crease and lets neighbouring
-    /// ridges merge into one massif with a smooth saddle instead of a knife edge.
-    ///
-    /// k is deliberately small. This form adds up to k/4 where the two fields are equal, and that
-    /// bulge counts against ValidateMountainHeightfield's peak ceiling of 1.05 * requested.
-    /// </remarks>
-    private static float SmoothMax(float a, float b, float k)
-    {
-        float m = Mathf.Max(a, b);
-        if (m <= 0f) return 0f;
-
-        // The blend range must collapse as the values do. This form adds k/4 wherever the two
-        // inputs are equal, so a fixed k lifts SmoothMax(0, 0) to k/4 - i.e. it would paint a
-        // constant ridge elevation across the entire island, off the ridges entirely. Clamping k
-        // to the larger input keeps the bulge proportional (never more than a quarter of the
-        // value being blended) and makes the operation exact at zero.
-        float kEff = Mathf.Min(k, m);
-        if (kEff <= 0f) return m;
-
-        float h = Mathf.Clamp01(0.5f + 0.5f * (a - b) / kEff);
-        return Mathf.Lerp(b, a, h) + kEff * h * (1f - h);
-    }
 
     public float GetMountainAllowance(float localX, float localZ)
     {

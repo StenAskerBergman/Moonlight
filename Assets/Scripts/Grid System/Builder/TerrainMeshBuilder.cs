@@ -116,40 +116,12 @@ public class TerrainMeshBuilder
                 int topLeft = bottomLeft + verticesPerAxis;
                 int topRight = topLeft + 1;
 
-                // Alternate the split diagonal in a checkerboard instead of using the same one for
-                // every quad.
-                //
-                // With a uniform diagonal, every vertex averages an ASYMMETRIC fan of six
-                // triangles - three on the diagonal's side, three off it - so RecalculateNormals
-                // biases each normal along that one direction. On flat or gently curved ground it
-                // is invisible, but where the surface bends sharply across the diagonal (a
-                // mountain flank arriving at the coastal slope) neighbouring vertices pick up
-                // systematically different normals and the bend renders as regular triangular
-                // teeth. The heightfield itself is smooth there - every height contour traced
-                // across this boundary has zero direction reversals - so the serration was purely
-                // an artefact of how the smooth field was triangulated, which is why smoothing the
-                // field, the texture and the water all left it untouched.
-                //
-                // Flipping the diagonal on alternate quads makes the fans mirror each other, so
-                // the bias cancels between neighbours. Winding is preserved in both cases.
-                if (((x + z) & 1) == 0)
-                {
-                    triangles[triangleIndex++] = topLeft;
-                    triangles[triangleIndex++] = topRight;
-                    triangles[triangleIndex++] = bottomLeft;
-                    triangles[triangleIndex++] = topRight;
-                    triangles[triangleIndex++] = bottomRight;
-                    triangles[triangleIndex++] = bottomLeft;
-                }
-                else
-                {
-                    triangles[triangleIndex++] = topLeft;
-                    triangles[triangleIndex++] = topRight;
-                    triangles[triangleIndex++] = bottomRight;
-                    triangles[triangleIndex++] = topLeft;
-                    triangles[triangleIndex++] = bottomRight;
-                    triangles[triangleIndex++] = bottomLeft;
-                }
+                triangles[triangleIndex++] = topLeft;
+                triangles[triangleIndex++] = topRight;
+                triangles[triangleIndex++] = bottomLeft;
+                triangles[triangleIndex++] = topRight;
+                triangles[triangleIndex++] = bottomRight;
+                triangles[triangleIndex++] = bottomLeft;
             }
         }
 
