@@ -103,29 +103,28 @@ public class TextureBuilder
                     {
                         finalColor = Color.Lerp(sand, rock, 0.35f); // Riverbed sand/gravel
                     }
-                    else if (height < 0.0f)
-                    {
-                        // Submerged ocean seabed:
-                        // Natural sand/gravel seabed, transitioning to deep marine silt.
-                        //
-                        // SeabedSiltDepth is what actually controls how wide the beach LOOKS. The
-                        // dry sand strip above the waterline is only a fraction of a world unit, but
-                        // the shallow shelf is visible straight through the water, so a slow depth
-                        // ramp (this was 4.0) keeps the shelf bright sand far out to sea and reads as
-                        // one continuous apron - the "plate rim" every island appeared to sit on.
-                        // Darkening to silt within about a unit of depth confines the visible sand to
-                        // the actual shoreline.
-                        float depthT = Mathf.Clamp01((-height) / SeabedSiltDepth);
-                        Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
-
-                        // Underneath mountain cliffs, shallow seabed begins as rocky gravel before fading to deep silt
-                        float mountainFactor = Mathf.Clamp01((mountainBoost - 0.10f) / 0.40f);
-                        Color seabedBase = Color.Lerp(sand, rock, mountainFactor * 0.6f);
-                        finalColor = Color.Lerp(seabedBase, deepSeabedSilt, depthT);
-                    }
                     else
                     {
-                        // Dry land & mountain surfaces.
+                        // Surface treatment, evaluated for EVERY height - above and below water alike.
+                        //
+                        // This used to be split into an `else if (height < 0)` seabed branch and an
+                        // `else` land branch, each computing its own rock weighting. The two did not
+                        // agree at their shared boundary: measured across 0.01 units of height at a
+                        // coastal mountain flank, the rock fraction stepped 1.000 (land) -> 0.600
+                        // (seabed) instantly, because the seabed branch capped rock at
+                        // mountainFactor * 0.6 while the land branch could reach a full 1.0.
+                        //
+                        // That 40% colour step followed the h=0 contour across the 960x960 texel
+                        // grid, and a hard edge crossing a pixel grid at a shallow angle stair-steps
+                        // by one texel - the serrated band along the foot of coastal mountains. It
+                        // survived every heightfield fix because the geometry was never at fault:
+                        // height, boost and rockWeight contours all traced with zero direction
+                        // reversals, and replacing the texture with a flat colour removed the teeth
+                        // entirely on identical geometry.
+                        //
+                        // Now there is a single surface colour with no branch in it, and depth only
+                        // fades that surface toward marine silt. depthT is 0 at h=0, so the result is
+                        // continuous across the waterline by construction rather than by tuning.
                         //
                         // Rock weight is resolved BEFORE the ground layer, because the ground layer
                         // needs to know about it (see below).
@@ -182,16 +181,34 @@ public class TextureBuilder
                         beachToGrass = Mathf.Max(beachToGrass, rockWeight);
                         Color groundColor = Color.Lerp(sand, grass, beachToGrass);
 
-                        Color landColor = Color.Lerp(groundColor, rock, rockWeight);
+                        Color surfaceColor = Color.Lerp(groundColor, rock, rockWeight);
 
                         // 3. High altitude snow peak
                         if (height >= 3.8f)
                         {
                             float snowWeight = Mathf.Clamp01((height - 3.8f) / 0.8f);
-                            landColor = Color.Lerp(landColor, snow, snowWeight);
+                            surfaceColor = Color.Lerp(surfaceColor, snow, snowWeight);
                         }
 
-                        finalColor = landColor;
+                        // 4. Submerged: fade the SAME surface toward deep marine silt with depth.
+                        //
+                        // SeabedSiltDepth controls how wide the beach LOOKS. The dry sand strip above
+                        // the waterline is only a fraction of a world unit, but the shallow shelf is
+                        // visible straight through the water, so a slow ramp (this was 4.0) kept the
+                        // shelf bright sand far out to sea and read as one continuous apron - the
+                        // "plate rim" every island appeared to sit on.
+                        //
+                        // Because this fades the surface colour rather than replacing it, a mountain
+                        // flank keeps its rock as it enters the water and simply darkens with depth,
+                        // and there is no value to disagree about at h=0.
+                        if (height < 0f)
+                        {
+                            float depthT = Mathf.Clamp01((-height) / SeabedSiltDepth);
+                            Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
+                            surfaceColor = Color.Lerp(surfaceColor, deepSeabedSilt, depthT);
+                        }
+
+                        finalColor = surfaceColor;
                     }
 
                     colorMap[rowOffset + x] = finalColor;
