@@ -266,6 +266,8 @@ public sealed class FeatureReservationMap
         public float RawRidgeElevation;
         public float RiverCarveDepth;
         public bool IsInRiverChannel;
+        public short DominantRidgeId;
+        public short DominantRiverId;
     }
 
     public readonly struct MineAnchor
@@ -318,7 +320,9 @@ public sealed class FeatureReservationMap
             MountainAllowance = 1f,
             RawRidgeElevation = 0f,
             RiverCarveDepth = 0f,
-            IsInRiverChannel = false
+            IsInRiverChannel = false,
+            DominantRidgeId = -1,
+            DominantRiverId = -1
         };
 
         Vector2 point = new Vector2(localX, localZ);
@@ -360,7 +364,11 @@ public sealed class FeatureReservationMap
                 }
 
                 float requiredCarve = Mathf.Max(0f, currentBaseHeight - targetWaterbedHeight) * sourceFade;
-                eval.RiverCarveDepth = Mathf.Max(eval.RiverCarveDepth, requiredCarve);
+                if (requiredCarve > eval.RiverCarveDepth)
+                {
+                    eval.RiverCarveDepth = requiredCarve;
+                    eval.DominantRiverId = (short)i;
+                }
             }
             else if (dist < clearanceRadius)
             {
@@ -405,7 +413,11 @@ public sealed class FeatureReservationMap
                 dipT = dipT * dipT * (3f - 2f * dipT);
                 float maxValleyDip = MaxValleyDip * dipT;
                 float valleyCarve = maxValleyDip * valleyCarveFactor * sourceFade;
-                eval.RiverCarveDepth = Mathf.Max(eval.RiverCarveDepth, valleyCarve);
+                if (valleyCarve > eval.RiverCarveDepth)
+                {
+                    eval.RiverCarveDepth = valleyCarve;
+                    eval.DominantRiverId = (short)i;
+                }
             }
 
             float riverAllowance = 1f - (valleySuppression * sourceFade);
@@ -421,6 +433,7 @@ public sealed class FeatureReservationMap
                 if (elevation > eval.RawRidgeElevation)
                 {
                     eval.RawRidgeElevation = elevation;
+                    eval.DominantRidgeId = (short)i;
                 }
             }
         }

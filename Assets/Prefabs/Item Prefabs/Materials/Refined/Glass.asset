@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: Glass
   m_EditorClassIdentifier: 
+  identifier: core:glass
   displayName: Glass
   itemName: glass
+  description: 
   baseValue: 0
   type: 0
   Icon: {fileID: 21300000, guid: c85f16a40345aa242bfa189d32c617d0, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
   powerLevel: 0
   rarity: 0
   uses: 0

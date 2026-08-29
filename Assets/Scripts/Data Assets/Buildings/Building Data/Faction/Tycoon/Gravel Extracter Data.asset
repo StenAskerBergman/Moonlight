@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: Gravel Extracter Data
   m_EditorClassIdentifier: 
-  Conditions: 0000000002000000
-  Requirements: 03000000
-  buildingSize: {x: 1, y: 1, z: 1}
+  identifier: core:gravel_extracter_data
   buildingName: Gravel Extracter
   buildingDescription: Extracts gravel for the production of building moduls
   buildingType: Extractor
+  buildingSize: {x: 1, y: 1, z: 1}
   buildingTags: []
-  material: 0
+  requiredNodeType: 0
+  BuildingRequirements: []

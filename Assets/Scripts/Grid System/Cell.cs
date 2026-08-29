@@ -271,6 +271,11 @@ public class Cell
         deliberatePlateauInfluence = Mathf.Clamp01(influence);
     }
 
+    public void SetDeliberatePlateauBuildability(float buildableWeight)
+    {
+        deliberatePlateauInfluence = Mathf.Clamp01(buildableWeight);
+    }
+
     public Cell(Vector3 _position, Building building, TerrainType terrainType, bool isBlocked = false, bool isDeposit = false)
     {
         this.position = _position;

@@ -92,7 +92,26 @@ MonoBehaviour:
     spawnPattern: 5
     patternName: High World
     patternDescription: Large of Islands
+  - displayName: Singular Plateau
+    description: Generates one coherent underwater plateau chunk.
+    spawnPattern: 0
+    numberOfIslands: 1
+    islandSpacing: 30
+    invertSelection: 0
+    overrideSelectionMasks: 1
+    currentIslandSelection: []
+    currentOceanSelection: []
+    islandConfig: {fileID: 0}
+    islandPrefab: {fileID: 0}
+    oceanTilePrefab: {fileID: 0}
+    defaultTerrainType: 0
+    useTerrainRules: 0
+    terrainRules: []
+    overrideWaterSettings: 0
+    waterOnStart: 1
+    waterHeight: -3
   selectedSpawnPattern: 0
+  selectedPatternDataIndex: 0
   islandPrefab: {fileID: 7038287545543584486, guid: fcd6ce1dee1a3ab4aabaeab9dd2fff64, type: 3}
   waterObject: {fileID: 7344457931242940783}
   islandConfig: {fileID: 11400000, guid: 642faf1ae9207db46a90e5609b48ea3a, type: 2}

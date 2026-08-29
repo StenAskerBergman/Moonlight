@@ -4,8 +4,16 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "New Item Data", menuName = "Data/Item/Item Data")]
 [System.Serializable]
-public class ItemData : ScriptableObject
+public class ItemData : ScriptableObject, IIdentifiable
 {
+    [Header("Identity")]
+    [Tooltip("Namespaced identifier (e.g. 'core:timber', 'core:raw_gravel', 'modname:custom_alloy').")]
+    [SerializeField] private string identifier = "core:item";
+
+    public Identifier Id => !string.IsNullOrEmpty(identifier)
+        ? new Identifier(identifier)
+        : new Identifier($"core:{name.ToLowerInvariant().Replace(' ', '_')}");
+
     // Item Data
     public string displayName;  // Items Display Name 
     public string itemName;     // The Name of the item

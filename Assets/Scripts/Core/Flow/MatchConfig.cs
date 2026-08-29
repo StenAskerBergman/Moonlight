@@ -20,14 +20,6 @@ public class MatchConfig
     [Header("Map")]
     public MapManager.SpawnPattern spawnPattern = MapManager.SpawnPattern.Normal;
 
-    [Tooltip("Island count. MapManager documents a hard ceiling of 49.")]
-    [Range(1, 49)]
-    public int numberOfIslands = 4;
-
-    [Tooltip("Island archetype used to seed each generated island. " +
-             "Leave null to keep whatever the Match scene already has assigned.")]
-    public IslandConfiguration islandConfig;
-
     [Header("Player")]
     [Tooltip("Factions the player starts the match with.")]
     public List<Faction> startingFactions = new List<Faction> { Faction.Tyc };
@@ -45,8 +37,6 @@ public class MatchConfig
         {
             matchName          = matchName,
             spawnPattern       = spawnPattern,
-            numberOfIslands    = numberOfIslands,
-            islandConfig       = islandConfig,
             startingFactions   = new List<Faction>(startingFactions),
             startWithResources = startWithResources
         };
@@ -54,7 +44,7 @@ public class MatchConfig
 
     public override string ToString()
     {
-        return $"MatchConfig(\"{matchName}\", {spawnPattern}, {numberOfIslands} islands, " +
+        return $"MatchConfig(\"{matchName}\", {spawnPattern}, " +
                $"factions: {string.Join("/", startingFactions)})";
     }
 }

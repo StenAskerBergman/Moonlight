@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: Factory Building Data
   m_EditorClassIdentifier: 
-  buildingSize: {x: 0, y: 0, z: 0}
-  Conditions: 
-  Requirements: 00000000
+  identifier: core:factory_building_data
   buildingName: Default Factory
   buildingDescription: Default Factory which produces nothing but the finest default
     goods.
   buildingType: 
+  buildingSize: {x: 0, y: 0, z: 0}
   buildingTags: []
-  material: 0
+  requiredNodeType: 0
+  BuildingRequirements: []

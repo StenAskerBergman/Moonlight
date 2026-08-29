@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: SugarSeed
   m_EditorClassIdentifier: 
+  identifier: core:sugarseed
   displayName: Sugar Seed
   itemName: sugarSeed
+  description: 
   baseValue: 450
   type: 0
   Icon: {fileID: 21300000, guid: 688d9c1f77516b24b89aa57a0a42aaa0, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
   powerLevel: 2
   rarity: 0
   uses: 0

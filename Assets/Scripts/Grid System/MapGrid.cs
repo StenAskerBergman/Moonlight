@@ -27,6 +27,7 @@ public sealed class TerrainGenerationProfile
 public class MapGrid : MonoBehaviour
 {
     private static readonly int TerrainBaseMapProperty = Shader.PropertyToID("_BaseMap");
+    private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
 
 
     #region Variables 
@@ -76,6 +77,9 @@ public class MapGrid : MonoBehaviour
 
         [Header("Semantic Terrain Generation")]
         public TerrainGenerationSettings generationSettings = new TerrainGenerationSettings();
+
+        [Header("Diagnostics & Heatmap")]
+        public TerrainDebugViewMode debugViewMode = TerrainDebugViewMode.Normal;
 
         /// <summary>
         /// Shared procedural source. The gameplay grid samples it at integer cell
@@ -244,38 +248,6 @@ public class MapGrid : MonoBehaviour
         }
     }
 
-    // Populates the grid for a plateau: no land/mountain tier, just a shallow
-    // underwater shelf that drops off into deep/abyssal water at the edges.
-    private void GeneratePlateauTerrain(float[,] noiseMap, float[,] falloffMap)
-    {
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float noiseValue = noiseMap[x, y] - falloffMap[x, y];
-                TerrainType terrainType;
-
-                // Check against new thresholds to determine terrain type
-                if (noiseValue < abyssThreshold) // 0
-                {
-                    terrainType = TerrainType.Abyssal;
-                }
-                else if (noiseValue < deepSeaThreshold) // 0.1
-                {
-                    terrainType = TerrainType.Deep;
-                }
-                else
-                {
-                    terrainType = TerrainType.Plateau; // 0.2
-                }
-
-                float height = GetHeightForTerrainType(terrainType);
-                Vector3 position = new Vector3(x, height, y);
-                grid[x, y] = new Cell(position, null, terrainType);
-            }
-        }
-    }
-
     // Populates the grid for open ocean/empty grids: nothing but deep and abyssal
     // water, since there's no land tier to generate.
     private void GenerateOceanTerrain(float[,] noiseMap, float[,] falloffMap)
@@ -359,7 +331,10 @@ public class MapGrid : MonoBehaviour
             {
                 TerrainSample sample = samples[x, z];
                 grid[x, z] = new Cell(new Vector3(x, sample.Height, z), null, sample.TerrainType);
-                grid[x, z].SetDeliberatePlateauInfluence(sample.PlateauInfluence);
+                float plateauBuildability = sample.PlateauData.IsDefined
+                    ? sample.PlateauData.BuildableWeight
+                    : sample.PlateauInfluence;
+                grid[x, z].SetDeliberatePlateauBuildability(plateauBuildability);
 
                 if (sample.TerrainType == TerrainType.Hill
                     || sample.TerrainType == TerrainType.Cliff
@@ -442,8 +417,8 @@ public class MapGrid : MonoBehaviour
                 GenerateIslandTerrain(noiseMap, falloffMap);
                 break;
             case GridType.Type.Plateau:
-                GeneratePlateauTerrain(noiseMap, falloffMap);
-                break;
+                throw new System.NotSupportedException(
+                    "Legacy plateau generation was removed; use IslandTerrainProvider.");
             case GridType.Type.Ocean:
             case GridType.Type.Empty:
             default:
@@ -790,7 +765,7 @@ public class MapGrid : MonoBehaviour
             for (int x = 2; x < size - 2; x++)
             {
                 Cell cell = grid[x, y];
-                if (cell.IsDeliberateUnderwaterPlateau || cell.currentTerrainType == TerrainType.Plateau)
+                if (cell.IsBuildableUnderwaterPlateau)
                 {
                     if (ventSpots.Count < 2 && IsSparseDepositCell(x, y))
                     {
@@ -965,6 +940,15 @@ public class MapGrid : MonoBehaviour
         // Builds and assign Terrain
         System.Diagnostics.Stopwatch stageSw = System.Diagnostics.Stopwatch.StartNew();
         GenerationWatchdog.SetPhase(gameObject.name, "Mesh Building");
+        PlateauGeometryResult plateauGeometry = currentGridType == GridType.Type.Plateau
+            && useContinuousMesh
+            && generationSettings.standalonePlateau.generateVolumetricRockGeometry
+                ? PlateauGeometryGenerator.Generate(
+                    TerrainSource.GetOrCreateSampleCache(effectiveVisualSamples),
+                    generationSettings.standalonePlateau,
+                    activeGenerationSeed,
+                    generationSettings.seed)
+                : null;
         TerrainMeshBuilder terrainMeshBuilder = useContinuousMesh
             ? new TerrainMeshBuilder(grid, TerrainSource, effectiveVisualSamples)
             : new TerrainMeshBuilder(grid);
@@ -976,6 +960,7 @@ public class MapGrid : MonoBehaviour
         GenerationWatchdog.SetPhase(gameObject.name, "Mesh Upload");
         TrackGeneratedVisualResource(terrainMesh);
         ApplyTerrainMesh(terrainMesh);
+        ApplyPlateauGeometry(plateauGeometry);
         long meshUploadMs = stageSw.ElapsedMilliseconds;
         if (profile != null) profile.meshUploadMs = meshUploadMs;
 
@@ -983,10 +968,10 @@ public class MapGrid : MonoBehaviour
         stageSw.Restart();
         GenerationWatchdog.SetPhase(gameObject.name, "Texture Splat Generation");
         TextureBuilder textureBuilder = useContinuousMesh
-            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile)
-            : new TextureBuilder(grid, climateProfile);
+            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile, debugViewMode)
+            : new TextureBuilder(grid, climateProfile, debugViewMode);
         Texture2D texture = textureBuilder.Build();
-        texture.name = "Generated Terrain Texture";
+        texture.name = $"Generated Terrain Texture ({debugViewMode})";
         long textureBuildMs = stageSw.ElapsedMilliseconds;
         if (profile != null) profile.textureSplatMs = textureBuildMs;
 
@@ -1271,6 +1256,47 @@ public class MapGrid : MonoBehaviour
         meshRenderer.sharedMaterial = terrainMaterial;
     }
 
+    private void ApplyPlateauGeometry(PlateauGeometryResult geometry)
+    {
+        Transform existingRoot = transform.Find(GeneratedPlateauGeometryRootName);
+        if (existingRoot != null)
+        {
+            if (Application.isPlaying) Destroy(existingRoot.gameObject);
+            else DestroyImmediate(existingRoot.gameObject);
+        }
+
+        if (geometry == null || !geometry.HasGeometry) return;
+
+        GameObject root = new GameObject(GeneratedPlateauGeometryRootName);
+        root.layer = gameObject.layer;
+        root.transform.SetParent(transform, false);
+
+        Material rockMaterial = plateauEdgeMaterial != null ? plateauEdgeMaterial : terrainMaterial;
+        ApplyPlateauGeometryLayer(root.transform, "Procedural Escarpment", geometry.Escarpment, rockMaterial);
+        ApplyPlateauGeometryLayer(root.transform, "Rock Formations", geometry.Formations, rockMaterial);
+    }
+
+    private void ApplyPlateauGeometryLayer(
+        Transform parent,
+        string layerName,
+        PlateauGeneratedMeshData meshData,
+        Material material)
+    {
+        if (meshData == null || !meshData.HasGeometry) return;
+
+        Mesh mesh = meshData.CreateMesh($"Generated Plateau {layerName}");
+        if (mesh == null) return;
+        TrackGeneratedVisualResource(mesh);
+
+        GameObject layer = new GameObject(layerName);
+        layer.layer = gameObject.layer;
+        layer.transform.SetParent(parent, false);
+        MeshFilter filter = layer.AddComponent<MeshFilter>();
+        filter.sharedMesh = mesh;
+        MeshRenderer renderer = layer.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = material;
+    }
+
     private void ApplyTexture(Texture2D texture)
     {
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -1281,6 +1307,26 @@ public class MapGrid : MonoBehaviour
             propertyBlock.SetTexture(TerrainBaseMapProperty, texture);
             meshRenderer.SetPropertyBlock(propertyBlock);
         }
+    }
+
+    /// <summary>
+    /// Rebuilds and applies the terrain texture splat without regenerating or reuploading the 3D mesh.
+    /// Useful for instant inspector-driven diagnostic / heatmap inspection.
+    /// </summary>
+    public void UpdateTerrainTexture()
+    {
+        if (grid == null) return;
+        bool isOceanChunk = currentGridType == GridType.Type.Ocean || currentGridType == GridType.Type.Empty;
+        int effectiveVisualSamples = isOceanChunk ? 1 : generationSettings.visualSamplesPerCell;
+        bool useContinuousMesh = TerrainSource != null;
+
+        TextureBuilder textureBuilder = useContinuousMesh
+            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile, debugViewMode)
+            : new TextureBuilder(grid, climateProfile, debugViewMode);
+        Texture2D texture = textureBuilder.Build();
+        texture.name = $"Generated Terrain Texture ({debugViewMode})";
+        TrackGeneratedVisualResource(texture);
+        ApplyTexture(texture);
     }
 
     public void ReleaseGeneratedVisualResources()
@@ -1361,6 +1407,25 @@ public class MapGrid : MonoBehaviour
                     }
                     edgeRenderer.sharedMaterial = null;
                 }
+            }
+
+            Transform plateauGeometryRoot = transform.Find(GeneratedPlateauGeometryRootName);
+            if (plateauGeometryRoot != null)
+            {
+                foreach (MeshFilter geometryFilter in plateauGeometryRoot.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (geometryFilter.sharedMesh == null) continue;
+                    ownedResources.Add(geometryFilter.sharedMesh);
+                    geometryFilter.sharedMesh = null;
+                }
+
+                foreach (MeshRenderer geometryRenderer in plateauGeometryRoot.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    geometryRenderer.sharedMaterial = null;
+                }
+
+                if (Application.isPlaying) Destroy(plateauGeometryRoot.gameObject);
+                else DestroyImmediate(plateauGeometryRoot.gameObject);
             }
 
             foreach (Object resource in ownedResources)

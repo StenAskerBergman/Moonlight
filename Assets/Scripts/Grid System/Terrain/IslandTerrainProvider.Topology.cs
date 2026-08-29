@@ -168,13 +168,6 @@ private float CalculateIslandField(float x, float z, float noise)
 }
 
 
-private float CalculatePlateauField(float x, float z, float noise)
-{
-    float mask = SampleIslandMask(x, z, noise);
-    return Mathf.Clamp01(noise * 0.25f + mask * 0.75f);
-}
-
-
 private float SampleIslandMask(float x, float z, float noise)
 {
     float denominator = Mathf.Max(1f, size - 1f);
@@ -208,6 +201,13 @@ private static float SampleLayer(RuntimeNoiseLayer layer, float x, float z)
         float sampleZ = (z + settings.offset.y) * frequency + offset.y;
 
         float perlinValue = Mathf.PerlinNoise(sampleX, sampleZ);
+        if (settings.mode == TerrainNoiseMode.Ridged)
+        {
+            // Fold ordinary Perlin around its midpoint. The configured layer mode
+            // previously had no effect, so authored ridged layers silently behaved
+            // like a second smooth Perlin layer everywhere in the terrain pipeline.
+            perlinValue = 1f - Mathf.Abs(perlinValue * 2f - 1f);
+        }
         total += perlinValue * amplitude;
         maxAmplitude += amplitude;
 

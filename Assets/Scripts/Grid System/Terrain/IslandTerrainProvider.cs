@@ -2,6 +2,51 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum PlateauZone : byte
+{
+    None = 0,
+    Tabletop,
+    RockyRim,
+    SandSlope,
+    UpperEscarpment,
+    LowerApron,
+    AbyssFade
+}
+
+/// <summary>
+/// Authoritative plateau meaning produced alongside the height field. Consumers use
+/// these continuous weights instead of re-deriving geology from height and slope.
+/// </summary>
+public readonly struct PlateauSampleData
+{
+    public PlateauSampleData(
+        PlateauZone zone,
+        float influence,
+        float buildableWeight,
+        float rockWeight,
+        float sandWeight,
+        float reefWeight,
+        float abyssFade)
+    {
+        Zone = zone;
+        Influence = Mathf.Clamp01(influence);
+        BuildableWeight = Mathf.Clamp01(buildableWeight);
+        RockWeight = Mathf.Clamp01(rockWeight);
+        SandWeight = Mathf.Clamp01(sandWeight);
+        ReefWeight = Mathf.Clamp01(reefWeight);
+        AbyssFade = Mathf.Clamp01(abyssFade);
+    }
+
+    public PlateauZone Zone { get; }
+    public float Influence { get; }
+    public float BuildableWeight { get; }
+    public float RockWeight { get; }
+    public float SandWeight { get; }
+    public float ReefWeight { get; }
+    public float AbyssFade { get; }
+    public bool IsDefined => Zone != PlateauZone.None || Influence > 0f;
+}
+
 public readonly struct TerrainSample
 {
     public TerrainSample(Cell.TerrainType terrainType, float height, float sourceValue, float plateauInfluence = 0f)
@@ -10,12 +55,23 @@ public readonly struct TerrainSample
         Height = height;
         SourceValue = sourceValue;
         PlateauInfluence = plateauInfluence;
+        PlateauData = default;
+    }
+
+    public TerrainSample(Cell.TerrainType terrainType, float height, float sourceValue, PlateauSampleData plateauData)
+    {
+        TerrainType = terrainType;
+        Height = height;
+        SourceValue = sourceValue;
+        PlateauInfluence = plateauData.Influence;
+        PlateauData = plateauData;
     }
 
     public Cell.TerrainType TerrainType { get; }
     public float Height { get; }
     public float SourceValue { get; }
     public float PlateauInfluence { get; }
+    public PlateauSampleData PlateauData { get; }
 }
 
 /// <summary>
@@ -29,18 +85,12 @@ public sealed partial class IslandTerrainProvider
     // composed-noise 0..1 domain rather than the island field's domain.
     private const float OceanDeepThreshold = 0.38f;
 
-    // Influence at which a cell stops being rim and becomes plateau core. Acceptance
-    // and application must use the identical value or they disagree about which cells
-    // the region intends to paint.
-    private const float FullPlateauInfluence = 0.9999f;
-
     public TerrainGenerationSettings Settings => settings;
     public FeatureReservationMap Reservations => featureReservations;
     private readonly TerrainGenerationSettings settings;
     private readonly GridType.Type gridType;
     private readonly int size;
     private readonly List<RuntimeNoiseLayer> layers;
-    private readonly List<UnderwaterPlateauRegion> plateauRegions;
     private readonly FeatureReservationMap featureReservations;
     // Upper bound for any offset added to a Perlin sample coordinate. See the constructor for
     // why large offsets destroy fine sampling precision.
@@ -92,9 +142,6 @@ public sealed partial class IslandTerrainProvider
         // noise field and loses no variety.
         legacyOffsetX = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
         legacyOffsetZ = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
-        plateauRegions = gridType == GridType.Type.Island
-            ? BuildUnderwaterPlateauRegions(chunkSeed)
-            : new List<UnderwaterPlateauRegion>();
         featureReservations = gridType == GridType.Type.Island
             ? BuildFeatureReservations(chunkSeed)
             : null;
@@ -102,14 +149,18 @@ public sealed partial class IslandTerrainProvider
 
     private TerrainSampleCache sampleCache;
 
-    public TerrainSampleCache GetOrCreateSampleCache(int visualSamplesPerCell)
+    public TerrainSampleCache GetOrCreateSampleCache(int visualSamplesPerCell, bool trackAttribution = false)
     {
-        if (sampleCache != null && sampleCache.VisualSamplesPerCell == visualSamplesPerCell && sampleCache.GridSize == size)
+        if (sampleCache != null && sampleCache.VisualSamplesPerCell == visualSamplesPerCell && sampleCache.GridSize == size && (!trackAttribution || sampleCache.HasAttribution))
         {
             return sampleCache;
         }
 
-        TerrainSampleCache cache = new TerrainSampleCache(size, visualSamplesPerCell);
+        TerrainSampleCache cache = new TerrainSampleCache(
+            size,
+            visualSamplesPerCell,
+            trackAttribution,
+            includePlateauData: gridType == GridType.Type.Plateau);
         int resolution = cache.Resolution;
         float step = cache.Step;
         float waterUpper = settings.waterUpper;
@@ -141,6 +192,15 @@ public sealed partial class IslandTerrainProvider
                     cache.PlateauInfluences[idx] = 0f;
                     cache.Slopes[idx] = 0f;
                     cache.TerrainTypes[idx] = ClassifyLegacyIsland(baseField).TerrainType;
+
+                    if (cache.Attribution != null)
+                    {
+                        cache.Attribution.RawBaseHeights[idx] = height;
+                        cache.Attribution.TerraceDeltas[idx] = 0f;
+                        cache.Attribution.PlateauDeltas[idx] = 0f;
+                        cache.Attribution.DominantRidgeIds[idx] = -1;
+                        cache.Attribution.DominantRiverIds[idx] = -1;
+                    }
                 }
             });
 
@@ -148,10 +208,10 @@ public sealed partial class IslandTerrainProvider
             return cache;
         }
 
-        // Underwater Plateau Chunks: Evaluate shallow plateau shelf
+        // Standalone plateau chunks: one deep evaluator owns footprint, profiles,
+        // classification, and blending for both gameplay and visual samples.
         if (gridType == GridType.Type.Plateau)
         {
-            float W = 8f;
             System.Threading.Tasks.Parallel.For(0, resolution, z =>
             {
                 float localZ = z * step;
@@ -163,32 +223,30 @@ public sealed partial class IslandTerrainProvider
                     float worldX = chunkWorldOrigin.x + localX;
                     int idx = z * resolution + x;
 
-                    TerrainSample canonicalBase = SampleSharedSeabed(worldX, worldZ);
-                    float plateauNoise = SampleComposedNoise(worldX, worldZ);
-                    float localMask = SampleIslandMask(localX, localZ, plateauNoise);
+                    TerrainSample sample = EvaluateStandalonePlateau(localX, localZ, worldX, worldZ);
 
-                    float dx = Mathf.Min(localX, size - localX);
-                    float dz = Mathf.Min(localZ, size - localZ);
-                    float tx = Mathf.Clamp01(dx / W);
-                    float tz = Mathf.Clamp01(dz / W);
-                    float edgeWeight = (tx * tx * tx * (tx * (tx * 6f - 15f) + 10f)) * (tz * tz * tz * (tz * (tz * 6f - 15f) + 10f));
-
-                    float plateauInfluence = localMask * edgeWeight;
-                    float height = Mathf.Lerp(canonicalBase.Height, settings.underwaterPlateauHeight, plateauInfluence);
-                    Cell.TerrainType terrainType = plateauInfluence >= FullPlateauInfluence
-                        ? Cell.TerrainType.Plateau
-                        : canonicalBase.TerrainType;
-
-                    cache.Heights[idx] = height;
-                    cache.BaseFields[idx] = canonicalBase.SourceValue;
+                    cache.Heights[idx] = sample.Height;
+                    cache.BaseFields[idx] = sample.SourceValue;
                     cache.MountainAllowances[idx] = 0f;
                     cache.MountainBoosts[idx] = 0f;
                     cache.RiverCarveDepths[idx] = 0f;
-                    cache.PlateauInfluences[idx] = plateauInfluence;
-                    cache.Slopes[idx] = 0f;
-                    cache.TerrainTypes[idx] = terrainType;
+                    cache.PlateauInfluences[idx] = sample.PlateauInfluence;
+                    cache.PlateauData[idx] = sample.PlateauData;
+                    cache.TerrainTypes[idx] = sample.TerrainType;
+
+                    if (cache.Attribution != null)
+                    {
+                        TerrainSample seabed = SampleSharedSeabed(worldX, worldZ);
+                        cache.Attribution.RawBaseHeights[idx] = seabed.Height;
+                        cache.Attribution.TerraceDeltas[idx] = 0f;
+                        cache.Attribution.PlateauDeltas[idx] = sample.Height - seabed.Height;
+                        cache.Attribution.DominantRidgeIds[idx] = -1;
+                        cache.Attribution.DominantRiverIds[idx] = -1;
+                    }
                 }
             });
+
+            PopulatePlateauSlopes(cache);
 
             sampleCache = cache;
             return cache;
@@ -207,12 +265,16 @@ public sealed partial class IslandTerrainProvider
                 float smoothField = CalculateLegacyIslandField(localX, localZ, true);
                 float terracePhase = EvaluateTerracePhase(localX, localZ);
                 float reservationBaseHeight = CalculateBaseContinuousHeight(baseField, terracePhase);
-                float visualBaseHeight = CalculateBaseContinuousHeight(smoothField, terracePhase);
+                float rawBaseHeight;
+                float visualBaseHeight = CalculateBaseContinuousHeight(smoothField, terracePhase, out rawBaseHeight);
+                float terraceDelta = visualBaseHeight - rawBaseHeight;
 
                 float mountainBoost = 0f;
                 float riverCarve = 0f;
                 bool isInRiverChannel = false;
                 float mountainAllowance = 1f;
+                short dominantRidgeId = -1;
+                short dominantRiverId = -1;
 
                 if (featureReservations != null)
                 {
@@ -220,25 +282,40 @@ public sealed partial class IslandTerrainProvider
                     mountainAllowance = res.MountainAllowance;
                     riverCarve = res.RiverCarveDepth;
                     isInRiverChannel = res.IsInRiverChannel;
+                    dominantRidgeId = res.DominantRidgeId;
+                    dominantRiverId = res.DominantRiverId;
 
                     mountainBoost = CalculateStructuralMountainBoost(smoothField, res);
-                    riverCarve *= EvaluateRiverCarveGate(mountainBoost);
+                    if (mountainBoost <= 0.001f)
+                    {
+                        dominantRidgeId = -1;
+                    }
+
+                    float carveGate = EvaluateRiverCarveGate(mountainBoost);
+                    riverCarve *= carveGate;
+                    if (riverCarve <= 0.001f)
+                    {
+                        dominantRiverId = -1;
+                    }
                 }
 
                 float height = visualBaseHeight + mountainBoost - riverCarve;
 
-                TerrainSample sample = new TerrainSample(Cell.TerrainType.Land, height, baseField);
-                if (gridType == GridType.Type.Island)
-                {
-                    sample = ApplyUnderwaterPlateauRegions(localX, localZ, sample);
-                }
-
-                cache.Heights[idx] = sample.Height;
+                cache.Heights[idx] = height;
                 cache.BaseFields[idx] = baseField;
                 cache.MountainAllowances[idx] = mountainAllowance;
                 cache.MountainBoosts[idx] = mountainBoost;
                 cache.RiverCarveDepths[idx] = riverCarve;
-                cache.PlateauInfluences[idx] = sample.PlateauInfluence;
+                cache.PlateauInfluences[idx] = 0f;
+
+                if (cache.Attribution != null)
+                {
+                    cache.Attribution.RawBaseHeights[idx] = rawBaseHeight;
+                    cache.Attribution.TerraceDeltas[idx] = terraceDelta;
+                    cache.Attribution.PlateauDeltas[idx] = 0f;
+                    cache.Attribution.DominantRidgeIds[idx] = dominantRidgeId;
+                    cache.Attribution.DominantRiverIds[idx] = dominantRiverId;
+                }
             }
         });
 
@@ -584,11 +661,17 @@ public sealed partial class IslandTerrainProvider
                 int cz = Mathf.Clamp(z * v + v / 2, 0, cache.Resolution - 1);
                 int idx = cache.GetIndex(cx, cz);
 
-                samples[x, z] = new TerrainSample(
-                    cache.TerrainTypes[idx],
-                    cache.Heights[idx],
-                    cache.BaseFields[idx],
-                    cache.PlateauInfluences[idx]);
+                samples[x, z] = cache.PlateauData != null
+                    ? new TerrainSample(
+                        cache.TerrainTypes[idx],
+                        cache.Heights[idx],
+                        cache.BaseFields[idx],
+                        cache.PlateauData[idx])
+                    : new TerrainSample(
+                        cache.TerrainTypes[idx],
+                        cache.Heights[idx],
+                        cache.BaseFields[idx],
+                        cache.PlateauInfluences[idx]);
             }
         }
 
@@ -609,32 +692,11 @@ public sealed partial class IslandTerrainProvider
         switch (gridType)
         {
             case GridType.Type.Island:
-                // 1. Synthesized base terrain with feature reservations
                 TerrainSample baseSample = SampleSynthesizedIsland(localX, localZ);
-                // 2. Plateau height adjustments
-                TerrainSample adjustedSample = ApplyUnderwaterPlateauRegions(localX, localZ, baseSample);
-                // 3. Coast classification
-                return ApplyCoastClassification(localX, localZ, adjustedSample);
+                return ApplyCoastClassification(localX, localZ, baseSample);
 
             case GridType.Type.Plateau:
-                TerrainSample canonicalBase = SampleSharedSeabed(worldX, worldZ);
-                float plateauNoise = SampleComposedNoise(worldX, worldZ);
-                float localMask = SampleIslandMask(localX, localZ, plateauNoise);
-                
-                float W = 8f;
-                float dx = Mathf.Min(localX, size - localX);
-                float dz = Mathf.Min(localZ, size - localZ);
-                float tx = Mathf.Clamp01(dx / W);
-                float tz = Mathf.Clamp01(dz / W);
-                float edgeWeight = (tx * tx * tx * (tx * (tx * 6f - 15f) + 10f)) * (tz * tz * tz * (tz * (tz * 6f - 15f) + 10f));
-
-                float plateauInfluence = localMask * edgeWeight;
-                float height = Mathf.Lerp(canonicalBase.Height, settings.underwaterPlateauHeight, plateauInfluence);
-                Cell.TerrainType terrainType = plateauInfluence >= FullPlateauInfluence
-                    ? Cell.TerrainType.Plateau
-                    : canonicalBase.TerrainType;
-
-                return new TerrainSample(terrainType, height, canonicalBase.SourceValue, plateauInfluence);
+                return EvaluateStandalonePlateau(localX, localZ, worldX, worldZ);
 
             case GridType.Type.Ocean:
             case GridType.Type.Empty:
@@ -648,10 +710,8 @@ public sealed partial class IslandTerrainProvider
         switch (gridType)
         {
             case GridType.Type.Island:
-                // Fast visual path: computes continuous synthesized height and plateau influence
-                // without redundant 4-neighbor coast resampling
-                TerrainSample baseSample = SampleSynthesizedIsland(localX, localZ);
-                return ApplyUnderwaterPlateauRegions(localX, localZ, baseSample);
+                // Fast visual path avoids redundant four-neighbor coast resampling.
+                return SampleSynthesizedIsland(localX, localZ);
 
             case GridType.Type.Plateau:
             case GridType.Type.Ocean:
@@ -673,23 +733,16 @@ public sealed partial class IslandTerrainProvider
     // after surfaceFlatlandHeight and carved a 0.5 unit trench inland of the waterline.
     //
     // beachHeight and naturalPlateauHeight are geometry-only anchors: they shape the
-    // ramp but classify nothing. Beach is owned by ApplyCoastClassification and Plateau
-    // by ApplyUnderwaterPlateauRegions.
+    // ramp but classify nothing. Beach is owned by ApplyCoastClassification; Plateau
+    // is reserved for standalone GridType.Plateau chunks.
 
     // Terrain type from the source value alone, using the same thresholds the height
     // anchors are keyed to so geometry and semantics change together.
     //
     // Beach and Plateau are deliberately absent. Beach is assigned by
-    // ApplyCoastClassification from natural shoreline adjacency, and Plateau by
-    // ApplyUnderwaterPlateauRegions. Giving either a band here would create a second,
-    // competing source for that type.
-
-    // CalculateIslandHeightSource
-
-    // value here is a Clamp01 mask from CalculatePlateauField, not the legacy island
-    // field, so CalculateContinuousHeight must not be used: that curve is tuned for the
-    // island domain and maps 0.4+ onto shoreline and land heights, which lifted whole
-    // standalone plateau grids up to roughly sea level.
+    // ApplyCoastClassification from natural shoreline adjacency, while Plateau is
+    // owned by standalone plateau chunks. Giving either a band here would create a
+    // second, competing source for that type.
 
     // Open ocean is graded between abyss and deep depth around its own threshold. As
     // above, the composed-noise domain is 0..1 and must not be fed into the island
@@ -710,57 +763,8 @@ public sealed partial class IslandTerrainProvider
         return new TerrainSample(type, height, value);
     }
 
-    /// <summary>Why a plateau candidate was turned down, for generation diagnostics.</summary>
-    private enum PlateauRejection
-    {
-        None = 0,
-        InteriorTooNarrow,
-        TooCloseToExisting,
-        ShelfRelationship,
-        CoreOutOfBounds,
-        CoreOnIllegalSubstrate,
-        CoreTooSmall,
-        Count
-    }
-
-    /// <summary>
-    /// Every cell the region intends to paint must be substrate the application pass
-    /// will actually paint.
-    ///
-    /// Acceptance and application have to agree on one definition of legal ground.
-    /// ApplyUnderwaterPlateauRegions only paints IsDeepOffshoreTerrain, so a core cell
-    /// sitting on Shallow, Water, Beach or Land is silently skipped at paint time and
-    /// leaves a hole. The previous test could not see that: it took 49 points across
-    /// the bounding box and measured them against the broader IsUnderwaterTerrain, so
-    /// Shallow and Water counted as valid and regions were routinely accepted with well
-    /// under half their core on legal ground - which is what reduced plateaus to slivers.
-    ///
-    /// This walks the whole core at cell resolution, at the same cell-centre
-    /// coordinates GenerateGameplaySamples uses, and fails the candidate on the first
-    /// illegal cell. An accepted region is therefore painted in full, with no clipping.
-    /// </summary>
-
-    private TerrainSample SampleBaseIsland(float x, float z)
-    {
-        return SampleLegacyIsland(x, z);
-    }
-
-    // HasSufficientInBoundsInterior was removed here: it allowed 15% of a core to fall
-    // outside the grid, which is the same silent-clipping failure as illegal substrate.
-    // HasLegalPlateauSubstrate now rejects on the first out-of-bounds core cell, which
-    // is strictly stronger, so keeping the old sparse 11x11 test would only have been a
-    // second, weaker opinion about the same question.
-
-    // Deliberate plateaus are a deep-ocean construction feature, so they only operate
-    // on open water. Keeping them off Shallow/Water leaves the coastal shelf to the
-    // natural shoreline and guarantees they cannot reach Beach or Land at all.
-    private static bool IsDeepOffshoreTerrain(Cell.TerrainType type)
-    {
-        return type == Cell.TerrainType.Deep || type == Cell.TerrainType.Abyssal;
-    }
-
-    // Broad "is this water" test, used by coast classification where Shallow and Water
-    // must also count as sea. Deliberate plateau placement uses IsDeepOffshoreTerrain.
+    // Broad "is this water" test used by coast classification, where Shallow and Water
+    // must also count as sea.
     private static bool IsUnderwaterTerrain(Cell.TerrainType type)
     {
         switch (type)
@@ -797,134 +801,5 @@ public sealed partial class IslandTerrainProvider
         public Vector2[] OctaveOffsets { get; }
     }
 
-    private readonly struct PlateauLobe
-    {
-        private readonly float cosine;
-        private readonly float sine;
-
-        public PlateauLobe(
-            Vector2 center,
-            float radiusX,
-            float radiusZ,
-            float rotation)
-        {
-            Center = center;
-            RadiusX = radiusX;
-            RadiusZ = radiusZ;
-            cosine = Mathf.Cos(rotation);
-            sine = Mathf.Sin(rotation);
-        }
-
-        public Vector2 Center { get; }
-        public float RadiusX { get; }
-        public float RadiusZ { get; }
-        public float BoundingRadius => Mathf.Max(RadiusX, RadiusZ);
-
-        public float SignedField(Vector2 point)
-        {
-            Vector2 delta = point - Center;
-            float localX = delta.x * cosine + delta.y * sine;
-            float localZ = -delta.x * sine + delta.y * cosine;
-            return 1f - new Vector2(localX / RadiusX, localZ / RadiusZ).magnitude;
-        }
-
-        public Vector2 NormalizedToWorld(Vector2 normalized)
-        {
-            float localX = normalized.x * RadiusX;
-            float localZ = normalized.y * RadiusZ;
-            return Center + new Vector2(
-                localX * cosine - localZ * sine,
-                localX * sine + localZ * cosine);
-        }
-    }
-
-    private readonly struct UnderwaterPlateauRegion
-    {
-        private readonly PlateauLobe[] positiveLobes;
-        private readonly PlateauLobe[] cutLobes;
-        private readonly float edgeIrregularity;
-        private readonly float edgeDistortionScale;
-        private readonly Vector2 distortionOffset;
-        private readonly float cutStrength;
-        private readonly float boundingRadius;
-
-        public UnderwaterPlateauRegion(
-            PlateauLobe[] positiveLobes,
-            PlateauLobe[] cutLobes,
-            float height,
-            float transitionWidth,
-            float edgeIrregularity,
-            float edgeDistortionScale,
-            Vector2 distortionOffset,
-            float cutStrength)
-        {
-            this.positiveLobes = positiveLobes;
-            this.cutLobes = cutLobes;
-            Height = height;
-            TransitionWidth = transitionWidth;
-            this.edgeIrregularity = edgeIrregularity;
-            this.edgeDistortionScale = edgeDistortionScale;
-            this.distortionOffset = distortionOffset;
-            this.cutStrength = cutStrength;
-
-            PlateauLobe primary = positiveLobes[0];
-            Center = primary.Center;
-            RadiusX = primary.RadiusX;
-            RadiusZ = primary.RadiusZ;
-            float maximumExtent = primary.BoundingRadius;
-            for (int i = 1; i < positiveLobes.Length; i++)
-            {
-                maximumExtent = Mathf.Max(
-                    maximumExtent,
-                    Vector2.Distance(Center, positiveLobes[i].Center) + positiveLobes[i].BoundingRadius);
-            }
-            boundingRadius = maximumExtent + Mathf.Min(RadiusX, RadiusZ) * edgeIrregularity;
-        }
-
-        public Vector2 Center { get; }
-        public float RadiusX { get; }
-        public float RadiusZ { get; }
-        public float Height { get; }
-        public float TransitionWidth { get; }
-        public float BoundingRadius => boundingRadius;
-
-        public float CalculateInfluence(float worldX, float worldZ)
-        {
-            Vector2 point = new Vector2(worldX, worldZ);
-            if (Vector2.Distance(point, Center) > BoundingRadius) return 0f;
-
-            float warpMagnitude = Mathf.Min(RadiusX, RadiusZ) * edgeIrregularity;
-            Vector2 warpedPoint = point + new Vector2(
-                Mathf.PerlinNoise(
-                    (worldX + distortionOffset.x) / edgeDistortionScale,
-                    (worldZ + distortionOffset.y) / edgeDistortionScale) * 2f - 1f,
-                Mathf.PerlinNoise(
-                    (worldX + distortionOffset.y + 173.31f) / edgeDistortionScale,
-                    (worldZ + distortionOffset.x - 91.73f) / edgeDistortionScale) * 2f - 1f)
-                * warpMagnitude;
-
-            float field = float.MinValue;
-            for (int i = 0; i < positiveLobes.Length; i++)
-            {
-                field = Mathf.Max(field, positiveLobes[i].SignedField(warpedPoint));
-            }
-
-            float cutField = 0f;
-            for (int i = 0; i < cutLobes.Length; i++)
-            {
-                cutField = Mathf.Max(cutField, Mathf.Max(0f, cutLobes[i].SignedField(warpedPoint)));
-            }
-            field -= cutField * cutStrength;
-
-            if (field <= 0f) return 0f;
-            if (field >= TransitionWidth) return 1f;
-            return Mathf.SmoothStep(0f, 1f, field / TransitionWidth);
-        }
-
-        public Vector2 NormalizedToWorld(Vector2 normalized)
-        {
-            return positiveLobes[0].NormalizedToWorld(normalized);
-        }
-    }
 }
 

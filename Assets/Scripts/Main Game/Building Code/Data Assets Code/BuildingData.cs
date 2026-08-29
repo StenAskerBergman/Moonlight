@@ -7,8 +7,16 @@ using UnityEngine;
 // Hold static universal data, universally for all buildings & built entities ingame 
 
 [CreateAssetMenu(fileName = "New Building Data", menuName = "Data/Building/Building Data")]
-public class BuildingData : ScriptableObject
+public class BuildingData : ScriptableObject, IIdentifiable
 {
+    [Header("Identity")]
+    [Tooltip("Namespaced identifier (e.g. 'core:worker_resident', 'core:coastal_warehouse', 'modname:custom_refinery').")]
+    [SerializeField] private string identifier = "core:building";
+
+    public Identifier Id => !string.IsNullOrEmpty(identifier) 
+        ? new Identifier(identifier) 
+        : new Identifier($"core:{name.ToLowerInvariant().Replace(' ', '_')}");
+
     // Basic data for the building
     public string buildingName, buildingDescription, buildingType;
     public Vector3 buildingSize;

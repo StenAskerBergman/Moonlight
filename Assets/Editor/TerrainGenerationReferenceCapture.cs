@@ -365,10 +365,19 @@ public static class TerrainGenerationReferenceCapture
             new Color32(255, 255, 255, 255));
         DrawInvertedFlag(reference, selectionInverted, reference.width - 196, reference.height - 12 - 7 * glyphScale, glyphScale);
         int legendY = reference.height - bannerHeight + 8;
-        DrawLegendItem(reference, 12, legendY, "MAINLAND", new Color32(255, 0, 0, 255), glyphScale);
-        DrawLegendItem(reference, 190, legendY, "BEACH", new Color32(0, 255, 0, 255), glyphScale);
-        DrawLegendItem(reference, 330, legendY, "MOUNTAIN", new Color32(0, 0, 255, 255), glyphScale);
-        DrawLegendItem(reference, 520, legendY, "WATER", new Color32(0, 0, 0, 255), glyphScale, new Color32(255, 255, 255, 255));
+        if (mapGrid.currentGridType == GridType.Type.Plateau)
+        {
+            DrawLegendItem(reference, 12, legendY, "SAND / TOP", new Color32(0, 255, 0, 255), glyphScale);
+            DrawLegendItem(reference, 188, legendY, "ROCK / RIM", new Color32(0, 0, 255, 255), glyphScale);
+            DrawLegendItem(reference, 372, legendY, "ABYSS", new Color32(0, 0, 0, 255), glyphScale, new Color32(255, 255, 255, 255));
+        }
+        else
+        {
+            DrawLegendItem(reference, 12, legendY, "MAINLAND", new Color32(255, 0, 0, 255), glyphScale);
+            DrawLegendItem(reference, 154, legendY, "BEACH", new Color32(0, 255, 0, 255), glyphScale);
+            DrawLegendItem(reference, 264, legendY, "MOUNTAIN", new Color32(0, 0, 255, 255), glyphScale);
+            DrawLegendItem(reference, 414, legendY, "WATER", new Color32(0, 0, 0, 255), glyphScale, new Color32(255, 255, 255, 255));
+        }
         reference.Apply(false, false);
         return true;
     }
@@ -398,7 +407,7 @@ public static class TerrainGenerationReferenceCapture
             for (int x = 0; x < cellsX; x++)
             {
                 Cell cell = grid[x, z];
-                bool buildable = gridSystem.IsValidSurfaceConstructionCell(cell);
+                bool buildable = IsValidConstructionCell(gridSystem, cell);
                 int x0 = Mathf.RoundToInt(x * pixelsPerCellX);
                 int x1 = Mathf.RoundToInt((x + 1) * pixelsPerCellX);
                 int y0 = Mathf.RoundToInt(z * pixelsPerCellZ);
@@ -425,13 +434,13 @@ public static class TerrainGenerationReferenceCapture
                 if (buildable)
                 {
                     Color32 buildableOutline = new Color32(0, 245, 255, 255);
-                    if (x == 0 || !gridSystem.IsValidSurfaceConstructionCell(grid[x - 1, z]))
+                    if (x == 0 || !IsValidConstructionCell(gridSystem, grid[x - 1, z]))
                         DrawFilledRectangle(reference, x0, y0, outlineWidth, y1 - y0, buildableOutline);
-                    if (x == cellsX - 1 || !gridSystem.IsValidSurfaceConstructionCell(grid[x + 1, z]))
+                    if (x == cellsX - 1 || !IsValidConstructionCell(gridSystem, grid[x + 1, z]))
                         DrawFilledRectangle(reference, x1 - outlineWidth, y0, outlineWidth, y1 - y0, buildableOutline);
-                    if (z == 0 || !gridSystem.IsValidSurfaceConstructionCell(grid[x, z - 1]))
+                    if (z == 0 || !IsValidConstructionCell(gridSystem, grid[x, z - 1]))
                         DrawFilledRectangle(reference, x0, y0, x1 - x0, outlineWidth, buildableOutline);
-                    if (z == cellsZ - 1 || !gridSystem.IsValidSurfaceConstructionCell(grid[x, z + 1]))
+                    if (z == cellsZ - 1 || !IsValidConstructionCell(gridSystem, grid[x, z + 1]))
                         DrawFilledRectangle(reference, x0, y1 - outlineWidth, x1 - x0, outlineWidth, buildableOutline);
                 }
 
@@ -447,6 +456,12 @@ public static class TerrainGenerationReferenceCapture
         DrawGameplayLegend(reference, island.id, selectionInverted);
         reference.Apply(false, false);
         return true;
+    }
+
+    private static bool IsValidConstructionCell(GridSystem gridSystem, Cell cell)
+    {
+        return gridSystem.IsValidSurfaceConstructionCell(cell)
+            || gridSystem.IsValidUnderwaterPlateauCell(cell);
     }
 
     private static void DrawGameplayLegend(Texture2D texture, int islandNumber, bool selectionInverted)

@@ -21,15 +21,12 @@ public class PreLobbyController : MonoBehaviour
     private void Awake()
     {
         PopulateOptions();
-        islandCountSlider.onValueChanged.AddListener(OnIslandCountChanged);
         continueButton.onClick.AddListener(Continue);
         backButton.onClick.AddListener(Back);
-        OnIslandCountChanged(islandCountSlider.value);
     }
 
     private void OnDestroy()
     {
-        islandCountSlider?.onValueChanged.RemoveListener(OnIslandCountChanged);
         continueButton?.onClick.RemoveListener(Continue);
         backButton?.onClick.RemoveListener(Back);
     }
@@ -69,7 +66,6 @@ public class PreLobbyController : MonoBehaviour
         {
             matchName = sessionName,
             spawnPattern = (MapManager.SpawnPattern)spawnPatternDropdown.value,
-            numberOfIslands = Mathf.RoundToInt(islandCountSlider.value),
             startingFactions = new List<Faction> { factions[factionDropdown.value] }
         };
 

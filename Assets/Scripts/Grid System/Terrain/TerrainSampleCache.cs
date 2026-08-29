@@ -22,8 +22,20 @@ public sealed class TerrainSampleCache
     public float[] MountainBoosts { get; }
     public float[] RiverCarveDepths { get; }
     public float[] PlateauInfluences { get; }
+    public PlateauSampleData[] PlateauData { get; }
 
-    public TerrainSampleCache(int gridSize, int visualSamplesPerCell)
+    /// <summary>
+    /// Optional diagnostic provenance data. Null during standard generation to avoid 50-70+ MB allocation;
+    /// populated when diagnostic/heat-map visualization is requested.
+    /// </summary>
+    public TerrainAttributionData Attribution { get; }
+    public bool HasAttribution => Attribution != null;
+
+    public TerrainSampleCache(
+        int gridSize,
+        int visualSamplesPerCell,
+        bool trackAttribution = false,
+        bool includePlateauData = false)
     {
         GridSize = gridSize;
         VisualSamplesPerCell = Mathf.Max(1, visualSamplesPerCell);
@@ -39,6 +51,12 @@ public sealed class TerrainSampleCache
         MountainBoosts = new float[totalCount];
         RiverCarveDepths = new float[totalCount];
         PlateauInfluences = new float[totalCount];
+        PlateauData = includePlateauData ? new PlateauSampleData[totalCount] : null;
+
+        if (trackAttribution)
+        {
+            Attribution = new TerrainAttributionData(totalCount);
+        }
     }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -77,5 +95,29 @@ public sealed class TerrainSampleCache
         x = Mathf.Clamp(x, 0, Resolution - 1);
         z = Mathf.Clamp(z, 0, Resolution - 1);
         return Slopes[z * Resolution + x];
+    }
+}
+
+/// <summary>
+/// Fine-grained subsystem provenance and per-stage elevation deltas.
+/// Captured directly during terrain synthesis passes.
+/// </summary>
+public sealed class TerrainAttributionData
+{
+    public float[] RawBaseHeights { get; }
+    public float[] TerraceDeltas { get; }
+    public float[] PlateauDeltas { get; }
+    public short[] DominantRidgeIds { get; }
+    public short[] DominantRiverIds { get; }
+
+    public TerrainAttributionData(int totalCount)
+    {
+        RawBaseHeights = new float[totalCount];
+        TerraceDeltas = new float[totalCount];
+        PlateauDeltas = new float[totalCount];
+        DominantRidgeIds = new short[totalCount];
+        DominantRiverIds = new short[totalCount];
+        System.Array.Fill(DominantRidgeIds, (short)-1);
+        System.Array.Fill(DominantRiverIds, (short)-1);
     }
 }

@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: Fish
   m_EditorClassIdentifier: 
+  identifier: core:fish
   displayName: Fish
   itemName: fish
+  description: 
   baseValue: 0
   type: 0
   Icon: {fileID: 21300000, guid: da36336fb2802ff489cdad5316df6556, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
   powerLevel: 0
   rarity: 0
   uses: 0

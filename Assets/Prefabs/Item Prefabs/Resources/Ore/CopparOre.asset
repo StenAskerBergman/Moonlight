@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: CopparOre
   m_EditorClassIdentifier: 
+  identifier: core:copparore
   displayName: Coppar
   itemName: CopparOre
+  description: 
   baseValue: 1
   type: 0
   Icon: {fileID: 21300000, guid: c1b6c06069c70d6448d2c46e3e0db3ef, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
   powerLevel: 1
   rarity: 0
   uses: 0

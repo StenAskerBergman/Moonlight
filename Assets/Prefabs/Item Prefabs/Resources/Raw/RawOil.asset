@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: RawOil
   m_EditorClassIdentifier: 
+  identifier: core:rawoil
   displayName: Raw Oil
   itemName: rawOil
+  description: 
   baseValue: 0
   type: 0
   Icon: {fileID: 21300000, guid: 12d36e9b7cd2ba04a9561d5af0df44fd, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
   powerLevel: 0
   rarity: 0
   uses: 0

@@ -12,12 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
   m_Name: Liquor
   m_EditorClassIdentifier: 
+  identifier: core:liquor
   displayName: Liquor
   itemName: liquor
   description: Booze, Liquor, and Alcohol for the hard workers!
   baseValue: 1
   type: 0
   Icon: {fileID: 21300000, guid: 8e1cb91f156c17f449975114029b875b, type: 3}
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
   factor: 0
   powerLevel: 0
   rarity: 0

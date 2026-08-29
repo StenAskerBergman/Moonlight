@@ -265,7 +265,7 @@ namespace UnityEditor.AI
             Handles.color = oldColor;
         }
 
-        [MenuItem("GameObject/AI/NavMesh Link", false, 2002)]
+        [MenuItem("GameObject/AI (Legacy)/NavMesh Link", false, 2002)]
         static public void CreateNavMeshLink(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;

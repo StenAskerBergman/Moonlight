@@ -73,6 +73,11 @@ private float CalculateBaseContinuousHeight(float value)
 
 private float CalculateBaseContinuousHeight(float value, float terracePhase)
 {
+    return CalculateBaseContinuousHeight(value, terracePhase, out _);
+}
+
+private float CalculateBaseContinuousHeight(float value, float terracePhase, out float rawBaseHeight)
+{
     float waterUpper = settings.waterUpper; // 0.40f (Coastline MSL = 0.0m)
     float coastalUpper = 0.46f;            // Smooth backshore transition up to mainland baseline (+0.85m)
     float abyssUpper = settings.abyssUpper; // 0.05f (Deep ocean floor)
@@ -84,7 +89,8 @@ private float CalculateBaseContinuousHeight(float value, float terracePhase)
         float t = Mathf.Clamp01((value - abyssUpper) / Mathf.Max(0.01f, waterUpper - abyssUpper));
         // Smooth concave shelf profile (t=0 -> abyssHeight, t=1 -> 0.0m Mean Sea Level)
         float shelfCurve = Mathf.Pow(t, 1.25f);
-        return Mathf.Lerp(settings.abyssHeight, 0.0f, shelfCurve);
+        rawBaseHeight = Mathf.Lerp(settings.abyssHeight, 0.0f, shelfCurve);
+        return rawBaseHeight;
     }
     else if (value <= coastalUpper)
     {
@@ -109,13 +115,15 @@ private float CalculateBaseContinuousHeight(float value, float terracePhase)
         float m0 = Mathf.Clamp(shelfExitSlope * band / Mathf.Max(0.01f, settings.surfaceFlatlandHeight), 0f, 2f);
 
         float shoreCurve = m0 * (u * u * u - 2f * u * u + u) + (3f * u * u - 2f * u * u * u);
-        return ApplyBuildableTerraces(Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve), terracePhase);
+        rawBaseHeight = Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve);
+        return ApplyBuildableTerraces(rawBaseHeight, terracePhase);
     }
     else
     {
         // Inland mainland: +0.85m baseline with organic rolling topography (rises naturally towards the interior)
         float excess = value - coastalUpper;
-        return ApplyBuildableTerraces(settings.surfaceFlatlandHeight + excess * 1.15f, terracePhase);
+        rawBaseHeight = settings.surfaceFlatlandHeight + excess * 1.15f;
+        return ApplyBuildableTerraces(rawBaseHeight, terracePhase);
     }
 }
 
@@ -296,24 +304,6 @@ private TerrainSample ClassifyLegacyIsland(float value)
     if (value < settings.cliffUpper) return Sample(Cell.TerrainType.Cliff, height, value);
     if (value < settings.mountainUpper) return Sample(Cell.TerrainType.Mountain, height, value);
     return Sample(Cell.TerrainType.MountainPeak, height, value);
-}
-
-private TerrainSample ClassifyStandalonePlateau(float value)
-{
-    if (value < settings.abyssUpper)
-        return Sample(Cell.TerrainType.Abyssal, settings.abyssHeight, value);
-
-    if (value < settings.deepUpper)
-        return Sample(
-            Cell.TerrainType.Deep,
-            BlendVisualHeight(settings.abyssHeight, settings.deepHeight, settings.abyssUpper, value),
-            value);
-
-    return new TerrainSample(
-        Cell.TerrainType.Plateau,
-        BlendVisualHeight(settings.deepHeight, settings.underwaterPlateauHeight, settings.deepUpper, value),
-        value,
-        1f);
 }
 
 private float BlendVisualHeight(float lower, float upper, float threshold, float value)

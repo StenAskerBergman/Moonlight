@@ -129,7 +129,7 @@ public class GridSystem : MonoBehaviour
         // Basic Setup
         bank = FindObjectOfType<Bank>();                        // Find the Bank, if for some reason I forgot
         mapManager = FindObjectOfType<MapManager>();            // locate the amount of islands to be generated
-        gridCount = mapManager.numberOfIslands;                 // count the amount of island grids that exist (protip: it starts at 0, so always add 1) 
+        gridCount = mapManager != null ? mapManager.RunGridSize : 0;
         buildingChecker = FindObjectOfType<BuildingChecker>();
         
         // Generate Cell Grid

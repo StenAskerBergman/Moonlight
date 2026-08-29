@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 /*  File Role: Creating the map of the game 
@@ -37,6 +38,7 @@ public class MapManager : MonoBehaviour
             return;
         }
         instance = this;
+        ValidateAndMigratePatternData();
 
         if (FindObjectOfType<PlayerSpawnManager>() == null)
         {
@@ -46,18 +48,251 @@ public class MapManager : MonoBehaviour
 
     #region Map Variables
 
-    // Spawn Patterns
-    [System.Serializable]
-    public class PatternData
+    public enum SpawnCondition
     {
-        [SerializeField]
-        internal string displayName = "My Custom Name";
+        All,
+        SelectedSlotIds,
+        ExcludingSlotIds,
+        Border,
+        Interior
+    }
 
-        public SpawnPattern spawnPattern;
-        public string patternName;
-        public string patternDescription;
-        [Tooltip("Invert island/ocean selection only while this spawn pattern is selected.")]
+    [Serializable]
+    public sealed class SpawnRule
+    {
+        public string name = "New Rule";
+        [Tooltip("Rules are evaluated from top to bottom. The first match wins.")]
+        public SpawnCondition condition = SpawnCondition.All;
+        [Tooltip("Used by Selected Slot IDs and Excluding Slot IDs conditions.")]
+        public List<int> slotIds = new List<int>();
+        public bool invertCondition;
+
+        [Header("Result")]
+        public GridType.Type terrainType = GridType.Type.Island;
+        [Tooltip("Optional prefab for matching slots. Leave empty to use the pattern's chunk prefab.")]
+        public GameObject prefabOverride;
+
+        public bool Matches(int slotId, int row, int column, int gridSize)
+        {
+            bool matches;
+            switch (condition)
+            {
+                case SpawnCondition.SelectedSlotIds:
+                    matches = slotIds != null && slotIds.Contains(slotId);
+                    break;
+                case SpawnCondition.ExcludingSlotIds:
+                    matches = slotIds == null || !slotIds.Contains(slotId);
+                    break;
+                case SpawnCondition.Border:
+                    matches = gridSize <= 1 || row == 0 || column == 0
+                              || row == gridSize - 1 || column == gridSize - 1;
+                    break;
+                case SpawnCondition.Interior:
+                    matches = gridSize > 2 && row > 0 && column > 0
+                              && row < gridSize - 1 && column < gridSize - 1;
+                    break;
+                default:
+                    matches = true;
+                    break;
+            }
+
+            return invertCondition ? !matches : matches;
+        }
+    }
+
+    // One PatternData item is the complete interface for a map-generation run.
+    [Serializable]
+    public sealed class PatternData
+    {
+        private const int CurrentDataVersion = 2;
+
+        public string displayName = "New Pattern";
+        [FormerlySerializedAs("patternName")]
+        [SerializeField, HideInInspector] private string legacyPatternName;
+        [SerializeField, HideInInspector] private int dataVersion;
+
+        [Header("Pattern Identification")]
+        [FormerlySerializedAs("patternDescription")]
+        [TextArea(2, 3)]
+        public string description;
+        public SpawnPattern spawnPattern = SpawnPattern.Normal;
+
+        [Header("Grid Layout")]
+        [Tooltip("Number of lattice slots along each axis (e.g. 7 for 7x7 grid)")]
+        [Range(0, 49)]
+        [FormerlySerializedAs("numberOfIslands")]
+        public int gridSize = 7;
+        [Tooltip("Spacing pitch between adjacent lattice slots")]
+        [FormerlySerializedAs("islandSpacing")]
+        public float slotSpacing = 30f;
+
+        [Header("Selection & Masking")]
+        [Tooltip("Invert the default-terrain slot selection for this pattern.")]
         public bool invertSelection;
+        [Tooltip("Slots that receive the default terrain. Inverted selection generates the default terrain everywhere except these slots.")]
+        public List<int> currentIslandSelection = new List<int>();
+        [Tooltip("Additional slots that receive Ocean terrain when selection is not inverted.")]
+        public List<int> currentOceanSelection = new List<int>();
+
+        [Header("Chunk Generation")]
+        [FormerlySerializedAs("islandConfig")]
+        [Tooltip("Island archetype/resource configuration used by every generated chunk in this pattern.")]
+        public IslandConfiguration configuration;
+        [Tooltip("Inline plateau geometry configuration used when this pattern resolves a Plateau slot.")]
+        public StandalonePlateauSettings plateauSettings = new StandalonePlateauSettings();
+        public GridType.Type defaultTerrainType = GridType.Type.Island;
+        [FormerlySerializedAs("islandPrefab")]
+        [Tooltip("Required prefab used unless the first matching slot override supplies another prefab.")]
+        public GameObject defaultChunkPrefab;
+
+        [Header("Ordered Slot Overrides")]
+        [FormerlySerializedAs("terrainRules")]
+        [Tooltip("Evaluated from top to bottom. The first match supplies terrain and may replace the chunk prefab.")]
+        public List<SpawnRule> slotOverrides = new List<SpawnRule>();
+
+        [Header("Water Settings")]
+        public bool waterOnStart = true;
+        public float waterHeight;
+
+        // Migration-only state. Runtime generation never reads these switches or
+        // redirects authority to MapManager's old scene-level defaults.
+        [FormerlySerializedAs("overrideSelectionMasks")]
+        [SerializeField, HideInInspector] private bool legacyOverrideSelectionMasks;
+        [FormerlySerializedAs("useTerrainRules")]
+        [SerializeField, HideInInspector] private bool legacyUseTerrainRules;
+        [FormerlySerializedAs("overrideWaterSettings")]
+        [SerializeField, HideInInspector] private bool legacyOverrideWaterSettings;
+        [FormerlySerializedAs("oceanTilePrefab")]
+        [SerializeField, HideInInspector] private GameObject legacyOceanTilePrefab;
+
+        public PatternData()
+        {
+            currentIslandSelection = new List<int>();
+            currentOceanSelection = new List<int>();
+            slotOverrides = new List<SpawnRule>();
+        }
+
+        public SpawnRule FindMatchingRule(int slotId, int row, int column, int gridSize)
+        {
+            if (slotOverrides == null) return null;
+
+            foreach (SpawnRule rule in slotOverrides)
+            {
+                if (rule != null && rule.Matches(slotId, row, column, gridSize)) return rule;
+            }
+
+            return null;
+        }
+
+        public bool TryResolveSlot(
+            int slotId,
+            int row,
+            int column,
+            out GridType.Type terrainType,
+            out GameObject chunkPrefab)
+        {
+            SpawnRule rule = FindMatchingRule(slotId, row, column, gridSize);
+            if (rule != null)
+            {
+                terrainType = rule.terrainType;
+                chunkPrefab = rule.prefabOverride != null ? rule.prefabOverride : defaultChunkPrefab;
+                return terrainType != GridType.Type.Empty;
+            }
+
+            bool selectedForDefault = spawnPattern == SpawnPattern.Singular
+                || (invertSelection
+                    ? !currentIslandSelection.Contains(slotId)
+                    : currentIslandSelection.Contains(slotId));
+            if (selectedForDefault)
+            {
+                terrainType = defaultTerrainType;
+                chunkPrefab = defaultChunkPrefab;
+                return terrainType != GridType.Type.Empty;
+            }
+
+            if (!invertSelection && currentOceanSelection.Contains(slotId))
+            {
+                terrainType = GridType.Type.Ocean;
+                chunkPrefab = defaultChunkPrefab;
+                return true;
+            }
+
+            terrainType = GridType.Type.Empty;
+            chunkPrefab = null;
+            return false;
+        }
+
+        public void ValidateAndMigrate(
+            int index,
+            int legacyGridSize,
+            float legacySlotSpacing,
+            List<int> legacyIslandSelection,
+            List<int> legacyOceanSelection,
+            IslandConfiguration legacyConfiguration,
+            GameObject legacyChunkPrefab,
+            bool legacyWaterOnStart,
+            float legacyWaterHeight)
+        {
+            if (dataVersion < 1 && !string.IsNullOrWhiteSpace(legacyPatternName))
+            {
+                if (string.IsNullOrWhiteSpace(displayName)) displayName = legacyPatternName;
+
+                // Entries serialized before terrain assignment existed represented
+                // ordinary islands. Preserve that meaning instead of interpreting the
+                // enum's zero value as Plateau during schema migration.
+                defaultTerrainType = GridType.Type.Island;
+            }
+
+            if (dataVersion < CurrentDataVersion)
+            {
+                gridSize = gridSize > 0 ? gridSize : Mathf.Max(1, legacyGridSize);
+                slotSpacing = slotSpacing > 0f ? slotSpacing : Mathf.Max(1f, legacySlotSpacing);
+
+                if (!legacyOverrideSelectionMasks)
+                {
+                    if (currentIslandSelection == null || currentIslandSelection.Count == 0)
+                    {
+                        currentIslandSelection = legacyIslandSelection != null
+                            ? new List<int>(legacyIslandSelection)
+                            : new List<int>();
+                    }
+
+                    if (currentOceanSelection == null || currentOceanSelection.Count == 0)
+                    {
+                        currentOceanSelection = legacyOceanSelection != null
+                            ? new List<int>(legacyOceanSelection)
+                            : new List<int>();
+                    }
+                }
+
+                if (configuration == null) configuration = legacyConfiguration;
+                if (defaultChunkPrefab == null) defaultChunkPrefab = legacyChunkPrefab;
+                if (!legacyOverrideWaterSettings)
+                {
+                    waterOnStart = legacyWaterOnStart;
+                    waterHeight = legacyWaterHeight;
+                }
+            }
+
+            // Repair references independently of the schema version. Some scenes were
+            // opened while this migration was still being developed, so their entries
+            // were stamped with the current version before the legacy manager-level
+            // references had been copied into each PatternData entry. Version-gating
+            // this repair leaves those scenes permanently unable to generate.
+            if (configuration == null) configuration = legacyConfiguration;
+            if (defaultChunkPrefab == null) defaultChunkPrefab = legacyChunkPrefab;
+
+            if (!Enum.IsDefined(typeof(SpawnPattern), spawnPattern)) spawnPattern = SpawnPattern.Normal;
+            displayName = string.IsNullOrWhiteSpace(displayName) ? $"Pattern {index + 1}" : displayName.Trim();
+            gridSize = Mathf.Clamp(gridSize, 1, 49);
+            slotSpacing = Mathf.Max(1f, slotSpacing);
+            currentIslandSelection ??= new List<int>();
+            currentOceanSelection ??= new List<int>();
+            slotOverrides ??= new List<SpawnRule>();
+            plateauSettings ??= new StandalonePlateauSettings();
+            plateauSettings.Validate();
+            dataVersion = CurrentDataVersion;
+        }
     }
 
 
@@ -83,36 +318,150 @@ public class MapManager : MonoBehaviour
     {
         get
         {
-            PatternData selectedPattern = patternDataList?.FirstOrDefault(
-                pattern => pattern != null && pattern.spawnPattern == selectedSpawnPattern);
+            PatternData selectedPattern = SelectedPatternData;
             return selectedPattern != null && selectedPattern.invertSelection;
         }
     }
 
+    public PatternData SelectedPatternData
+    {
+        get
+        {
+            if (patternDataList == null)
+            {
+                return null;
+            }
+
+            if (selectedPatternDataIndex >= 0 && selectedPatternDataIndex < patternDataList.Count)
+            {
+                return patternDataList[selectedPatternDataIndex];
+            }
+
+            return null;
+        }
+    }
+
+    public List<int> ActiveIslandSelection
+    {
+        get
+        {
+            PatternData activePattern = SelectedPatternData;
+            return activePattern?.currentIslandSelection ?? EmptySlotSelection;
+        }
+    }
+
+    public List<int> ActiveOceanSelection
+    {
+        get
+        {
+            PatternData activePattern = SelectedPatternData;
+            return activePattern?.currentOceanSelection ?? EmptySlotSelection;
+        }
+    }
+
+    public IslandConfiguration ActiveConfiguration
+    {
+        get
+        {
+            PatternData activePattern = SelectedPatternData;
+            return activePattern?.configuration;
+        }
+    }
+
+    public GameObject ActiveChunkPrefab
+    {
+        get
+        {
+            PatternData activePattern = SelectedPatternData;
+            return activePattern?.defaultChunkPrefab;
+        }
+    }
+
     [Header("Spawn Patterns")]
+    [Tooltip("Collection of configured map generation patterns.")]
     public List<PatternData> patternDataList;
-    [Space]
-    public SpawnPattern selectedSpawnPattern;
+    [FormerlySerializedAs("selectedSpawnPattern")]
+    [SerializeField, HideInInspector] private SpawnPattern legacySelectedSpawnPattern;
+    [SerializeField, HideInInspector] private int selectedPatternDataIndex = -1;
+    private static readonly List<int> EmptySlotSelection = new List<int>();
+
+    public int SelectedPatternDataIndex => selectedPatternDataIndex;
+
+    public void SelectPatternData(int index)
+    {
+        if (patternDataList == null || index < 0 || index >= patternDataList.Count)
+        {
+            selectedPatternDataIndex = -1;
+            return;
+        }
+
+        selectedPatternDataIndex = index;
+    }
+
+    private void OnValidate()
+    {
+        ValidateAndMigratePatternData();
+    }
+
+    private void ValidateAndMigratePatternData()
+    {
+        patternDataList ??= new List<PatternData>();
+        if (patternDataList != null)
+        {
+            for (int i = 0; i < patternDataList.Count; i++)
+            {
+                PatternData pattern = patternDataList[i];
+                if (pattern != null)
+                {
+                    pattern.ValidateAndMigrate(
+                        i,
+                        legacyNumberOfIslands,
+                        legacyIslandSpacing,
+                        legacyIslandSelection,
+                        legacyOceanSelection,
+                        legacyIslandConfiguration,
+                        legacyIslandPrefab,
+                        legacyWaterOnStart,
+                        legacyWaterHeight);
+                }
+            }
+        }
+
+        if (selectedPatternDataIndex < 0 || selectedPatternDataIndex >= patternDataList.Count
+            || patternDataList[selectedPatternDataIndex] == null)
+        {
+            int migratedIndex = patternDataList.FindIndex(
+                pattern => pattern != null && pattern.spawnPattern == legacySelectedSpawnPattern);
+            selectedPatternDataIndex = migratedIndex >= 0
+                ? migratedIndex
+                : patternDataList.FindIndex(pattern => pattern != null);
+        }
+    }
 
 
     // Prefabs ... (and below the rest of your variables)
-    [Header("Chunk Prefabs")]
-    [SerializeField] private GameObject islandPrefab; // The Current Island Object / Land chunk prefab
-    [SerializeField] private GameObject oceanTilePrefab; // Ocean/Plateau chunk prefab (falls back to islandPrefab if null)
+    [FormerlySerializedAs("islandPrefab")]
+    [SerializeField, HideInInspector] private GameObject legacyIslandPrefab;
+    [FormerlySerializedAs("oceanTilePrefab")]
+    [SerializeField, HideInInspector] private GameObject legacyOceanTilePrefab;
 
-    public GameObject landTilePrefab => islandPrefab;
+    public GameObject landTilePrefab => ActiveChunkPrefab;
     [SerializeField] private GameObject waterObject; // Assuming that waterObject is a reference to the water game object
-    [SerializeField] private IslandConfiguration islandConfig; // Assuming that IslandConfig is a reference to the IslandConfiguration scriptable object
+    [FormerlySerializedAs("islandConfig")]
+    [SerializeField, HideInInspector] private IslandConfiguration legacyIslandConfiguration;
 
     //[Range(0, 7)] // Add Later
-    public int numberOfIslands;
+    [FormerlySerializedAs("numberOfIslands")]
+    [SerializeField, HideInInspector] private int legacyNumberOfIslands;
     public List<Island> islands { get; private set; }
     private int nextIslandID;
     private GameManager gameManager;
     [SerializeField, HideInInspector] private Transform generatedMapRoot;
     [Space]
-    [SerializeField] private bool WaterOnStart;
-    [SerializeField] private float waterHeight = 0f; // Replace with the correct height of your water
+    [FormerlySerializedAs("WaterOnStart")]
+    [SerializeField, HideInInspector] private bool legacyWaterOnStart;
+    [FormerlySerializedAs("waterHeight")]
+    [SerializeField, HideInInspector] private float legacyWaterHeight;
 
     [Space]
 
@@ -120,7 +469,8 @@ public class MapManager : MonoBehaviour
     [Space]
     [Header("Square Patterns Only")]
     // The LATTICE SLOT pitch, not the chunk width. See LatticeSlotSpacing.
-    [SerializeField] private float islandSpacing = 20f;
+    [FormerlySerializedAs("islandSpacing")]
+    [SerializeField, HideInInspector] private float legacyIslandSpacing = 20f;
     [Tooltip("VESTIGIAL. Chunk bounds are now sized from ChunkWorldSize so they match " +
              "the generated mesh exactly. Nothing reads this.")]
     [SerializeField] private float islandSize = 10f;
@@ -148,7 +498,21 @@ public class MapManager : MonoBehaviour
     /// Pitch between adjacent lattice SLOTS. Half a chunk with the current sparse
     /// selection - it is not the chunk's world width.
     /// </summary>
-    private float LatticeSlotSpacing => islandSpacing;
+    public int RunGridSize
+    {
+        get
+        {
+            return SelectedPatternData?.gridSize ?? 1;
+        }
+    }
+
+    public float LatticeSlotSpacing
+    {
+        get
+        {
+            return SelectedPatternData?.slotSpacing ?? 1f;
+        }
+    }
 
     /// <summary>
     /// World-space width of one generated chunk: gridResolution * cellWorldSize, read
@@ -156,17 +520,18 @@ public class MapManager : MonoBehaviour
     /// GridSystem.cellSize). This is the extent of the terrain mesh and of
     /// Island.bounds - it is deliberately independent of LatticeSlotSpacing.
     /// </summary>
-    private float ChunkWorldSize
+    public float ChunkWorldSize
     {
         get
         {
-            if (islandPrefab != null)
+            GameObject prefab = ActiveChunkPrefab;
+            if (prefab != null)
             {
-                MapGrid prefabGrid = islandPrefab.GetComponent<MapGrid>();
+                MapGrid prefabGrid = prefab.GetComponent<MapGrid>();
                 if (prefabGrid != null && prefabGrid.Size > 0) return prefabGrid.Size;
             }
 
-            return islandSpacing;
+            return LatticeSlotSpacing;
         }
     }
 
@@ -183,11 +548,11 @@ public class MapManager : MonoBehaviour
     /// This generalises what the Singular pattern already hardcodes - substituting
     /// slots = 1 yields exactly its chunkWorldSize/2.
     /// </summary>
-    private float LatticeCenteringOffset
+    public float LatticeCenteringOffset
     {
         get
         {
-            int slots = Mathf.Max(1, numberOfIslands);
+            int slots = Mathf.Max(1, RunGridSize);
             return ((slots - 1) * LatticeSlotSpacing + ChunkWorldSize) * 0.5f;
         }
     }
@@ -210,14 +575,12 @@ public class MapManager : MonoBehaviour
     public float xOffset { get; private set; }
     public float zOffset { get; private set; }
 
-    [Header("Island Selection")]
-    public bool invertSelection;
-
-    [Tooltip("Max Island Amount: 49")] // Write down why this number is here to begin with
-    public List<int> currentIslandSelection; // Current Selected Islands
-
-    [Tooltip("Max Ocean Amount: XX")]
-    public List<int> currentOceanSelection; // Current Selected Oceans
+    [FormerlySerializedAs("invertSelection")]
+    [SerializeField, HideInInspector] private bool legacyInvertSelection;
+    [FormerlySerializedAs("currentIslandSelection")]
+    [SerializeField, HideInInspector] private List<int> legacyIslandSelection;
+    [FormerlySerializedAs("currentOceanSelection")]
+    [SerializeField, HideInInspector] private List<int> legacyOceanSelection;
 
     #endregion
 
@@ -244,14 +607,18 @@ public class MapManager : MonoBehaviour
             return;
         }
 
-        selectedSpawnPattern = config.spawnPattern;
-        numberOfIslands = config.numberOfIslands;
-
-        // A null islandConfig means "the lobby had no opinion", so keep the
-        // Inspector's asset rather than blanking a working reference.
-        if (config.islandConfig != null)
+        int requestedPattern = patternDataList?.FindIndex(
+            pattern => pattern != null && pattern.spawnPattern == config.spawnPattern) ?? -1;
+        if (requestedPattern >= 0)
         {
-            islandConfig = config.islandConfig;
+            SelectPatternData(requestedPattern);
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"MapManager: MatchConfig requested layout '{config.spawnPattern}', but Pattern Data List has no matching entry. " +
+                "Keeping the selected PatternData entry as the generation authority.",
+                this);
         }
 
         Debug.Log($"<color=lightblue>MapManager:</color> applied {config}");
@@ -268,28 +635,30 @@ public class MapManager : MonoBehaviour
         RegenerateMap();
     }
 
-    private void ResolvePrefabReferences()
-    {
-        if (islandPrefab == null)
-        {
-#if UNITY_EDITOR
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("IslandPrefab t:Prefab");
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[i]);
-                if (path.EndsWith("IslandPrefab.prefab"))
-                {
-                    islandPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                    break;
-                }
-            }
-#endif
-        }
-    }
-
     public void GenerateMap()
     {
-        ResolvePrefabReferences();
+        var generationStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        LastGenerationTimeMs = -1;
+        LastGenerationBreakStatus = null;
+
+        ValidateAndMigratePatternData();
+        PatternData activePattern = SelectedPatternData;
+        if (activePattern == null)
+        {
+            Debug.LogError(
+                "MapManager: generation requires one selected Pattern Data List entry.",
+                this);
+            return;
+        }
+
+        if (activePattern.defaultChunkPrefab == null)
+        {
+            Debug.LogError(
+                $"MapManager: Pattern '{activePattern.displayName}' has no Default Chunk Prefab.",
+                this);
+            return;
+        }
+
         ResolveGeneratedMapRoot();
         if (generatedMapRoot != null)
         {
@@ -308,8 +677,10 @@ public class MapManager : MonoBehaviour
 
         if (waterObject != null)
         {
-            waterObject.SetActive(WaterOnStart);
-            // waterObject.transform.localPosition = new Vector3(0f, waterHeight, 0f); // Removed so user can position it manually
+            waterObject.SetActive(activePattern.waterOnStart);
+            Vector3 waterPosition = waterObject.transform.localPosition;
+            waterPosition.y = activePattern.waterHeight;
+            waterObject.transform.localPosition = waterPosition;
         }
 
         islands = new List<Island>();
@@ -320,12 +691,11 @@ public class MapManager : MonoBehaviour
 
         // Creates Island Game Object
         // > Start 
-        // Debug.Log("Pattern: " + selectedSpawnPattern); // Pattern Tracker + Verifier
-        switch (selectedSpawnPattern)
+        switch (activePattern.spawnPattern)
         {
             case SpawnPattern.Singular: // DEV ONLY
                 // Singular Spawn
-                int singularIslandID = nextIslandID++;
+                int singularIslandID = 1;
                 // Minimum corner placed half a chunk negative on both axes, so the one
                 // generated chunk is centred on the world origin.
                 float Offset = ChunkWorldSize * -0.5f;
@@ -335,7 +705,6 @@ public class MapManager : MonoBehaviour
                     // Singular Spawn
 
                     // Generate a Single new island
-                    invertSelection = true;
                     IslandData islandData = new IslandData(GridType.Type.Island);
 
                     // Set the position and size of the island's bounds
@@ -346,7 +715,7 @@ public class MapManager : MonoBehaviour
                     islandData.id = singularIslandID;  // Use the reserved ID
                     islandData.name = "Island " + singularIslandID;
 
-                    AddIsland(islandData); // Singular
+                        AddIsland(islandData, 0, 0); // Singular
                 }
                 break;
 
@@ -397,9 +766,9 @@ public class MapManager : MonoBehaviour
                 xOffset = LatticeCenteringOffset;
                 zOffset = LatticeCenteringOffset;
 
-                for (int i = 0; i < numberOfIslands; i++)
+                for (int i = 0; i < RunGridSize; i++)
                 {
-                    for (int j = 0; j < numberOfIslands; j++)
+                    for (int j = 0; j < RunGridSize; j++)
                     {
                         // Generate a new island
                         IslandData islandData = new IslandData(GridType.Type.Island);
@@ -415,7 +784,7 @@ public class MapManager : MonoBehaviour
                         islandData.name = "Island " + (currentIsland + 1);
 
                         // Add the island to the game world
-                        AddIsland(islandData); // Square
+                        AddIsland(islandData, i, j); // Square
 
                         currentIsland++;
                     }
@@ -432,9 +801,9 @@ public class MapManager : MonoBehaviour
                 xOffset = LatticeCenteringOffset;
                 zOffset = LatticeCenteringOffset;
                 // Add Islands Loop
-                for (int i = 0; i < numberOfIslands; i++)
+                for (int i = 0; i < RunGridSize; i++)
                 {
-                    for (int j = 0; j < numberOfIslands; j++)
+                    for (int j = 0; j < RunGridSize; j++)
                     {
                         // Create New Data
                         IslandData islandData = new IslandData(GridType.Type.Island);
@@ -473,13 +842,8 @@ public class MapManager : MonoBehaviour
                         // Generate Island Data
 
                         // Generate island data logic...
-                        if (currentOceanSelection.Contains(currentIsland + 1))
-                        {
-                            //Debug.Log($"Generating ocean terrain for Island ID {currentIsland + 1} at position {islandPosition}");
-                        }
-
                         // Add the island to the game world
-                        AddIsland(islandData); // Normal
+                        AddIsland(islandData, i, j); // Normal
 
                         currentIsland++;
 
@@ -519,15 +883,10 @@ public class MapManager : MonoBehaviour
                 break;
         }
 
-        if (selectedSpawnPattern == SpawnPattern.Singular)
-        {
-            currentIslandSelection.Add(1);
-            currentOceanSelection.Remove(1); // Ensure ID 1 is not considered for oceans
-        }
-
         ValidateGeneratedChunkSeparation();
 
         OnMapGenerated?.Invoke();
+        LastGenerationTimeMs = generationStopwatch.ElapsedMilliseconds;
     }
 
     /// <summary>
@@ -629,24 +988,34 @@ public class MapManager : MonoBehaviour
     public List<Vector3> oceanGizmoPositions = new List<Vector3>();
 
     // IMPORTANT: USES SPAWN PATTERNS 
-    public void AddIsland(IslandData data)
+    public void AddIsland(IslandData data, int row = 0, int column = 0)
     {
-        bool invertSelection = IsSelectionInverted;
-        bool shouldAddIsland = selectedSpawnPattern == SpawnPattern.Singular
-            || (invertSelection ? !currentIslandSelection.Contains(data.id) : currentIslandSelection.Contains(data.id));
-        bool shouldAddOcean = !invertSelection && currentOceanSelection.Contains(data.id) && selectedSpawnPattern != SpawnPattern.Singular;
-
-        // If we should add this island (or ocean, depending on the list and invertSelection)
-        if (shouldAddIsland || shouldAddOcean)
+        PatternData activePattern = SelectedPatternData;
+        if (activePattern == null)
         {
+            Debug.LogError("MapManager: cannot resolve a slot without selected PatternData.", this);
+            return;
+        }
 
-            GameObject prefabToUse = shouldAddOcean ? (oceanTilePrefab != null ? oceanTilePrefab : islandPrefab) : islandPrefab;
-            if (prefabToUse == null)
-            {
-                Debug.LogError("MapManager: Neither landTilePrefab nor oceanTilePrefab is assigned!");
-                nextIslandID++;
-                return;
-            }
+        if (!activePattern.TryResolveSlot(
+                data.id,
+                row,
+                column,
+                out GridType.Type resolvedTerrain,
+                out GameObject prefabToUse))
+        {
+            return;
+        }
+
+        data.gridType = resolvedTerrain;
+        bool shouldAddOcean = resolvedTerrain == GridType.Type.Ocean;
+        if (prefabToUse == null)
+        {
+            Debug.LogError(
+                $"MapManager: Pattern '{activePattern.displayName}' resolved slot {data.id} without a chunk prefab.",
+                this);
+            return;
+        }
 
             GameObject islandGO = Instantiate(prefabToUse);
             islandGO.transform.SetParent(generatedMapRoot, true);
@@ -663,23 +1032,25 @@ public class MapManager : MonoBehaviour
             // but calling them "Island N" makes the hierarchy unreadable when half the
             // map is open water. Only the GameObject is renamed - IslandData.name and
             // the island id are left alone so nothing that looks them up breaks.
-            islandGO.name = shouldAddOcean ? $"Ocean {data.id}" : data.name;
+            islandGO.name = data.gridType == GridType.Type.Island
+                ? data.name
+                : $"{data.gridType} {data.id}";
 
             Island island = islandGO.GetComponent<Island>();
             if (island == null)
             {
-                Debug.LogError($"MapManager: '{islandPrefab.name}' has no Island component - cannot add island '{data.name}'.");
+                Debug.LogError($"MapManager: '{prefabToUse.name}' has no Island component - cannot add chunk '{data.name}'.");
                 Destroy(islandGO);
-                nextIslandID++;
                 return;
             }
 
             island.Initialize(data.islandType);
-            island.islandConfig = islandConfig;
+            island.islandConfig = activePattern.configuration;
             island.buildings = data.buildings;
             island.IslandItems = data.items;
             island.bounds = data.bounds;
-            island.id = GetNextIslandID();
+            island.id = data.id > 0 ? data.id : nextIslandID;
+            nextIslandID = Mathf.Max(nextIslandID, island.id + 1);
             island.islandObject = islandGO;
 
             islands.Add(island);
@@ -688,19 +1059,20 @@ public class MapManager : MonoBehaviour
             MapGrid mapGrid = islandGO.GetComponent<MapGrid>();
             InfluenceManager influenceManager = islandGO.AddComponent<InfluenceManager>();
 
-            // If the island is actually an ocean, then set the grid type accordingly
-            if (shouldAddOcean)
+            if (mapGrid == null)
             {
-                mapGrid.currentGridType = GridType.Type.Ocean; // or GridType.Type.Plateau if that's what you meant by "ocean/plateaus"
-                                                               // Add ocean gizmo position, log message, etc.
-                                                               // ... What about -> shouldBePlateau(mapGrid.currentGridType); - Undecided for now - TODO!
-            }
-            else 
-            {
-                // If it's a regular island, then proceed as normal
-                mapGrid.currentGridType = data.gridType;
+                Debug.LogError($"MapManager: '{prefabToUse.name}' has no MapGrid component.", islandGO);
+                Destroy(islandGO);
+                islands.Remove(island);
+                return;
             }
 
+            mapGrid.currentGridType = resolvedTerrain;
+            if (resolvedTerrain == GridType.Type.Plateau)
+            {
+                mapGrid.generationSettings ??= new TerrainGenerationSettings();
+                mapGrid.generationSettings.standalonePlateau = activePattern.plateauSettings.Clone();
+            }
             mapGrid.InitializeTerrain();
 
 
@@ -711,14 +1083,6 @@ public class MapManager : MonoBehaviour
                 oceanGizmoPositions.Add(island.bounds.center + Vector3.up * 5); // Raise the Gizmo above the terrain for visibility
                 // Debug.Log($"Ocean placed at {island.bounds.center} with ID {island.id}");
             }
-        }
-        else
-        {
-            // Debug.Log($"Skipped adding terrain with ID {data.id}");
-        }
-
-        // Always increment the ID to ensure unique IDs
-        nextIslandID++;
     }
 
     // At the class level
@@ -759,8 +1123,8 @@ public class MapManager : MonoBehaviour
     // Version 2
     public void RemoveSelectedIslandsAndOceans(bool invertSelection)
     {
-        List<int> mergedSelection = new List<int>(currentIslandSelection);
-        mergedSelection.AddRange(currentOceanSelection.Except(currentIslandSelection)); // Combine and avoid duplicates
+        List<int> mergedSelection = new List<int>(ActiveIslandSelection);
+        mergedSelection.AddRange(ActiveOceanSelection.Except(ActiveIslandSelection)); // Combine and avoid duplicates
 
         List<Island> toRemove = new List<Island>();
 
@@ -794,15 +1158,16 @@ public class MapManager : MonoBehaviour
     public void RemoveSelectedIslands(bool invertSelection)
     {
         List<Island> islandsToRemove = new List<Island>();
+        List<int> islandSelection = ActiveIslandSelection;
 
         // Add the islands to remove based on the current selection
         foreach (Island island in islands)
         {
-            if (currentIslandSelection.Contains(island.id) && !invertSelection)
+            if (islandSelection.Contains(island.id) && !invertSelection)
             {
                 islandsToRemove.Add(island);
             }
-            else if (!currentIslandSelection.Contains(island.id) && invertSelection)
+            else if (!islandSelection.Contains(island.id) && invertSelection)
             {
                 islandsToRemove.Add(island);
             }
@@ -816,14 +1181,6 @@ public class MapManager : MonoBehaviour
     }
 
 
-    #endregion
-
-    #region Set Island Id
-    private int GetNextIslandID()
-    {
-        // Debug.Log("nextIslandID = " + nextIslandID);
-        return nextIslandID++;
-    }
     #endregion
 
     #region Get Island Methods

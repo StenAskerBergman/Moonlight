@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(MapGrid))]
@@ -11,6 +11,23 @@ public class MapGridEditor : Editor
         DrawDefaultInspector();
 
         MapGrid mapGrid = (MapGrid)target;
+
+        GUILayout.Space(10);
+        EditorGUILayout.LabelField("Terrain Diagnostics & Heatmap", EditorStyles.boldLabel);
+        EditorGUI.BeginChangeCheck();
+        TerrainDebugViewMode newMode = (TerrainDebugViewMode)EditorGUILayout.EnumPopup("Debug View Mode", mapGrid.debugViewMode);
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(mapGrid, "Change Terrain Debug View Mode");
+            mapGrid.debugViewMode = newMode;
+            EditorUtility.SetDirty(mapGrid);
+            mapGrid.UpdateTerrainTexture();
+        }
+
+        if (GUILayout.Button("Update Terrain Texture"))
+        {
+            mapGrid.UpdateTerrainTexture();
+        }
 
         if (mapGrid.climateProfile != null)
         {

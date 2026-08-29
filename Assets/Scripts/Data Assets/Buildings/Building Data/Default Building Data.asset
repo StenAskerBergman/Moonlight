@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: Default Building Data
   m_EditorClassIdentifier: 
+  identifier: core:default_building_data
   buildingName: 
   buildingDescription: 
   buildingType: 
   buildingSize: {x: 0, y: 0, z: 0}
   buildingTags: []
+  requiredNodeType: 0
   BuildingRequirements:
   - {fileID: 0}

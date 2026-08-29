@@ -14,9 +14,16 @@ using UnityEngine;
 /// BuildingData ("Data/Building/Building Data"), etc.
 /// </summary>
 [CreateAssetMenu(fileName = "New Unit Definition", menuName = "Data/Unit/Unit Definition")]
-public class UnitDefinition : ScriptableObject
+public class UnitDefinition : ScriptableObject, IIdentifiable
 {
     [Header("Identity")]
+    [Tooltip("Namespaced identifier (e.g. 'core:patrol_boat', 'core:cargo_truck', 'modname:custom_submarine').")]
+    [SerializeField] private string identifier = "core:unit";
+
+    public Identifier Id => !string.IsNullOrEmpty(identifier)
+        ? new Identifier(identifier)
+        : new Identifier($"core:{name.ToLowerInvariant().Replace(' ', '_')}");
+
     [Tooltip("Human-readable category name (e.g. 'Patrol Boat', 'Cargo Ship').")]
     public string displayCategory;
 

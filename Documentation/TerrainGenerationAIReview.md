@@ -21,7 +21,7 @@ Both directories contain an `index.md` for fast human/AI review and a `manifest.
 4. Compare total and per-island timings with the successful manifest. Capture/render/export time is excluded from terrain-generation timings.
 5. A missing island image in `LatestFailed` means generation stopped before that island completed enough rendering state to capture; it does not mean the capture utility deleted it.
 6. Splat channels are `R = grass`, `G = sand`, `B = rock`, and opaque black represents the alpha/seafloor-water channel.
-7. In the gameplay-grid image, faint green means `GridSystem.IsValidSurfaceConstructionCell` accepted that cell at capture time; faint red means it rejected it. Cyan outlines the accepted region boundary.
+7. In the gameplay-grid image, faint green means either `GridSystem.IsValidSurfaceConstructionCell` or `GridSystem.IsValidUnderwaterPlateauCell` accepted that cell at capture time; faint red means both rejected it. Cyan outlines the accepted region boundary.
 8. Resource markers use the two-letter code and color shown in the image legend. They reflect each generated `Cell.depositNodeType`, not inferred texture color.
 9. Treat image and timing evidence separately. A compile pass does not prove that generated terrain looks or behaves correctly.
 10. If the selected `MapManager.PatternData.invertSelection` checkbox was true at capture time, each image shows an orange `INVERTED` flag and the manifest records `selectionInverted: true`. Treat that as generation-state evidence, not a terrain color.

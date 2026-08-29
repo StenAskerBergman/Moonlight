@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: City Center Building Data
   m_EditorClassIdentifier: 
+  identifier: core:city_center_building_data
   buildingName: City Center
   buildingDescription: Your Islands City Center is the core that connects your islands
     population.
@@ -20,5 +21,6 @@ MonoBehaviour:
   buildingTags:
   - Universal
   - Civilan
+  requiredNodeType: 0
   BuildingRequirements:
   - {fileID: 11400000, guid: baca84f334285874d9845af34b226eb5, type: 2}

@@ -12,11 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: Worker Building Data
   m_EditorClassIdentifier: 
+  identifier: core:worker_building_data
   buildingName: Worker Residential House
   buildingDescription: Residential housing unit for our most basic yet essential
     workers, the corner stone of our society!
   buildingType: Residential House
   buildingSize: {x: 1, y: 1, z: 1}
   buildingTags: []
+  requiredNodeType: 0
   BuildingRequirements:
   - {fileID: 11400000, guid: baca84f334285874d9845af34b226eb5, type: 2}
