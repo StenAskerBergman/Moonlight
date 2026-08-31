@@ -61,19 +61,19 @@ public class Boat : MonoBehaviour
         this.GetComponent<Inventory>().AddItem(startItem, 1);
     }
 
-    //public void AddToUnitInventory(ItemData itemData, int amount)
-    //{
-    //    //if (amount <= 0 || itemData == null) return;
-    //    //if (unitInventory != null) unitInventory.AddItem(itemData, amount);
-    //}
+    public void AddToUnitInventory(ItemData itemData, int amount)
+    {
+        //if (amount <= 0 || itemData == null) return;
+        //if (unitInventory != null) unitInventory.AddItem(itemData, amount);
+    }
 
-    //public void AddToInventory(UnitInventory unitInventory)
-    //{
-    //    //unitInventory.AddItem( startItem, 1);
-    //}
+    public void AddToInventory(UnitInventory unitInventory)
+    {
+        //unitInventory.AddItem( startItem, 1);
+    }
 
-    //public void AddToUnitInventory()
-    //{
-    //   // this.GetComponent<UnitInventory>().AddItem(startItem, 1);
-    //}
+    public void AddToUnitInventory()
+    {
+        // this.GetComponent<UnitInventory>().AddItem(startItem, 1);
+    }
 }

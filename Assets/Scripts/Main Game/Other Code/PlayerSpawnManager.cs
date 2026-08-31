@@ -59,12 +59,12 @@ public class PlayerSpawnManager : MonoBehaviour
 
     private void OnEnable()
     {
-        MapManager.OnMapGenerated += HandleMapGenerated;
+        RuntimeNavMeshBaker.OnNavMeshBaked += HandleNavMeshReady;
     }
 
     private void OnDisable()
     {
-        MapManager.OnMapGenerated -= HandleMapGenerated;
+        RuntimeNavMeshBaker.OnNavMeshBaked -= HandleNavMeshReady;
     }
 
     private void LoadDefaultAssetsIfNull()
@@ -100,7 +100,7 @@ public class PlayerSpawnManager : MonoBehaviour
 #endif
     }
 
-    private void HandleMapGenerated()
+    private void HandleNavMeshReady()
     {
         if (GameSession.Active != null)
         {

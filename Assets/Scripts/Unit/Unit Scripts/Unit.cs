@@ -81,6 +81,10 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         this.gameObject.name += " - Name: " + displayName;
 
 
+        // Try to fetch inventories if they are attached but not assigned
+        if (unitInventory == null) unitInventory = GetComponent<UnitInventory>();
+        if (inventory == null) inventory = GetComponent<Inventory>();
+
         // Inv Check - Ensure UnitInventory is assigned
         if (unitInventory == null && inventory == null)
         {
