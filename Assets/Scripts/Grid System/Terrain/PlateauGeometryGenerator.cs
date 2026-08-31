@@ -62,16 +62,27 @@ internal sealed class PlateauGeometryResult
 /// </summary>
 internal static class PlateauGeometryGenerator
 {
+    private enum RockArchetype
+    {
+        FoundationBoulder,
+        ShelfSlab,
+        FracturedButtress,
+        RoundedShoulder,
+        NarrowSpire,
+    }
+
     private readonly struct ContourPoint
     {
-        public ContourPoint(Vector3 position, Vector3 outward)
+        public ContourPoint(Vector3 position, Vector3 outward, Vector3 profileOutward)
         {
             Position = position;
             Outward = outward;
+            ProfileOutward = profileOutward;
         }
 
         public Vector3 Position { get; }
         public Vector3 Outward { get; }
+        public Vector3 ProfileOutward { get; }
     }
 
     public static PlateauGeometryResult Generate(
@@ -105,6 +116,7 @@ internal static class PlateauGeometryGenerator
         MeshAccumulator escarpment = new MeshAccumulator();
         BuildEscarpment(
             escarpment,
+            cache,
             contour,
             settings,
             chunkSeed,
@@ -219,7 +231,14 @@ internal static class PlateauGeometryGenerator
             tangent.y = 0f;
             tangent = tangent.sqrMagnitude > 0.0001f ? tangent.normalized : Vector3.forward;
             Vector3 outward = new Vector3(tangent.z, 0f, -tangent.x);
-            contour[index] = new ContourPoint(positions[index], outward);
+            Vector3 profileOutward = positions[index]
+                - new Vector3(center.x, positions[index].y, center.y);
+            profileOutward.y = 0f;
+            profileOutward = profileOutward.sqrMagnitude > 0.0001f
+                ? profileOutward.normalized
+                : outward;
+            if (Vector3.Dot(outward, profileOutward) < 0f) outward = -outward;
+            contour[index] = new ContourPoint(positions[index], outward, profileOutward);
         }
 
         return contour;
@@ -227,14 +246,35 @@ internal static class PlateauGeometryGenerator
 
     private static void BuildEscarpment(
         MeshAccumulator mesh,
+        TerrainSampleCache cache,
         ContourPoint[] contour,
         StandalonePlateauSettings settings,
         int chunkSeed,
         int worldSeed)
     {
         int layerCount = settings.escarpmentStrata;
-        float totalDrop = settings.cliffDropDepth + settings.lowerApronDrop * 0.28f;
         float[] contourDistance = BuildContourDistances(contour, out float perimeter);
+        Vector3[,] wallVertices = new Vector3[contour.Length, layerCount + 1];
+
+        // Resolve each shell vertex once. The former per-quad evaluation repeated
+        // every heightfield lookup up to four times and made the visual-only mesh
+        // disproportionately expensive compared with the island itself.
+        for (int point = 0; point < contour.Length; point++)
+        {
+            for (int layer = 0; layer <= layerCount; layer++)
+            {
+                wallVertices[point, layer] = EvaluateWallVertex(
+                    cache,
+                    contour[point],
+                    point,
+                    contour.Length,
+                    layer,
+                    layerCount,
+                    settings,
+                    chunkSeed,
+                    worldSeed);
+            }
+        }
 
         for (int segment = 0; segment < contour.Length; segment++)
         {
@@ -244,14 +284,10 @@ internal static class PlateauGeometryGenerator
 
             for (int layer = 0; layer < layerCount; layer++)
             {
-                Vector3 topA = EvaluateWallVertex(
-                    contour[segment], segment, contour.Length, layer, layerCount, totalDrop, chunkSeed, worldSeed);
-                Vector3 topB = EvaluateWallVertex(
-                    contour[next], next, contour.Length, layer, layerCount, totalDrop, chunkSeed, worldSeed);
-                Vector3 bottomB = EvaluateWallVertex(
-                    contour[next], next, contour.Length, layer + 1, layerCount, totalDrop, chunkSeed, worldSeed);
-                Vector3 bottomA = EvaluateWallVertex(
-                    contour[segment], segment, contour.Length, layer + 1, layerCount, totalDrop, chunkSeed, worldSeed);
+                Vector3 topA = wallVertices[segment, layer];
+                Vector3 topB = wallVertices[next, layer];
+                Vector3 bottomB = wallVertices[next, layer + 1];
+                Vector3 bottomA = wallVertices[segment, layer + 1];
 
                 float v0 = layer / (float)layerCount;
                 float v1 = (layer + 1f) / layerCount;
@@ -269,40 +305,182 @@ internal static class PlateauGeometryGenerator
     }
 
     private static Vector3 EvaluateWallVertex(
+        TerrainSampleCache cache,
         ContourPoint point,
         int pointIndex,
         int pointCount,
         int layer,
         int layerCount,
-        float totalDrop,
+        StandalonePlateauSettings settings,
         int chunkSeed,
         int worldSeed)
     {
         float t = layer / (float)layerCount;
         int block = pointIndex / 4;
-        float blockOffset = SignedSeed(chunkSeed, worldSeed, 1103 + block * 17) * 0.09f;
-        float fracture = SignedSeed(chunkSeed, worldSeed, 1709 + pointIndex * 23 + layer * 101) * 0.06f;
+        float blockOffset = SignedSeed(chunkSeed, worldSeed, 1103 + block * 17) * 0.11f;
+        float fracture = SignedSeed(chunkSeed, worldSeed, 1709 + pointIndex * 23 + layer * 101)
+            * Mathf.Min(0.14f, settings.cliffFractureStrength * 0.10f);
         float contourPhase = pointIndex / (float)Mathf.Max(1, pointCount) * Mathf.PI * 2f;
         float layerPhase = SeedUnit(chunkSeed, worldSeed, 1301) * Mathf.PI * 2f + contourPhase * 1.35f;
         float stratumEnvelope = Mathf.Sin(t * Mathf.PI);
 
-        // Alternating offsets create shelves and real undercuts instead of simply
-        // displacing another sloped heightfield outward.
-        float outset = 0.10f
-            + t * 0.55f
-            + (Mathf.Sin(t * Mathf.PI * 2.5f + layerPhase) * 0.16f
+        float drop = EvaluateRockProfileDrop(layer, layerCount, settings);
+
+        // The heightfield profile is evaluated along a radial ray and its width is
+        // shortened and noise-varied locally. Resolve the actual sampled crossing
+        // instead of moving along the smoothed contour normal using a global maximum
+        // width. That keeps this shell just outside the authoritative surface around
+        // lobes and notches rather than exposing it as white curtains between panels.
+        float profileDistance = ResolveProfileDistance(cache, point, drop, settings);
+
+        // A small positive skin keeps the render shell outside the heightfield.
+        // Alternating offsets then cut shallow shelves and undercuts around that
+        // profile without returning to the old near-vertical hanging ribbon.
+        float surfaceVariation = (Mathf.Sin(t * Mathf.PI * 2.5f + layerPhase) * 0.13f
                 + blockOffset
                 + fracture) * stratumEnvelope;
-        float drop = totalDrop * Mathf.Pow(t, 0.74f);
+        float outset = profileDistance + Mathf.Max(0.08f, 0.24f + surfaceVariation);
         float stratumBreak = SignedSeed(chunkSeed, worldSeed, 1901 + layer * 37) * 0.10f;
         float y = point.Position.y + 0.04f - drop + stratumBreak * stratumEnvelope;
 
-        Vector3 tangent = Vector3.Cross(point.Outward, Vector3.up);
+        Vector3 tangent = Vector3.Cross(point.ProfileOutward, Vector3.up);
         float shear = SignedSeed(chunkSeed, worldSeed, 2203 + block * 41) * stratumEnvelope * 0.10f;
         return point.Position
-            + point.Outward * outset
+            + point.ProfileOutward * outset
             + tangent * shear
             + Vector3.up * (y - point.Position.y);
+    }
+
+    private static float ResolveProfileDistance(
+        TerrainSampleCache cache,
+        ContourPoint point,
+        float drop,
+        StandalonePlateauSettings settings)
+    {
+        if (drop <= 0.0001f) return 0f;
+
+        float targetHeight = point.Position.y - drop;
+        float analyticMaximum = settings.upperEscarpmentWidth
+                * (1f + settings.profileAsymmetry)
+            + settings.lowerApronWidth
+                * (1f + settings.profileAsymmetry * 0.55f);
+        float distanceToEdge = DistanceToChunkEdge(
+            point.Position,
+            point.ProfileOutward,
+            cache.GridSize);
+        float scanLimit = Mathf.Min(
+            distanceToEdge,
+            analyticMaximum + Mathf.Max(0.5f, cache.Step * 2f));
+        float scanStep = Mathf.Max(0.10f, cache.Step * 0.72f);
+        float previousDistance = 0f;
+        float previousHeight = point.Position.y;
+
+        for (float distance = scanStep; distance <= scanLimit; distance += scanStep)
+        {
+            Vector3 samplePoint = point.Position + point.ProfileOutward * distance;
+            float height = SampleHeight(cache, samplePoint.x, samplePoint.z);
+            if (height <= targetHeight)
+            {
+                float denominator = previousHeight - height;
+                float crossing = denominator > 0.0001f
+                    ? Mathf.Clamp01((previousHeight - targetHeight) / denominator)
+                    : 1f;
+                return Mathf.Lerp(previousDistance, distance, crossing);
+            }
+
+            previousDistance = distance;
+            previousHeight = height;
+        }
+
+        // The profile can terminate very close to the chunk seam, where the last
+        // bilinear sample may sit fractionally above the requested band. Preserve a
+        // deterministic, bounded fallback instead of extending beyond the chunk.
+        return Mathf.Min(
+            distanceToEdge,
+            InverseRockProfileDistance(drop, settings));
+    }
+
+    private static float DistanceToChunkEdge(
+        Vector3 position,
+        Vector3 direction,
+        float gridSize)
+    {
+        const float epsilon = 0.0001f;
+        float xDistance = Mathf.Infinity;
+        if (direction.x > epsilon)
+        {
+            xDistance = (gridSize - position.x) / direction.x;
+        }
+        else if (direction.x < -epsilon)
+        {
+            xDistance = -position.x / direction.x;
+        }
+
+        float zDistance = Mathf.Infinity;
+        if (direction.z > epsilon)
+        {
+            zDistance = (gridSize - position.z) / direction.z;
+        }
+        else if (direction.z < -epsilon)
+        {
+            zDistance = -position.z / direction.z;
+        }
+
+        return Mathf.Max(0f, Mathf.Min(xDistance, zDistance));
+    }
+
+    private static float EvaluateRockProfileDrop(
+        int layer,
+        int layerCount,
+        StandalonePlateauSettings settings)
+    {
+        if (layer <= 0) return 0f;
+        if (layer >= layerCount)
+        {
+            return settings.cliffDropDepth + settings.lowerApronDrop;
+        }
+
+        // Allocate most bands to the steep upper escarpment while reserving at
+        // least one for the apron. Within each region, advance in profile-distance
+        // space and evaluate the forward heightfield curve. Its inverse below then
+        // returns evenly distributed radial strata instead of one oversized last
+        // apron quad.
+        int upperLayerCount = Mathf.Clamp(
+            Mathf.RoundToInt(layerCount * 0.60f),
+            2,
+            layerCount - 1);
+        if (layer <= upperLayerCount)
+        {
+            float upperProgress = layer / (float)upperLayerCount;
+            return settings.cliffDropDepth * Mathf.Pow(upperProgress, 0.42f);
+        }
+
+        int lowerLayerCount = layerCount - upperLayerCount;
+        float lowerProgress = (layer - upperLayerCount) / (float)lowerLayerCount;
+        float softeningDrop = 1f - Mathf.Pow(1f - lowerProgress, 2.6f);
+        return settings.cliffDropDepth + settings.lowerApronDrop * softeningDrop;
+    }
+
+    private static float InverseRockProfileDistance(
+        float drop,
+        StandalonePlateauSettings settings)
+    {
+        float upperDrop = Mathf.Max(0.001f, settings.cliffDropDepth);
+        float maximumUpperWidth = settings.upperEscarpmentWidth
+            * (1f + settings.profileAsymmetry);
+        if (drop <= upperDrop)
+        {
+            float normalizedDrop = Mathf.Clamp01(drop / upperDrop);
+            float upperProgress = Mathf.Pow(normalizedDrop, 1f / 0.42f);
+            return maximumUpperWidth * upperProgress;
+        }
+
+        float lowerDrop = Mathf.Max(0.001f, settings.lowerApronDrop);
+        float normalizedLowerDrop = Mathf.Clamp01((drop - upperDrop) / lowerDrop);
+        float lowerProgress = 1f - Mathf.Pow(1f - normalizedLowerDrop, 1f / 2.6f);
+        float maximumLowerWidth = settings.lowerApronWidth
+            * (1f + settings.profileAsymmetry * 0.55f);
+        return maximumUpperWidth + maximumLowerWidth * lowerProgress;
     }
 
     private static float[] BuildContourDistances(ContourPoint[] contour, out float perimeter)
@@ -357,7 +535,7 @@ internal static class PlateauGeometryGenerator
                     width,
                     depth,
                     height,
-                    settings.rockyRimWidth,
+                    settings,
                     settings.rocksPerCluster,
                     CombineSeed(chunkSeed, worldSeed, 3001 + cluster * 97));
             }
@@ -393,6 +571,7 @@ internal static class PlateauGeometryGenerator
                 width * 1.15f,
                 width * 0.86f,
                 height * 0.34f,
+                RockArchetype.FoundationBoulder,
                 CombineSeed(chunkSeed, worldSeed, 3407 + spire * 73));
             AddRockVolume(
                 mesh,
@@ -402,6 +581,7 @@ internal static class PlateauGeometryGenerator
                 width * 0.58f,
                 width * 0.50f,
                 height,
+                RockArchetype.NarrowSpire,
                 CombineSeed(chunkSeed, worldSeed, 3511 + spire * 73));
         }
     }
@@ -413,41 +593,103 @@ internal static class PlateauGeometryGenerator
         float clusterWidth,
         float clusterDepth,
         float clusterHeight,
-        float rockyRimWidth,
+        StandalonePlateauSettings settings,
         int rockCount,
         int seed)
     {
         Vector3 tangent = Vector3.Cross(anchor.Outward, Vector3.up);
-        for (int rock = 0; rock < rockCount; rock++)
+
+        // Each perimeter cluster is one overlapping geological mass. A broad,
+        // embedded foundation supplies the common base; medium slabs, shoulders,
+        // and buttresses overlap it, and exactly one support may become the local
+        // dominant peak.
+        float foundationInset = Mathf.Max(
+            settings.rockyRimWidth * 0.48f,
+            clusterDepth * 0.42f);
+        Vector3 foundationBase = anchor.Position - anchor.Outward * foundationInset;
+        foundationBase = MoveInsideTabletop(cache, foundationBase, -anchor.Outward);
+        foundationBase.y = Mathf.Max(
+            anchor.Position.y,
+            SampleHeight(cache, foundationBase.x, foundationBase.z)) - 0.34f;
+        AddRockVolume(
+            mesh,
+            foundationBase,
+            tangent,
+            anchor.Outward,
+            clusterWidth * 0.92f,
+            clusterDepth * 1.12f,
+            clusterHeight * Mathf.Lerp(0.36f, 0.46f, Hash01(seed, 379)),
+            RockArchetype.FoundationBoulder,
+            seed + 101);
+
+        int supportCount = Mathf.Max(2, rockCount - 1);
+        int dominantSupport = Mathf.Min(
+            supportCount - 1,
+            Mathf.FloorToInt(Hash01(seed, 397) * supportCount));
+        for (int support = 0; support < supportCount; support++)
         {
-            float normalized = rockCount <= 1 ? 0.5f : rock / (float)(rockCount - 1);
-            float lateral = (normalized - 0.5f) * clusterWidth * 0.76f
-                + SignedHash(seed, 401 + rock * 13) * clusterWidth * 0.11f;
+            float normalized = supportCount <= 1 ? 0.5f : support / (float)(supportCount - 1);
+            float lateral = (normalized - 0.5f) * clusterWidth * 0.62f
+                + SignedHash(seed, 401 + support * 13) * clusterWidth * 0.09f;
             float centerBias = 1f - Mathf.Abs(normalized - 0.5f) * 1.45f;
-            float width = clusterWidth
-                * Mathf.Lerp(0.24f, 0.44f, Hash01(seed, 467 + rock * 23));
-            float depth = clusterDepth
-                * Mathf.Lerp(0.48f, 0.86f, Hash01(seed, 499 + rock * 29));
-            float height = clusterHeight
-                * Mathf.Lerp(0.40f, 0.72f, Hash01(seed, 541 + rock * 31))
-                * Mathf.Lerp(0.80f, 1.22f, Mathf.Clamp01(centerBias));
-
-            if (rock == 0)
+            bool isDominant = support == dominantSupport;
+            RockArchetype archetype;
+            if (isDominant)
             {
-                width = clusterWidth * 0.72f;
-                depth = clusterDepth * 0.92f;
-                height = clusterHeight * 0.42f;
+                archetype = Hash01(seed, 421) < 0.58f
+                    ? RockArchetype.FracturedButtress
+                    : RockArchetype.RoundedShoulder;
             }
-            else if (rock == rockCount / 2)
+            else
             {
-                width = clusterWidth * 0.38f;
-                depth = clusterDepth * 0.62f;
-                height = clusterHeight;
+                switch (support % 3)
+                {
+                    case 0:
+                        archetype = RockArchetype.ShelfSlab;
+                        break;
+                    case 1:
+                        archetype = RockArchetype.RoundedShoulder;
+                        break;
+                    default:
+                        archetype = RockArchetype.FracturedButtress;
+                        break;
+                }
             }
 
-            float semanticInset = rockyRimWidth
-                * Mathf.Lerp(0.38f, 0.74f, Hash01(seed, 433 + rock * 19));
-            float inward = Mathf.Max(semanticInset, depth * 0.52f + 0.18f);
+            float width;
+            float depth;
+            float height;
+            switch (archetype)
+            {
+                case RockArchetype.ShelfSlab:
+                    width = clusterWidth * Mathf.Lerp(0.42f, 0.60f, Hash01(seed, 467 + support * 23));
+                    depth = clusterDepth * Mathf.Lerp(0.42f, 0.60f, Hash01(seed, 499 + support * 29));
+                    height = clusterHeight * Mathf.Lerp(0.22f, 0.34f, Hash01(seed, 541 + support * 31));
+                    break;
+                case RockArchetype.FracturedButtress:
+                    width = clusterWidth * Mathf.Lerp(0.28f, 0.42f, Hash01(seed, 467 + support * 23));
+                    depth = clusterDepth * Mathf.Lerp(0.48f, 0.70f, Hash01(seed, 499 + support * 29));
+                    height = clusterHeight * Mathf.Lerp(0.42f, 0.58f, Hash01(seed, 541 + support * 31));
+                    break;
+                default:
+                    width = clusterWidth * Mathf.Lerp(0.36f, 0.54f, Hash01(seed, 467 + support * 23));
+                    depth = clusterDepth * Mathf.Lerp(0.54f, 0.76f, Hash01(seed, 499 + support * 29));
+                    height = clusterHeight * Mathf.Lerp(0.34f, 0.54f, Hash01(seed, 541 + support * 31));
+                    break;
+            }
+
+            if (isDominant)
+            {
+                width = Mathf.Max(width, clusterWidth * 0.42f);
+                depth = Mathf.Max(depth, clusterDepth * 0.60f);
+                height = clusterHeight
+                    * Mathf.Lerp(0.78f, 1f, Hash01(seed, 593))
+                    * Mathf.Lerp(0.92f, 1.08f, Mathf.Clamp01(centerBias));
+            }
+
+            float semanticInset = settings.rockyRimWidth
+                * Mathf.Lerp(0.38f, 0.64f, Hash01(seed, 433 + support * 19));
+            float inward = Mathf.Max(semanticInset, depth * 0.42f + 0.12f);
             Vector3 basePosition = anchor.Position
                 + tangent * lateral
                 - anchor.Outward * inward;
@@ -464,7 +706,33 @@ internal static class PlateauGeometryGenerator
                 width,
                 depth,
                 height,
-                seed + rock * 1013);
+                archetype,
+                seed + support * 1013);
+        }
+
+        // Most, but not every, mass grows a vertical support into the upper
+        // escarpment. Its base follows the same inverse profile as the wall, so the
+        // rim and cliff overlap as one structure instead of meeting at a clean seam.
+        if (Hash01(seed, 613) > 0.24f)
+        {
+            float descent = settings.cliffDropDepth
+                * Mathf.Lerp(0.46f, 0.72f, Hash01(seed, 619));
+            Vector3 cliffTangent = Vector3.Cross(anchor.ProfileOutward, Vector3.up);
+            float profileDistance = ResolveProfileDistance(cache, anchor, descent, settings) + 0.28f;
+            Vector3 buttressBase = anchor.Position
+                + anchor.ProfileOutward * profileDistance
+                + cliffTangent * SignedHash(seed, 631) * clusterWidth * 0.16f
+                + Vector3.down * (descent + 0.22f);
+            AddRockVolume(
+                mesh,
+                buttressBase,
+                cliffTangent,
+                anchor.ProfileOutward,
+                clusterWidth * Mathf.Lerp(0.28f, 0.38f, Hash01(seed, 641)),
+                clusterDepth * Mathf.Lerp(0.54f, 0.78f, Hash01(seed, 653)),
+                descent + clusterHeight * Mathf.Lerp(0.24f, 0.36f, Hash01(seed, 661)),
+                RockArchetype.FracturedButtress,
+                seed + 1709);
         }
     }
 
@@ -476,26 +744,72 @@ internal static class PlateauGeometryGenerator
         float width,
         float depth,
         float height,
+        RockArchetype archetype,
         int seed)
     {
-        const int sideCount = 7;
+        int sideCount = archetype == RockArchetype.FoundationBoulder
+            || archetype == RockArchetype.ShelfSlab
+                ? 8
+                : 7;
         const int ringCount = 6;
-        float[] ringHeight = { 0f, 0.10f, 0.36f, 0.66f, 0.90f, 1f };
-        float[] ringRadius = { 0.54f, 1f, 0.91f, 0.74f, 0.47f, 0.12f };
+        float[] ringHeight;
+        float[] ringRadius;
+        float leanScale;
+        float rotationJitter;
+        switch (archetype)
+        {
+            case RockArchetype.FoundationBoulder:
+                ringHeight = new[] { 0f, 0.12f, 0.36f, 0.63f, 0.84f, 1f };
+                ringRadius = new[] { 0.72f, 1f, 1.02f, 0.96f, 0.82f, 0.58f };
+                leanScale = 0.035f;
+                rotationJitter = 0.10f;
+                break;
+            case RockArchetype.ShelfSlab:
+                ringHeight = new[] { 0f, 0.10f, 0.30f, 0.62f, 0.86f, 1f };
+                ringRadius = new[] { 0.78f, 1f, 1.03f, 1f, 0.94f, 0.78f };
+                leanScale = 0.045f;
+                rotationJitter = 0.07f;
+                break;
+            case RockArchetype.FracturedButtress:
+                ringHeight = new[] { 0f, 0.08f, 0.32f, 0.62f, 0.86f, 1f };
+                ringRadius = new[] { 0.82f, 1f, 0.95f, 0.87f, 0.75f, 0.54f };
+                leanScale = 0.075f;
+                rotationJitter = 0.16f;
+                break;
+            case RockArchetype.RoundedShoulder:
+                ringHeight = new[] { 0f, 0.14f, 0.38f, 0.64f, 0.84f, 1f };
+                ringRadius = new[] { 0.62f, 0.88f, 1f, 0.92f, 0.70f, 0.32f };
+                leanScale = 0.065f;
+                rotationJitter = 0.18f;
+                break;
+            default:
+                ringHeight = new[] { 0f, 0.10f, 0.34f, 0.65f, 0.88f, 1f };
+                ringRadius = new[] { 0.64f, 1f, 0.84f, 0.58f, 0.31f, 0.06f };
+                leanScale = 0.12f;
+                rotationJitter = 0.22f;
+                break;
+        }
+
         Vector3[,] points = new Vector3[ringCount, sideCount];
-        Vector2 lean = new Vector2(SignedHash(seed, 17), SignedHash(seed, 29)) * 0.12f;
+        Vector2 lean = new Vector2(SignedHash(seed, 17), SignedHash(seed, 29)) * leanScale;
+        float baseRotation = archetype == RockArchetype.ShelfSlab ? Mathf.PI * 0.125f : 0f;
+        float noiseAmplitude = archetype == RockArchetype.ShelfSlab ? 0.08f : 0.16f;
 
         for (int ring = 0; ring < ringCount; ring++)
         {
             float t = ringHeight[ring];
-            float rotation = SignedHash(seed, 101 + ring * 17) * 0.24f;
+            float rotation = baseRotation
+                + SignedHash(seed, 101 + ring * 17) * rotationJitter;
             for (int side = 0; side < sideCount; side++)
             {
                 float angle = side / (float)sideCount * Mathf.PI * 2f + rotation;
-                float radiusNoise = Mathf.Lerp(0.76f, 1.18f, Hash01(seed, 211 + ring * 67 + side * 19));
+                float radiusNoise = 1f
+                    + SignedHash(seed, 211 + ring * 67 + side * 19) * noiseAmplitude;
+                float depthNoise = 1f
+                    + SignedHash(seed, 307 + ring * 71 + side * 23) * noiseAmplitude;
                 float x = Mathf.Cos(angle) * width * 0.5f * ringRadius[ring] * radiusNoise;
                 float z = Mathf.Sin(angle) * depth * 0.5f * ringRadius[ring]
-                    * Mathf.Lerp(0.82f, 1.14f, Hash01(seed, 307 + ring * 71 + side * 23));
+                    * depthNoise;
                 Vector3 drift = tangent * (lean.x * width * t) + outward * (lean.y * depth * t);
                 points[ring, side] = basePosition
                     + tangent * x

@@ -246,8 +246,31 @@ public class BuildingPlacer : MonoBehaviour
             manager.RegisterZone(zone);
         }
 
-        // Next Step: Initialize Building!
+        InitializePlacedBuilding(buildingInstance);
+
         buildingChecker.CancelBuilding();
+    }
+
+    /// <summary>
+    /// Puts a freshly placed building onto the construction -> Active path.
+    ///
+    /// Building.CurrentState defaults to UnderConstruction, and BuildingProductionController
+    /// and BuildingOutput both refuse to run until it reaches Active. Nothing else in the
+    /// placement flow performed that transition, so every placed producer sat inert. Adding
+    /// ConstructionSite here (it creates its own BuildingSimulation) means prefabs do not
+    /// each have to remember to carry the construction components.
+    /// </summary>
+    private void InitializePlacedBuilding(GameObject buildingInstance)
+    {
+        if (buildingInstance == null) return;
+
+        // ConstructionSite.Start runs autoBuildOnStart on the frame after placement and
+        // drives progress to 1.0, which is what flips BuildingSimulation - and through it
+        // the legacy Building component - to Active.
+        if (buildingInstance.GetComponent<ConstructionSite>() == null)
+        {
+            buildingInstance.AddComponent<ConstructionSite>();
+        }
     }
     public bool CheckIfCanAffordBuilding(BuildingCost buildingCost)
     {

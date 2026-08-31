@@ -63,28 +63,16 @@ public class TradeInteraction : MonoBehaviour, ITradable
         }
     }
 
-    public void OpenTradeMenu()
+    public void OpenTradeMenu(Inventory targetInventory = null)
     {
         if(/*tradeMenu is Closed && player clicks to open trade menu on another islands then*/true)
         {
             // Allow to Open the trade menu
-            tradeMenu.Open();
+            tradeMenu.Open(unitInventory, targetInventory, this);
             // if unit close enough with inventory
             // Begin a open trade session with the
             // npc's trade point, and cancel if the
             // unit is to far away from trade point
-
-        }
-
-        // Check if the unit is close enough to an NPC trade point
-        if (/*if unit inventory open && close enough to trade point then open trade menu unless already open */ true)
-        {
-            tradeMenu.Open(); // Open the trade menu UI
-
-        }
-        else
-        {
-            // Handle scenario where the unit is too far from the trade point
         }
     }
 

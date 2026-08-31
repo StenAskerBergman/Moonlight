@@ -3,10 +3,14 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Owns and dispatches Truck units for ground-based inter-building resource
-/// transport. Listens for BuildingOutput.OnOutputReady and routes an idle (or
-/// freshly spawned) truck to ferry the output from the producing building to a
-/// consuming building on the same island.
+/// Owns the manual "order a truck" entry point and the shared truck prefab.
+///
+/// NOTE: the automatic producer -> consumer path below (OnOutputReady, FindConsumer,
+/// TryGetPath, GetOrSpawnTruck) is currently DORMANT. OnOutputReady is deliberately
+/// not subscribed to BuildingOutput.OnOutputReady: automatic output collection is
+/// owned by WarehouseLogisticsScheduler for Slice 1, and subscribing here as well
+/// would let two dispatchers reserve the same output. The code is retained for the
+/// later building-to-building Delivery Job slice; see Documentation/PlayableLoop.md.
 /// </summary>
 public class TransportManager : MonoBehaviour
 {

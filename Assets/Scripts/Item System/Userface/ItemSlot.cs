@@ -500,6 +500,41 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                 Debug.Log($"<color=lightblue>ItemSlot: </color><color=yellow>Item Valid On Drop (using DisplayName): </color><color=white>{droppedItem.itemData.displayName}</color>");
             }
 
+            // Cross-inventory Transfer Logic
+            ItemSlot sourceSlot = droppedItem.itemSlot;
+            if (sourceSlot != null)
+            {
+                Inventory targetInv = GetComponentInParent<Inventory>();
+                Inventory sourceInv = sourceSlot.GetComponentInParent<Inventory>();
+
+                if (targetInv != null && sourceInv != null && targetInv != sourceInv)
+                {
+                    int transferAmount = droppedItem.GetQuantity();
+                    
+                    if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) transferAmount = 10;
+                    if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) transferAmount = 1;
+
+                    transferAmount = Mathf.Min(transferAmount, droppedItem.GetQuantity());
+
+                    if (sourceInv.CanRemove(droppedItem.itemData, transferAmount) && targetInv.CanAdd(droppedItem.itemData, transferAmount))
+                    {
+                        sourceInv.RemoveItem(droppedItem.itemData, transferAmount);
+                        targetInv.AddItem(droppedItem.itemData, transferAmount);
+                        PlayDropSound();
+                        
+                        // Force refresh if they have UI managers
+                        var targetUI = GetComponentInParent<InventoryUserface>();
+                        var sourceUI = sourceSlot.GetComponentInParent<InventoryUserface>();
+                        if (targetUI != null) targetUI.RefreshInventoryDisplay();
+                        if (sourceUI != null) sourceUI.RefreshInventoryDisplay();
+                    }
+                    
+                    // Return out to let the refresh handle the visual state, preventing the normal stack merge logic
+                    // which operates on local UI elements rather than actual Inventory states.
+                    return;
+                }
+            }
+
             // Example: Swap items if the slot is not empty
             if (IsOccupied())
             {
@@ -564,12 +599,12 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
                 if (itemStack != null)
                 {
                     itemStack.SetItemData(droppedItem.GetItemData(), droppedItem.GetQuantity());
-                    ItemSlot sourceSlot = droppedItem.itemSlot;
+                    ItemSlot srcSlot = droppedItem.itemSlot;
                     droppedItem.ClearStack();
                     UpdateSlotName();
-                    if (sourceSlot != null)
+                    if (srcSlot != null)
                     {
-                        sourceSlot.RenameSlot();
+                        srcSlot.RenameSlot();
                     }
                     PlayDropSound();
                 }

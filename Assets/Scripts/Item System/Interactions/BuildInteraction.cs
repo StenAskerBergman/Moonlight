@@ -78,46 +78,48 @@ public class BuildInteraction : MonoBehaviour, IBuildable
         targetPosition = Vector3.zero;
         failReason = null;
 
-        if (IslandManager.instance == null)
+        if (IslandManager.instance == null || IslandManager.instance.islands == null)
         {
-            failReason = "no IslandManager in scene";
+            failReason = "no IslandManager or islands in scene";
             return false;
         }
 
-        targetIsland = IslandManager.instance.GetIsland(transform.position);
-        if (targetIsland == null)
+        Cell closestCell = null;
+        float minDistance = float.MaxValue;
+        
+        foreach (Island island in IslandManager.instance.islands)
         {
-            failReason = "no island within build range";
+            GridSystem gs = island.GetComponent<GridSystem>();
+            if (gs == null) continue;
+            
+            for (int x = 0; x < gs.gridSize; x++)
+            {
+                for (int z = 0; z < gs.gridSize; z++)
+                {
+                    Cell cell = gs.GetCell(x, z);
+                    if (cell == null || cell.isBlocked || cell.isOccupied) continue;
+                    
+                    Vector3 cellWorldPos = gs.transform.TransformPoint(cell.localCenter);
+                    float dist = Vector3.Distance(transform.position, cellWorldPos);
+                    
+                    if (dist < minDistance && dist <= buildRange)
+                    {
+                        minDistance = dist;
+                        closestCell = cell;
+                        targetIsland = island;
+                        targetGrid = gs;
+                        targetPosition = cellWorldPos;
+                    }
+                }
+            }
+        }
+
+        if (closestCell == null)
+        {
+            failReason = "no buildable cell within build range";
             return false;
         }
 
-        targetGrid = targetIsland.GetComponent<GridSystem>();
-        if (targetGrid == null)
-        {
-            failReason = "island has no GridSystem";
-            return false;
-        }
-
-        Cell cell = targetGrid.GetCellAtWorldPosition(transform.position);
-        if (cell == null)
-        {
-            failReason = "no buildable cell near unit";
-            return false;
-        }
-
-        targetPosition = targetGrid.GetNearestPointOnGrid(transform.position);
-
-        if (Vector3.Distance(transform.position, targetPosition) > buildRange)
-        {
-            failReason = $"target is outside build range ({buildRange})";
-            return false;
-        }
-
-        if (cell.isBlocked || cell.isOccupied)
-        {
-            failReason = "target cell is blocked or occupied";
-            return false;
-        }
 
         InfluenceManager influenceManager = targetIsland.islandObject != null
             ? targetIsland.islandObject.GetComponent<InfluenceManager>()

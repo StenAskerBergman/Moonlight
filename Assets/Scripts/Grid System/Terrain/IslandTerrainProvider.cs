@@ -98,6 +98,7 @@ public sealed partial class IslandTerrainProvider
 
     private readonly float legacyOffsetX;
     private readonly float legacyOffsetZ;
+    private readonly float islandEmergenceOffset;
     private readonly int chunkSeed;
     private readonly int worldSeed;
     private readonly Vector2 chunkWorldOrigin;
@@ -111,20 +112,7 @@ public sealed partial class IslandTerrainProvider
         this.worldSeed = worldSeed;
         this.chunkWorldOrigin = chunkWorldOrigin;
 
-        // Authoritative physical elevation hierarchy:
-        this.settings.surfaceFlatlandHeight = 0.85f;
-        this.settings.beachHeight = 0.25f;
-        this.settings.waterHeight = -0.6f;
-        this.settings.shallowHeight = -1.5f;
-        this.settings.naturalPlateauHeight = -2.5f;
-        this.settings.deepHeight = -3.2f;
-        this.settings.abyssHeight = -4.5f;
-        this.settings.cliffHeight = 2.4f;
-        this.settings.mountainHeight = 3.2f;
-        this.settings.mountainPeakHeight = 4.2f;
-        this.settings.underwaterPlateauHeight = -2.2f;
-
-        this.settings.Validate();
+        this.settings.EnforceAuthoritativeHeights();
         layers = BuildRuntimeLayers(this.settings.noiseLayers, worldSeed);
         System.Random legacyRandom = new System.Random(unchecked(chunkSeed * 486187739 ^ 0x51ED270B));
         // Kept small ON PURPOSE. These are added directly to the Perlin sample coordinate, and
@@ -142,6 +130,9 @@ public sealed partial class IslandTerrainProvider
         // noise field and loses no variety.
         legacyOffsetX = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
         legacyOffsetZ = Mathf.Repeat(RandomRange(legacyRandom, -10000f, 10000f), NoiseOffsetWrap);
+        islandEmergenceOffset = gridType == GridType.Type.Island
+            ? CalculateIslandEmergenceOffset()
+            : 0f;
         featureReservations = gridType == GridType.Type.Island
             ? BuildFeatureReservations(chunkSeed)
             : null;

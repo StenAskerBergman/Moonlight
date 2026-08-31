@@ -7,7 +7,7 @@ namespace Moonlight.Rendering
     {
         [Header("Water Detection")]
         [SerializeField] private Camera targetCamera;
-        [Tooltip("Optional. Its Y position is used as the surface height.")]
+        [Tooltip("Optional visible water object. Its renderer's upper bound is the authoritative surface height; transform Y is used when it has no renderer.")]
         [SerializeField] private Transform waterSurface;
         [SerializeField] private float waterHeight;
         [Min(0f), SerializeField] private float surfaceHysteresis = 0.08f;
@@ -62,6 +62,7 @@ namespace Moonlight.Rendering
         private float transitionDuration;
         private AudioSource audioSource;
         private AudioClip generatedDiveSound;
+        private Renderer waterSurfaceRenderer;
 
         private void OnEnable()
         {
@@ -69,6 +70,8 @@ namespace Moonlight.Rendering
 
             if (targetCamera == null)
                 targetCamera = Camera.main;
+
+            ResolveWaterSurfaceRenderer();
 
             isUnderwater = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
             ApplyState();
@@ -112,6 +115,7 @@ namespace Moonlight.Rendering
         {
             targetCamera = camera;
             waterSurface = null;
+            waterSurfaceRenderer = null;
             waterHeight = surfaceHeight;
             isUnderwater = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
             ApplyState();
@@ -134,7 +138,31 @@ namespace Moonlight.Rendering
             BeginTransition(-1f, surfaceDuration);
         }
 
-        private float SurfaceHeight => waterSurface != null ? waterSurface.position.y : waterHeight;
+        private float SurfaceHeight
+        {
+            get
+            {
+                if (waterSurface == null) return waterHeight;
+                ResolveWaterSurfaceRenderer();
+                return waterSurfaceRenderer != null
+                    ? waterSurfaceRenderer.bounds.max.y
+                    : waterSurface.position.y;
+            }
+        }
+
+        private void ResolveWaterSurfaceRenderer()
+        {
+            if (waterSurface == null)
+            {
+                waterSurfaceRenderer = null;
+                return;
+            }
+
+            if (waterSurfaceRenderer == null || waterSurfaceRenderer.transform != waterSurface)
+            {
+                waterSurfaceRenderer = waterSurface.GetComponent<Renderer>();
+            }
+        }
 
         private void BeginTransition(float direction, float duration)
         {

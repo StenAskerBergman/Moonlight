@@ -13,18 +13,23 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
     [SerializeField] private GameObject roadDronePrefab;
     [SerializeField, Min(1)] private int droneCargoCapacity = 15;
     [SerializeField, Min(0)] private int retryLimit = 2;
+    [Tooltip("Seconds a failed job waits before it is eligible for dispatch again. " +
+             "Without a delay every retry is consumed in the frame the first attempt failed.")]
+    [SerializeField, Min(0f)] private float retryDelaySeconds = 2f;
     [SerializeField, Min(0.1f)] private float assignmentRefreshSeconds = 1f;
 
     private readonly Queue<PickupJob> jobs = new Queue<PickupJob>();
     private readonly List<Truck> drones = new List<Truck>();
     private readonly Queue<Truck> idleDrones = new Queue<Truck>();
     private readonly Dictionary<Building, PickupJob> activeByProducer = new Dictionary<Building, PickupJob>();
+    private readonly List<PickupJob> retryingJobs = new List<PickupJob>();
 
     private InfluenceZone influence;
     private Building warehouseBuilding;
     private Island island;
     private IslandResourceStorage sharedStorage;
     private float nextAssignmentRefresh;
+    private bool warnedAboutMissingInfluence;
 
     public int WarehouseId => warehouseBuilding != null && warehouseBuilding.BuildingId != 0
         ? warehouseBuilding.BuildingId
@@ -67,10 +72,30 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
             nextAssignmentRefresh = Time.time + assignmentRefreshSeconds;
             DiscoverReadyProducers();
         }
+        PromoteDueRetries();
         DispatchQueuedJobs();
     }
 
-    public bool Covers(Vector3 worldPosition) => influence != null && influence.ContainsPoint(worldPosition);
+    // The zone is resolved lazily rather than cached once in Awake. Depot adds this
+    // scheduler before an InfluenceZone necessarily exists, and a permanently null
+    // zone makes Covers() always false, which silently disables the whole warehouse.
+    public bool Covers(Vector3 worldPosition)
+    {
+        if (influence == null) influence = GetComponent<InfluenceZone>();
+        if (influence == null)
+        {
+            if (!warnedAboutMissingInfluence)
+            {
+                warnedAboutMissingInfluence = true;
+                Debug.LogWarning(
+                    $"WarehouseLogisticsScheduler on '{name}' has no InfluenceZone, so it covers no producers " +
+                    "and will never dispatch a pickup. Add an InfluenceZone to this building.",
+                    this);
+            }
+            return false;
+        }
+        return influence.ContainsPoint(worldPosition);
+    }
     public bool BelongsTo(Island candidate) => island != null && island == candidate;
     public bool HasImmediatelyAvailableDrone => idleDrones.Count > 0 || drones.Count < FleetCapacity;
 
@@ -210,8 +235,12 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
         if (drone != null) idleDrones.Enqueue(drone);
         if (job != null && job.Producer != null && job.RegisterRetry() <= retryLimit)
         {
+            // Park the job outside `jobs` until its delay elapses. Re-enqueuing here
+            // let DispatchQueuedJobs' loop dequeue it again on the same iteration,
+            // which spent every retry in the frame the first attempt failed.
             job.SetState(PickupJob.JobState.Queued);
-            jobs.Enqueue(job);
+            job.SetEarliestDispatchTime(Time.time + retryDelaySeconds);
+            retryingJobs.Add(job);
             return;
         }
 
@@ -226,8 +255,32 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
 
     private void FinishJob(PickupJob job)
     {
-        if (job?.Producer == null) return;
-        activeByProducer.Remove(job.Producer);
-        WarehouseAssignmentRegistry.MarkPickupFinished(job.Producer);
+        if (job == null) return;
+
+        // Compare against a real null, not Unity's overloaded ==. A destroyed
+        // producer is still a valid dictionary key, and skipping it here left the
+        // entry in activeByProducer and in the registry's active-pickup set forever.
+        Building producer = job.Producer;
+        if (ReferenceEquals(producer, null)) return;
+
+        activeByProducer.Remove(producer);
+        WarehouseAssignmentRegistry.MarkPickupFinished(producer);
+    }
+
+    private void PromoteDueRetries()
+    {
+        for (int index = retryingJobs.Count - 1; index >= 0; index--)
+        {
+            PickupJob job = retryingJobs[index];
+            if (job == null)
+            {
+                retryingJobs.RemoveAt(index);
+                continue;
+            }
+            if (Time.time < job.EarliestDispatchTime) continue;
+
+            retryingJobs.RemoveAt(index);
+            jobs.Enqueue(job);
+        }
     }
 }

@@ -35,6 +35,8 @@ public class ItemEnums : MonoBehaviour
         RawLobster,
         RawFish,
         RawCrab,
+        Grain,
+        Plantain,
         None
     }
 
@@ -75,6 +77,8 @@ public class ItemEnums : MonoBehaviour
         Plastics,
         Hamburgers,
         Electronics,
+        Grain,
+        Plantain,
 
         None
     }

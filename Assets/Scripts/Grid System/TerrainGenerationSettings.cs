@@ -112,7 +112,7 @@ public sealed class DomainWarpSettings
 [Serializable]
 public sealed class StandalonePlateauSettings
 {
-    private const int CurrentDataVersion = 5;
+    private const int CurrentDataVersion = 8;
 
     [SerializeField, HideInInspector] private int dataVersion;
 
@@ -163,6 +163,27 @@ public sealed class StandalonePlateauSettings
     [Header("Chunk framing")]
     [Min(1f)] public float outerSeamWidth = 3.0f;
 
+    [Header("Submergence")]
+    [Tooltip("Minimum vertical distance from the authoritative water surface to the plateau tabletop.")]
+    [Min(2f)] public float tabletopDepthBelowWater = 6.0f;
+    [Tooltip("Minimum water above the highest generated rim formation.")]
+    [Min(0.5f)] public float minimumFormationClearance = 2.5f;
+
+    public float RequiredTabletopDepthBelowWater
+    {
+        get
+        {
+            // The spire volume begins slightly above its embedded base and then adds
+            // its full height. Include relief so the guarantee covers the actual mesh,
+            // not only the scalar heightfield.
+            float tallestSpire = occasionalSpireHeight * 1.12f + tabletopRelief;
+            float tallestCluster = perimeterClusterHeight * 1.18f + tabletopRelief;
+            return Mathf.Max(
+                tabletopDepthBelowWater,
+                Mathf.Max(tallestSpire, tallestCluster) + minimumFormationClearance);
+        }
+    }
+
     public void Validate()
     {
         if (dataVersion < CurrentDataVersion)
@@ -205,6 +226,13 @@ public sealed class StandalonePlateauSettings
             sandOpeningTopWidth = sandOpeningTopWidth <= 0f
                 ? 4.5f
                 : Mathf.Min(sandOpeningTopWidth, 4.5f);
+            tabletopDepthBelowWater = tabletopDepthBelowWater < 2f ? 6f : tabletopDepthBelowWater;
+            // Version 6 briefly shipped with 0.75m as the generated default. That
+            // technically submerged a spire but left it plainly visible through the
+            // surface; migrate that exact former default to the deep-sea clearance.
+            minimumFormationClearance = minimumFormationClearance <= 0.7501f
+                ? 2.5f
+                : minimumFormationClearance;
             dataVersion = CurrentDataVersion;
         }
 
@@ -242,6 +270,8 @@ public sealed class StandalonePlateauSettings
         sandOpeningWidthMultiplier = Mathf.Clamp(sandOpeningWidthMultiplier, 1.25f, 3f);
         sandDescentLengthMultiplier = Mathf.Clamp(sandDescentLengthMultiplier, 1f, 2.5f);
         outerSeamWidth = Mathf.Max(1f, outerSeamWidth);
+        tabletopDepthBelowWater = Mathf.Max(2f, tabletopDepthBelowWater);
+        minimumFormationClearance = Mathf.Max(0.5f, minimumFormationClearance);
     }
 
     public StandalonePlateauSettings Clone()
@@ -423,7 +453,9 @@ public sealed class TerrainGenerationSettings
         cliffHeight = 2.4f;
         mountainHeight = 3.2f;
         mountainPeakHeight = 4.2f;
-        underwaterPlateauHeight = -2.2f;
+        standalonePlateau ??= new StandalonePlateauSettings();
+        standalonePlateau.Validate();
+        underwaterPlateauHeight = waterHeight - standalonePlateau.RequiredTabletopDepthBelowWater;
         Validate();
     }
 }

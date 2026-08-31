@@ -124,16 +124,18 @@ public sealed class MapManagerEditor : Editor
                 int gridSlots = selected.gridSize;
                 float spacing = selected.slotSpacing;
                 int islandsCount = mapManager.ActiveIslandSelection.Count;
-                int oceansCount = mapManager.ActiveOceanSelection.Count;
+                int underwaterCount = mapManager.ActiveOceanSelection.Count;
 
                 DrawSummaryRow("Layout", selected.spawnPattern.ToString());
                 DrawSummaryRow("Grid Size", $"{gridSlots} x {gridSlots} ({gridSlots * gridSlots} slots)");
                 DrawSummaryRow("Slot Spacing", $"{spacing:F0} units");
                 DrawSummaryRow("Inverted Selection", selected.invertSelection ? "Yes" : "No");
 
-                if (islandsCount > 0 || oceansCount > 0)
+                if (islandsCount > 0 || underwaterCount > 0)
                 {
-                    DrawSummaryRow("Selection Masks", $"Islands: {islandsCount}, Oceans: {oceansCount}");
+                    DrawSummaryRow(
+                        "Selection Masks",
+                        $"Islands: {islandsCount}, {selected.underwaterSelectionTerrainType}: {underwaterCount}");
                 }
 
                 if (selected.configuration != null)

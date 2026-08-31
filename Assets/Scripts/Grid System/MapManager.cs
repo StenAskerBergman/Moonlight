@@ -104,7 +104,7 @@ public class MapManager : MonoBehaviour
     [Serializable]
     public sealed class PatternData
     {
-        private const int CurrentDataVersion = 2;
+        private const int CurrentDataVersion = 4;
 
         public string displayName = "New Pattern";
         [FormerlySerializedAs("patternName")]
@@ -131,8 +131,10 @@ public class MapManager : MonoBehaviour
         public bool invertSelection;
         [Tooltip("Slots that receive the default terrain. Inverted selection generates the default terrain everywhere except these slots.")]
         public List<int> currentIslandSelection = new List<int>();
-        [Tooltip("Additional slots that receive Ocean terrain when selection is not inverted.")]
+        [Tooltip("Additional underwater slots used by the normal world pattern. These resolve to the terrain type below when selection is not inverted.")]
         public List<int> currentOceanSelection = new List<int>();
+        [Tooltip("Terrain generated in the underwater slot list. Plateau preserves the original deep-sea plateau pattern; Ocean is available for intentionally flat seabed chunks.")]
+        public GridType.Type underwaterSelectionTerrainType = GridType.Type.Plateau;
 
         [Header("Chunk Generation")]
         [FormerlySerializedAs("islandConfig")]
@@ -212,9 +214,9 @@ public class MapManager : MonoBehaviour
 
             if (!invertSelection && currentOceanSelection.Contains(slotId))
             {
-                terrainType = GridType.Type.Ocean;
+                terrainType = underwaterSelectionTerrainType;
                 chunkPrefab = defaultChunkPrefab;
-                return true;
+                return terrainType != GridType.Type.Empty;
             }
 
             terrainType = GridType.Type.Empty;
@@ -288,10 +290,64 @@ public class MapManager : MonoBehaviour
             slotSpacing = Mathf.Max(1f, slotSpacing);
             currentIslandSelection ??= new List<int>();
             currentOceanSelection ??= new List<int>();
+            if (dataVersion < 4)
+            {
+                RepairDuplicatedLegacySelectionTail(currentIslandSelection);
+            }
+            NormalizeSlotIds(currentIslandSelection, gridSize * gridSize);
+            NormalizeSlotIds(currentOceanSelection, gridSize * gridSize);
+            if (underwaterSelectionTerrainType != GridType.Type.Plateau
+                && underwaterSelectionTerrainType != GridType.Type.Ocean)
+            {
+                underwaterSelectionTerrainType = GridType.Type.Plateau;
+            }
             slotOverrides ??= new List<SpawnRule>();
+            foreach (SpawnRule rule in slotOverrides)
+            {
+                if (rule == null) continue;
+                rule.slotIds ??= new List<int>();
+                NormalizeSlotIds(rule.slotIds, gridSize * gridSize);
+            }
             plateauSettings ??= new StandalonePlateauSettings();
             plateauSettings.Validate();
             dataVersion = CurrentDataVersion;
+        }
+
+        private static void NormalizeSlotIds(List<int> slotIds, int maximumSlotId)
+        {
+            HashSet<int> seen = new HashSet<int>();
+            int writeIndex = 0;
+            for (int readIndex = 0; readIndex < slotIds.Count; readIndex++)
+            {
+                int slotId = slotIds[readIndex];
+                if (slotId < 1 || slotId > maximumSlotId || !seen.Add(slotId)) continue;
+                slotIds[writeIndex++] = slotId;
+            }
+
+            if (writeIndex < slotIds.Count)
+            {
+                slotIds.RemoveRange(writeIndex, slotIds.Count - writeIndex);
+            }
+        }
+
+        private static void RepairDuplicatedLegacySelectionTail(List<int> slotIds)
+        {
+            // A previous list migration appended slot 1 repeatedly after this exact
+            // established eight-slot normal-world pattern. Earlier normalization
+            // collapsed the repeats but could not know that the remaining ninth id
+            // was migration debris. Recognise the original prefix once and remove
+            // only its appended tail; arbitrary custom selections are untouched.
+            int[] establishedSlots = { 3, 17, 19, 21, 29, 31, 33, 47 };
+            if (slotIds.Count <= establishedSlots.Length) return;
+
+            for (int index = 0; index < establishedSlots.Length; index++)
+            {
+                if (slotIds[index] != establishedSlots[index]) return;
+            }
+
+            slotIds.RemoveRange(
+                establishedSlots.Length,
+                slotIds.Count - establishedSlots.Length);
         }
     }
 
@@ -356,6 +412,15 @@ public class MapManager : MonoBehaviour
         {
             PatternData activePattern = SelectedPatternData;
             return activePattern?.currentOceanSelection ?? EmptySlotSelection;
+        }
+    }
+
+    public GridType.Type ActiveUnderwaterSelectionTerrainType
+    {
+        get
+        {
+            PatternData activePattern = SelectedPatternData;
+            return activePattern?.underwaterSelectionTerrainType ?? GridType.Type.Plateau;
         }
     }
 
@@ -979,6 +1044,33 @@ public class MapManager : MonoBehaviour
         if (generatedMapRoot == null && !Application.isPlaying)
         {
             generatedMapRoot = transform.Find(GeneratedMapRootName);
+        }
+    }
+
+    /// <summary>
+    /// Rehydrates the non-serialized procedural state that Unity discards during an
+    /// editor domain reload. The saved chunk objects are the durable generation
+    /// recipe; each MapGrid deterministically rebuilds its cells, mesh, texture, and
+    /// plateau geometry from its serialized type, settings, transform, and island id.
+    /// </summary>
+    public void RestoreGeneratedStateAfterDomainReload()
+    {
+        if (Application.isPlaying) return;
+
+        ResolveGeneratedMapRoot();
+        if (generatedMapRoot == null) return;
+
+        MapGrid[] generatedChunks = generatedMapRoot.GetComponentsInChildren<MapGrid>(true);
+        if (generatedChunks.Length == 0) return;
+
+        islands = generatedMapRoot.GetComponentsInChildren<Island>(true).ToList();
+        nextIslandID = islands.Count == 0
+            ? 1
+            : islands.Max(island => island != null ? island.id : 0) + 1;
+
+        foreach (MapGrid generatedChunk in generatedChunks)
+        {
+            generatedChunk.RestoreGeneratedStateAfterDomainReload();
         }
     }
     

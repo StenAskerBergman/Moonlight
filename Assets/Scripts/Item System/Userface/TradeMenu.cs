@@ -5,183 +5,145 @@ using UnityEngine.UI;
 
 public class TradeMenu : MonoBehaviour
 {
-    // Reference to the TradeInteraction component of the trading unit
     private TradeInteraction tradeInteraction;
 
-    // UI elements, such as item slots, buttons, etc.
-    public GameObject tradeMenuUI; // The trade menu panel
-    public ItemSlot[] playerItemSlots; // Item slots for player's items
-    public ItemSlot[] npcItemSlots; // Item slots for NPC's items
-    public Button finalizeTradeButton; // Button to finalize the trade
-    private UnitInventoryUI UnitInventory; // Current Selected Unit
+    public GameObject tradeMenuUI; 
+    public ItemSlot[] playerItemSlots; 
+    public ItemSlot[] npcItemSlots; 
+    public Button finalizeTradeButton; 
+    public Button cancelTradeButton;
+
+    [Header("Active Trade Settings")]
+    public Text totalPriceText;
+    public Text offeredGoodsText;
+    public Text wantedGoodsText;
+
+    private Inventory currentUnitInventory;
+    private Inventory targetNpcInventory;
+
+    private Dictionary<ItemData, int> itemsToBuy = new Dictionary<ItemData, int>();
+    private Dictionary<ItemData, int> itemsToSell = new Dictionary<ItemData, int>();
 
     void Awake()
     {
-        // Initialize references to UI elements here, if needed
-        UnitInventory = FindObjectOfType<UnitInventoryUI>(); // Find the UnitInventoryUI in the scene
-        // Not good solution considering that several different are used so there will be a problems, here...
-
-        // Need a independant System to indicate which unit is selected, maybe run a even6t or something...
-
-        // No sure How this will work?                                                                           
-        // Maybe a run a Event from the
-        // UnitInventoryUI.cs to change                                  
-        // the amount everywhere for one
-        // single player and nobody else
-
+        if (finalizeTradeButton != null) finalizeTradeButton.onClick.AddListener(FinalizeTrade);
+        if (cancelTradeButton != null) cancelTradeButton.onClick.AddListener(Close);
     }
 
-    // TradeMenu.cs
-    public void ConfirmTrade()
+    public void Open(Inventory unitInv, Inventory npcInv, TradeInteraction interaction)
     {
-        // How can I trade when we yet to implemented different owners? ... Lets await Owner Adjustment
-        //ItemData selectedItem = GetSelectedItem();
-        //int quantity = UnitInventoryUI.CurrentTradeQuantity;
+        currentUnitInventory = unitInv;
+        targetNpcInventory = npcInv;
+        tradeInteraction = interaction;
 
-        //if (ShowConfirmationDialog($"Trade {quantity} {selectedItem.displayName}?"))
-        //{
-        //    tradeInteraction.ExecuteTrade(targetInventory, selectedItem, quantity);
-        //}
-    }
+        itemsToBuy.Clear();
+        itemsToSell.Clear();
 
-    public int GetSelectedQuantity()
-    {
-        return UnitInventory.CurrentTradeQuantity;
-    }
+        if (tradeMenuUI != null) tradeMenuUI.SetActive(true);
 
-    private bool ShowConfirmationDialog(string message)
-    {
-        // Implement a confirmation dialog and return the user's choice
-        return true; // Placeholder
-    }
-
-    public void Open()
-    {
-    //     Enable and display the trade menu UI
-    //     tradeMenuUI.SetActive(true);
-
-    //     Populate the item slots with items from both player and NPC inventories
-    //     PopulateItemSlots();
-
-    //     Add listeners to UI elements, such as item slots and buttons
-    //     finalizeTradeButton.onClick.AddListener(FinalizeTrade);
-
-    //     tradeMenuUI.SetActive(true);
-
-    //     There is no way to tell what the current Unit is...
-    //     PopulateItemSlots(UnitInventoryUI.CurrentUnitInventory, null); // Populate with current unit's inventory
-
-    //     Add additional initialization...
+        PopulateItemSlots(unitInv, npcInv);
+        UpdateTradeSummary();
     }
 
     public void Close()
     {
-    //     Disable and hide the trade menu UI
-    //     tradeMenuUI.SetActive(false);
-
-    //     Clear item slots and remove listeners
-    //     ClearItemSlots();
-    //     finalizeTradeButton.onClick.RemoveListener(FinalizeTrade);
-
-    //     tradeMenuUI.SetActive(false);
-    //     Clear slots and additional cleanup...
+        if (tradeMenuUI != null) tradeMenuUI.SetActive(false);
+        ClearItemSlots();
     }
 
     public void PopulateItemSlots(Inventory playerInventory, Inventory npcInventory = null)
     {
-        // Populate slots for player inventory
-        PopulateSlots(playerItemSlots, playerInventory.GetAllItems());
-
-        // Optionally, populate for NPC inventory
-        if (npcInventory != null)
-        {
-            PopulateSlots(npcItemSlots, npcInventory.GetAllItems());
-        }
+        if (playerInventory != null) PopulateSlots(playerItemSlots, playerInventory.GetAllItems());
+        if (npcInventory != null) PopulateSlots(npcItemSlots, npcInventory.GetAllItems());
     }
 
     private void PopulateSlots(ItemSlot[] slots, Dictionary<ItemData, int> items)
     {
+        if (slots == null) return;
         int index = 0;
         foreach (var item in items)
         {
-            if (index < slots.Length)
+            if (index < slots.Length && slots[index] != null)
             {
                 slots[index].InitializeSlot(item.Key, item.Value);
                 index++;
             }
         }
-
         for (int i = index; i < slots.Length; i++)
         {
-            // Clear slots somehow...
-            // slots[i].ClearSlot();
+            if (slots[i] != null) slots[i].ClearSlot();
         }
     }
 
     private void ClearItemSlots()
     {
-        // Logic to clear item slots
-
-        foreach (var slot in playerItemSlots)
+        if (playerItemSlots != null)
         {
-            // Clear slots somehow...
-            // slot.ClearSlot();
+            foreach (var slot in playerItemSlots) { if (slot != null) slot.ClearSlot(); }
+        }
+        if (npcItemSlots != null)
+        {
+            foreach (var slot in npcItemSlots) { if (slot != null) slot.ClearSlot(); }
         }
     }
 
-    public void ExecuteTrade()
+    public void StageBuyItem(ItemData item, int quantity)
     {
-        // Gather selected items from player and NPC
-        var selectedPlayerItems = GetSelectedItems(playerItemSlots);
-        var selectedNpcItems = GetSelectedItems(npcItemSlots);
-
-        // Perform the trade
-        foreach (var item in selectedPlayerItems)
-        {
-            // There are NO OWNER CLASSES YET SO WE CANT TRADE AT THE MOST BASIC FUNDAMENTAL LEVEL!
-            // tradeInteraction.TradeItem(targetNpcUnit, item.Key, item.Value);
-        }
-
-        foreach (var item in selectedNpcItems)
-        {
-            // Assuming a method to handle NPC's part of the trade
-            // npcUnit.TradeItem(playerUnit, item.Key, item.Value);
-        }
-
-        Close(); // Close the trade menu after trade
+        if (!itemsToBuy.ContainsKey(item)) itemsToBuy[item] = 0;
+        itemsToBuy[item] += quantity;
+        UpdateTradeSummary();
     }
 
-    private Dictionary<ItemData, int> GetSelectedItems(ItemSlot[] slots)
+    public void StageSellItem(ItemData item, int quantity)
     {
-        var selectedItems = new Dictionary<ItemData, int>();
-        foreach (var slot in slots)
-        {
-            //if (slot.IsSelectedForTrade())
-            //{
-            //    // Since quantity is now managed at the UnitStorage level, we retrieve it from there.
-            //    int quantity = unitStorageManager.GetItemQuantity(slot.GetItemData());
-            //    selectedItems.Add(slot.GetItemData(), quantity);
-            //}
-        }
-        return selectedItems;
+        if (!itemsToSell.ContainsKey(item)) itemsToSell[item] = 0;
+        itemsToSell[item] += quantity;
+        UpdateTradeSummary();
     }
 
+    private void UpdateTradeSummary()
+    {
+        int totalCost = 0;
+        int totalEarnings = 0;
+
+        // In a real scenario, use actual unit prices from ItemData or a market manager
+        int defaultPrice = 10; 
+
+        foreach (var kvp in itemsToBuy) totalCost += kvp.Value * defaultPrice;
+        foreach (var kvp in itemsToSell) totalEarnings += kvp.Value * defaultPrice;
+
+        if (totalPriceText != null)
+        {
+            int net = totalEarnings - totalCost;
+            totalPriceText.text = $"Net Value: {(net >= 0 ? "+" : "")}{net}";
+        }
+    }
 
     public void FinalizeTrade()
     {
-        // Call the FinalizeTrade method in TradeInteraction
-        if (tradeInteraction != null)
+        if (currentUnitInventory == null || targetNpcInventory == null || tradeInteraction == null) return;
+
+        // Execute Sells (Player -> NPC)
+        foreach (var kvp in itemsToSell)
         {
-            tradeInteraction.FinalizeTrade();
+            tradeInteraction.ExecuteTrade(targetNpcInventory, kvp.Key, kvp.Value);
         }
 
-        // Close the trade menu after finalizing the trade
+        // Execute Buys (NPC -> Player)
+        // Since tradeInteraction.ExecuteTrade assumes unitInventory -> otherInventory,
+        // we can temporarily swap or just call Remove/Add directly.
+        foreach (var kvp in itemsToBuy)
+        {
+            if (targetNpcInventory.CanRemove(kvp.Key, kvp.Value) && currentUnitInventory.CanAdd(kvp.Key, kvp.Value))
+            {
+                targetNpcInventory.RemoveItem(kvp.Key, kvp.Value);
+                currentUnitInventory.AddItem(kvp.Key, kvp.Value);
+            }
+        }
+
         Close();
     }
 
-    // Additional methods for handling trade menu interactions can be added here
-
-    // Method to assign the TradeInteraction component
     public void AssignTradeInteraction(TradeInteraction interaction)
     {
         tradeInteraction = interaction;

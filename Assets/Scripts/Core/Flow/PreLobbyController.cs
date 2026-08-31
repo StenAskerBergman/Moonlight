@@ -21,12 +21,15 @@ public class PreLobbyController : MonoBehaviour
     private void Awake()
     {
         PopulateOptions();
+        islandCountSlider.onValueChanged.AddListener(OnIslandCountChanged);
+        OnIslandCountChanged(islandCountSlider.value);
         continueButton.onClick.AddListener(Continue);
         backButton.onClick.AddListener(Back);
     }
 
     private void OnDestroy()
     {
+        islandCountSlider?.onValueChanged.RemoveListener(OnIslandCountChanged);
         continueButton?.onClick.RemoveListener(Continue);
         backButton?.onClick.RemoveListener(Back);
     }
@@ -45,7 +48,7 @@ public class PreLobbyController : MonoBehaviour
         factionDropdown.AddOptions(labels);
     }
 
-    private void OnIslandCountChanged(float value)
+    public void OnIslandCountChanged(float value)
     {
         islandCountValue.text = Mathf.RoundToInt(value).ToString();
     }

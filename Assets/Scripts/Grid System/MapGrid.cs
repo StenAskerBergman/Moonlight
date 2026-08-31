@@ -1249,10 +1249,10 @@ public class MapGrid : MonoBehaviour
     #region Apply Refactors 
     private void ApplyTerrainMesh(Mesh terrainMesh)
     {
-        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() ?? gameObject.AddComponent<MeshFilter>();
+        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() != null ? gameObject.GetComponent<MeshFilter>() : gameObject.AddComponent<MeshFilter>();
         meshFilter.sharedMesh = terrainMesh;
 
-        MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() ?? gameObject.AddComponent<MeshRenderer>();
+        MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() != null ? gameObject.GetComponent<MeshRenderer>() : gameObject.AddComponent<MeshRenderer>();
         meshRenderer.sharedMaterial = terrainMaterial;
     }
 
@@ -1493,10 +1493,10 @@ public class MapGrid : MonoBehaviour
         // Default Material
         if (edgeMaterial != null) edgeMaterial = beachEdgeMaterial;
 
-        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() ?? gameObject.AddComponent<MeshFilter>();
+        MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>() != null ? gameObject.GetComponent<MeshFilter>() : gameObject.AddComponent<MeshFilter>();
         meshFilter.sharedMesh = edgeMesh;
 
-        MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() ?? gameObject.AddComponent<MeshRenderer>();
+        MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() != null ? gameObject.GetComponent<MeshRenderer>() : gameObject.AddComponent<MeshRenderer>();
         if (meshRenderer != null) meshRenderer.sharedMaterial = edgeMaterial; // ApplyEdgeMaterial(determineEdgeMaterial(grid[x, y,]));
     }
 
@@ -1517,4 +1517,10 @@ public class MapGrid : MonoBehaviour
     }
     #endregion
 
+
+    public void RestoreGeneratedStateAfterDomainReload()
+    {
+        if (Application.isPlaying) return;
+        GenerateTerrain();
+    }
 }

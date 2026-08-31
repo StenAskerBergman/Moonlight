@@ -131,6 +131,9 @@ public class Island : MonoBehaviour, IUniqueIdentifier
         return depositCells;
     }
 
+    // Trade Rules
+    public IslandTradeRules TradeRules { get; private set; }
+
     /// <summary>
     /// Sets up a freshly instantiated island. This replaces what used to be a
     /// constructor: Island is a MonoBehaviour, so only Unity may create it (via the
@@ -146,6 +149,12 @@ public class Island : MonoBehaviour, IUniqueIdentifier
         this.IslandSeeds = new Dictionary<ItemData, int>();
 
         this.buildings = new List<Building>();
+
+        TradeRules = GetComponent<IslandTradeRules>();
+        if (TradeRules == null)
+        {
+            TradeRules = gameObject.AddComponent<IslandTradeRules>();
+        }
 
         // Future Idea:
         // idea use Bool List to Allow / Disallow certain items / seeds from a island

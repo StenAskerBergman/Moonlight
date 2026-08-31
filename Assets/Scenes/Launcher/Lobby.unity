@@ -2464,7 +2464,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 4
+  m_text: 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -4658,7 +4658,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 600, y: 100}
+  m_SizeDelta: {x: 534.6852, y: 100}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1505902187
 MonoBehaviour:
@@ -4704,13 +4704,25 @@ MonoBehaviour:
   m_FillRect: {fileID: 379843287}
   m_HandleRect: {fileID: 81387495}
   m_Direction: 0
-  m_MinValue: 1
+  m_MinValue: 4
   m_MaxValue: 12
   m_WholeNumbers: 1
-  m_Value: 4
+  m_Value: 10
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 902864538}
+        m_TargetAssemblyTypeName: PreLobbyController, Assembly-CSharp
+        m_MethodName: OnIslandCountChanged
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1547407456
 GameObject:
   m_ObjectHideFlags: 0

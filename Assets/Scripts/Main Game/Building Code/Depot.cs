@@ -18,6 +18,17 @@ public class Depot : MonoBehaviour
 
     private void Start()
     {
+        // Without this guard an unassigned inventory asset throws on the first frame,
+        // which took down every other Start on the building with it.
+        if (buildingInvData == null)
+        {
+            Debug.LogWarning(
+                $"Depot on '{name}' has no BuildingInventoryData assigned, so its inventory " +
+                "behaviour is inactive. Warehouse logistics still run via WarehouseLogisticsScheduler.",
+                this);
+            return;
+        }
+
         // Check building type and initialize behavior accordingly
         switch (buildingInvData.CurrentInventoryType)
         {
@@ -33,7 +44,7 @@ public class Depot : MonoBehaviour
 
     public void InteractWithInventory(ItemData itemData, int amount)
     {
-        // For example, to add items:
+        if (behaviour == null) return;
         behaviour.AddItem(itemData, amount);
     }
 }

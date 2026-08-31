@@ -86,6 +86,7 @@ public sealed partial class IslandTerrainProvider
                 upperWidth,
                 rockLength,
                 abyssHeight,
+                seabed.Height,
                 geologyNoise,
                 footprint.RayToChunkEdge - footprint.BoundaryDistance,
                 plateau);
@@ -110,20 +111,32 @@ public sealed partial class IslandTerrainProvider
             signedPerimeterDistance,
             sandLength,
             footprint.RayToChunkEdge - footprint.BoundaryDistance,
+            seabed.Height,
             plateau);
 
         float height = Mathf.Lerp(rockHeight, sandHeight, sandMask);
+        float distanceToChunkEdge = Mathf.Min(
+            Mathf.Min(localX, size - localX),
+            Mathf.Min(localZ, size - localZ));
+        float chunkInteriorWeight = SmootherStep01(
+            distanceToChunkEdge / Mathf.Max(0.001f, plateau.outerSeamWidth));
+        height = Mathf.Lerp(seabed.Height, height, chunkInteriorWeight);
         float influence = isTabletop
             ? 1f
             : 1f - SmootherStep01(signedPerimeterDistance / Mathf.Max(1f, Mathf.Max(rockLength, sandLength)));
+        influence *= chunkInteriorWeight;
 
-        float rimWeight = 1f - SmootherStep01(Mathf.Abs(signedPerimeterDistance) / Mathf.Max(0.5f, plateau.rockyRimWidth));
+        float rimWeight = (1f - SmootherStep01(
+            Mathf.Abs(signedPerimeterDistance) / Mathf.Max(0.5f, plateau.rockyRimWidth)))
+            * chunkInteriorWeight;
         float buildableWeight = interiorWeight
-            * (1f - SmootherStep01(Mathf.Clamp01(formationWeight * 1.15f)));
+            * (1f - SmootherStep01(Mathf.Clamp01(formationWeight * 1.15f)))
+            * chunkInteriorWeight;
         float abyssFade = SmootherStep01(Mathf.InverseLerp(
             upperWidth,
             Mathf.Max(upperWidth + 0.001f, rockLength),
-            signedPerimeterDistance));
+            signedPerimeterDistance))
+            * chunkInteriorWeight;
         float activeSandSlope = sandMask * (1f - abyssFade) * (isTabletop ? 1f : influence);
         float rockWeight = isTabletop
             ? Mathf.Max(rimWeight, formationWeight) * (1f - sandMask)
@@ -131,17 +144,19 @@ public sealed partial class IslandTerrainProvider
         float sandWeight = Mathf.Max(buildableWeight, activeSandSlope);
         float reefWeight = (1f - activeSandSlope)
             * Mathf.Max(rimWeight, isTabletop ? 0f : (1f - abyssFade) * 0.35f);
-        PlateauZone zone = isTabletop
-            ? (rimWeight > 0.2f || formationWeight > 0.18f
-                ? PlateauZone.RockyRim
-                : PlateauZone.Tabletop)
-            : activeSandSlope > 0.5f
-                ? PlateauZone.SandSlope
-                : signedPerimeterDistance < upperWidth
-                    ? PlateauZone.UpperEscarpment
-                    : signedPerimeterDistance < rockLength
-                        ? PlateauZone.LowerApron
-                        : PlateauZone.AbyssFade;
+        PlateauZone zone = chunkInteriorWeight <= 0.001f
+            ? PlateauZone.None
+            : isTabletop
+                ? (rimWeight > 0.2f || formationWeight > 0.18f
+                    ? PlateauZone.RockyRim
+                    : PlateauZone.Tabletop)
+                : activeSandSlope > 0.5f
+                    ? PlateauZone.SandSlope
+                    : signedPerimeterDistance < upperWidth
+                        ? PlateauZone.UpperEscarpment
+                        : signedPerimeterDistance < rockLength
+                            ? PlateauZone.LowerApron
+                            : PlateauZone.AbyssFade;
         PlateauSampleData plateauData = new PlateauSampleData(
             zone,
             influence,
@@ -415,6 +430,7 @@ public sealed partial class IslandTerrainProvider
         float upperWidth,
         float totalLength,
         float abyssHeight,
+        float sharedSeabedHeight,
         float geologyNoise,
         float rayLength,
         StandalonePlateauSettings plateau)
@@ -444,7 +460,12 @@ public sealed partial class IslandTerrainProvider
         }
 
         return ContinueIntoUnseenAbyss(
-            profileHeight, signedDistance, totalLength, rayLength, plateau);
+            profileHeight,
+            signedDistance,
+            totalLength,
+            rayLength,
+            sharedSeabedHeight,
+            plateau);
     }
 
     private float EvaluateSandOpeningMask(
@@ -483,20 +504,23 @@ public sealed partial class IslandTerrainProvider
         float signedDistance,
         float formationLength,
         float rayLength,
+        float sharedSeabedHeight,
         StandalonePlateauSettings plateau)
     {
-        if (signedDistance <= formationLength)
+        float seamStart = Mathf.Max(formationLength, rayLength - plateau.outerSeamWidth);
+        if (signedDistance <= seamStart)
         {
             return formationHeight;
         }
 
-        // Never turn the lower profile back upward to expose the square shared
-        // seabed. Continue a subtle descent all the way out of view instead.
-        float abyssT = SmootherStep01(Mathf.InverseLerp(
-            formationLength,
-            Mathf.Max(formationLength + plateau.outerSeamWidth, rayLength),
+        // The final band is a topological seam, not another authored landform.
+        // Converge to the same world-space seabed sampled by neighbouring Ocean
+        // chunks so their border vertices agree exactly after independent generation.
+        float seamT = SmootherStep01(Mathf.InverseLerp(
+            seamStart,
+            Mathf.Max(seamStart + 0.001f, rayLength),
             signedDistance));
-        return formationHeight - abyssT * plateau.lowerApronDrop;
+        return Mathf.Lerp(formationHeight, sharedSeabedHeight, seamT);
     }
 
     private float SeedUnit(int salt)

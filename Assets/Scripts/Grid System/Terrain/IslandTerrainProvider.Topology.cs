@@ -142,19 +142,62 @@ private float CalculateLegacyIslandField(float localX, float localZ, bool lowFre
     // Evaluate low-frequency domain warp in world coordinates
     EvaluateDomainWarp(worldX, worldZ, worldSeed, out float warpX, out float warpZ);
 
-    float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, lowFrequencyOnly);
-
-    float W = 8f;
-    float dx = Mathf.Min(localX, size - localX);
-    float dz = Mathf.Min(localZ, size - localZ);
-    float tx = Mathf.Clamp01(dx / W);
-    float tz = Mathf.Clamp01(dz / W);
-    
-    float weightX = tx * tx * tx * (tx * (tx * 6f - 15f) + 10f);
-    float weightZ = tz * tz * tz * (tz * (tz * 6f - 15f) + 10f);
-    float weight = weightX * weightZ;
+    float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, lowFrequencyOnly)
+        + islandEmergenceOffset;
+    float weight = CalculateIslandInteriorBlendWeight(localX, localZ);
 
     return Mathf.Lerp(sharedBase, localField, weight);
+}
+
+private float CalculateIslandEmergenceOffset()
+{
+    // Island ids select different Perlin offsets. Some valid ids previously landed
+    // on a low patch whose highest point remained below the shoreline. Survey the
+    // broad, low-frequency field and apply only the smallest smooth interior lift
+    // needed to guarantee one dry mainland sample. The chunk-edge blend remains
+    // untouched, so neighbouring ocean chunks still meet exactly.
+    const float minimumDryMainlandField = 0.48f;
+    const int surveySteps = 8;
+    float surveyMargin = Mathf.Min(12f, size * 0.25f);
+    float surveySpan = Mathf.Max(0f, size - surveyMargin * 2f);
+    float smallestRequiredOffset = float.PositiveInfinity;
+
+    for (int z = 0; z <= surveySteps; z++)
+    {
+        float localZ = surveyMargin + surveySpan * (z / (float)surveySteps);
+        for (int x = 0; x <= surveySteps; x++)
+        {
+            float localX = surveyMargin + surveySpan * (x / (float)surveySteps);
+            float worldX = chunkWorldOrigin.x + localX;
+            float worldZ = chunkWorldOrigin.y + localZ;
+            EvaluateDomainWarp(worldX, worldZ, worldSeed, out float warpX, out float warpZ);
+
+            float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
+            float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, true);
+            float weight = CalculateIslandInteriorBlendWeight(localX, localZ);
+            if (weight <= 0.001f) continue;
+
+            float currentField = Mathf.Lerp(sharedBase, localField, weight);
+            float requiredOffset = (minimumDryMainlandField - currentField) / weight;
+            smallestRequiredOffset = Mathf.Min(smallestRequiredOffset, requiredOffset);
+        }
+    }
+
+    return float.IsInfinity(smallestRequiredOffset)
+        ? 0f
+        : Mathf.Max(0f, smallestRequiredOffset);
+}
+
+private float CalculateIslandInteriorBlendWeight(float localX, float localZ)
+{
+    const float sharedSeamWidth = 8f;
+    float dx = Mathf.Min(localX, size - localX);
+    float dz = Mathf.Min(localZ, size - localZ);
+    float tx = Mathf.Clamp01(dx / sharedSeamWidth);
+    float tz = Mathf.Clamp01(dz / sharedSeamWidth);
+    float weightX = tx * tx * tx * (tx * (tx * 6f - 15f) + 10f);
+    float weightZ = tz * tz * tz * (tz * (tz * 6f - 15f) + 10f);
+    return weightX * weightZ;
 }
 
 
