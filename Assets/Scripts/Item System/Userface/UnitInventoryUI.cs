@@ -87,6 +87,7 @@ public class UnitInventoryUI : InventoryUserface
         }
 
         SyncSlots();
+        RefreshInventoryDisplay();
 
         // Update the slot's UnitInventory data
         var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
@@ -135,6 +136,8 @@ public class UnitInventoryUI : InventoryUserface
         {
             this.inventory.OnInventoryChanged += RefreshInventoryDisplay;
         }
+        
+        RefreshInventoryDisplay();
     }
 
     protected virtual void OnDestroy()

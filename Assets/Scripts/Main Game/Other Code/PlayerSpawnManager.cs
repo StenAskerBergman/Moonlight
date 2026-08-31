@@ -183,7 +183,7 @@ public class PlayerSpawnManager : MonoBehaviour
             FocusCamera(spawnPosition);
         }
 
-        Debug.Log($"<color=cyan>PlayerSpawnManager: Successfully spawned Starter Flagship at {spawnPosition} with 40 Modules, 40 Tools, and 40 Fish.</color>");
+        Debug.Log($"<color=cyan>PlayerSpawnManager: Successfully spawned Starter Flagship named {shipObj.name} at {spawnPosition} with 40 Modules, 40 Tools, and 40 Fish.</color>");
         return shipObj;
     }
 
@@ -192,7 +192,7 @@ public class PlayerSpawnManager : MonoBehaviour
         Vector3 rawPos = GetRawSpawnPosition();
         
         // Snap to nearest NavMesh position so the Agent doesn't fail to initialize
-        if (UnityEngine.AI.NavMesh.SamplePosition(rawPos, out UnityEngine.AI.NavMeshHit hit, 50f, UnityEngine.AI.NavMesh.AllAreas))
+        if (UnityEngine.AI.NavMesh.SamplePosition(rawPos, out UnityEngine.AI.NavMeshHit hit, 150f, UnityEngine.AI.NavMesh.AllAreas))
         {
             return hit.position;
         }

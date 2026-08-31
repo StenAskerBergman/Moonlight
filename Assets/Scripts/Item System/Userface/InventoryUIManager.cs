@@ -80,7 +80,7 @@ public class InventoryUIManager : MonoBehaviour
         }
 
         // Check if the unit has an inventory to show, and set the current "inventory" template active accordingly
-        if (selectedUnit.inventory != null)
+        if (selectedUnit.inventory != null || selectedUnit.unitInventory != null)
         {
             currentActiveTemplate.SetActive(true);
             // Call methods to fill the template with data from the selected unit's inventory
