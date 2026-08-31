@@ -99,6 +99,7 @@ public class UnitSelections : MonoBehaviour
         // Handles A single Unit Clicked 
         if (!unitsSelected.Contains(unitToAdd))
         {
+            DeselectBuildingWhenSelectingBoat(unitToAdd);
             this.DeselectAll();
             unitsSelected.Add(unitToAdd);
             selectionChanged.Invoke(unitsSelected);
@@ -133,6 +134,8 @@ public class UnitSelections : MonoBehaviour
     {
         if (!unitsSelected.Contains(unitToAdd))
         {
+            DeselectBuildingWhenSelectingBoat(unitToAdd);
+
             // Shift Add
             unitsSelected.Add(unitToAdd);
             unitToAdd.transform.GetChild(0).gameObject.SetActive(true); 
@@ -166,7 +169,9 @@ public class UnitSelections : MonoBehaviour
 
         if (!unitsSelected.Contains(unitToAdd))
         {
-            if (unitToAdd.type == UnitType.Character)
+            DeselectBuildingWhenSelectingBoat(unitToAdd);
+
+            if (unitToAdd.unitType == UnitType.Character)
             {
                 // Call OnSelect on the Selected Character Units
                 (unitToAdd as ISelectable)?.OnSelect();
@@ -185,6 +190,14 @@ public class UnitSelections : MonoBehaviour
         FlagCheck();
     }
 
+    private static void DeselectBuildingWhenSelectingBoat(Unit unit)
+    {
+        if (InfluenceManager.IsBoatUnit(unit) && BuildingSelections.Instance != null)
+        {
+            BuildingSelections.Instance.DeselectAll();
+        }
+    }
+
     #endregion
 
     #region Deselect All
@@ -193,7 +206,7 @@ public class UnitSelections : MonoBehaviour
         foreach (var unit in unitsSelected)
         {
 
-            if (unit.type == UnitType.Character) unit.GetComponent<UnitMovement>().enabled = false;
+            if (unit.unitType == UnitType.Character) unit.GetComponent<UnitMovement>().enabled = false;
             unit.transform.GetChild(0).gameObject.SetActive(false);
 
             // Call OnDeselect on the deselected units

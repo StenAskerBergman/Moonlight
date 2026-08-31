@@ -29,6 +29,10 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
         if (building == null || building.CurrentState != BuildingEnums.BuildingState.Active) return;
         if (Time.time < nextProductionTime) return;
         nextProductionTime = Time.time + productionIntervalSeconds;
+        BuildingSupply supply = GetComponent<BuildingSupply>();
+        if (supply != null && !supply.HasRequiredSupplies()) return;
+        if (output.IsFull) return;
+        supply?.ConsumeSupplies();
         output.AddOutput(GetProducedResource(), GetProductionRate());
     }
 

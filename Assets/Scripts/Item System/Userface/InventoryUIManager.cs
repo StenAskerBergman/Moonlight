@@ -60,7 +60,7 @@ public class InventoryUIManager : MonoBehaviour
             currentActiveTemplate.SetActive(false);
 
         // Determine which inventory template to use based on the unit type
-        switch (selectedUnit.type)
+        switch (selectedUnit.unitType)
         {
             case UnitType.Character:
                 currentActiveTemplate = unitInventoryTemplate;
@@ -75,7 +75,7 @@ public class InventoryUIManager : MonoBehaviour
 
             default:
                 // Log an error and return if there's no suitable inventory template
-                Debug.LogError($"<color=red>InventoryUIManager: No inventory template found for unit type {selectedUnit.type}</color>");
+                Debug.LogError($"<color=red>InventoryUIManager: No inventory template found for unit type {selectedUnit.unitType}</color>");
                 return;
         }
 

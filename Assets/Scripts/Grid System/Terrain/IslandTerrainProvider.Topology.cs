@@ -24,8 +24,10 @@ private float SampleComposedNoise(float x, float z)
 
 private float EvaluateSharedBaseField(float worldX, float worldZ, int worldSeed)
 {
-    float globalNoise = SampleComposedNoise(worldX, worldZ);
-    return (globalNoise * 0.2f) - 0.15f;
+    // The far field is one canonical abyss datum. Landform fields may only rise
+    // from this value; they do not own a second, noisy depth standard that must be
+    // reconciled at chunk borders.
+    return settings.abyssUpper - settings.visualTransitionWidth * 2f;
 }
 
 private void EvaluateDomainWarp(float worldX, float worldZ, int seed, out float warpX, out float warpZ)
@@ -144,9 +146,10 @@ private float CalculateLegacyIslandField(float localX, float localZ, bool lowFre
 
     float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, lowFrequencyOnly)
         + islandEmergenceOffset;
-    float weight = CalculateIslandInteriorBlendWeight(localX, localZ);
-
-    return Mathf.Lerp(sharedBase, localField, weight);
+    // The local field is already suppressed outside the island silhouette. Taking
+    // the higher field makes abyss the floor without imprinting the square chunk
+    // boundary on the island's descent.
+    return Mathf.Max(sharedBase, localField);
 }
 
 private float CalculateIslandEmergenceOffset()
@@ -174,11 +177,8 @@ private float CalculateIslandEmergenceOffset()
 
             float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
             float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, true);
-            float weight = CalculateIslandInteriorBlendWeight(localX, localZ);
-            if (weight <= 0.001f) continue;
-
-            float currentField = Mathf.Lerp(sharedBase, localField, weight);
-            float requiredOffset = (minimumDryMainlandField - currentField) / weight;
+            float currentField = Mathf.Max(sharedBase, localField);
+            float requiredOffset = minimumDryMainlandField - currentField;
             smallestRequiredOffset = Mathf.Min(smallestRequiredOffset, requiredOffset);
         }
     }
@@ -187,19 +187,6 @@ private float CalculateIslandEmergenceOffset()
         ? 0f
         : Mathf.Max(0f, smallestRequiredOffset);
 }
-
-private float CalculateIslandInteriorBlendWeight(float localX, float localZ)
-{
-    const float sharedSeamWidth = 8f;
-    float dx = Mathf.Min(localX, size - localX);
-    float dz = Mathf.Min(localZ, size - localZ);
-    float tx = Mathf.Clamp01(dx / sharedSeamWidth);
-    float tz = Mathf.Clamp01(dz / sharedSeamWidth);
-    float weightX = tx * tx * tx * (tx * (tx * 6f - 15f) + 10f);
-    float weightZ = tz * tz * tz * (tz * (tz * 6f - 15f) + 10f);
-    return weightX * weightZ;
-}
-
 
 private float CalculateIslandField(float x, float z, float noise)
 {

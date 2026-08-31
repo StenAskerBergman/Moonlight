@@ -55,6 +55,8 @@ public class Truck : MonoBehaviour
     private PickupJob _pickupJob;
     private IslandResourceStorage _sharedStorage;
     private Action<Truck, PickupJob, bool> _pickupCompletion;
+    private DeliveryJob _deliveryJob;
+    private Action<Truck, DeliveryJob, bool> _deliveryCompletion;
 
     public static event Action<Truck> OnTruckArrived;
     public static event Action<Truck> OnTruckDelivered;
@@ -106,6 +108,28 @@ public class Truck : MonoBehaviour
         _pathIndex = 0;
         SetModel(empty: true);
         CurrentState = TruckState.DrivingToPickup;
+    }
+
+    public void AssignDeliveryJob(DeliveryJob job, List<Cell> path, IslandResourceStorage sharedStorage,
+        Action<Truck, DeliveryJob, bool> completion)
+    {
+        if (job == null || job.Consumer == null || path == null || path.Count == 0 || sharedStorage == null ||
+            !sharedStorage.CommitReservation(job.Resource, job.Amount) || !_transport.AddResource(job.Resource, job.Amount))
+        {
+            completion?.Invoke(this, job, false);
+            return;
+        }
+
+        _deliveryJob = job;
+        _deliveryCompletion = completion;
+        _sharedStorage = sharedStorage;
+        _cargo[job.Resource] = job.Amount;
+        PickupBuilding = null;
+        DropoffBuilding = job.Consumer;
+        _routePath = path;
+        _pathIndex = 0;
+        SetModel(empty: false);
+        CurrentState = TruckState.DrivingToDropoff;
     }
 
     private void Update()
@@ -223,7 +247,24 @@ public class Truck : MonoBehaviour
     {
         yield return new WaitForSeconds(loadUnloadTime);
 
-        if (_pickupJob != null && _sharedStorage != null)
+        if (_deliveryJob != null)
+        {
+            BuildingSupply supply = DropoffBuilding != null ? DropoffBuilding.GetComponent<BuildingSupply>() : null;
+            int accepted = supply != null ? supply.ReceiveSupply(_deliveryJob.Resource, _deliveryJob.Amount) : 0;
+            if (accepted != _deliveryJob.Amount)
+            {
+                if (accepted > 0)
+                {
+                    _transport.RemoveResource(_deliveryJob.Resource, accepted);
+                    _cargo[_deliveryJob.Resource] -= accepted;
+                    if (_cargo[_deliveryJob.Resource] <= 0) _cargo.Remove(_deliveryJob.Resource);
+                }
+                CompleteDeliveryJob(false);
+                yield break;
+            }
+            _transport.RemoveResource(_deliveryJob.Resource, _deliveryJob.Amount);
+        }
+        else if (_pickupJob != null && _sharedStorage != null)
         {
             _pickupJob.SetState(PickupJob.JobState.Unloading);
             _sharedStorage.Add(_cargo);
@@ -251,6 +292,12 @@ public class Truck : MonoBehaviour
             GameEventBus.Publish(new OnUnitDelivered(_unit));
         }
 
+        if (_deliveryJob != null)
+        {
+            CompleteDeliveryJob(true);
+            yield break;
+        }
+
         if (_pickupJob != null)
         {
             CompletePickupJob(true);
@@ -273,6 +320,28 @@ public class Truck : MonoBehaviour
         _pickupJob = null;
         _sharedStorage = null;
         _pickupCompletion = null;
+        _cargo.Clear();
+        PickupBuilding = null;
+        DropoffBuilding = null;
+        _routePath = null;
+        _pathIndex = 0;
+        SetModel(empty: true);
+        CurrentState = TruckState.Idle;
+        completion?.Invoke(this, job, succeeded);
+    }
+
+    private void CompleteDeliveryJob(bool succeeded)
+    {
+        DeliveryJob job = _deliveryJob;
+        Action<Truck, DeliveryJob, bool> completion = _deliveryCompletion;
+        if (!succeeded && _sharedStorage != null && _cargo.Count > 0)
+        {
+            _sharedStorage.Add(_cargo);
+            foreach (var entry in _cargo) _transport.RemoveResource(entry.Key, entry.Value);
+        }
+        _deliveryJob = null;
+        _deliveryCompletion = null;
+        _sharedStorage = null;
         _cargo.Clear();
         PickupBuilding = null;
         DropoffBuilding = null;

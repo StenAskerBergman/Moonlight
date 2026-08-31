@@ -104,7 +104,7 @@ public class MapManager : MonoBehaviour
     [Serializable]
     public sealed class PatternData
     {
-        private const int CurrentDataVersion = 4;
+        private const int CurrentDataVersion = 6;
 
         public string displayName = "New Pattern";
         [FormerlySerializedAs("patternName")]
@@ -250,6 +250,18 @@ public class MapManager : MonoBehaviour
                 gridSize = gridSize > 0 ? gridSize : Mathf.Max(1, legacyGridSize);
                 slotSpacing = slotSpacing > 0f ? slotSpacing : Mathf.Max(1f, legacySlotSpacing);
 
+                // Version 5 briefly doubled the established normal-world pitch. The
+                // selection already occupies every other slot, so that change moved
+                // 60-unit chunks 120 units apart and left a full ungenerated gap.
+                // Restore the authored 30-unit lattice: selected neighbours then sit
+                // exactly one 60-unit chunk width apart and can share their edge.
+                if (dataVersion < 6
+                    && spawnPattern == SpawnPattern.Normal
+                    && Mathf.Approximately(slotSpacing, 60f))
+                {
+                    slotSpacing = 30f;
+                }
+
                 if (!legacyOverrideSelectionMasks)
                 {
                     if (currentIslandSelection == null || currentIslandSelection.Count == 0)
@@ -294,6 +306,7 @@ public class MapManager : MonoBehaviour
             {
                 RepairDuplicatedLegacySelectionTail(currentIslandSelection);
             }
+            RepairMissingEstablishedUnderwaterSlot(currentOceanSelection, spawnPattern);
             NormalizeSlotIds(currentIslandSelection, gridSize * gridSize);
             NormalizeSlotIds(currentOceanSelection, gridSize * gridSize);
             if (underwaterSelectionTerrainType != GridType.Type.Plateau
@@ -348,6 +361,25 @@ public class MapManager : MonoBehaviour
             slotIds.RemoveRange(
                 establishedSlots.Length,
                 slotIds.Count - establishedSlots.Length);
+        }
+
+        private static void RepairMissingEstablishedUnderwaterSlot(
+            List<int> slotIds,
+            SpawnPattern pattern)
+        {
+            if (pattern != SpawnPattern.Normal || slotIds.Count != 7) return;
+
+            int[] survivingSlots = { 5, 7, 15, 35, 43, 45, 49 };
+            for (int index = 0; index < survivingSlots.Length; index++)
+            {
+                if (slotIds[index] != survivingSlots[index]) return;
+            }
+
+            // Slot 1 belongs to the authored eight-plateau normal-world mask. It
+            // disappeared during the interrupted list migration that also produced
+            // the duplicated island tail; recognise only that exact seven-slot
+            // remainder so arbitrary custom masks are never expanded.
+            slotIds.Insert(0, 1);
         }
     }
 
@@ -553,10 +585,8 @@ public class MapManager : MonoBehaviour
     //   generated-neighbour pitch = 60                     = stride * latticeSlotSpacing
     //
     // Chunks therefore tile exactly because
-    //     occupied-slot stride * latticeSlotSpacing == chunkWorldSize
-    // NOT because the slot spacing equals the chunk width. A spawn pattern that fills
-    // adjacent slots would overlap by half a chunk - ValidateGeneratedChunkSeparation
-    // below exists to catch exactly that.
+    //     occupied-slot stride * latticeSlotSpacing == chunkWorldSize.
+    // ValidateGeneratedChunkSeparation catches custom selections that violate this.
     // ---------------------------------------------------------------------------
 
     /// <summary>
@@ -746,6 +776,7 @@ public class MapManager : MonoBehaviour
             Vector3 waterPosition = waterObject.transform.localPosition;
             waterPosition.y = activePattern.waterHeight;
             waterObject.transform.localPosition = waterPosition;
+            EnsureWaterCoversGeneratedLattice();
         }
 
         islands = new List<Island>();
@@ -952,6 +983,30 @@ public class MapManager : MonoBehaviour
 
         OnMapGenerated?.Invoke();
         LastGenerationTimeMs = generationStopwatch.ElapsedMilliseconds;
+    }
+
+    /// <summary>
+    /// Keeps the shared water surface large enough for the complete centred lattice,
+    /// including one chunk of ocean margin around its outer edge. This is based on the
+    /// mesh's authored local bounds, so it works for the current Unity Plane without
+    /// hard-coding its ten-unit primitive size.
+    /// </summary>
+    private void EnsureWaterCoversGeneratedLattice()
+    {
+        if (waterObject == null) return;
+
+        MeshFilter waterMesh = waterObject.GetComponent<MeshFilter>();
+        if (waterMesh == null || waterMesh.sharedMesh == null) return;
+
+        Vector3 meshSize = waterMesh.sharedMesh.bounds.size;
+        if (meshSize.x <= 0f || meshSize.z <= 0f) return;
+
+        float latticeWidth = (Mathf.Max(1, RunGridSize) - 1) * LatticeSlotSpacing + ChunkWorldSize;
+        float requiredWidth = latticeWidth + ChunkWorldSize * 2f;
+        Vector3 waterScale = waterObject.transform.localScale;
+        waterScale.x = Mathf.Max(waterScale.x, requiredWidth / meshSize.x);
+        waterScale.z = Mathf.Max(waterScale.z, requiredWidth / meshSize.z);
+        waterObject.transform.localScale = waterScale;
     }
 
     /// <summary>

@@ -35,8 +35,11 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
                    ?? gameObject.AddComponent<SelectionOutlineTarget>();
 
     // Unit Types
-    public UnitType type;
+    public UnitType unitType;
     public MoveType moveType;
+
+    public UnitType GetUnitType(Unit unit) {  return unit.unitType; }
+    public MoveType GetMoveType(Unit unit) { return unit.moveType; }
 
     // Inventories
     public Inventory inventory;
@@ -147,7 +150,7 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 
 
         // Handle Specific Type Logic on a Case by Case basis
-        switch (type)
+        switch (unitType)
         {
             case UnitType.Character:
                 // Enable Character Flag for Selection
@@ -399,7 +402,7 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         // DisplayManager.Instance.Unfocus(true);
 
         // Reset the flags
-        switch (type)
+        switch (unitType)
         {
             // Cases:
             // Set Unit Type Flag to False

@@ -57,6 +57,12 @@ public class MapGrid : MonoBehaviour
         public Material abyssalEdgeMaterial;
         public Material mountainEdgeMaterial;
 
+        [Header("Generated Plateau Materials")]
+        [Tooltip("Optional explicit material for the generated underwater cliff shell. Falls back to the configured mountain/cliff material.")]
+        public Material plateauEscarpmentMaterial;
+        [Tooltip("Optional explicit material for generated underwater boulders, shelves, buttresses, shoulders, and spires. Falls back to the configured mountain/cliff material.")]
+        public Material plateauFormationMaterial;
+
         // Nav Mesh
         [Header("Nav Mesh Related")]
         public MeshColliderCookingOptions cookingOptions;
@@ -1271,9 +1277,34 @@ public class MapGrid : MonoBehaviour
         root.layer = gameObject.layer;
         root.transform.SetParent(transform, false);
 
-        Material rockMaterial = plateauEdgeMaterial != null ? plateauEdgeMaterial : terrainMaterial;
-        ApplyPlateauGeometryLayer(root.transform, "Procedural Escarpment", geometry.Escarpment, rockMaterial);
-        ApplyPlateauGeometryLayer(root.transform, "Rock Formations", geometry.Formations, rockMaterial);
+        ApplyPlateauGeometryLayer(
+            root.transform,
+            "Procedural Escarpment",
+            geometry.Escarpment,
+            ResolvePlateauEscarpmentMaterial());
+        ApplyPlateauGeometryLayer(
+            root.transform,
+            "Rock Formations",
+            geometry.Formations,
+            ResolvePlateauFormationMaterial());
+    }
+
+    private Material ResolvePlateauEscarpmentMaterial()
+    {
+        if (plateauEscarpmentMaterial != null) return plateauEscarpmentMaterial;
+        if (mountainEdgeMaterial != null) return mountainEdgeMaterial;
+        if (coastEdgeMaterial != null) return coastEdgeMaterial;
+        if (deepSeaEdgeMaterial != null) return deepSeaEdgeMaterial;
+        return terrainMaterial;
+    }
+
+    private Material ResolvePlateauFormationMaterial()
+    {
+        if (plateauFormationMaterial != null) return plateauFormationMaterial;
+        if (mountainEdgeMaterial != null) return mountainEdgeMaterial;
+        if (coastEdgeMaterial != null) return coastEdgeMaterial;
+        if (deepSeaEdgeMaterial != null) return deepSeaEdgeMaterial;
+        return terrainMaterial;
     }
 
     private void ApplyPlateauGeometryLayer(
@@ -1480,7 +1511,9 @@ public class MapGrid : MonoBehaviour
             || material == deepSeaEdgeMaterial
             || material == plateauEdgeMaterial
             || material == abyssalEdgeMaterial
-            || material == mountainEdgeMaterial;
+            || material == mountainEdgeMaterial
+            || material == plateauEscarpmentMaterial
+            || material == plateauFormationMaterial;
     }
 
     private void OnDestroy()

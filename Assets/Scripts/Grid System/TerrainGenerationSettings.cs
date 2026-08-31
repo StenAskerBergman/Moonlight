@@ -160,9 +160,6 @@ public sealed class StandalonePlateauSettings
     [Range(1.25f, 3f)] public float sandOpeningWidthMultiplier = 2.0f;
     [Range(1f, 2.5f)] public float sandDescentLengthMultiplier = 1.55f;
 
-    [Header("Chunk framing")]
-    [Min(1f)] public float outerSeamWidth = 3.0f;
-
     [Header("Submergence")]
     [Tooltip("Minimum vertical distance from the authoritative water surface to the plateau tabletop.")]
     [Min(2f)] public float tabletopDepthBelowWater = 6.0f;
@@ -269,7 +266,6 @@ public sealed class StandalonePlateauSettings
         sandOpeningTopWidth = Mathf.Max(2f, sandOpeningTopWidth);
         sandOpeningWidthMultiplier = Mathf.Clamp(sandOpeningWidthMultiplier, 1.25f, 3f);
         sandDescentLengthMultiplier = Mathf.Clamp(sandDescentLengthMultiplier, 1f, 2.5f);
-        outerSeamWidth = Mathf.Max(1f, outerSeamWidth);
         tabletopDepthBelowWater = Mathf.Max(2f, tabletopDepthBelowWater);
         minimumFormationClearance = Mathf.Max(0.5f, minimumFormationClearance);
     }
@@ -455,7 +451,10 @@ public sealed class TerrainGenerationSettings
         mountainPeakHeight = 4.2f;
         standalonePlateau ??= new StandalonePlateauSettings();
         standalonePlateau.Validate();
-        underwaterPlateauHeight = waterHeight - standalonePlateau.RequiredTabletopDepthBelowWater;
+        // The scalar plateau is a landform rising from the shared abyss datum.
+        // Decorative rock geometry owns its own submergence/clearance concerns and
+        // must not push the terrain tabletop below the abyssal seabed.
+        underwaterPlateauHeight = naturalPlateauHeight;
         Validate();
     }
 }

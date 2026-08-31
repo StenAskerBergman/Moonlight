@@ -21,7 +21,7 @@ internal static class UnitFactory
         Unit unit = go.GetComponent<Unit>();
         if (unit != null)
         {
-            unit.type = def.unitType;
+            unit.unitType = def.unitType;
             if (def.movementProfile != null)
             {
                 unit.moveType = def.movementProfile.Domain;

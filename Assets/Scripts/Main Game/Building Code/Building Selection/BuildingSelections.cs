@@ -6,10 +6,8 @@ using UnityEngine.Events;
 /// UnitSelections/ISelectable pattern (Unit/Unit Scripts/UnitSelections.cs) but
 /// trimmed to single-select, since only one building's HUD panel is shown at a time.
 ///
-/// Deliberately independent of UnitSelections — selecting a building does not
-/// deselect a selected unit and vice versa. The ISelectable.cs priority comment
-/// ("Mil > Units > Buildings") implies these should eventually be reconciled, but
-/// that ordering isn't implemented anywhere yet, so this doesn't invent it either.
+/// Building and unit selections are generally independent. Selecting a boat is the
+/// exception: UnitSelections clears the selected building so its menu closes.
 /// </summary>
 public class BuildingSelections : MonoBehaviour
 {

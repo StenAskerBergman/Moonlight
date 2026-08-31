@@ -43,3 +43,21 @@ public sealed class PickupJob
     public void SetEarliestDispatchTime(float time) => EarliestDispatchTime = time;
     public int RegisterRetry() => ++RetryCount;
 }
+
+/// <summary>Reserved island-stock movement from a warehouse to one consumer.</summary>
+public sealed class DeliveryJob
+{
+    public DeliveryJob(Building consumer, WarehouseLogisticsScheduler warehouse,
+        ItemEnums.ResourceType resource, int amount)
+    {
+        Consumer = consumer;
+        Warehouse = warehouse;
+        Resource = resource;
+        Amount = amount;
+    }
+
+    public Building Consumer { get; }
+    public WarehouseLogisticsScheduler Warehouse { get; }
+    public ItemEnums.ResourceType Resource { get; }
+    public int Amount { get; }
+}

@@ -31,7 +31,9 @@ public class BuildingInventory : MonoBehaviour
 
     private void Awake()
     {
-        currentInventory = inventoryData.inventoryCapacity;
+        currentInventory = inventoryData != null ? inventoryData.inventoryCapacity : 30;
+        Building building = GetComponent<Building>();
+        if (building != null && building.buildingInventory == null) building.buildingInventory = this;
     }
 
     #endregion
@@ -57,7 +59,23 @@ public class BuildingInventory : MonoBehaviour
     // Add Resource To Building
     public void AddResourceToBuilding(ItemEnums.ResourceType resource)
     {
-        Resources.Add(resource);
+        if (Resources.Count < currentInventory) Resources.Add(resource);
+    }
+
+    public int FreeCapacity => Mathf.Max(0, currentInventory - Resources.Count);
+
+    public int AddResourceToBuilding(ItemEnums.ResourceType resource, int amount)
+    {
+        int accepted = Mathf.Min(Mathf.Max(0, amount), FreeCapacity);
+        for (int i = 0; i < accepted; i++) Resources.Add(resource);
+        return accepted;
+    }
+
+    public bool TryRemoveResource(ItemEnums.ResourceType resource, int amount)
+    {
+        if (amount <= 0 || GetResourceCount(resource) < amount) return false;
+        for (int i = 0; i < amount; i++) Resources.Remove(resource);
+        return true;
     }
 
     // Removes Resource To Building

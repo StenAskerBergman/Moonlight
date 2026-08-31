@@ -41,6 +41,33 @@ public class BuildingSupply : MonoBehaviour
         return true;
     }
 
+    public bool TryGetNextDeliveryRequest(int capacity, out ItemEnums.ResourceType resource, out int amount)
+    {
+        resource = default;
+        amount = 0;
+        if (building == null || building.buildingInventory == null || requiredSupplies == null) return false;
+        foreach (ResourceRequirement requirement in requiredSupplies)
+        {
+            if (requirement == null || requirement.amount <= 0 ||
+                !System.Enum.TryParse(requirement.requiredResource, out ItemEnums.ResourceType parsed)) continue;
+            int onHand = building.buildingInventory.GetResourceCount(parsed);
+            int target = Mathf.Max(requirement.amount * 3, requirement.amount);
+            int missing = Mathf.Min(target - onHand, building.buildingInventory.FreeCapacity);
+            if (missing <= 0) continue;
+            resource = parsed;
+            amount = Mathf.Min(missing, Mathf.Max(1, capacity));
+            return true;
+        }
+        return false;
+    }
+
+    public int ReceiveSupply(ItemEnums.ResourceType resource, int amount)
+    {
+        return building != null && building.buildingInventory != null
+            ? building.buildingInventory.AddResourceToBuilding(resource, amount)
+            : 0;
+    }
+
     public void ConsumeSupplies()
     {
         if (requiredSupplies == null) return;
@@ -55,10 +82,7 @@ public class BuildingSupply : MonoBehaviour
                 continue;
             }
 
-            for (int i = 0; i < requirement.amount; i++)
-            {
-                building.buildingInventory.RemoveResourceFromBuilding(resourceType);
-            }
+            building.buildingInventory.TryRemoveResource(resourceType, requirement.amount);
         }
     }
 

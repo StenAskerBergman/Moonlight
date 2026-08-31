@@ -672,7 +672,7 @@ public sealed partial class IslandTerrainProvider
     private TerrainSample SampleSharedSeabed(float worldX, float worldZ)
     {
         float source = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
-        return ClassifyLegacyIsland(source);
+        return Sample(Cell.TerrainType.Abyssal, settings.abyssHeight, source);
     }
 
     public TerrainSample Sample(float localX, float localZ)

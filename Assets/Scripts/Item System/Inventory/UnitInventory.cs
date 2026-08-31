@@ -187,6 +187,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         }
 
         Debug.Assert(unitStorageManager != null, "UnitStorageManager should not be null at this point.");
+
         Debug.Assert(itemSlots != null, "No suitable slot found - this should not happen.");
 
 

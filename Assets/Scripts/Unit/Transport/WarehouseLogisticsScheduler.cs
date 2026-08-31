@@ -23,6 +23,8 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
     private readonly Queue<Truck> idleDrones = new Queue<Truck>();
     private readonly Dictionary<Building, PickupJob> activeByProducer = new Dictionary<Building, PickupJob>();
     private readonly List<PickupJob> retryingJobs = new List<PickupJob>();
+    private readonly Queue<DeliveryJob> deliveries = new Queue<DeliveryJob>();
+    private readonly HashSet<Building> activeDeliveries = new HashSet<Building>();
 
     private InfluenceZone influence;
     private Building warehouseBuilding;
@@ -71,9 +73,11 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
         {
             nextAssignmentRefresh = Time.time + assignmentRefreshSeconds;
             DiscoverReadyProducers();
+            DiscoverSupplyRequests();
         }
         PromoteDueRetries();
         DispatchQueuedJobs();
+        DispatchDeliveries();
     }
 
     // The zone is resolved lazily rather than cached once in Awake. Depot adds this
@@ -131,6 +135,46 @@ public sealed class WarehouseLogisticsScheduler : MonoBehaviour
         {
             if (output != null) TryQueueAutomaticPickup(output.GetComponent<Building>());
         }
+    }
+
+    private void DiscoverSupplyRequests()
+    {
+        if (island == null || sharedStorage == null) return;
+        foreach (BuildingSupply supply in island.GetComponentsInChildren<BuildingSupply>())
+        {
+            Building consumer = supply != null ? supply.GetComponent<Building>() : null;
+            if (consumer == null || activeDeliveries.Contains(consumer) || WarehouseAssignmentRegistry.Resolve(consumer) != this) continue;
+            if (!supply.TryGetNextDeliveryRequest(droneCargoCapacity, out ItemEnums.ResourceType resource, out int requested)) continue;
+            if (!TryBuildRoadRoute(consumer, out _)) continue;
+            if (!sharedStorage.TryReserve(resource, requested, out int reserved)) continue;
+            activeDeliveries.Add(consumer);
+            deliveries.Enqueue(new DeliveryJob(consumer, this, resource, reserved));
+        }
+    }
+
+    private void DispatchDeliveries()
+    {
+        while (deliveries.Count > 0)
+        {
+            Truck drone = GetOrCreateDrone();
+            if (drone == null) return;
+            DeliveryJob job = deliveries.Dequeue();
+            if (job.Consumer == null || !TryBuildRoadRoute(job.Consumer, out List<Cell> route))
+            {
+                sharedStorage?.ReleaseReservation(job.Resource, job.Amount);
+                activeDeliveries.Remove(job.Consumer);
+                idleDrones.Enqueue(drone);
+                continue;
+            }
+            drone.AssignDeliveryJob(job, route, sharedStorage, HandleDeliveryFinished);
+        }
+    }
+
+    private void HandleDeliveryFinished(Truck drone, DeliveryJob job, bool succeeded)
+    {
+        if (!succeeded && job != null) sharedStorage?.ReleaseReservation(job.Resource, job.Amount);
+        if (job != null) activeDeliveries.Remove(job.Consumer);
+        if (drone != null) idleDrones.Enqueue(drone);
     }
 
     private bool TryQueueAutomaticPickup(Building producer)

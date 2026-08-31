@@ -18,6 +18,7 @@ public sealed class IslandResourceStorage : MonoBehaviour
 
     [SerializeField] private List<ResourceEntry> entries = new List<ResourceEntry>();
     private readonly Dictionary<ItemEnums.ResourceType, int> amounts = new Dictionary<ItemEnums.ResourceType, int>();
+    private readonly Dictionary<ItemEnums.ResourceType, int> reserved = new Dictionary<ItemEnums.ResourceType, int>();
 
     public IReadOnlyList<ResourceEntry> Entries => entries;
 
@@ -32,6 +33,40 @@ public sealed class IslandResourceStorage : MonoBehaviour
     }
 
     public int GetAmount(ItemEnums.ResourceType resource) => amounts.TryGetValue(resource, out int amount) ? amount : 0;
+    public int GetAvailableAmount(ItemEnums.ResourceType resource)
+    {
+        reserved.TryGetValue(resource, out int held);
+        return Mathf.Max(0, GetAmount(resource) - held);
+    }
+
+    public bool TryReserve(ItemEnums.ResourceType resource, int requested, out int reservation)
+    {
+        reservation = Mathf.Min(Mathf.Max(0, requested), GetAvailableAmount(resource));
+        if (reservation <= 0) return false;
+        reserved[resource] = GetAmountReserved(resource) + reservation;
+        return true;
+    }
+
+    public bool CommitReservation(ItemEnums.ResourceType resource, int reservation)
+    {
+        if (reservation <= 0 || GetAmountReserved(resource) < reservation || GetAmount(resource) < reservation) return false;
+        amounts[resource] -= reservation;
+        reserved[resource] -= reservation;
+        if (amounts[resource] <= 0) amounts.Remove(resource);
+        if (reserved[resource] <= 0) reserved.Remove(resource);
+        RefreshInspectorEntries();
+        return true;
+    }
+
+    public void ReleaseReservation(ItemEnums.ResourceType resource, int reservation)
+    {
+        if (reservation <= 0 || !reserved.TryGetValue(resource, out int held)) return;
+        held -= reservation;
+        if (held <= 0) reserved.Remove(resource);
+        else reserved[resource] = held;
+    }
+
+    private int GetAmountReserved(ItemEnums.ResourceType resource) => reserved.TryGetValue(resource, out int amount) ? amount : 0;
 
     public void Add(IReadOnlyDictionary<ItemEnums.ResourceType, int> cargo)
     {

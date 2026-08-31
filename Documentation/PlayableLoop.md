@@ -74,3 +74,20 @@ part of automatic logistics and remains a follow-up implementation.
   finishes.
 - A failed pre-load job retries, then releases and requeues its reservation.
 - Warehouses never dispatch more drones than their level permits.
+
+## Slice 2: warehouse input delivery and recipe consumption
+
+Consumers declare their operating inputs through `BuildingSupply`. The assigned
+warehouse keeps up to three production cycles on hand, reserves available island
+stock, and sends a road drone from storage to the consumer. Reservations prevent
+two consumers from claiming the same stock. A production cycle only consumes its
+inputs when output capacity is available, so blocked output never destroys goods.
+
+```text
+Island shared storage reserves requested input
+    → warehouse drone loads reserved stock
+    → drone travels over the road network to the consumer
+    → consumer receives local input stock
+    → production cycle atomically checks and consumes its recipe
+    → output enters local producer storage for Slice 1 pickup
+```
