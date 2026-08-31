@@ -227,6 +227,16 @@ public class BuildingPlacer : MonoBehaviour
                     }
                 }
             }
+
+            // --- WIRING SETTLEMENT.CS ---
+            // Trigger the boat's Settlement behavior to execute cargo transfer
+            // now that the warehouse cost has been paid.
+            Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
+            if (boatSettlement != null)
+            {
+                boatSettlement.CompleteSettlement(currentBaseStorageManager);
+            }
+            // ----------------------------
         }
         else if (buildingCost != null && currentBaseStorageManager != null)
         {
