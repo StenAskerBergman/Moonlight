@@ -155,6 +155,13 @@ public class UnitSelections : MonoBehaviour
             selectionChanged.Invoke(unitsSelected);
             UserfaceHandler();
             FlagCheck();
+
+            // Refresh HUD to the first remaining unit so the panel
+            // isn't left stale or hidden after a shift-deselect.
+            if (unitsSelected.Count > 0)
+            {
+                unitsSelected[0].ViewUnit();
+            }
         }
     }
     #endregion
@@ -171,11 +178,9 @@ public class UnitSelections : MonoBehaviour
         {
             DeselectBuildingWhenSelectingBoat(unitToAdd);
 
-            if (unitToAdd.unitType == UnitType.Character)
-            {
-                // Call OnSelect on the Selected Character Units
-                (unitToAdd as ISelectable)?.OnSelect();
-            }
+            // Call OnSelect on all drag-selected units (was Character-only,
+            // which left ships/submarines without outline or HUD).
+            (unitToAdd as ISelectable)?.OnSelect();
 
             // Add any new Units to Current Selection
             unitsSelected.Add(unitToAdd);
@@ -211,9 +216,6 @@ public class UnitSelections : MonoBehaviour
 
             // Call OnDeselect on the deselected units
             (unit as ISelectable)?.OnDeselect();
-
-            // Hides HUD elements for the deselected unit
-            UserfaceHandler();
         }
         unitsSelected.Clear();
         selectionChanged.Invoke(unitsSelected);

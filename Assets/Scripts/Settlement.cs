@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.MLAgents.Integrations.Match3;
 using UnityEngine;
 
 [Serializable]
@@ -31,8 +30,16 @@ public class Settlement : MonoBehaviour
         unit = GetComponent<Unit>();
         unitInventory = GetComponent<UnitInventory>();
 
-        DrawSettleRange();
-        settleRangeRenderer.enabled = false;
+        // Guard: settleRangeRenderer may not be assigned in the Inspector yet.
+        if (settleRangeRenderer != null)
+        {
+            DrawSettleRange();
+            settleRangeRenderer.enabled = false;
+        }
+        else
+        {
+            Debug.LogWarning($"Settlement on {gameObject.name}: settleRangeRenderer is not assigned. Settle-range circle will not render.");
+        }
     }
 
     public bool TryingToSettle()
@@ -46,13 +53,15 @@ public class Settlement : MonoBehaviour
     public void BeginSettlement()
     {
         tryingToSettle = true;
-        settleRangeRenderer.enabled = true;
+        if (settleRangeRenderer != null)
+            settleRangeRenderer.enabled = true;
     }
 
     public void CancelSettlement()
     {
         tryingToSettle = false;
-        settleRangeRenderer.enabled = false;
+        if (settleRangeRenderer != null)
+            settleRangeRenderer.enabled = false;
     }
 
     public bool CanSettle(Island island, out string reason)
@@ -109,7 +118,7 @@ public class Settlement : MonoBehaviour
     // -> Always deduct construction costs
     // -> If transferEntireInventoryOnSettlement == true
     // -> move all remaining ship cargo into settlement
-    public void CompleteSettlement(Inventory settlementInventory)
+    public void CompleteSettlement(BaseStorageManager islandStorage)
     {
         // Always consume construction costs
         foreach (SettlementCost cost in settlementCosts)
@@ -120,10 +129,31 @@ public class Settlement : MonoBehaviour
             unitInventory.RemoveItem(cost.item, cost.amount);
         }
 
-        // Optionally transfer everything remaining
-        if (transferEntireInventoryOnSettlement)
+        // Optionally transfer everything remaining from the ship into island storage
+        if (transferEntireInventoryOnSettlement && islandStorage != null)
         {
-            // Transfer remaining cargo here
+            Dictionary<ItemData, int> remaining = unitInventory.GetAllItems();
+            if (remaining != null)
+            {
+                // Snapshot the keys so we can modify the inventory during iteration
+                var entries = new List<KeyValuePair<ItemData, int>>(remaining);
+                foreach (var kvp in entries)
+                {
+                    if (kvp.Key == null || kvp.Value <= 0)
+                        continue;
+
+                    if (islandStorage.CanAddItem(kvp.Key, kvp.Value))
+                    {
+                        islandStorage.AddItem(kvp.Key, kvp.Value);
+                        unitInventory.RemoveItem(kvp.Key, kvp.Value);
+                        Debug.Log($"<color=green>Settlement: Transferred {kvp.Value}x {kvp.Key.displayName} to island storage.</color>");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Settlement: Could not transfer {kvp.Value}x {kvp.Key.displayName} — island storage full.");
+                    }
+                }
+            }
         }
     }
 

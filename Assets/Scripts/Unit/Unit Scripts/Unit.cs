@@ -197,7 +197,7 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     public void ViewUnit() 
     {
         // Only display the inventory UI if the unit is selectable.
-        if (!Selectable || !HasInventory()) return;
+        if (!HasInventory()) return;
 
         // Fetch or find the UnitInventoryUI component
         var unitInventoryUI = GetUnitInventoryUIComponent();
@@ -271,11 +271,7 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
                 // if (selectionUIElements == null && uiElement.gameObject.GetComponentsInChildren<ItemSlot>.().amount == 0) Destroy(uiElement);
             }
         }
-        else
-        {
-            Debug.LogError("Selection UI Elements are not assigned or empty.");
-
-        }
+        // else: Normal for units without custom overhead UI elements — not an error.
     }
 
     #region Getter Methods
@@ -427,8 +423,10 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
             // Set the flag to false as the unit does not have an inventory.
             UnitSelections.Instance.RemoveInventoryCount(); 
             
-            // Hide the inventory UI if it's not relevant for the selected unit.
-            UnitSelections.Instance.inventoryUIPanel.SetActive(false); 
+            // Only hide the panel when no other units remain selected;
+            // otherwise a shift-deselect would kill the HUD for the rest.
+            if (UnitSelections.Instance.unitsSelected.Count <= 1)
+                UnitSelections.Instance.inventoryUIPanel.SetActive(false); 
         }
 
         // MenuSwap(false, true);
