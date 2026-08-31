@@ -188,14 +188,12 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         Debug.Assert(unitStorageManager != null, "UnitStorageManager should not be null at this point.");
 
-        Debug.Assert(itemSlots != null, "No suitable slot found - this should not happen.");
-
-
-        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + itemSlots.Count(s => s != null) + "</color> - <color=white> Before InitializeItemSlots && Before InitializeStorageManager() </color>");
+        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + (itemSlots != null ? itemSlots.Count(s => s != null) : 0) + "</color> - <color=white> Before InitializeItemSlots && Before InitializeStorageManager() </color>");
         InitializeItemSlots(); // Awake - UnitInventory.cs
-        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + itemSlots.Count(s => s != null) + "</color> - <color=white> After InitializeItemSlots && Before InitializeStorageManager() </color>");
+        Debug.Assert(itemSlots != null, "No suitable slot found - this should not happen.");
+        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + (itemSlots != null ? itemSlots.Count(s => s != null) : 0) + "</color> - <color=white> After InitializeItemSlots && Before InitializeStorageManager() </color>");
         InitializeStorageManager();
-        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + itemSlots.Count(s => s != null) + "</color> - <color=white> After InitializeItemSlots && After InitializeStorageManager() </color>");
+        Debug.Log("<color=gray>UnitInventory: Initialized itemSlots count: </color><color=yellow>" + (itemSlots != null ? itemSlots.Count(s => s != null) : 0) + "</color> - <color=white> After InitializeItemSlots && After InitializeStorageManager() </color>");
 
     }
 
