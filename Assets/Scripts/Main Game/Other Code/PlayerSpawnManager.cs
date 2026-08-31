@@ -189,6 +189,19 @@ public class PlayerSpawnManager : MonoBehaviour
 
     private Vector3 CalculateSafeWaterSpawnPosition()
     {
+        Vector3 rawPos = GetRawSpawnPosition();
+        
+        // Snap to nearest NavMesh position so the Agent doesn't fail to initialize
+        if (UnityEngine.AI.NavMesh.SamplePosition(rawPos, out UnityEngine.AI.NavMeshHit hit, 50f, UnityEngine.AI.NavMesh.AllAreas))
+        {
+            return hit.position;
+        }
+        
+        return rawPos;
+    }
+
+    private Vector3 GetRawSpawnPosition()
+    {
         Island targetIsland = null;
 
         if (MapManager.instance != null && MapManager.instance.islands != null && MapManager.instance.islands.Count > 0)
