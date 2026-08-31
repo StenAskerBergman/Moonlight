@@ -31,8 +31,16 @@ public class ItemStackFactory
     // Ref ItemStack.cs
     public static ItemStack CreateItemStack(Transform parent)
     {
-        GameObject stackGO = new GameObject("ItemStack");
+        // Must be a RectTransform to render properly in UI Canvas!
+        GameObject stackGO = new GameObject("ItemStack", typeof(RectTransform));
         stackGO.transform.SetParent(parent, false);
+
+        // Stretch to fill the parent ItemSlot visually
+        RectTransform rt = stackGO.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
 
         ItemStack itemStack = stackGO.AddComponent<ItemStack>();
 
@@ -289,9 +297,11 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // ItemSlot.cs 
     public void InitializeSlot(ItemData itemData, int quantity)
     {
+        hasItem = true;
+
         if (itemStack == null)
         {
-            itemStack = GetComponentInChildren<ItemStack>() ?? ItemStackFactory.CreateItemStack(transform);
+            IsItemStackSetup("InitializeSlot");
         }
 
         if (itemStack != null)

@@ -46,7 +46,16 @@ public class UnitActionBarUI : MonoBehaviour
 
     private void OnDiveButtonClicked()
     {
-        diveInteraction?.Dive();
+        if (diveInteraction == null) return;
+        
+        if (diveInteraction.IsSubmerged)
+        {
+            diveInteraction.Surface();
+        }
+        else
+        {
+            diveInteraction.Dive();
+        }
     }
 
     private void OnSelectionChanged(System.Collections.Generic.List<Unit> selectedUnits)
@@ -84,7 +93,16 @@ public class UnitActionBarUI : MonoBehaviour
         if (diveButton != null)
         {
             bool canDive = diveInteraction != null && diveInteraction.CanDive();
-            diveButton.gameObject.SetActive(canDive);
+            bool canSurface = diveInteraction != null && diveInteraction.CanSurface();
+            
+            diveButton.gameObject.SetActive(canDive || canSurface);
+
+            // Update text to say "Surface" if submerged
+            Text btnText = diveButton.GetComponentInChildren<Text>();
+            if (btnText != null && diveInteraction != null)
+            {
+                btnText.text = diveInteraction.IsSubmerged ? "Surface" : "Dive";
+            }
         }
     }
 }

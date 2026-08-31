@@ -111,9 +111,23 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         GameObject textGO = new GameObject("Quantity Text", typeof(RectTransform));
         textGO.transform.SetParent(transform, false);
 
+        RectTransform rt = textGO.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
         Text text = textGO.AddComponent<Text>();
         text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // without a font nothing renders
         text.raycastTarget = false;                                   // must not intercept drag/drop
+        text.alignment = TextAnchor.LowerRight;
+        text.color = Color.white;
+        text.fontSize = 14;
+        
+        // Ensure text is not clipped if the slot is small
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+
         return text;
     }
 

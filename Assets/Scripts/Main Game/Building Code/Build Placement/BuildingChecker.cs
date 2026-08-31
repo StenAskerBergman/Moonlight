@@ -35,6 +35,10 @@ public class BuildingChecker : MonoBehaviour
     private BuildingRequirements buildingRequirements;
     private Vector3 targetPosition;
     private BuildingData _BuildData;
+    
+    // Tracks the boat currently providing settlement range for the active preview
+    private Unit currentSettlingBoat;
+    private Unit hoveredBoat;
     #endregion
 
     #region Awake + Start + OnDestroy
@@ -144,19 +148,23 @@ public class BuildingChecker : MonoBehaviour
     #region Update Method
     private void Update()
     {
-
         // Check if there is a Building Preview Active...
         if (currentBuildingPreview != null)
         {
-
+            hoveredBoat = null; // Reset every frame, UpdateBuildsite will populate it if valid
+            
             UpdateBuildsite();
             
             currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
 
-            // Debug.Log("Update: canPlace is " + canPlace);
+            // Update the visual settlement ring to follow whatever boat we evaluated
+            UpdateSettlingBoatRing(hoveredBoat);
 
             InputCheck();
-
+        }
+        else
+        {
+            UpdateSettlingBoatRing(null); // Ensure it's off if no preview
         }
     }
     #endregion
@@ -556,6 +564,11 @@ public class BuildingChecker : MonoBehaviour
                             Unit foundingBoat = null;
                             bool canWarehouse = influenceManager.CanPlaceWarehouse(newPos, gridSystem, out foundingBoat);
 
+                            if (!influenceManager.HasWarehouse)
+                            {
+                                hoveredBoat = InfluenceManager.GetNearestPlayerBoat(newPos);
+                            }
+
                             // If this is the first warehouse on an unsettled island, verify boat cargo
                             if (canWarehouse && !influenceManager.HasWarehouse && foundingBoat != null)
                             {
@@ -618,9 +631,26 @@ public class BuildingChecker : MonoBehaviour
     }
     #endregion
 
+    private void UpdateSettlingBoatRing(Unit newBoat)
+    {
+        if (currentSettlingBoat != newBoat)
+        {
+            if (currentSettlingBoat != null)
+            {
+                currentSettlingBoat.GetComponent<Settlement>()?.CancelSettlement();
+            }
+            currentSettlingBoat = newBoat;
+            if (currentSettlingBoat != null)
+            {
+                currentSettlingBoat.GetComponent<Settlement>()?.BeginSettlement();
+            }
+        }
+    }
+
     #region Cancel Building Methods
     public void CancelBuilding()
     {
+        UpdateSettlingBoatRing(null);
         if (currentBuildingPreview != null)
         {
             if (currentBuildingPreview.gameObject != null)
