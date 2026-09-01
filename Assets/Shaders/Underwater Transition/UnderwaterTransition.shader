@@ -44,6 +44,12 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
             float _MarineSnowScale;
             float _MarineSnowSpeed;
 
+            // 0 = surfaced, 1 = fully submerged. Continuous through the crossing,
+            // unlike _TransitionAmount which only animates during isTransitioning.
+            float _TransitionProgress;
+            float _GodRayIntensity;
+            float _DebrisDensity;
+
             float4x4 _InverseViewProjection;
 
             float Hash21(float2 p)
@@ -62,14 +68,116 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                             lerp(Hash21(i + float2(0, 1)), Hash21(i + 1), f.x), f.y);
             }
 
-            float CalculateCaustics(float2 p, float t)
+            // Cheap animated voronoi: distance from p to the nearest of 9 jittered
+            // feature points (one per neighboring cell), each orbiting its cell center
+            // over time so the pattern shimmers instead of just scrolling.
+            float VoronoiCaustic(float2 p, float t)
             {
-                float2 p1 = p + float2(t * 0.7, t * 0.5);
-                float2 p2 = p * 1.3 - float2(t * 0.6, -t * 0.8);
-                float c1 = sin(p1.x * 3.14 + sin(p1.y * 2.71 + t)) + cos(p1.y * 3.14 + sin(p1.x * 2.71 - t));
-                float c2 = sin(p2.x * 4.14 + cos(p2.y * 3.71 - t)) + cos(p2.y * 4.14 + cos(p2.x * 3.71 + t));
-                float caustic = pow(saturate(0.5 + 0.25 * (c1 + c2)), 3.5) * 2.2;
-                return caustic;
+                float2 cell = floor(p);
+                float2 f = frac(p);
+                float minDist = 8.0;
+
+                [unroll]
+                for (int y = -1; y <= 1; y++)
+                {
+                    [unroll]
+                    for (int x = -1; x <= 1; x++)
+                    {
+                        float2 neighbor = float2(x, y);
+                        float2 rnd = float2(Hash21(cell + neighbor), Hash21(cell + neighbor + 19.19));
+                        float2 featurePoint = neighbor + 0.5 + 0.5 * sin(t + rnd * 6.2831853);
+                        minDist = min(minDist, length(featurePoint - f));
+                    }
+                }
+
+                return minDist;
+            }
+
+            // Two voronoi layers at different scale/speed, summed and brightened, so the
+            // thin bright cell-boundary veins from each layer cross and reinforce each
+            // other -- the broken, refracting look of real sunlight through a moving
+            // surface rather than one clean repeating pattern.
+            float CalculateCaustics(float2 worldXZ, float t)
+            {
+                float layer1 = VoronoiCaustic(worldXZ * _CausticsScale, t * _CausticsSpeed);
+                float layer2 = VoronoiCaustic(worldXZ * _CausticsScale * 1.7 + 13.7, t * _CausticsSpeed * -1.35);
+
+                float bright1 = pow(saturate(1.0 - layer1 * 2.2), 3.0);
+                float bright2 = pow(saturate(1.0 - layer2 * 2.2), 3.0);
+
+                return saturate((bright1 + bright2) * 1.35);
+            }
+
+            // Classic screen-space radial light shafts: march a handful of samples from
+            // each pixel toward a screen-space "sun" point near the top of the frame,
+            // accumulating scene brightness along the way. Bright surface glints smear
+            // into shafts; the whole thing fades with transition progress and camera depth
+            // so it reads strongest just under the surface and dies out toward the abyss.
+            float3 ComputeGodRays(float2 uv, float2 warpedUv, float progress, float camDepth, float time)
+            {
+                if (progress < 0.001 || _GodRayIntensity < 0.001)
+                    return float3(0, 0, 0);
+
+                float2 lightPos = float2(0.5 + sin(time * 0.05) * 0.03, 0.97);
+                float2 toLight = lightPos - uv;
+
+                const int SAMPLES = 10;
+                float2 rayStep = toLight / SAMPLES * 0.65;
+
+                float2 samplePos = warpedUv;
+                float accum = 0.0;
+                float weight = 1.0;
+
+                [unroll]
+                for (int i = 0; i < SAMPLES; i++)
+                {
+                    samplePos += rayStep;
+                    float3 s = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, saturate(samplePos)).rgb;
+                    float luma = dot(s, half3(0.299, 0.587, 0.114));
+                    accum += smoothstep(0.55, 1.0, luma) * weight;
+                    weight *= 0.9;
+                }
+                accum /= SAMPLES;
+
+                float radialFalloff = saturate(1.0 - length(toLight) * 0.55);
+                float depthFade = exp(-progress * 2.0) * exp(-camDepth * 0.04);
+                float shimmer = 0.85 + 0.15 * sin(time * 3.0 + uv.x * 20.0);
+
+                return accum * radialFalloff * depthFade * shimmer * _GodRayIntensity * half3(0.55, 0.85, 0.95);
+            }
+
+            // One drifting speck layer: a sparse grid of jittered dots that scroll slowly
+            // in screen space. Three layers at different scale/speed (called below) fake
+            // parallax -- the "nearer" layer is bigger and drifts faster.
+            float DebrisLayer(float2 uv, float aspect, float scale, float speed, float seed, float time)
+            {
+                float2 p = uv * float2(aspect, 1.0) * scale;
+                p.y -= time * speed;
+                float2 cell = floor(p);
+                float2 f = frac(p) - 0.5;
+
+                float rnd = Hash21(cell + seed);
+                float2 jitter = (float2(Hash21(cell + seed + 1.7), Hash21(cell + seed + 3.1)) - 0.5) * 0.6;
+                float dist = length(f - jitter);
+                float speck = 1.0 - smoothstep(0.02, 0.09, dist);
+                return speck * step(0.82, rnd);
+            }
+
+            // Procedural plankton/sediment: no particle system, just animated noise dots
+            // in screen space, layered for a sense of depth as they drift upward.
+            float3 ComputeDebris(float2 uv, float progress, float camDepth, float time)
+            {
+                if (_DebrisDensity < 0.001)
+                    return float3(0, 0, 0);
+
+                float aspect = _ScreenParams.x / max(_ScreenParams.y, 1.0);
+                float debris = 0.0;
+                debris += DebrisLayer(uv, aspect, 14.0, 0.015, 11.0, time) * 1.0;
+                debris += DebrisLayer(uv, aspect, 22.0, 0.028, 47.0, time) * 0.8;
+                debris += DebrisLayer(uv, aspect, 34.0, 0.045, 91.0, time) * 0.6;
+
+                float fade = saturate(progress * 1.4) * exp(-camDepth * 0.03);
+                return saturate(debris) * _DebrisDensity * fade * half3(0.85, 0.95, 0.9);
             }
 
             float CalculateMarineSnow(float3 wsPos, float t)
@@ -134,7 +242,16 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 warpedUv.x += sin(uv.y * 42.0 + time * 3.2) * distortion;
                 warpedUv.y += cos(uv.x * 35.0 - time * 2.4) * distortion * 0.45;
 
+                // Chromatic aberration: only during the crossing window (progress 0.3-0.7),
+                // settling back to a clean single sample once the crossing is over.
+                float caWindow = smoothstep(0.3, 0.4, _TransitionProgress) * (1.0 - smoothstep(0.6, 0.7, _TransitionProgress));
                 half4 scene = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, warpedUv);
+                if (caWindow > 0.001)
+                {
+                    float2 caOffset = (1.0 / _ScreenParams.xy) * lerp(1.0, 2.0, caWindow) * caWindow;
+                    scene.r = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, warpedUv + caOffset).r;
+                    scene.b = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, warpedUv - caOffset).b;
+                }
 
                 // --- Depth-Aware Bathymetry & Underwater Volumetric Fog ---
                 float rawDepth = SampleSceneDepth(warpedUv);
@@ -181,9 +298,15 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     }
                 }
 
-                // 1. Exponential Light Absorption (Beer-Lambert Law)
+                // 1. Exponential Light Absorption (Beer-Lambert Law), per channel.
+                // Real seawater strips red first, then green, leaving blue-green in the
+                // abyss -- _AbsorptionCoefficients.r is tuned well above .b for this.
+                // _TransitionProgress adds a simulated extra column of water on top of
+                // the real per-pixel waterDistance, so the crossing itself reads as
+                // "going deeper" even before geometry provides much actual depth.
                 float3 betaExt = _AbsorptionCoefficients.xyz;
-                float3 transmittance = exp(-betaExt * waterDistance * _FogDensity * 14.0);
+                float progressDepth = _TransitionProgress * 8.0;
+                float3 transmittance = exp(-betaExt * (waterDistance + progressDepth) * _FogDensity * 14.0);
 
                 // 2. Depth-Sensitive In-Scattering (Volumetric Water Column)
                 float meanDepth = 0.5 * (camDepth + pixelDepth);
@@ -204,7 +327,7 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 float3 caustics = float3(0, 0, 0);
                 if (_CausticsStrength > 0.001 && !isBackground && positionWS.y < _WaterLevel)
                 {
-                    float causticVal = CalculateCaustics(positionWS.xz * _CausticsScale, time * _CausticsSpeed);
+                    float causticVal = CalculateCaustics(positionWS.xz, time);
                     float depthFade = exp(-pixelDepth / max(_CausticsFadeDepth, 0.5));
                     caustics = _ShallowWaterColor.rgb * causticVal * _CausticsStrength * depthFade * sunLightAtten;
                 }
@@ -233,6 +356,14 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     underwaterView = backgroundAtmosphere + marineSnow;
                 }
 
+                // 5. Murk / Turbidity: desaturate and pull toward a uniform ambient tone
+                // as fog builds up and the transition deepens. Clear near the surface,
+                // a flat blue-green soup once fogAmount and progress both ramp up.
+                float murkAmount = saturate(fogAmount * (0.6 + 0.4 * tDeep) + _TransitionProgress * 0.15);
+                float murkLuma = dot(underwaterView, half3(0.299, 0.587, 0.114));
+                underwaterView = lerp(underwaterView, murkLuma.xxx, murkAmount * 0.5);
+                underwaterView = lerp(underwaterView, ambientWaterColor, murkAmount * 0.35);
+
                 // Transition blending across waterline
                 float transitionSide = smoothstep(
                     surfaceLine + wave - _EdgeWidth, surfaceLine + wave + _EdgeWidth, uv.y);
@@ -245,7 +376,22 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 float foamNoise = 0.65 + ValueNoise(float2(uv.x * 38.0, time * 3.0)) * 0.65;
 
                 color += edge * foamNoise * _ShallowWaterColor.rgb * 0.8;
+
+                // 6. Surface Plane: a bright shimmering band right at the waterline during
+                // the 0.3-0.7 crossing window -- "breaking the surface". The edge/foam
+                // term above already marks the line; this just makes it flare brighter
+                // right when the camera is actually passing through it.
+                float bandWindow = smoothstep(0.3, 0.4, _TransitionProgress) * (1.0 - smoothstep(0.6, 0.7, _TransitionProgress));
+                float shimmer = sin(uv.x * 60.0 + time * 6.0) * 0.5 + 0.5;
+                color += edge * shimmer * (_ShallowWaterColor.rgb * 1.6 + half3(0.15, 0.2, 0.2)) * bandWindow * 1.5;
+
                 color = lerp(color, half3(0.82, 0.96, 1.0), bubbles * 0.92);
+
+                // 7. God Rays & Debris, confined to the underwater side of the frame by
+                // the same tintAmount used to blend the underwater view in above.
+                color += ComputeGodRays(uv, warpedUv, _TransitionProgress, camDepth, time) * tintAmount;
+                color += ComputeDebris(uv, _TransitionProgress, camDepth, time) * tintAmount;
+
                 return half4(color, scene.a);
             }
             ENDHLSL

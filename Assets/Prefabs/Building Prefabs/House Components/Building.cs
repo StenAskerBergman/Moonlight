@@ -93,10 +93,25 @@ public class Building : MonoBehaviour, ISelectable
         outline ??= GetComponent<SelectionOutlineTarget>()
                    ?? gameObject.AddComponent<SelectionOutlineTarget>();
 
+    // Lazily added for the same reason as the outline: no building prefab needs the
+    // component placed by hand.
+    private BuildingHighlighter highlighter;
+    private BuildingHighlighter Highlighter =>
+        highlighter ??= GetComponent<BuildingHighlighter>()
+                       ?? gameObject.AddComponent<BuildingHighlighter>();
+
+    // Ground ring under the selected building, the building-side equivalent of the
+    // circle Unit.OnSelect enables on its first child.
+    private BuildingSelectionRing selectionRing;
+    private BuildingSelectionRing SelectionRing =>
+        selectionRing ??= GetComponent<BuildingSelectionRing>()
+                         ?? gameObject.AddComponent<BuildingSelectionRing>();
+
     public void OnSelect()
     {
         Selected = true;
-        Outline.SetSelected(true);
+        Highlighter.SetHighlight(BuildingHighlight.Selected);
+        SelectionRing.SetVisible(true);
     }
 
     // Call after upgrades/modules structurally add or remove renderers under this
@@ -105,11 +120,52 @@ public class Building : MonoBehaviour, ISelectable
     public void RefreshOutlineRenderers()
     {
         Outline.RefreshRenderers();
+        Highlighter.RefreshOverlays();
+        SelectionRing.Refresh();
     }
 
     public void OnDeselect()
     {
         Selected = false;
-        Outline.SetSelected(false);
+        SelectionRing.SetVisible(false);
+
+        // Only the blue "you clicked this" state is cleared here. Green influence is
+        // owned by BuildingHighlightController, which decides it from the selection as a
+        // whole - clearing it from the deselected building would fight that.
+        if (Highlighter.State == BuildingHighlight.Selected)
+        {
+            Highlighter.SetHighlight(BuildingHighlight.None);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (BuildingSelections.Instance != null && BuildingSelections.Instance.SelectedBuilding == this)
+        {
+            BuildingSelections.Instance.DeselectAll();
+        }
+
+        ReleaseOccupiedCells();
+    }
+
+    private void ReleaseOccupiedCells()
+    {
+        Island island = GetComponentInParent<Island>();
+        GridSystem grid = island != null ? island.GetComponent<GridSystem>() : GetComponentInParent<GridSystem>();
+        if (grid != null)
+        {
+            int size = grid.gridSize;
+            for (int x = 0; x < size; x++)
+            {
+                for (int z = 0; z < size; z++)
+                {
+                    Cell cell = grid.GetCell(x, z);
+                    if (cell != null && cell.occupyingBuilding == this)
+                    {
+                        cell.ReleaseCell();
+                    }
+                }
+            }
+        }
     }
 }

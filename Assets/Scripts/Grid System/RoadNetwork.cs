@@ -48,11 +48,17 @@ public class RoadNetwork : MonoBehaviour
 
         foreach (Cell neighbor in cell.neighbors)
         {
-            if (neighbor == null || !_roadCells.Contains(neighbor)) continue;
+            if (neighbor == null || !_roadCells.Contains(neighbor) || !AreOrthogonal(cell, neighbor)) continue;
 
             AddEdge(cell, neighbor);
             AddEdge(neighbor, cell);
         }
+    }
+
+    private static bool AreOrthogonal(Cell first, Cell second)
+    {
+        Vector3Int delta = first.cellPosition - second.cellPosition;
+        return Mathf.Abs(delta.x) + Mathf.Abs(delta.z) == 1;
     }
 
     public void UnregisterRoadCell(Cell cell)

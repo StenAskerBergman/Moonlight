@@ -242,7 +242,18 @@ public class BuildingPlacer : MonoBehaviour
         {
             DeductCosts(buildingCost, currentBaseStorageManager); 
         }
-        MarkGridCells(buildingInstance, buildingProperties.buildingSize);
+        // Resolved here rather than read from the placer's own gridSystem field, which
+        // nothing assigns during this flow. It was null, so MarkGridCells threw and took
+        // the rest of placement down with it - including the influence zone registration
+        // below, which is what actually settles the island.
+        GridSystem placementGrid = buildingPreview.gridSystem;
+        if (placementGrid == null && islandTransform != null)
+        {
+            placementGrid = islandTransform.GetComponent<GridSystem>()
+                         ?? islandTransform.GetComponentInChildren<GridSystem>();
+        }
+
+        MarkGridCells(buildingInstance, buildingProperties.buildingSize, placementGrid);
 
         // Register Influence Zone (Phase 3)
         InfluenceZone zone = buildingInstance.GetComponent<InfluenceZone>();
@@ -290,19 +301,33 @@ public class BuildingPlacer : MonoBehaviour
 
     private bool IsValidPlacement(BuildingPreview buildingPreview, Transform islandTransform)
     {
-        // Logic for checking if the island exists and if the building preview is valid
-        Camera mainCamera = Camera.main;
-        Island currentIsland = islandManager.GetIslandInFrontOfCamera(mainCamera);
-        
-        if (currentIsland == null)
-        {
-            Debug.Log("No island found in front of the camera.");
-            return false;
-        }
-
         if (buildingPreview == null)
         {
             Debug.LogError("BuildingPreview component not found.");
+            return false;
+        }
+
+        // Validate the island the blueprint is actually standing on. This used to ask
+        // IslandManager for whatever island happened to be in front of the camera, so a
+        // perfectly good site was rejected purely because of the angle the player was
+        // looking from - and it always failed outright since IslandManager.islands is
+        // never populated.
+        Island currentIsland = buildingPreview.currentIsland;
+
+        if (currentIsland == null && islandTransform != null)
+        {
+            currentIsland = islandTransform.GetComponent<Island>()
+                         ?? islandTransform.GetComponentInParent<Island>();
+        }
+
+        if (currentIsland == null && islandManager != null)
+        {
+            currentIsland = islandManager.GetIslandInFrontOfCamera(Camera.main);
+        }
+
+        if (currentIsland == null)
+        {
+            Debug.Log("No island found for the building site.");
             return false;
         }
 
@@ -317,6 +342,11 @@ public class BuildingPlacer : MonoBehaviour
         Vector3 targetPosition = buildingPreview.transform.position;
         Quaternion targetRotation = buildingPreview.transform.rotation;
         GameObject buildingInstance = Instantiate(buildingPreview.buildingPrefab, targetPosition, targetRotation, islandTransform);
+
+        // Buildings whose art has not been made yet get a generated stand-in model, so a new
+        // building is never an invisible object on the island. Does nothing once real art exists.
+        BuildingPlaceholderModel.Ensure(buildingInstance);
+
         return buildingInstance;
     }
 
@@ -347,19 +377,35 @@ public class BuildingPlacer : MonoBehaviour
     }
 
 
-    private void MarkGridCells(GameObject buildingInstance, Vector3 buildingSize)
+    private void MarkGridCells(GameObject buildingInstance, Vector3 buildingSize, GridSystem placementGrid)
     {
-        // Logic for marking grid cells
+        if (placementGrid == null)
+        {
+            Debug.LogWarning("BuildingPlacer: no GridSystem for the placed building - its cells were not reserved.");
+            return;
+        }
+
         Vector3 targetPosition = buildingInstance.transform.position;
-        Vector3Int gridPosition = gridSystem.WorldToCell(targetPosition);
+        Vector3Int gridPosition = placementGrid.WorldToCell(targetPosition);
+        Building building = buildingInstance.GetComponent<Building>();
+
         for (int x = 0; x < buildingSize.x; x++)
         {
             for (int z = 0; z < buildingSize.z; z++)
             {
                 int targetX = gridPosition.x + x;
                 int targetZ = gridPosition.z + z;
-                Vector3 targetCellWorldPosition = new Vector3(targetX * gridSystem.cellSize, 0, targetZ * gridSystem.cellSize);
-                gridSystem.MarkCellAsOccupied(targetCellWorldPosition, buildingInstance.GetComponent<Building>());
+
+                // Cell indices are grid-local and a cell's centre is index + 0.5. This
+                // used to multiply the index by cellSize and use it as a WORLD position,
+                // ignoring the island's own transform, so it reserved cells belonging to
+                // whatever happened to sit at those world coordinates.
+                Vector3 targetCellWorldPosition = placementGrid.transform.TransformPoint(
+                    new Vector3((targetX + 0.5f) * placementGrid.cellSize,
+                                0f,
+                                (targetZ + 0.5f) * placementGrid.cellSize));
+
+                placementGrid.MarkCellAsOccupied(targetCellWorldPosition, building);
             }
         }
     }

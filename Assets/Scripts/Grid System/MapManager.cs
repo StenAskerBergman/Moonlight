@@ -1215,11 +1215,13 @@ public class MapManager : MonoBehaviour
             }
 
             mapGrid.currentGridType = resolvedTerrain;
-            if (resolvedTerrain == GridType.Type.Plateau)
-            {
-                mapGrid.generationSettings ??= new TerrainGenerationSettings();
-                mapGrid.generationSettings.standalonePlateau = activePattern.plateauSettings.Clone();
-            }
+            mapGrid.generationSettings ??= new TerrainGenerationSettings();
+
+            // PatternData owns the visible ocean surface and plateau profile. Apply
+            // both to every chunk so island borders and plateau surrounds derive the
+            // same abyss datum and remain seamless after a domain reload.
+            mapGrid.generationSettings.standalonePlateau = activePattern.plateauSettings.Clone();
+            mapGrid.generationSettings.SetAuthoritativeWaterSurfaceHeight(activePattern.waterHeight);
             mapGrid.InitializeTerrain();
 
 

@@ -11,8 +11,10 @@ public class RoadPlacer : MonoBehaviour
     [Tooltip("Optional. Left empty, the RoadNetwork singleton is used.")]
     [SerializeField] private RoadNetwork roadNetwork;
     [SerializeField] private GameObject roadTilePrefab;
+    [Tooltip("Definition used by the existing PlaceRoad(Cell) interface. Leave empty to retain legacy untyped roads and the fallback prefab.")]
+    [SerializeField] private RoadDefinition defaultRoadDefinition;
 
-    private Dictionary<Cell, GameObject> _placedRoadTiles = new Dictionary<Cell, GameObject>();
+    private Dictionary<Cell, RoadTileVisual> _placedRoadTiles = new Dictionary<Cell, RoadTileVisual>();
 
     public static event Action<Cell> OnRoadPlaced;
     public static event Action<Cell> OnRoadRemoved;
@@ -42,6 +44,11 @@ public class RoadPlacer : MonoBehaviour
 
     public bool PlaceRoad(Cell targetCell)
     {
+        return PlaceRoad(targetCell, defaultRoadDefinition);
+    }
+
+    public bool PlaceRoad(Cell targetCell, RoadDefinition definition)
+    {
         if (targetCell == null) return false;
 
         if (targetCell.isRoad || targetCell.isOccupied || targetCell.isBlocked)
@@ -55,16 +62,18 @@ public class RoadPlacer : MonoBehaviour
             return false;
         }
 
-        targetCell.SetRoad(true);
+        targetCell.SetRoad(true, definition);
 
         GridSystem grid = ActiveGridSystem;
-        if (roadTilePrefab != null && grid != null)
+        if (grid != null)
         {
             // localCenter, not position: position carries the array index, the cell
             // physically occupies local [x, x+1) so the tile belongs at x+0.5.
             Vector3 worldPosition = grid.transform.TransformPoint(targetCell.localCenter);
-            GameObject roadTileInstance = Instantiate(roadTilePrefab, worldPosition, Quaternion.identity, grid.transform);
-            _placedRoadTiles[targetCell] = roadTileInstance;
+            GameObject roadTileInstance = new GameObject($"Road {targetCell.cellPosition.x},{targetCell.cellPosition.z}");
+            roadTileInstance.transform.SetParent(grid.transform, false);
+            roadTileInstance.transform.position = worldPosition;
+            _placedRoadTiles[targetCell] = roadTileInstance.AddComponent<RoadTileVisual>();
         }
 
         RoadNetwork network = ActiveRoadNetwork;
@@ -72,6 +81,8 @@ public class RoadPlacer : MonoBehaviour
         {
             network.RegisterRoadCell(targetCell);
         }
+
+        RefreshLocalArea(targetCell);
 
         OnRoadPlaced?.Invoke(targetCell);
         return true;
@@ -83,7 +94,7 @@ public class RoadPlacer : MonoBehaviour
 
         targetCell.SetRoad(false);
 
-        if (_placedRoadTiles.TryGetValue(targetCell, out GameObject roadTileInstance))
+        if (_placedRoadTiles.TryGetValue(targetCell, out RoadTileVisual roadTileInstance))
         {
             if (roadTileInstance != null)
             {
@@ -98,7 +109,47 @@ public class RoadPlacer : MonoBehaviour
             network.UnregisterRoadCell(targetCell);
         }
 
+        RefreshLocalArea(targetCell);
+
         OnRoadRemoved?.Invoke(targetCell);
         return true;
+    }
+
+    public bool ReplaceRoad(Cell targetCell, RoadDefinition definition)
+    {
+        if (targetCell == null || !targetCell.isRoad) return false;
+        if (targetCell.roadDefinition == definition) return true;
+
+        targetCell.SetRoad(true, definition);
+        RefreshLocalArea(targetCell);
+        OnRoadPlaced?.Invoke(targetCell);
+        return true;
+    }
+
+    public bool UpgradeRoad(Cell targetCell, RoadDefinition definition)
+    {
+        return ReplaceRoad(targetCell, definition);
+    }
+
+    private void RefreshLocalArea(Cell changedCell)
+    {
+        GridSystem grid = ActiveGridSystem;
+        if (grid == null || changedCell == null) return;
+
+        int centerX = changedCell.cellPosition.x;
+        int centerZ = changedCell.cellPosition.z;
+        for (int dx = -2; dx <= 2; dx++)
+        {
+            for (int dz = -2; dz <= 2; dz++)
+            {
+                if (Mathf.Abs(dx) + Mathf.Abs(dz) > 2) continue;
+                Cell cell = grid.GetCell(centerX + dx, centerZ + dz);
+                if (cell == null || !cell.isRoad) continue;
+                if (_placedRoadTiles.TryGetValue(cell, out RoadTileVisual visual) && visual != null)
+                {
+                    visual.Apply(RoadTopologyResolver.Resolve(grid, cell, roadTilePrefab));
+                }
+            }
+        }
     }
 }

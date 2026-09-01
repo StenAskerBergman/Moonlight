@@ -26,6 +26,10 @@ public class UnitInventoryUI : InventoryUserface
     public ItemSlot[] itemSlots;
     public Unit unit;
 
+    [Tooltip("Slots that present the inspected unit's abilities. Left empty, they are " +
+             "discovered from any child ItemSlot flagged AbilitySlot.")]
+    public ItemSlot[] abilitySlots;
+
     // Read-only windows for shared base behaviour. These expose the fields above;
     // they are not additional state. This class owns its display context, while
     // UnitInventory / UnitStorageManager remain the authority over item movement.
@@ -51,7 +55,7 @@ public class UnitInventoryUI : InventoryUserface
             } 
             else
             {
-                Unit selectedUnit = UnitSelections.Instance.unitsSelected[0]; // or however you determine the relevant unit - Unit Selection Priority
+                Unit selectedUnit = UnitSelections.Instance.FocusedUnit;
                 if (selectedUnit != null)
                 {
                     // If you also need to set the general 
@@ -155,6 +159,7 @@ public class UnitInventoryUI : InventoryUserface
     public void SetUnit(Unit newUnit)
     {
         this.unit = newUnit;
+        RefreshAbilityDisplay();
         Debug.Log("<color=green>UnitInventoryUI: Succesful Set Unit! Unit: </color>" + unit.name + " Unit.ID: " + unit.ID);
     }
 
@@ -202,6 +207,52 @@ public class UnitInventoryUI : InventoryUserface
         SyncSlots();
     }
 
+    // Ability slots are not part of itemSlots: they hold no cargo and are skipped by
+    // the inventory projection entirely, so nothing was ever written into them.
+    private void SyncAbilitySlots()
+    {
+        if (abilitySlots != null && abilitySlots.Length > 0) return;
+
+        var found = new List<ItemSlot>();
+        foreach (ItemSlot slot in GetComponentsInChildren<ItemSlot>(true))
+        {
+            if (slot != null && slot.AbilitySlot) found.Add(slot);
+        }
+        abilitySlots = found.ToArray();
+    }
+
+    /// <summary>
+    /// Paints the inspected unit's abilities into the ability slots. A unit with no
+    /// UnitAbilities component, or fewer abilities than slots, leaves the remaining
+    /// slots reading "(empty)" and greyed out rather than showing prefab placeholders.
+    /// </summary>
+    public void RefreshAbilityDisplay()
+    {
+        SyncAbilitySlots();
+        if (abilitySlots == null || abilitySlots.Length == 0) return;
+
+        // The live selection wins over the cached unit so a deselect cannot leave the
+        // previous unit's abilities on screen.
+        Unit displayedUnit = (UnitSelections.Instance != null ? UnitSelections.Instance.FocusedUnit : null) ?? unit;
+        UnitAbilities unitAbilities = displayedUnit != null ? displayedUnit.GetComponent<UnitAbilities>() : null;
+        int abilityCount = unitAbilities != null ? unitAbilities.Abilities.Count : 0;
+
+        for (int i = 0; i < abilitySlots.Length; i++)
+        {
+            if (abilitySlots[i] == null) continue;
+
+            AbilityDefinition definition = i < abilityCount ? unitAbilities.Abilities[i].definition : null;
+            if (definition != null)
+            {
+                abilitySlots[i].ShowAbility(definition.icon, definition.displayName);
+            }
+            else
+            {
+                abilitySlots[i].ShowEmptyAbility();
+            }
+        }
+    }
+
     public void SyncSlots()
     {
         if ((inventorySlots == null || inventorySlots.Count == 0) && itemSlots != null && itemSlots.Length > 0)
@@ -222,6 +273,7 @@ public class UnitInventoryUI : InventoryUserface
     protected override void ClearSlots()
     {
         SyncSlots();
+        RefreshAbilityDisplay();
         var slots = (itemSlots != null && itemSlots.Length > 0) ? itemSlots : inventorySlots?.ToArray();
         if (slots != null)
         {
@@ -265,7 +317,7 @@ public class UnitInventoryUI : InventoryUserface
         // Now you can safely call the base refresh logic.
         base.RefreshInventoryDisplay();
 
-        // Clear previous slots
+        // Clear previous slots (this also repaints the ability slots)
         ClearSlots();
 
         if (inventory == null && unitInventory == null)

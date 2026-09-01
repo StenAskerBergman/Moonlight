@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,35 +12,83 @@ public class UnitActionBarUI : MonoBehaviour
 {
     [SerializeField] private Button buildButton;
     [SerializeField] private Button diveButton;
+    [SerializeField] private Button deliverButton;
 
     private BuildInteraction buildInteraction;
     private DiveInteraction diveInteraction;
+    private DeliverInteraction deliverInteraction;
+
+    private bool subscribedToSelection;
+    private Unit trackedUnit;
+
+    private void Awake()
+    {
+        ResolveButtonReferences();
+    }
+
+    private void ResolveButtonReferences()
+    {
+        if (buildButton == null)
+        {
+            Transform t = transform.Find("TMP Build Harbor Button");
+            if (t != null) buildButton = t.GetComponent<Button>();
+        }
+
+        if (diveButton == null)
+        {
+            Transform t = transform.Find("TMP Dive Button");
+            if (t != null) diveButton = t.GetComponent<Button>();
+        }
+
+        if (deliverButton == null)
+        {
+            Transform t = transform.Find("TMP Deliver Cargo Button");
+            if (t != null) deliverButton = t.GetComponent<Button>();
+        }
+    }
 
     private void OnEnable()
     {
-        if (UnitSelections.Instance != null)
-        {
-            UnitSelections.Instance.selectionChanged.AddListener(OnSelectionChanged);
-        }
+        ResolveButtonReferences();
+        EnsureSubscribedToSelection();
 
-        if (buildButton != null) buildButton.onClick.AddListener(OnBuildButtonClicked);
         if (diveButton != null) diveButton.onClick.AddListener(OnDiveButtonClicked);
+        if (deliverButton != null) deliverButton.onClick.AddListener(OnDeliverButtonClicked);
 
         RefreshSelectedComponents();
     }
 
+    /// <summary>
+    /// UnitSelections assigns its Instance in Awake, which can run after this component's
+    /// OnEnable. The subscription was attempted once and silently skipped when that
+    /// happened, so selection changes never reached this bar and the build button stayed
+    /// hidden forever. Retried from Update until it takes.
+    /// </summary>
+    private void EnsureSubscribedToSelection()
+    {
+        if (subscribedToSelection || UnitSelections.Instance == null) return;
+
+        UnitSelections.Instance.selectionChanged.AddListener(OnSelectionChanged);
+        subscribedToSelection = true;
+    }
+
     private void OnDisable()
     {
-        if (UnitSelections.Instance != null)
+        if (subscribedToSelection && UnitSelections.Instance != null)
         {
             UnitSelections.Instance.selectionChanged.RemoveListener(OnSelectionChanged);
         }
+        subscribedToSelection = false;
 
-        if (buildButton != null) buildButton.onClick.RemoveListener(OnBuildButtonClicked);
         if (diveButton != null) diveButton.onClick.RemoveListener(OnDiveButtonClicked);
+        if (deliverButton != null) deliverButton.onClick.RemoveListener(OnDeliverButtonClicked);
     }
 
-    private void OnBuildButtonClicked()
+    /// <summary>
+    /// Persistent Button.onClick target for the TMP Build Harbor Button.
+    /// Kept public so the scene wiring is visible and inspectable in Unity.
+    /// </summary>
+    public void BuildHarbor()
     {
         buildInteraction?.Build(null);
     }
@@ -66,24 +115,71 @@ public class UnitActionBarUI : MonoBehaviour
     private void RefreshSelectedComponents()
     {
         Unit selectedUnit = null;
-        if (UnitSelections.Instance != null && UnitSelections.Instance.unitsSelected.Count > 0)
+        if (UnitSelections.Instance != null && UnitSelections.Instance.unitsSelected != null && UnitSelections.Instance.unitsSelected.Count > 0)
         {
-            selectedUnit = UnitSelections.Instance.unitsSelected[0];
+            selectedUnit = UnitSelections.Instance.FocusedUnit;
         }
 
-        buildInteraction = selectedUnit != null ? selectedUnit.GetComponent<BuildInteraction>() : null;
-        diveInteraction = selectedUnit != null ? selectedUnit.GetComponent<DiveInteraction>() : null;
+        trackedUnit = selectedUnit;
+
+        if (selectedUnit != null)
+        {
+            buildInteraction = selectedUnit.GetComponent<BuildInteraction>();
+            if (buildInteraction == null && InfluenceManager.IsBoatUnit(selectedUnit))
+            {
+                buildInteraction = selectedUnit.gameObject.AddComponent<BuildInteraction>();
+            }
+
+            diveInteraction = selectedUnit.GetComponent<DiveInteraction>();
+
+            // Added on demand like BuildInteraction above - no vessel prefab carries it.
+            deliverInteraction = selectedUnit.GetComponent<DeliverInteraction>();
+            if (deliverInteraction == null && InfluenceManager.IsBoatUnit(selectedUnit))
+            {
+                deliverInteraction = selectedUnit.gameObject.AddComponent<DeliverInteraction>();
+            }
+        }
+        else
+        {
+            buildInteraction = null;
+            diveInteraction = null;
+            deliverInteraction = null;
+        }
 
         UpdateButtonVisibility();
     }
 
     private void Update()
     {
+        EnsureSubscribedToSelection();
+
+        // Re-resolve on a focus change even if the selection event was missed, so the
+        // bar can never be left pointing at a unit that is no longer selected.
+        Unit focused = UnitSelections.Instance != null ? UnitSelections.Instance.FocusedUnit : null;
+        if (focused != trackedUnit)
+        {
+            RefreshSelectedComponents();
+            return;
+        }
+
         UpdateButtonVisibility();
     }
 
+    /// <summary>Persistent Button.onClick target for the deliver-cargo button.</summary>
+    public void DeliverCargo()
+    {
+        deliverInteraction?.DeliverAll();
+    }
+
+    private void OnDeliverButtonClicked() => DeliverCargo();
+
     private void UpdateButtonVisibility()
     {
+        if (deliverButton != null)
+        {
+            deliverButton.gameObject.SetActive(deliverInteraction != null && deliverInteraction.CanDeliver());
+        }
+
         if (buildButton != null)
         {
             bool canBuild = buildInteraction != null && buildInteraction.CanBuild();
@@ -98,10 +194,19 @@ public class UnitActionBarUI : MonoBehaviour
             diveButton.gameObject.SetActive(canDive || canSurface);
 
             // Update text to say "Surface" if submerged
-            Text btnText = diveButton.GetComponentInChildren<Text>();
-            if (btnText != null && diveInteraction != null)
+            string label = (diveInteraction != null && diveInteraction.IsSubmerged) ? "Surface" : "Dive";
+            TMP_Text tmpText = diveButton.GetComponentInChildren<TMP_Text>();
+            if (tmpText != null)
             {
-                btnText.text = diveInteraction.IsSubmerged ? "Surface" : "Dive";
+                tmpText.text = label;
+            }
+            else
+            {
+                Text btnText = diveButton.GetComponentInChildren<Text>();
+                if (btnText != null)
+                {
+                    btnText.text = label;
+                }
             }
         }
     }

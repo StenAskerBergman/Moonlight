@@ -24,6 +24,14 @@ MonoBehaviour:
   riverColor: {r: 0.22, g: 0.52, b: 0.9, a: 1}
   shallowWaterColor: {r: 0.38, g: 0.74, b: 0.95, a: 1}
   deepWaterColor: {r: 0.06, g: 0.14, b: 0.45, a: 1}
+  plateauFineSandColor: {r: 0.62, g: 0.59, b: 0.47, a: 1}
+  plateauCoarseSandColor: {r: 0.46, g: 0.43, b: 0.34, a: 1}
+  plateauShellSedimentColor: {r: 0.76, g: 0.73, b: 0.61, a: 1}
+  plateauGravelColor: {r: 0.34, g: 0.38, b: 0.37, a: 1}
+  plateauMudColor: {r: 0.2, g: 0.23, b: 0.2, a: 1}
+  plateauSiltColor: {r: 0.11, g: 0.15, b: 0.17, a: 1}
+  plateauReefColor: {r: 0.13, g: 0.28, b: 0.22, a: 1}
+  plateauMaterialVariation: 0.78
   treePrefabs: []
   forestDensity: 0.85
   plainsTreeDensity: 0.08

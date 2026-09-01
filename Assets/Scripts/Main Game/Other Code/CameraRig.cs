@@ -352,6 +352,11 @@ public class CameraRig : MonoBehaviour
         return position;
     }
     #endregion
+
+    public void FocusOnWorldPosition(Vector3 worldPosition)
+    {
+        newPosition = new Vector3(worldPosition.x, newPosition.y, worldPosition.z);
+    }
     
     
 }

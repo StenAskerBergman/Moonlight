@@ -74,7 +74,7 @@ private void EvaluateDomainWarp(float worldX, float worldZ, int seed, out float 
         currentAmplitude *= warp.persistence;
     }
 
-    float effectiveAmp = Mathf.Clamp(warp.amplitude, 0f, 7.5f);
+    float effectiveAmp = Mathf.Clamp(warp.amplitude, 0f, Mathf.Min(7.5f, size * 0.20f));
     warpX = maxAmp > 0f ? (totalWarpX / maxAmp) * effectiveAmp : 0f;
     warpZ = maxAmp > 0f ? (totalWarpZ / maxAmp) * effectiveAmp : 0f;
 }
@@ -146,10 +146,30 @@ private float CalculateLegacyIslandField(float localX, float localZ, bool lowFre
 
     float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, lowFrequencyOnly)
         + islandEmergenceOffset;
-    // The local field is already suppressed outside the island silhouette. Taking
-    // the higher field makes abyss the floor without imprinting the square chunk
-    // boundary on the island's descent.
-    return Mathf.Max(sharedBase, localField);
+    float influence = EvaluateIslandInfluence(localX, localZ, warpX, warpZ);
+
+    // Island influence has an organic radial support and reaches zero before the
+    // generation domain ends. The abyss datum therefore owns every shared border
+    // without using four independent chunk-edge distances.
+    return Mathf.Lerp(sharedBase, Mathf.Max(sharedBase, localField), influence);
+}
+
+private float EvaluateIslandInfluence(float localX, float localZ, float warpX, float warpZ)
+{
+    float warpedNormX = ((localX + warpX) / size) * 2f - 1f;
+    float warpedNormZ = ((localZ + warpZ) / size) * 2f - 1f;
+    float warpedRadius = Mathf.Sqrt(warpedNormX * warpedNormX + warpedNormZ * warpedNormZ);
+
+    // Domain warp can displace the apparent centre by at most 7.5 world units.
+    // Reserve that radial allowance uniformly so the support is contained without
+    // acquiring the square outline of the chunk that stores it.
+    float maximumWarp = Mathf.Min(7.5f, size * 0.20f);
+    float maximumRadius = Mathf.Clamp(
+        1f - maximumWarp * 2f / Mathf.Max(2f, size) - 0.05f,
+        0.50f,
+        0.78f);
+    float fadeStart = Mathf.Max(0.42f, maximumRadius - 0.14f);
+    return 1f - SmootherStep01(Mathf.InverseLerp(fadeStart, maximumRadius, warpedRadius));
 }
 
 private float CalculateIslandEmergenceOffset()
@@ -177,8 +197,11 @@ private float CalculateIslandEmergenceOffset()
 
             float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
             float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, true);
-            float currentField = Mathf.Max(sharedBase, localField);
-            float requiredOffset = minimumDryMainlandField - currentField;
+            float influence = EvaluateIslandInfluence(localX, localZ, warpX, warpZ);
+            if (influence <= 0.001f) continue;
+
+            float currentField = Mathf.Lerp(sharedBase, Mathf.Max(sharedBase, localField), influence);
+            float requiredOffset = (minimumDryMainlandField - currentField) / influence;
             smallestRequiredOffset = Mathf.Min(smallestRequiredOffset, requiredOffset);
         }
     }

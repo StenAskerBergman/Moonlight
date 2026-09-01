@@ -17,6 +17,22 @@ public class SelectionOutlineRendererFeature : ScriptableRendererFeature
         [Min(0.001f)]
         public float outlineWidth = 0.05f;
 
+        [Header("Pulse")]
+        [Tooltip("Animate the outline between its dim and bright state. Off by default: this feature now only draws unit selection, since buildings pulse via BuildingHighlighter's overlay instead.")]
+        public bool pulse;
+
+        [Tooltip("Full dim-to-bright-to-dim cycles per second.")]
+        [Min(0.01f)]
+        public float pulseSpeed = 1.2f;
+
+        [Tooltip("Outline brightness at the dim end of the cycle, as a fraction of Outline Color. 1 = no brightness pulse.")]
+        [Range(0f, 1f)]
+        public float pulseMinIntensity = 0.45f;
+
+        [Tooltip("Extra width added at the bright end of the cycle, as a fraction of Outline Width. 0 = brightness-only pulse.")]
+        [Range(0f, 1f)]
+        public float pulseWidthAmount = 0.25f;
+
         public RenderPassEvent renderPassEvent =
             RenderPassEvent.AfterRenderingTransparents;
     }
@@ -92,8 +108,27 @@ public class SelectionOutlineRendererFeature : ScriptableRendererFeature
             if (renderers.Count == 0)
                 return;
 
-            outlineMaterial.SetColor("_OutlineColor", settings.outlineColor);
-            outlineMaterial.SetFloat("_OutlineWidth", settings.outlineWidth);
+            // 0 at the dim end of the cycle, 1 at the bright end. Driven off
+            // unscaled time so the highlight keeps breathing while the game is paused
+            // (the build/selection UI is usable during pause).
+            float pulse01 = settings.pulse
+                ? 0.5f - 0.5f * Mathf.Cos(Time.unscaledTime * settings.pulseSpeed * 2f * Mathf.PI)
+                : 1f;
+
+            Color color = settings.outlineColor;
+            float intensity = Mathf.Lerp(settings.pulseMinIntensity, 1f, pulse01);
+
+            // Scale RGB rather than alpha: the outline blends SrcAlpha/OneMinusSrcAlpha,
+            // so fading alpha would dissolve the silhouette instead of dimming it.
+            color.r *= intensity;
+            color.g *= intensity;
+            color.b *= intensity;
+
+            float width = settings.outlineWidth *
+                (1f + settings.pulseWidthAmount * pulse01);
+
+            outlineMaterial.SetColor("_OutlineColor", color);
+            outlineMaterial.SetFloat("_OutlineWidth", width);
 
             CommandBuffer cmd = CommandBufferPool.Get("Selection Outline");
 

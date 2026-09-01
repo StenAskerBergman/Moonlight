@@ -135,7 +135,7 @@ public class UnitMovement : MonoBehaviour
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
 
-            if (Physics.Raycast(ray, out hit, Mathf.Infinity, TravelMedium))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, TravelMedium, QueryTriggerInteraction.Ignore))
             {
                 NavMeshHit navHit;
                 // Check if the hit point is close enough to a point on the NavMesh, or find the nearest valid point

@@ -58,6 +58,7 @@ public class ItemDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (unitDrag != null)
         {
             unitDrag.isHolding = true;
+            unitDrag.SuppressCurrentGesture();
         }
     }
 

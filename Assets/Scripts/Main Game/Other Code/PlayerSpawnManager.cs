@@ -15,7 +15,10 @@ public class PlayerSpawnManager : MonoBehaviour
     public static PlayerSpawnManager Instance { get; private set; }
 
     [Header("Starter Ship Settings")]
-    [Tooltip("The starter ship prefab to instantiate. If unassigned, defaults to Commandship.")]
+    [Tooltip("The starter ship definition to instantiate. If assigned, takes precedence.")]
+    [SerializeField] private UnitDefinition starterShipDefinition;
+
+    [Tooltip("The starter ship prefab to instantiate. If unassigned, defaults to Freight Ship.")]
     [SerializeField] private GameObject starterShipPrefab;
 
     [Tooltip("Distance in world units offshore from the first island's beach to spawn the ship.")]
@@ -70,11 +73,24 @@ public class PlayerSpawnManager : MonoBehaviour
     private void LoadDefaultAssetsIfNull()
     {
 #if UNITY_EDITOR
+        if (starterShipDefinition == null)
+        {
+            starterShipDefinition = AssetDatabase.LoadAssetAtPath<UnitDefinition>(
+                "Assets/Data/Units/Naval/Trade/Freight Ship.asset"
+            );
+        }
+
         if (starterShipPrefab == null)
         {
             starterShipPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/Prefabs/Units Prefabs/Characters/Ships/Commandship.prefab"
+                "Assets/Prefabs/Units Prefabs/Naval/Trade/Freight Ship.prefab"
             );
+            if (starterShipPrefab == null)
+            {
+                starterShipPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/Prefabs/Units Prefabs/Characters/Ships/Commandship.prefab"
+                );
+            }
         }
 
         if (buildingModulesItem == null)
@@ -131,7 +147,15 @@ public class PlayerSpawnManager : MonoBehaviour
 
         GameObject shipObj = null;
 
-        if (starterShipPrefab != null)
+        if (starterShipDefinition != null)
+        {
+            Unit createdUnit = UnitFactory.Create(starterShipDefinition, spawnPosition, spawnRotation);
+            if (createdUnit != null)
+            {
+                shipObj = createdUnit.gameObject;
+            }
+        }
+        else if (starterShipPrefab != null)
         {
             shipObj = Instantiate(starterShipPrefab, spawnPosition, spawnRotation);
         }
@@ -292,6 +316,12 @@ public class PlayerSpawnManager : MonoBehaviour
         if (unitInventory == null)
         {
             unitInventory = shipObj.AddComponent<UnitInventory>();
+        }
+
+        // Ensure 3 cargo holds with max 40 each for starting freight ship
+        if (unitInventory.configuredSlotCount == 0)
+        {
+            unitInventory.ConfigureSlots(3, 40);
         }
 
         if (buildingModulesItem != null && buildingModulesAmount > 0)

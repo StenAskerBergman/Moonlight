@@ -308,8 +308,29 @@ public class StampPlacementController : MonoBehaviour
             if (influence == null && _currentIsland.islandObject != null)
                 influence = _currentIsland.islandObject.GetComponent<InfluenceManager>();
 
-            if (influence != null && !influence.IsWithinBuildableArea(worldPos))
-                return false;
+            if (influence != null)
+            {
+                BuildingProperties props = prefab.GetComponent<BuildingProperties>();
+                BuildingData data = props != null ? props.buildingData : null;
+                bool isWarehouse = data != null && (
+                    data.buildingType == BuildingEnums.BuildingType.OnShore.ToString() ||
+                    (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag => tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) || tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase))) ||
+                    (data.buildingName != null && (data.buildingName.IndexOf("Warehouse", System.StringComparison.OrdinalIgnoreCase) >= 0 || data.buildingName.IndexOf("Harbor", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                );
+
+                if (isWarehouse)
+                {
+                    Unit foundingBoat = null;
+                    if (!influence.CanPlaceWarehouse(worldPos, _currentGridSystem, out foundingBoat))
+                    {
+                        return false;
+                    }
+                }
+                else if (!influence.IsWithinBuildableArea(worldPos))
+                {
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -405,12 +426,49 @@ public class StampPlacementController : MonoBehaviour
             return false;
 
         // Check cost affordability
+        InfluenceManager influenceManager = _currentIsland.GetComponent<InfluenceManager>();
+        bool isUnsettledIsland = influenceManager == null || !influenceManager.HasWarehouse;
+        Unit foundingBoat = null;
+        
         BaseStorageManager storage = _currentIsland.GetBaseStorageManager();
         BuildingCost costPrefab = ghost.sourcePrefab.GetComponent<BuildingCost>();
-        if (costPrefab != null && storage != null && !storage.CanAffordBuilding(costPrefab))
+        
+        if (costPrefab != null)
         {
-            Debug.Log($"[StampPlacement] Cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
-            return false;
+            if (isUnsettledIsland)
+            {
+                foundingBoat = InfluenceManager.GetNearestPlayerBoat(position);
+                if (foundingBoat != null)
+                {
+                    UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+                    if (costPrefab.costData != null && boatInv != null)
+                    {
+                        var costItems = costPrefab.costData.GetCostItemsDictionary();
+                        var boatItems = boatInv.GetAllItems();
+                        foreach (var kvp in costItems)
+                        {
+                            if (kvp.Key != null && kvp.Value > 0)
+                            {
+                                if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
+                                {
+                                    Debug.Log($"[StampPlacement] Boat cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[StampPlacement] No founding boat nearby for '{ghost.entry.buildingIdentifier}'. Skipping.");
+                    return false;
+                }
+            }
+            else if (storage != null && !storage.CanAffordBuilding(costPrefab))
+            {
+                Debug.Log($"[StampPlacement] Cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
+                return false;
+            }
         }
 
         // Instantiate under island transform
@@ -428,7 +486,28 @@ public class StampPlacementController : MonoBehaviour
         // Deduct costs
         BuildingCost buildingCost = instance.GetComponent<BuildingCost>();
         Bank bank = FindObjectOfType<Bank>();
-        if (buildingCost != null && storage != null && bank != null)
+        
+        if (isUnsettledIsland && foundingBoat != null)
+        {
+            UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+            if (buildingCost != null && buildingCost.costData != null && boatInv != null)
+            {
+                var costItems = buildingCost.costData.GetCostItemsDictionary();
+                foreach (var kvp in costItems)
+                {
+                    if (kvp.Key != null && kvp.Value > 0)
+                        boatInv.RemoveItem(kvp.Key, kvp.Value);
+                }
+            }
+
+            // Trigger settlement transfer
+            Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
+            if (boatSettlement != null && storage != null)
+            {
+                boatSettlement.CompleteSettlement(storage);
+            }
+        }
+        else if (buildingCost != null && storage != null && bank != null)
         {
             storage.DeductBuildingCosts(buildingCost, bank);
         }

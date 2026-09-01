@@ -13,6 +13,11 @@ public class StorageManager : MonoBehaviour
         this.storage = storage;
     }
 
+    // Unity never calls a constructor with arguments. Declaring only the one above
+    // removed the implicit parameterless constructor, so Unity could not run field
+    // initializers on any StorageManager and every serialized default came up 0.
+    public StorageManager() { }
+
     // Unity Constructor
     private void Awake()
     {

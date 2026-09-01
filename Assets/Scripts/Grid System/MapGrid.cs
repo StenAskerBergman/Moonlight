@@ -27,7 +27,18 @@ public sealed class TerrainGenerationProfile
 public class MapGrid : MonoBehaviour
 {
     private static readonly int TerrainBaseMapProperty = Shader.PropertyToID("_BaseMap");
+    private static readonly int MainTextureProperty = Shader.PropertyToID("_MainTex");
+    private static readonly int DepositSandColorAProperty = Shader.PropertyToID("_SandColorA");
+    private static readonly int DepositSandColorBProperty = Shader.PropertyToID("_SandColorB");
+    private static readonly int DepositRockColorProperty = Shader.PropertyToID("_RockColor");
+    private static readonly int DepositEdgeSeedProperty = Shader.PropertyToID("_EdgeSeed");
     private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
+    private const string GeneratedDepositVisualsRootName = "Generated Resource Deposits";
+    private const int CrudeOilFootprintSize = 3;
+    private const int MinCrudeOilDeposits = 2;
+    private const int MaxCrudeOilDeposits = 5;
+    private const float PreferredCrudeOilDepositSpacing = 10f;
+    private const float MinimumCrudeOilDepositSpacing = 4.25f;
 
 
     #region Variables 
@@ -762,7 +773,14 @@ public class MapGrid : MonoBehaviour
             }
         }
 
-        // 3. Underwater Plateaus ONLY: Hydrothermal Vents and Seabed Ore
+        // 3. Underwater Plateaus ONLY: reserve the large oil footprints before
+        // placing single-cell resources so those resources cannot fragment them.
+        if (currentGridType == GridType.Type.Plateau)
+        {
+            PlaceCrudeOilDeposits();
+        }
+
+        // 4. Underwater Plateaus ONLY: Hydrothermal Vents and Seabed Ore
         List<Vector2Int> ventSpots = new List<Vector2Int>();
         List<Vector2Int> oreSpots = new List<Vector2Int>();
 
@@ -771,9 +789,11 @@ public class MapGrid : MonoBehaviour
             for (int x = 2; x < size - 2; x++)
             {
                 Cell cell = grid[x, y];
-                if (cell.IsBuildableUnderwaterPlateau)
+                if (cell.IsBuildableUnderwaterPlateau && !cell.isDeposit)
                 {
-                    if (ventSpots.Count < 2 && IsSparseDepositCell(x, y))
+                    if (ventSpots.Count < 2
+                        && IsSparseDepositCell(x, y)
+                        && !HasDepositWithin(x, y, 5f))
                     {
                         bool tooClose = false;
                         foreach (var v in ventSpots)
@@ -788,7 +808,9 @@ public class MapGrid : MonoBehaviour
                         }
                     }
 
-                    if (oreSpots.Count < 3 && IsSparseDepositCell(x + 13, y + 7))
+                    if (oreSpots.Count < 3
+                        && IsSparseDepositCell(x + 13, y + 7)
+                        && !HasDepositWithin(x, y, 5f))
                     {
                         bool tooClose = false;
                         foreach (var o in oreSpots)
@@ -995,10 +1017,9 @@ public class MapGrid : MonoBehaviour
             stageSw.Restart();
             GenerationWatchdog.SetPhase(gameObject.name, "Foliage Scattering");
             IslandFoliagePlacer foliagePlacer = GetComponent<IslandFoliagePlacer>();
-            if (foliagePlacer != null) {
-                foliagePlacer.climateProfile = climateProfile;
-                foliagePlacer.ScatterFoliage(grid);
-            }
+            if (foliagePlacer == null) foliagePlacer = gameObject.AddComponent<IslandFoliagePlacer>();
+            foliagePlacer.climateProfile = climateProfile;
+            foliagePlacer.ScatterFoliage(grid, currentGridType == GridType.Type.Plateau, activeGenerationSeed);
             foliageMs = stageSw.ElapsedMilliseconds;
         }
         if (profile != null) profile.foliageMs = foliageMs;
@@ -1289,6 +1310,262 @@ public class MapGrid : MonoBehaviour
             ResolvePlateauFormationMaterial());
     }
 
+    private void PlaceCrudeOilDeposits()
+    {
+        Transform existingRoot = transform.Find(GeneratedDepositVisualsRootName);
+        if (existingRoot != null)
+        {
+            if (Application.isPlaying) Destroy(existingRoot.gameObject);
+            else DestroyImmediate(existingRoot.gameObject);
+        }
+
+        List<Vector2Int> candidates = new List<Vector2Int>();
+        for (int z = 1; z <= size - CrudeOilFootprintSize - 1; z++)
+        {
+            for (int x = 1; x <= size - CrudeOilFootprintSize - 1; x++)
+            {
+                Vector2Int anchor = new Vector2Int(x, z);
+                if (IsCrudeOilFootprintAvailable(anchor)) candidates.Add(anchor);
+            }
+        }
+
+        candidates.Sort((left, right) =>
+        {
+            int comparison = DepositCandidateScore(left).CompareTo(DepositCandidateScore(right));
+            if (comparison != 0) return comparison;
+            comparison = left.y.CompareTo(right.y);
+            return comparison != 0 ? comparison : left.x.CompareTo(right.x);
+        });
+
+        int targetCount = MinCrudeOilDeposits
+            + (int)((uint)DepositCandidateScore(new Vector2Int(size, CrudeOilFootprintSize))
+                % (uint)(MaxCrudeOilDeposits - MinCrudeOilDeposits + 1));
+        List<Vector2Int> selected = SelectCrudeOilCandidates(candidates, targetCount);
+
+        GameObject prefab = ResourceDepositCatalog.Load()?.CrudeOilPrefab;
+        GameObject visualRoot = null;
+        foreach (Vector2Int anchor in selected)
+        {
+            if (!IsCrudeOilFootprintAvailable(anchor)) continue;
+
+            Vector2 center = new Vector2(
+                anchor.x + CrudeOilFootprintSize * 0.5f,
+                anchor.y + CrudeOilFootprintSize * 0.5f);
+
+            float visualHeight = float.MinValue;
+            for (int dz = 0; dz < CrudeOilFootprintSize; dz++)
+            {
+                for (int dx = 0; dx < CrudeOilFootprintSize; dx++)
+                {
+                    Cell depositCell = grid[anchor.x + dx, anchor.y + dz];
+                    visualHeight = Mathf.Max(visualHeight, depositCell.height);
+                    depositCell.SetDeposit(ResourceNodeType.CrudeOil);
+                }
+            }
+
+            if (prefab == null) continue;
+
+            if (visualRoot == null)
+            {
+                visualRoot = new GameObject(GeneratedDepositVisualsRootName);
+                visualRoot.layer = gameObject.layer;
+                visualRoot.transform.SetParent(transform, false);
+            }
+
+            CreateCrudeOilVisual(prefab, visualRoot.transform, anchor, center, visualHeight);
+        }
+    }
+
+    private List<Vector2Int> SelectCrudeOilCandidates(List<Vector2Int> candidates, int targetCount)
+    {
+        List<Vector2Int> selected = new List<Vector2Int>(targetCount);
+        SelectCrudeOilCandidatesWithSpacing(
+            candidates,
+            selected,
+            targetCount,
+            PreferredCrudeOilDepositSpacing,
+            6f);
+
+        // Irregular formations can divide the strict BuildableWeight == 1 interior.
+        // Preserve the 3x3 suitability rule, but relax only the spacing when needed
+        // so a normal 60x60 plateau still receives the guaranteed minimum of two.
+        if (selected.Count < MinCrudeOilDeposits)
+        {
+            SelectCrudeOilCandidatesWithSpacing(
+                candidates,
+                selected,
+                MinCrudeOilDeposits,
+                MinimumCrudeOilDepositSpacing,
+                2f);
+        }
+
+        return selected;
+    }
+
+    private void SelectCrudeOilCandidatesWithSpacing(
+        List<Vector2Int> candidates,
+        List<Vector2Int> selected,
+        int targetCount,
+        float spacing,
+        float existingDepositClearance)
+    {
+        foreach (Vector2Int anchor in candidates)
+        {
+            if (selected.Count >= targetCount) return;
+            if (selected.Contains(anchor) || !IsCrudeOilFootprintAvailable(anchor)) continue;
+
+            Vector2 center = new Vector2(
+                anchor.x + CrudeOilFootprintSize * 0.5f,
+                anchor.y + CrudeOilFootprintSize * 0.5f);
+            if (HasDepositWithin(center.x, center.y, existingDepositClearance)) continue;
+
+            bool tooClose = false;
+            foreach (Vector2Int existingAnchor in selected)
+            {
+                Vector2 existingCenter = new Vector2(
+                    existingAnchor.x + CrudeOilFootprintSize * 0.5f,
+                    existingAnchor.y + CrudeOilFootprintSize * 0.5f);
+                if (Vector2.Distance(existingCenter, center) < spacing)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (!tooClose) selected.Add(anchor);
+        }
+    }
+
+    private bool IsCrudeOilFootprintAvailable(Vector2Int anchor)
+    {
+        for (int dz = 0; dz < CrudeOilFootprintSize; dz++)
+        {
+            for (int dx = 0; dx < CrudeOilFootprintSize; dx++)
+            {
+                Cell candidate = grid[anchor.x + dx, anchor.y + dz];
+                if (!candidate.IsBuildableUnderwaterPlateau || candidate.isDeposit) return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void CreateCrudeOilVisual(
+        GameObject prefab,
+        Transform parent,
+        Vector2Int anchor,
+        Vector2 center,
+        float height)
+    {
+        GameObject instance = Instantiate(prefab, parent, false);
+        instance.name = $"Crude Oil Deposit ({anchor.x}, {anchor.y})";
+        instance.layer = gameObject.layer;
+        instance.transform.localPosition = new Vector3(center.x, height + 0.025f, center.y);
+        uint visualHash = (uint)DepositCandidateScore(anchor);
+        float yaw = visualHash / (float)uint.MaxValue * 360f;
+        ConfigureDepositFootprint(instance, yaw);
+
+        foreach (Collider depositCollider in instance.GetComponentsInChildren<Collider>(true))
+        {
+            depositCollider.enabled = false;
+        }
+
+        DepositTextureSet textureSet = instance.GetComponent<DepositTextureSet>();
+        Renderer depositRenderer = instance.GetComponentInChildren<Renderer>();
+        if (textureSet == null || depositRenderer == null || textureSet.AlternateAlbedo == null) return;
+
+        Texture2D selectedAlbedo = (DepositCandidateScore(anchor) & 1) == 0
+            ? textureSet.Albedo
+            : textureSet.AlternateAlbedo;
+        if (selectedAlbedo == null) return;
+
+        MaterialPropertyBlock properties = new MaterialPropertyBlock();
+        depositRenderer.GetPropertyBlock(properties);
+        properties.SetTexture(TerrainBaseMapProperty, selectedAlbedo);
+        properties.SetTexture(MainTextureProperty, selectedAlbedo);
+        properties.SetFloat(DepositEdgeSeedProperty, (visualHash & 0xFFFFu) / 65535f * 37f);
+        if (climateProfile != null)
+        {
+            properties.SetColor(DepositSandColorAProperty, climateProfile.plateauFineSandColor);
+            properties.SetColor(DepositSandColorBProperty, climateProfile.plateauCoarseSandColor);
+            properties.SetColor(
+                DepositRockColorProperty,
+                Color.Lerp(climateProfile.plateauGravelColor, climateProfile.rockColor2, 0.5f));
+        }
+        depositRenderer.SetPropertyBlock(properties);
+    }
+
+    private static void ConfigureDepositFootprint(GameObject instance, float yaw)
+    {
+        MeshFilter meshFilter = instance.GetComponentInChildren<MeshFilter>();
+        if (meshFilter == null || meshFilter.sharedMesh == null)
+        {
+            instance.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            return;
+        }
+
+        Vector3 meshSize = meshFilter.sharedMesh.bounds.size;
+        bool alreadyHorizontal = meshSize.x > 0.001f
+            && meshSize.z > 0.001f
+            && meshSize.y <= 0.001f;
+
+        if (alreadyHorizontal)
+        {
+            // Unity's built-in Plane is already on XZ and measures 10x10. Scale from
+            // its actual bounds so the authored prefab covers exactly three cells.
+            instance.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            instance.transform.localScale = new Vector3(
+                CrudeOilFootprintSize / meshSize.x,
+                1f,
+                CrudeOilFootprintSize / meshSize.z);
+            return;
+        }
+
+        // A conventional Quad is authored on XY. Lay it down first, then apply yaw
+        // around terrain-up; composing these rotations avoids yaw tipping it upright.
+        float width = Mathf.Max(0.001f, meshSize.x);
+        float height = Mathf.Max(0.001f, meshSize.y);
+        instance.transform.localRotation = Quaternion.Euler(0f, yaw, 0f)
+            * Quaternion.Euler(90f, 0f, 0f);
+        instance.transform.localScale = new Vector3(
+            CrudeOilFootprintSize / width,
+            CrudeOilFootprintSize / height,
+            1f);
+    }
+
+    private bool HasDepositWithin(float centerX, float centerZ, float radius)
+    {
+        int minX = Mathf.Max(0, Mathf.FloorToInt(centerX - radius));
+        int maxX = Mathf.Min(size - 1, Mathf.CeilToInt(centerX + radius));
+        int minZ = Mathf.Max(0, Mathf.FloorToInt(centerZ - radius));
+        int maxZ = Mathf.Min(size - 1, Mathf.CeilToInt(centerZ + radius));
+        float radiusSquared = radius * radius;
+
+        for (int z = minZ; z <= maxZ; z++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (!grid[x, z].isDeposit) continue;
+                float dx = x + 0.5f - centerX;
+                float dz = z + 0.5f - centerZ;
+                if (dx * dx + dz * dz < radiusSquared) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int DepositCandidateScore(Vector2Int candidate)
+    {
+        unchecked
+        {
+            int hash = candidate.x * 73856093 ^ candidate.y * 19349663 ^ activeGenerationSeed;
+            hash ^= hash >> 13;
+            hash *= 1274126177;
+            return hash ^ hash >> 16;
+        }
+    }
+
     private Material ResolvePlateauEscarpmentMaterial()
     {
         if (plateauEscarpmentMaterial != null) return plateauEscarpmentMaterial;
@@ -1457,6 +1734,13 @@ public class MapGrid : MonoBehaviour
 
                 if (Application.isPlaying) Destroy(plateauGeometryRoot.gameObject);
                 else DestroyImmediate(plateauGeometryRoot.gameObject);
+            }
+
+            Transform depositVisualsRoot = transform.Find(GeneratedDepositVisualsRootName);
+            if (depositVisualsRoot != null)
+            {
+                if (Application.isPlaying) Destroy(depositVisualsRoot.gameObject);
+                else DestroyImmediate(depositVisualsRoot.gameObject);
             }
 
             foreach (Object resource in ownedResources)

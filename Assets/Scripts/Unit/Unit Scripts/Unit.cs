@@ -58,6 +58,8 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     public Owner owner;
     public GameObject ownerPrefab;
 
+    [SerializeField] public UnitDefinition definition;
+
     [SerializeField] public bool Selectable = false;
     [SerializeField] public bool Targetable = false;
 
@@ -70,10 +72,12 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     void Start()
     {
         // Name Check - Ensure Name is assigned
-        if (string.IsNullOrEmpty(displayName))
+        if (string.IsNullOrWhiteSpace(displayName))
         {
-            // Lacks a name thereby defaulting to a preset name based of vessel type
-            SetDisplayName(displayName = NameGenerator.RandomNameSelector(NameType.Ship));
+            // Lacks a name thereby defaulting to a preset name based of vessel type.
+            // Whitespace counts as nameless: the Inspector default is an empty string, and
+            // IsNullOrEmpty let a name that was only spaces through as "already named".
+            SetDisplayName(displayName = NameGenerator.RandomNameSelector(ResolveNameType()));
             Debug.Log("Unit: Generated Display Name: " + displayName);
         }
 
@@ -138,6 +142,29 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     public void SetDisplayName(string newName)
     {
         displayName = newName;
+    }
+
+    /// <summary>
+    /// Which name pool an unnamed unit draws from.
+    ///
+    /// The UnitDefinition's own nameType wins - that is what UnitFactory uses, so a unit
+    /// spawned through the factory and one that fell through to this fallback end up
+    /// named from the same pool. Without a definition the movement domain decides, which
+    /// stops submarines and aircraft being handed surface-ship names.
+    /// </summary>
+    private NameType ResolveNameType()
+    {
+        if (definition != null) return definition.nameType;
+
+        switch (moveType)
+        {
+            case MoveType.Submersible:
+                return NameType.ExplorerSub;
+            case MoveType.Aircraft:
+                return NameType.Plane;
+            default:
+                return NameType.Ship;
+        }
     }
 
     // OnSelect() 
@@ -234,6 +261,11 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
                 UnitSelections.Instance.inventoryUIPanel.SetActive(true);
                 DisplayManager.Instance.Focus();
             }
+
+            if (UnitInformationPanel.Instance != null)
+            {
+                UnitInformationPanel.Instance.SelectUnit(this);
+            }
         }
         else
         {
@@ -285,8 +317,19 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     {
         ShowSelectionUI(true);
 
-        // First, find or create the UnitInventoryUI instance
-        var unitInventoryUI = UnitSelections.Instance.GetUnitInventoryUI();
+        // A unit points at its concrete inventory panel (ship, submarine, aircraft).
+        // The shared inventoryUIPanel is only a container and does not carry
+        // UnitInventoryUI itself, so asking the container first leaves the visible
+        // child panel unbound.
+        var unitInventoryUI = inventoryUIPrefab != null
+            ? inventoryUIPrefab.GetComponent<UnitInventoryUI>()
+            : null;
+
+        if (unitInventoryUI == null)
+        {
+            unitInventoryUI = UnitSelections.Instance.GetUnitInventoryUI();
+        }
+
         if (unitInventoryUI == null)
         {
             // Can always be called once... 
@@ -430,7 +473,17 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
             // Only hide the panel when no other units remain selected;
             // otherwise a shift-deselect would kill the HUD for the rest.
             if (UnitSelections.Instance.unitsSelected.Count <= 1)
+            {
                 UnitSelections.Instance.inventoryUIPanel.SetActive(false); 
+            }
+            else
+            {
+                Unit remainingUnit = UnitSelections.Instance.unitsSelected.Find(u => u != this && u != null);
+                if (remainingUnit != null)
+                {
+                    remainingUnit.ViewUnit();
+                }
+            }
         }
 
         // MenuSwap(false, true);

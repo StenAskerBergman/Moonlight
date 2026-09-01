@@ -26,6 +26,11 @@ public class BuildingClick : MonoBehaviour
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
         if (BuildingSelections.Instance == null) return;
 
+        // While demolition mode is on, a click marks a building for removal instead of
+        // selecting it. Both raycast the same layer, so without this one click would do
+        // both - marking a building and opening its panel.
+        if (DemolitionManager.Instance != null && DemolitionManager.Instance.IsActive) return;
+
         Ray ray = myCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, buildingClickable))
         {

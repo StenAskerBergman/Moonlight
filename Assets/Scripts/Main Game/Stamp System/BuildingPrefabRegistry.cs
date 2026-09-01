@@ -64,10 +64,19 @@ public class BuildingPrefabRegistry : MonoBehaviour
         if (prefab == null) return;
 
         BuildingProperties props = prefab.GetComponent<BuildingProperties>();
-        if (props == null || props.buildingData == null) return;
+        if (props == null) return;
 
-        string id = props.buildingData.Id.ToString();
-        if (string.IsNullOrEmpty(id)) return;
+        string id = props.buildingData != null ? props.buildingData.Id.ToString() : null;
+
+        // Not every building prefab carries a BuildingData asset yet - the Depot does
+        // not. Those used to be dropped here without a word, which left the manual
+        // override list unable to publish the very prefabs it exists for. Fall back to a
+        // stable name-derived identifier so they can still be resolved.
+        if (string.IsNullOrEmpty(id))
+        {
+            string source = !string.IsNullOrEmpty(props.buildingName) ? props.buildingName : prefab.name;
+            id = $"moonlight:{source.ToLowerInvariant().Replace(' ', '_')}";
+        }
 
         _lookup[id] = prefab;
     }

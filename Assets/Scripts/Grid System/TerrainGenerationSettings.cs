@@ -353,6 +353,13 @@ public sealed class TerrainGenerationSettings
     public float mountainHeight = 3.2f;
     public float mountainPeakHeight = 4.2f;
 
+    // The visible ocean is owned by MapManager.PatternData, while waterHeight is a
+    // semantic terrain-band anchor. Keep the physical surface separately so plateau
+    // depth follows the selected world without moving the island classification bands.
+    [SerializeField, HideInInspector] private float authoritativeWaterSurfaceHeight = -0.6f;
+
+    public float AuthoritativeWaterSurfaceHeight => authoritativeWaterSurfaceHeight;
+
     [Header("Gameplay suitability")]
     [Min(0f)] public float maxBuildableHeightVariance = 0.2f;
 
@@ -444,17 +451,34 @@ public sealed class TerrainGenerationSettings
         shallowHeight = -1.5f;
         naturalPlateauHeight = -2.5f;
         deepHeight = -3.2f;
-        abyssHeight = -4.5f;
         hillHeight = 1.6f;
         cliffHeight = 2.4f;
         mountainHeight = 3.2f;
         mountainPeakHeight = 4.2f;
         standalonePlateau ??= new StandalonePlateauSettings();
         standalonePlateau.Validate();
-        // The scalar plateau is a landform rising from the shared abyss datum.
-        // Decorative rock geometry owns its own submergence/clearance concerns and
-        // must not push the terrain tabletop below the abyssal seabed.
-        underwaterPlateauHeight = naturalPlateauHeight;
+
+        // One vertical contract owns both landform types. The tabletop is placed far
+        // enough below the authoritative water surface to submerge its tallest rock,
+        // then the shared abyss datum is placed below the complete plateau profile.
+        // Island borders, plateau surrounds, and open ocean all consume abyssHeight,
+        // so no terrain chunk can carry a shallower private version of the abyss.
+        underwaterPlateauHeight = authoritativeWaterSurfaceHeight
+            - standalonePlateau.RequiredTabletopDepthBelowWater;
+        abyssHeight = underwaterPlateauHeight
+            - standalonePlateau.cliffDropDepth
+            - standalonePlateau.lowerApronDrop;
         Validate();
+    }
+
+    public void SetAuthoritativeWaterSurfaceHeight(float surfaceHeight)
+    {
+        if (float.IsNaN(surfaceHeight) || float.IsInfinity(surfaceHeight))
+        {
+            return;
+        }
+
+        authoritativeWaterSurfaceHeight = surfaceHeight;
+        EnforceAuthoritativeHeights();
     }
 }

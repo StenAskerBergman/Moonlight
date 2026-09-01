@@ -11,14 +11,25 @@ public class UnitStorageManager : StorageManager
     // Constructor
     public UnitStorageManager(Storage storage) : base(storage) { }
 
-    // Stack Stat - Constants - These Number should be derive from the UnitStorage.cs file
-    public const int MAX_STACK_SIZE = 40; // Max Stack Quantity Allowed
-    private const int NORMAL_SLOTS = 4;    // Max Normal Item Slots - THIS IS ITEM SLOTS
+    // Required. Unity builds MonoBehaviours through the parameterless constructor, so
+    // without this one the field initializers below never ran and maxStackSize /
+    // normalSlots came up 0 on every unit.
+    public UnitStorageManager() { }
+
+    // Stack Stat - Constants - These Numbers can be overridden per unit
+    public const int DEFAULT_MAX_STACK_SIZE = 40; // Default Max Stack Quantity Allowed
+    public const int DEFAULT_NORMAL_SLOTS = 4;    // Default Normal Item Slots
+
+    [SerializeField] private int maxStackSize = DEFAULT_MAX_STACK_SIZE;
+    [SerializeField] private int normalSlots = DEFAULT_NORMAL_SLOTS;
     private const int CONSUME_SLOT = 1;    // Max Consumable Item Slots
     private const int ABILITY_SLOT = 1;    // Max Ability Item Slots
 
+    public int NormalSlots { get => normalSlots; set => normalSlots = value; }
+    public int MaxStackSize { get => maxStackSize; set { maxStackSize = value; UpdateMaxQuantity(); } }
+
     // Stack Stat - "Dynamic" / Placeholder Number
-    public int maxQuantity { get; private set; } = MAX_STACK_SIZE;
+    public int maxQuantity { get; private set; } = DEFAULT_MAX_STACK_SIZE;
     public int BonusQuantity { get; set; }
 
     // Unity Constructor
@@ -38,6 +49,12 @@ public class UnitStorageManager : StorageManager
             storage = unitStorage;
         }
 
+        // Managers serialized before the parameterless constructor existed still carry
+        // 0 here. Left at 0, CanAddItem rejects every add ("quantity exceeds stack
+        // maximum: 40 / 0") and the unit's cargo can never be filled.
+        if (maxStackSize <= 0) maxStackSize = DEFAULT_MAX_STACK_SIZE;
+        if (normalSlots <= 0) normalSlots = DEFAULT_NORMAL_SLOTS;
+
         // Updates Slot Max Quantity
         UpdateMaxQuantity();
 
@@ -54,12 +71,12 @@ public class UnitStorageManager : StorageManager
 
         public int GetMaxStackSize()
         {
-            return MAX_STACK_SIZE;
+            return maxStackSize;
         }
 
         public int GetNormalSlots()
         {
-            return NORMAL_SLOTS;
+            return normalSlots;
         }
 
         public int GetConsumeSlot()
@@ -133,7 +150,7 @@ public class UnitStorageManager : StorageManager
     // Update Max Quantity
     private void UpdateMaxQuantity()
     {
-        maxQuantity = MAX_STACK_SIZE + BonusQuantity;
+        maxQuantity = maxStackSize + BonusQuantity;
     }
 
     // Dedicated Method to determine if Can Add Item 
@@ -197,7 +214,7 @@ public class UnitStorageManager : StorageManager
         switch (itemData.type)
         {
             case ItemType.Normal:
-                return NORMAL_SLOTS - currentUsed;
+                return normalSlots - currentUsed;
             case ItemType.Consumable:
                 return CONSUME_SLOT - currentUsed;
             default:

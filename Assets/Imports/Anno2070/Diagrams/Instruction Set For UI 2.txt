@@ -1,0 +1,418 @@
+Do **A + C together**. B is mostly just art assets and can be filled after the behavior works.
+
+Anno 2070's core rule is verified: the tier page initially exposes **finished-product selectors**; selecting one reveals the directly buildable production buildings for that chain. ([Golem][1])
+
+## A. Give Codex this
+
+> Implement the Anno 2070-style Production section of Moonlight's Construction Menu.
+>
+> Do not build a generic building grid. Production must be a two-state UI:
+>
+> **Collapsed**
+>
+> * Show one button per production line.
+> * Button represents the final good/output, not an individual building.
+>
+> **Expanded**
+>
+> * Clicking a production-line button expands a production-chain panel upward.
+> * Keep the production-line selector row visible.
+> * Show every building in that selected chain as individually clickable construction buttons.
+> * Show dependency connectors between buildings.
+> * Selecting another production line replaces the currently expanded chain.
+> * Leaving the civilization page, changing faction, selecting Infrastructure or Ornaments must clear the expanded production chain.
+>
+> Use data-driven definitions, not hardcoded page UI.
+>
+> Required model:
+>
+> ```csharp
+> ConstructionPageDefinition
+> ProductionLineDefinition
+> ProductionNodeDefinition
+> ProductionConnectionDefinition
+> ```
+>
+> `ProductionLineDefinition` needs:
+>
+> ```text
+> Id
+> DisplayName
+> OutputIcon
+> UnlockCondition
+> Nodes[]
+> Connections[]
+> ```
+>
+> Each node needs:
+>
+> ```text
+> BuildingData
+> Column
+> Row
+> UnlockCondition
+> ```
+>
+> Use explicit `Column` and `Row` coordinates rather than trying to invent an automatic graph-layout algorithm. The chains are deliberately composed UI layouts and need predictable placement.
+>
+> Support these layouts:
+>
+> ```text
+> [A]
+>
+> [A] -> [B]
+>
+> [A] -> [B] -> [C]
+>
+> [A] --\
+>        -> [C]
+> [B] --/
+>
+> [A] -> [B] --\
+>               -> [D]
+> [C] ----------/
+>
+> [A] --\
+>        -> [C] -> [E]
+> [B] --/
+> [D] ----------> [E]
+> ```
+>
+> Connections must support:
+>
+> ```text
+> Horizontal
+> MergeFromAbove
+> MergeFromBelow
+> VerticalJoin
+> ```
+>
+> Do not make every connector a unique sprite. Construct connectors from reusable horizontal/vertical pieces and elbows.
+>
+> The expanded panel must calculate its height from occupied rows. A simple chain should stay short; a branched chain should push the sections beneath it downward.
+>
+> Locked production lines remain visible but disabled/greyed. Once their population requirement is reached they become interactable and receive the existing new-unlock notification treatment.
+>
+> Clicking an actual building node must invoke the existing Moonlight building-placement pipeline. The production-chain framework must not contain placement logic.
+>
+> Build the framework first with placeholder icons and populate the following Tycoon definitions.
+
+## C. Exact six-page Production behavior
+
+The six Tycoon construction pages are Infrastructure, Workers, Employees, Engineers, Executives, Ornaments. Anno explicitly uses up to six population-specific construction tabs. ([Anno 2070][2])
+
+### 1. Infrastructure
+
+**Collapsed**
+
+```text
+Infrastructure
+(no Production selector row)
+```
+
+**Expanded**
+
+```text
+Never expands a production chain.
+```
+
+Infrastructure has its own direct categories/buttons.
+
+---
+
+### 2. Workers
+
+**Collapsed**
+
+```text
+PRODUCTION
+
+[Building Modules] [Liquor] [Fish] [Coal Power]
+```
+
+**Expanded examples**
+
+```text
+BUILDING MODULES
+
+[Basalt Crusher] -> [Smelter]
+```
+
+```text
+LIQUOR
+
+[Distillery]
+```
+
+```text
+FISH
+
+[Fishery]
+```
+
+```text
+COAL POWER
+
+[Rotary Excavator] -> [Coal Power Station]
+```
+
+Unlock progression:
+
+```text
+Tycoon building rights
+    Building Modules
+
+1 Worker
+    Fish
+    Coal Power
+
+60 Workers
+    Liquor
+```
+
+Basalt production is available with Tycoon building rights; Fish/Rotary Excavator/Coal Power unlock at 1 Worker and Distillery at 60 Workers. ([Anno 2070][3])
+
+---
+
+### 3. Employees
+
+**Collapsed**
+
+```text
+PRODUCTION
+
+[Tools] [Concrete] [Convenience Food] [Plastics] [Weapons]
+```
+
+**Expanded**
+
+```text
+TOOLS
+
+[Iron Ore Mine] ----\
+                     -> [Iron Smelter] -> [Tools Workshop]
+[Coal Mine] --------/
+```
+
+```text
+CONCRETE
+
+[Limestone Quarry] --\
+                      -> [Concrete Factory]
+[Sand Extractor] ----/
+```
+
+```text
+CONVENIENCE FOOD
+
+[Meat Factory] --\
+                  -> [Food Supply Factory]
+[Flavor Lab] ----/
+```
+
+```text
+PLASTICS
+
+[Oil Driller] -> [Oil Refinery] -> [Plastics Factory]
+```
+
+```text
+WEAPONS
+
+[Iron Ore Mine] --\
+                   -> [Iron Smelter] -> [Munitions Factory]
+[Coal Mine] ------/
+```
+
+Reveal schedule:
+
+```text
+1 Employee
+    Tools
+    Concrete
+
+360 Employees
+    Convenience Food
+
+600 Employees
+    Plastics
+
+750 Employees
+    Weapons
+```
+
+([Anno 2070][4])
+
+---
+
+### 4. Engineers
+
+**Collapsed**
+
+```text
+PRODUCTION
+
+[Steel] [Luxury Meals] [Atomic Power] [Champagne] [Heavy Weapons]
+```
+
+**Expanded**
+
+```text
+STEEL
+
+[Iron Ore Mine] --\
+                   -> [Iron Smelter] -> [Steelworks]
+[Coal Source] ----/
+```
+
+Anno's screenshot shows precisely this kind of expanded production-line presentation.
+
+```text
+LUXURY MEALS
+
+[Lobster Farm] --\
+                  -> [Gourmet Factory]
+[Truffle Farm] --/
+```
+
+```text
+ATOMIC POWER
+
+[Uranium Mine] -> [Fuel Element Factory] -> [Nuclear Power Plant]
+```
+
+```text
+CHAMPAGNE
+
+[Vineyard] -------------\
+                         -> [Champagne Cellar]
+[Sugar Beet Plantation]-/
+```
+
+```text
+HEAVY WEAPONS
+
+[Iron Ore Mine] --\
+                   -> [Iron Smelter] --\
+[Coal Source] ----/                       \
+                                           -> [Arsenal]
+[Uranium Mine] -> [Explosives Factory] --/
+```
+
+Reveal schedule:
+
+```text
+1 Engineer
+    Steel
+
+250 Engineers
+    Luxury Meals
+    Atomic Power
+
+950 Engineers
+    Champagne
+
+1200 Engineers
+    Heavy Weapons
+```
+
+([Anno 2070][5])
+
+This page is the best test case for **expansion and reduction**, because Heavy Weapons expands into multiple branches and then converges again.
+
+---
+
+### 5. Executives
+
+**Collapsed**
+
+```text
+PRODUCTION
+
+[Jewellery] [Pharmaceuticals]
+```
+
+Despite having only two selectors, these are the most structurally complicated Tycoon chains.
+
+**Jewellery**
+
+```text
+[Gold Refinery] ----\
+                     -> [Gold Smeltery] --\
+[Coal Source] ------/                      \
+                                            -> [Jewelery Manufactory]
+[Diamond Harvester] -----------------------/
+```
+
+**Pharmaceuticals**
+
+```text
+[Fat Factory] --\
+                 -> [Chemical Plant] ------\
+[Aquafarm] -----/                           \
+                                             -> [Healthcare Office]
+[Manganese Excavation Robot]                 /
+        -> [Rare-Earth Borer] --------------/
+```
+
+Reveal schedule:
+
+```text
+1 Executive
+    Jewellery
+
+1200 Executives
+    Pharmaceuticals
+```
+
+([Anno 2070][6])
+
+This is your **final framework validation case**. If Pharmaceuticals renders cleanly, the framework is good enough.
+
+---
+
+### 6. Ornaments
+
+```text
+No Production section.
+No expandable production chain.
+Switching here collapses any currently open chain.
+```
+
+That last behavior is worth explicitly implementing: Ubisoft even patched a bug where a production chain incorrectly remained displayed after switching to the Ornament tab. ([PC Gamer][7])
+
+## Minimum asset set
+
+Do **not** make dozens of special connector images.
+
+You need:
+
+```text
+ProductionLineButton frame
+Selected ProductionLineButton frame
+Locked frame/overlay
+
+BuildingButton frame
+BuildingButton hover/selected
+BuildingButton locked overlay
+
+Chain background / right-facing arrow panel
+
+Horizontal connector
+Vertical connector
+90-degree elbow
+T-junction
+
+Final-good icons
+Individual building icons
+```
+
+The most important implementation decision is: **explicit node coordinates + reusable connector primitives**. Don't let Codex build a fancy automatic graph solver for something Anno solves as a tightly authored GUI.
+
+[1]: https://www.golem.de/1111/87879.html?utm_source=chatgpt.com "Test Anno 2070: Komplexes Aufbauspiel mit Zukunft - Golem.de"
+[2]: https://anno2070.fandom.com/wiki/Interface?utm_source=chatgpt.com "Interface | Anno 2070 Wiki | Fandom"
+[3]: https://anno2070.fandom.com/wiki/Basalt_Crusher?utm_source=chatgpt.com "Basalt Crusher | Anno 2070 Wiki | Fandom"
+[4]: https://anno2070.fandom.com/wiki/Tycoon_Employee_House?utm_source=chatgpt.com "Tycoon Employee House | Anno 2070 Wiki | Fandom"
+[5]: https://anno2070.fandom.com/wiki/Tycoon_Engineer_Apartment?utm_source=chatgpt.com "Tycoon Engineer Apartment | Anno 2070 Wiki | Fandom"
+[6]: https://anno2070.fandom.com/wiki/Tycoon_Executive_Mansion?utm_source=chatgpt.com "Tycoon Executive Mansion | Anno 2070 Wiki | Fandom"
+[7]: https://www.pcgamer.com/anno-2070-update-adds-new-buildings-increases-probability-of-tornado-disaster/?utm_source=chatgpt.com "Anno 2070 update adds new buildings, increases \"probability of tornado disaster\" | PC Gamer"

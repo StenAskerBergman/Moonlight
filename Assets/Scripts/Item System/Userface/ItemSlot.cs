@@ -167,16 +167,13 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (this.itemStack != null && this.itemStack.itemData != null)
         {
-            var ItemText = GetComponentInChildren<Text>();
-
             empty = false;
             int max = this.itemStack.GetMaxQuantity();
             this.gameObject.name = $"{this.realName} - {this.itemStack.itemData.itemName} ({this.itemStack.GetQuantity()}/{max})";
 
-            if (ItemText != null)
-            {
-                ItemText.text = this.itemStack.GetQuantity() + "/" + max;
-            }
+            // The visible label is written by ItemStack.UpdateStackUI alone. This used
+            // to write a second, differently formatted value into whatever Text it
+            // found first, so the label depended on which of the two ran last.
         }
         else
         {
@@ -324,6 +321,50 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
 
         UpdateSlotName();
     }
+    #endregion
+
+    #region Ability Slot Presentation
+
+    // An ability slot builds no ItemStack (see Awake), so nothing ever wrote to its
+    // authored "Item Icon" / "Item Text" children and they kept the prefab placeholder.
+    // These paint those children directly - this is the only writer for such a slot.
+
+    private static readonly Color AbilityFilledTint = Color.white;
+    private static readonly Color AbilityEmptyTint = new Color(0.45f, 0.45f, 0.45f, 1f);
+
+    public void ShowAbility(Sprite abilityIcon, string label)
+    {
+        PaintAbility(abilityIcon, string.IsNullOrEmpty(label) ? "Ability" : label, true);
+    }
+
+    public void ShowEmptyAbility()
+    {
+        PaintAbility(null, "(empty)", false);
+    }
+
+    private void PaintAbility(Sprite abilityIcon, string label, bool filled)
+    {
+        Color tint = filled ? AbilityFilledTint : AbilityEmptyTint;
+
+        foreach (Image image in GetComponentsInChildren<Image>(true))
+        {
+            if (image.transform == transform) continue; // the slot's own background
+            image.sprite = abilityIcon;
+            image.enabled = abilityIcon != null;
+            image.color = tint;
+        }
+
+        foreach (Text text in GetComponentsInChildren<Text>(true))
+        {
+            if (text.transform == transform) continue;
+            text.text = label;
+            text.color = tint;
+        }
+
+        Button button = GetComponent<Button>();
+        if (button != null) button.interactable = filled;
+    }
+
     #endregion
 
     #region Find Available Slot - Used By UnitInventory.cs 
@@ -489,6 +530,26 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         if (droppedItem.itemData == null || droppedItem.GetQuantity() <= 0)
         {
             Debug.Log("<color=lightblue>ItemSlot: </color><color=yellow>Dropped Item has no item data or quantity <= 0</color>");
+            return;
+        }
+
+        // HUD slots are interactive projections of physical UnitInventory slots.
+        // Mutate those physical slots first, then let OnUnitInventoryChanged redraw
+        // the HUD. Swapping only these local ItemStacks would be lost on refresh and
+        // would leave UnitStorage/UnitInventory out of sync.
+        ItemSlot cargoSourceSlot = droppedItem.itemSlot;
+        UnitInventory sourceUnitInventory = cargoSourceSlot != null ? cargoSourceSlot.unitInventory : null;
+        UnitInventory targetUnitInventory = unitInventory;
+        if (sourceUnitInventory != null && sourceUnitInventory == targetUnitInventory)
+        {
+            if (targetUnitInventory.MoveStack(cargoSourceSlot, this))
+            {
+                PlayDropSound();
+            }
+            else
+            {
+                Debug.Log("<color=lightblue>ItemSlot: </color><color=orange><b>REJECTED:</b> Cargo stack could not be moved, merged, or swapped.</color>");
+            }
             return;
         }
 

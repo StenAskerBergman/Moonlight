@@ -26,6 +26,9 @@ public readonly struct PlateauSampleData
         float rockWeight,
         float sandWeight,
         float reefWeight,
+        float gravelWeight,
+        float mudWeight,
+        float siltWeight,
         float abyssFade)
     {
         Zone = zone;
@@ -34,6 +37,9 @@ public readonly struct PlateauSampleData
         RockWeight = Mathf.Clamp01(rockWeight);
         SandWeight = Mathf.Clamp01(sandWeight);
         ReefWeight = Mathf.Clamp01(reefWeight);
+        GravelWeight = Mathf.Clamp01(gravelWeight);
+        MudWeight = Mathf.Clamp01(mudWeight);
+        SiltWeight = Mathf.Clamp01(siltWeight);
         AbyssFade = Mathf.Clamp01(abyssFade);
     }
 
@@ -43,6 +49,9 @@ public readonly struct PlateauSampleData
     public float RockWeight { get; }
     public float SandWeight { get; }
     public float ReefWeight { get; }
+    public float GravelWeight { get; }
+    public float MudWeight { get; }
+    public float SiltWeight { get; }
     public float AbyssFade { get; }
     public bool IsDefined => Zone != PlateauZone.None || Influence > 0f;
 }

@@ -38,7 +38,7 @@ public class UnitStorage : Storage
     /*   HOLY GOD FOR THIS NOTE           */
 
     // EACH TIME U MUST RE-READ THIS ADD 
-    // HOURS WASTED HERE: 10h
+    // HOURS WASTED HERE: 28h
 
     // Inheritade Methods
     // public int GetItemQuantity(ItemData itemData)

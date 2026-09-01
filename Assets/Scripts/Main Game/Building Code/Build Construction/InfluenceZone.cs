@@ -21,4 +21,19 @@ public class InfluenceZone : MonoBehaviour
         radius = Mathf.Max(0f, influenceRadius);
         zoneType = influenceType;
     }
+
+    private void OnDestroy()
+    {
+        InfluenceManager manager = GetComponentInParent<InfluenceManager>();
+        if (manager == null)
+        {
+            Island island = GetComponentInParent<Island>();
+            if (island != null) manager = island.GetComponent<InfluenceManager>();
+        }
+
+        if (manager != null)
+        {
+            manager.UnregisterZone(this);
+        }
+    }
 }

@@ -13,6 +13,7 @@ public class Cell
     public ResourceNodeType depositNodeType { get; private set; }
     public bool isOccupied => occupyingBuilding != null;
     public bool isRoad { get; private set; }
+    public RoadDefinition roadDefinition { get; private set; }
 
     public CellStatus currentStatus { get; private set; }
 
@@ -249,9 +250,10 @@ public class Cell
         depositNodeType = nodeType;
     }
 
-    public void SetRoad(bool value)
+    public void SetRoad(bool value, RoadDefinition definition = null)
     {
         isRoad = value;
+        roadDefinition = value ? definition : null;
     }
 
     public void SetRiverData(RiverStatus status, RiverDirection direction)

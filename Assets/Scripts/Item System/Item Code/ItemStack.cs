@@ -10,7 +10,7 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     // READ ME 
     // THIS IS A CODE OBJECT BUT ALSO A FUCKING PREFAB YOU MAKE
     // SURE TO CHECK IF YOU'VE CODED WITH THIS IN MIND YOU FUCK
-    // (note to self) - N
+    // (note to self) - Nets
 
     // Known Issue
     // Unclear Errors on awake
@@ -90,7 +90,13 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
         if (itemQuantityText == null)
         {
-            itemQuantityText = GetComponentInChildren<Text>() ?? GetComponent<Text>();
+            // A HUD slot authors its own quantity label as a SIBLING of this stack, so
+            // the searches below never reach it: they would build a second, invisible
+            // label instead and leave the visible one stuck on the prefab's "#".
+            itemQuantityText = FindSlotQuantityText()
+                ?? GetComponentInChildren<Text>()
+                ?? GetComponent<Text>();
+
             if (itemQuantityText == null)
             {
                 itemQuantityText = CreateQuantityTextChild();
@@ -101,6 +107,26 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         {
             itemDragHandler = GetComponent<ItemDragHandler>() ?? gameObject.AddComponent<ItemDragHandler>();
         }
+    }
+
+    // The quantity label the owning ItemSlot already provides, if it has one. Only
+    // graphics that belong to the slot itself count - this stack's own children are
+    // skipped so a previously created fallback label is never re-adopted.
+    private Text FindSlotQuantityText()
+    {
+        if (itemSlot == null)
+        {
+            itemSlot = GetComponentInParent<ItemSlot>();
+        }
+        if (itemSlot == null) return null;
+
+        foreach (Text candidate in itemSlot.GetComponentsInChildren<Text>(true))
+        {
+            if (candidate.transform == itemSlot.transform) continue;
+            if (candidate.transform.IsChildOf(transform)) continue;
+            return candidate;
+        }
+        return null;
     }
 
     // Text and Image both derive from Graphic, which is [DisallowMultipleComponent].
@@ -437,8 +463,10 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
         if (itemData != null)
         {
+            gameObject.SetActive(true);
             if (itemIcon != null)
             {
+                itemIcon.enabled = true;
                 itemIcon.sprite = itemData.Icon;
             }
             else
@@ -495,7 +523,11 @@ public class ItemStack : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         // Clear Stack
         item = null;
         itemData = null;
-        if (itemIcon != null) itemIcon.sprite = null;
+        if (itemIcon != null) 
+        {
+            itemIcon.sprite = null;
+            itemIcon.enabled = false;
+        }
         if (itemQuantityText != null) itemQuantityText.text = "";
         quantity = 0;
         UpdateMaxQuantity();

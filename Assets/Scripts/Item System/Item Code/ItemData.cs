@@ -15,12 +15,24 @@ public class ItemData : ScriptableObject, IIdentifiable
         : new Identifier($"core:{name.ToLowerInvariant().Replace(' ', '_')}");
 
     // Item Data
-    public string displayName;  // Items Display Name 
+    public string displayName;  // Items Display Name
     public string itemName;     // The Name of the item
     public string description;  // The Description of the item
     public float baseValue;     // Base value of the item
     public ItemType type;       // Generic Type of the item
     public Sprite Icon;         // Default Icon of the item
+
+    [Header("Availability")]
+    [Tooltip("Faction + demographic + population count that unlocks this. Leave the faction or class as None for something always available.")]
+    public PopulationUnlock unlock;
+
+    [Header("Classification")]
+    [Tooltip("ON = a socketable/equippable modifier (warehouse upgrade, seed, vehicle upgrade) shown on the Items tab. OFF = a normal cargo commodity shown on the Goods tab. The two are separate stockpiles, not two views of one list.")]
+    public bool isSocketable;
+
+    [Header("Activation")]
+    [Tooltip("How this item behaves once it is slotted into an Island or Local item slot: whether it can be taken back out, whether it burns charges, and how long it runs. Key characters use this too.")]
+    public ItemActivationProfile activation = new ItemActivationProfile();
 
     // Slot Data
     public ItemSlot oldSlot;    // The old slot of the item

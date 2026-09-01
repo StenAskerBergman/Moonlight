@@ -283,6 +283,12 @@ public static class TerrainGenerationReferenceCapture
             string fileName = $"island-{island.id:D3}_top-left_side-right.png";
             File.WriteAllBytes(Path.Combine(outputDirectory, fileName), composite.EncodeToPNG());
 
+            List<string> crudeOilDepositFiles = CaptureCrudeOilDepositCloseups(
+                island,
+                camera,
+                resolution,
+                outputDirectory);
+
             string controlTextureFile = null;
             if (TryBuildControlTextureReference(island, manifest.selectionInverted, out controlTexture))
             {
@@ -309,6 +315,7 @@ public static class TerrainGenerationReferenceCapture
                 file = fileName,
                 controlTextureFile = controlTextureFile,
                 gameplayDebugFile = gameplayDebugFile,
+                crudeOilDepositFiles = crudeOilDepositFiles,
                 boundsCenter = FormatVector(bounds.center),
                 boundsSize = FormatVector(bounds.size),
                 timing = island.GetComponent<MapGrid>()?.LastGenerationProfile,
@@ -487,6 +494,7 @@ public static class TerrainGenerationReferenceCapture
         int rowThree = texture.height - bannerHeight + 10;
         DrawLegendItem(texture, 12, rowThree, "OS ORE SEABED", ResourceColor(ResourceNodeType.OreSeabed), glyphScale);
         DrawLegendItem(texture, 250, rowThree, "HV VENT", ResourceColor(ResourceNodeType.HydrothermalVent), glyphScale);
+        DrawLegendItem(texture, 430, rowThree, "CO CRUDE OIL", ResourceColor(ResourceNodeType.CrudeOil), glyphScale);
     }
 
     private static void DrawLegendItem(
@@ -535,6 +543,7 @@ public static class TerrainGenerationReferenceCapture
             case ResourceNodeType.CoastalFishery: return new Color32(60, 255, 210, 255);
             case ResourceNodeType.OreSeabed: return new Color32(180, 100, 255, 255);
             case ResourceNodeType.HydrothermalVent: return new Color32(255, 70, 220, 255);
+            case ResourceNodeType.CrudeOil: return new Color32(35, 25, 15, 255);
             default: return new Color32(180, 180, 180, 255);
         }
     }
@@ -550,6 +559,7 @@ public static class TerrainGenerationReferenceCapture
             case ResourceNodeType.CoastalFishery: return "CF";
             case ResourceNodeType.OreSeabed: return "OS";
             case ResourceNodeType.HydrothermalVent: return "HV";
+            case ResourceNodeType.CrudeOil: return "CO";
             default: return "";
         }
     }
@@ -623,6 +633,61 @@ public static class TerrainGenerationReferenceCapture
         camera.nearClipPlane = 0.01f;
         camera.farClipPlane = distance + bounds.size.y + 10f;
         return Render(camera, resolution, "Terrain Reference Top");
+    }
+
+    private static List<string> CaptureCrudeOilDepositCloseups(
+        Island island,
+        Camera camera,
+        int resolution,
+        string outputDirectory)
+    {
+        Transform[] deposits = island.GetComponentsInChildren<Transform>(false)
+            .Where(child => child != null
+                && child.name.StartsWith("Crude Oil Deposit (", StringComparison.Ordinal))
+            .OrderBy(child => child.name, StringComparer.Ordinal)
+            .ToArray();
+        var files = new List<string>(deposits.Length);
+        int closeupResolution = Mathf.Clamp(resolution, 384, 768);
+
+        for (int index = 0; index < deposits.Length; index++)
+        {
+            Renderer[] renderers = deposits[index].GetComponentsInChildren<Renderer>(false);
+            if (renderers.Length == 0) continue;
+
+            Bounds depositBounds = renderers[0].bounds;
+            for (int rendererIndex = 1; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                if (renderers[rendererIndex] != null && renderers[rendererIndex].enabled)
+                {
+                    depositBounds.Encapsulate(renderers[rendererIndex].bounds);
+                }
+            }
+
+            // Keep a fixed amount of surrounding tabletop in frame. Besides making
+            // captures comparable across seeds, this exposes hard rectangular edges,
+            // incorrect scale, and poor sediment blending immediately.
+            float contextDiameter = Mathf.Max(
+                8f,
+                Mathf.Max(depositBounds.size.x, depositBounds.size.z) * 2.5f);
+            var closeupBounds = new Bounds(
+                depositBounds.center,
+                new Vector3(contextDiameter, Mathf.Max(2f, depositBounds.size.y), contextDiameter));
+
+            Texture2D closeup = null;
+            try
+            {
+                closeup = RenderTopView(camera, closeupBounds, closeupResolution);
+                string fileName = $"island-{island.id:D3}_crude-oil-{index + 1:D2}_top-closeup.png";
+                File.WriteAllBytes(Path.Combine(outputDirectory, fileName), closeup.EncodeToPNG());
+                files.Add(fileName);
+            }
+            finally
+            {
+                if (closeup != null) UnityEngine.Object.DestroyImmediate(closeup);
+            }
+        }
+
+        return files;
     }
 
     private static Texture2D RenderSideView(Camera camera, Bounds bounds, int resolution)
@@ -939,6 +1004,17 @@ public static class TerrainGenerationReferenceCapture
                 markdown.AppendLine($"Gameplay placement grid and resource nodes: ![Island {entry.islandNumber:D3} gameplay grid](./{entry.gameplayDebugFile})");
                 markdown.AppendLine();
             }
+            if (entry.crudeOilDepositFiles != null && entry.crudeOilDepositFiles.Count > 0)
+            {
+                markdown.AppendLine($"Crude-oil deposit close-ups ({entry.crudeOilDepositFiles.Count}):");
+                markdown.AppendLine();
+                for (int depositIndex = 0; depositIndex < entry.crudeOilDepositFiles.Count; depositIndex++)
+                {
+                    markdown.AppendLine(
+                        $"![Island {entry.islandNumber:D3} crude-oil deposit {depositIndex + 1:D2}](./{entry.crudeOilDepositFiles[depositIndex]})");
+                    markdown.AppendLine();
+                }
+            }
             markdown.AppendLine($"Bounds center: `{entry.boundsCenter}`; size: `{entry.boundsSize}`");
             markdown.AppendLine();
         }
@@ -988,6 +1064,7 @@ public static class TerrainGenerationReferenceCapture
         public string file;
         public string controlTextureFile;
         public string gameplayDebugFile;
+        public List<string> crudeOilDepositFiles = new List<string>();
         public string boundsCenter;
         public string boundsSize;
         public TerrainGenerationProfile timing;

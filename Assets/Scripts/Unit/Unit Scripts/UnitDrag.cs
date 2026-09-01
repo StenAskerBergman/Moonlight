@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 // using static UnityEngine.Rendering.DebugUI.Table;
 // using UnityEngine.UIElements.Experimental;
 
@@ -11,6 +12,7 @@ public class UnitDrag : MonoBehaviour
 
     private Camera myCam;
     public bool isHolding;
+    private bool pointerStartedOverUI;
 
     //Graphical
     [SerializeField]
@@ -32,48 +34,67 @@ public class UnitDrag : MonoBehaviour
 
     void Update()
     {
-        if (!isHolding)
-        {     
-            //When Clicked
-            if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0))
+        {
+            pointerStartedOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            if (pointerStartedOverUI || isHolding)
             {
-                Ray ray = myCam.ScreenPointToRay(Input.mousePosition);
-
-                startPosition = Input.mousePosition;
-                selectionBox = new Rect();
+                CancelCurrentGesture();
+                return;
             }
 
-            //when dragging
-            if (Input.GetMouseButton(0))
-            {
-                endPosition = Input.mousePosition;
-                DrawVisual();
-                DrawSelection();
-            }
+            startPosition = Input.mousePosition;
+            endPosition = startPosition;
+            selectionBox = new Rect();
+        }
 
-            //When released click
+        // A world-selection gesture must never begin after a pointer-down on UI.
+        // Keep the suppression latched until release; item dragging starts only
+        // after Unity's drag threshold, which is too late to guard mouse-down.
+        if (pointerStartedOverUI || isHolding)
+        {
             if (Input.GetMouseButtonUp(0))
             {
-                // The box is presentation state and must always be cleared. If anything
-                // inside SelectUnits() throws, skipping these three lines leaves the
-                // selection rectangle frozen on screen for the rest of the session.
-                try
-                {
-                    SelectUnits();
-                }
-                finally
-                {
-                    startPosition = Vector2.zero;
-                    endPosition = Vector2.zero;
-                    DrawVisual();
-                }
+                pointerStartedOverUI = false;
+                CancelCurrentGesture();
             }
-        }
-        else if(isHolding)
-        {
-            // IsHolding, aka don't do anything
             return;
         }
+
+        //when dragging
+        if (Input.GetMouseButton(0))
+        {
+            endPosition = Input.mousePosition;
+            DrawVisual();
+            DrawSelection();
+        }
+
+        //When released click
+        if (Input.GetMouseButtonUp(0))
+        {
+            try
+            {
+                SelectUnits();
+            }
+            finally
+            {
+                CancelCurrentGesture();
+            }
+        }
+    }
+
+    public void SuppressCurrentGesture()
+    {
+        pointerStartedOverUI = true;
+        CancelCurrentGesture();
+    }
+
+    private void CancelCurrentGesture()
+    {
+        startPosition = Vector2.zero;
+        endPosition = Vector2.zero;
+        selectionBox = new Rect();
+        DrawVisual();
     }
 
     void DrawVisual()
@@ -116,6 +137,8 @@ public class UnitDrag : MonoBehaviour
 
     void SelectUnits()
     {
+        if (UnitSelections.Instance == null || myCam == null) return;
+
         //loop thru all the units
         var unitList = UnitSelections.Instance.unitList;
 

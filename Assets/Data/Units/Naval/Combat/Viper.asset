@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e5f80e987516c441b3c66bf8905478f, type: 3}
+  m_Name: Viper
+  m_EditorClassIdentifier: 
+  identifier: moonlight:viper
+  displayCategory: Fast Anti-Submarine Warship
+  prefab: {fileID: 5409342986107001119, guid: 9ee1d84786fd9da4d9d45626902df128, type: 3}
+  unitType: 0
+  movementProfile: {fileID: 11400000, guid: 5bffa7fd25635584ba396ad8872d0d8b, type: 2}
+  nameType: 4
+  displayName: Viper
+  description: 
+  navalClass: 1
+  unlockTier: 1
+  maxHealth: 400
+  movementSpeed: 10
+  acceleration: 8
+  turnSpeed: 120
+  cargoSlotCount: 2
+  cargoCapacityPerSlot: 40
+  equipmentSlotCount: 1
+  attackCapabilities: 5
+  attackRange: 15
+  damage: 20
+  attackCooldown: 1.5
+  canSubmerge: 0
+  canCarryAircraft: 0
+  aircraftCapacity: 0
+  buildCost: 100
+  maintenanceCost: 10
+  abilities:
+  - {fileID: 11400000, guid: feae710edb2020c45aebaf6f8e1fefa3, type: 2}

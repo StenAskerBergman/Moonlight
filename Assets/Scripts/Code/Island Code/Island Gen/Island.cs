@@ -134,6 +134,14 @@ public class Island : MonoBehaviour, IUniqueIdentifier
     // Trade Rules
     public IslandTradeRules TradeRules { get; private set; }
 
+    // Population per faction/demographic. Backs the warehouse panel's tier tabs and
+    // every PopulationUnlock check on this island.
+    public IslandPopulation Population { get; private set; }
+
+    // Pool of unsocketed modifier items. Deliberately separate from the commodity
+    // Inventory - see IslandItemStorage.
+    public IslandItemStorage Items { get; private set; }
+
     /// <summary>
     /// Sets up a freshly instantiated island. This replaces what used to be a
     /// constructor: Island is a MonoBehaviour, so only Unity may create it (via the
@@ -154,6 +162,21 @@ public class Island : MonoBehaviour, IUniqueIdentifier
         if (TradeRules == null)
         {
             TradeRules = gameObject.AddComponent<IslandTradeRules>();
+        }
+
+        // Fetched-then-added like TradeRules above, so an island that was authored with
+        // these components in the prefab keeps its Inspector values (starting population,
+        // faction, starting items) and a procedurally generated one still gets them.
+        Population = GetComponent<IslandPopulation>();
+        if (Population == null)
+        {
+            Population = gameObject.AddComponent<IslandPopulation>();
+        }
+
+        Items = GetComponent<IslandItemStorage>();
+        if (Items == null)
+        {
+            Items = gameObject.AddComponent<IslandItemStorage>();
         }
 
         // Future Idea:

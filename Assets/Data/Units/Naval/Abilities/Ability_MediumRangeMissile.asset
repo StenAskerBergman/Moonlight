@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc659089967c1ce4c8cfb42b3a455afd, type: 3}
+  m_Name: Ability_MediumRangeMissile
+  m_EditorClassIdentifier: 
+  identifier: moonlight:ability_medium_range_missile
+  displayName: Medium-Range Missile
+  description: Launches a long-range tactical cruise missile against surface targets.
+  icon: {fileID: 0}
+  hotkeyHint: 
+  abilityType: 3
+  cooldown: 120
+  range: 50
+  duration: 0
+  targetRestrictions: 1
+  missileDamage: 250
+  areaOfEffect: 12
+  castTime: 2.5
+  projectilePrefab: {fileID: 0}
+  resourceCost: 0

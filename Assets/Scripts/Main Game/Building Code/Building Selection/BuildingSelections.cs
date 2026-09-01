@@ -28,6 +28,15 @@ public class BuildingSelections : MonoBehaviour
         Instance = this;
     }
 
+    private void Update()
+    {
+        // Poll for destroyed selection so external destruction (e.g. demolition) clears cleanly.
+        if (SelectedBuilding == null && !ReferenceEquals(SelectedBuilding, null))
+        {
+            DeselectAll();
+        }
+    }
+
     public void ClickSelect(Building building)
     {
         if (building == SelectedBuilding) return;
@@ -41,7 +50,15 @@ public class BuildingSelections : MonoBehaviour
 
     public void DeselectAll()
     {
-        if (SelectedBuilding == null) return;
+        if (SelectedBuilding == null)
+        {
+            if (!ReferenceEquals(SelectedBuilding, null))
+            {
+                SelectedBuilding = null;
+                selectionChanged?.Invoke(null);
+            }
+            return;
+        }
 
         (SelectedBuilding as ISelectable)?.OnDeselect();
         SelectedBuilding = null;

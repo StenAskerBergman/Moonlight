@@ -5,12 +5,20 @@ namespace Moonlight.Rendering
     [DisallowMultipleComponent]
     public sealed class UnderwaterTransitionController : MonoBehaviour
     {
+        [Header("Water Transition")]
+        public Animator transition;
+        public float transistionTime = 1f;
+
         [Header("Water Detection")]
         [SerializeField] private Camera targetCamera;
         [Tooltip("Optional visible water object. Its renderer's upper bound is the authoritative surface height; transform Y is used when it has no renderer.")]
         [SerializeField] private Transform waterSurface;
         [SerializeField] private float waterHeight;
         [Min(0f), SerializeField] private float surfaceHysteresis = 0.08f;
+
+        [Header("Dive Interaction Sync")]
+        [Tooltip("Optional. When assigned, this unit's dive/surface events also drive the underwater transition (combined with camera height via OR). Can also be set at runtime via SetTrackedUnit.")]
+        [SerializeField] private DiveInteraction trackedDiveUnit;
 
         [Header("Transition")]
         [Min(0.05f), SerializeField] private float diveDuration = 0.65f;
@@ -24,8 +32,8 @@ namespace Moonlight.Rendering
         [SerializeField] private Color deepWaterColor = new Color(0.025f, 0.22f, 0.29f, 1f);
         [Tooltip("Dark ocean void / black at abyssal depths.")]
         [SerializeField] private Color abyssalColor = new Color(0.002f, 0.035f, 0.055f, 1f);
-        [Tooltip("Wavelength absorption coefficients (RGB). Higher value = faster decay.")]
-        [SerializeField] private Vector4 absorptionCoefficients = new Vector4(0.24f, 0.065f, 0.02f, 0f);
+        [Tooltip("Wavelength absorption coefficients (RGB). Higher value = faster decay. Defaults approximate real seawater: red absorbs ~8x faster than blue, green ~2.5x faster.")]
+        [SerializeField] private Vector4 absorptionCoefficients = new Vector4(0.16f, 0.05f, 0.02f, 0f);
         [Range(0.001f, 0.2f), SerializeField] private float fogDensity = 0.038f;
         [Min(0.5f), SerializeField] private float deepDepthThreshold = 6f;
         [Min(1f), SerializeField] private float abyssDepthThreshold = 14f;
@@ -44,6 +52,14 @@ namespace Moonlight.Rendering
         [Range(0f, 2f), SerializeField] private float marineSnowIntensity = 0.45f;
         [Range(0.1f, 5f), SerializeField] private float marineSnowScale = 1.2f;
         [Range(0.01f, 0.5f), SerializeField] private float marineSnowSpeed = 0.08f;
+
+        [Header("God Rays")]
+        [Tooltip("Screen-space light shafts radiating from the surface. Fades out with depth.")]
+        [Range(0f, 2f), SerializeField] private float godRayIntensity = 0.5f;
+
+        [Header("Debris")]
+        [Tooltip("Density of drifting plankton/sediment specks in the water column.")]
+        [Range(0f, 3f), SerializeField] private float debrisDensity = 1f;
 
         [Header("Surface Optics")]
         [SerializeField] private Color underwaterColor = new Color(0.28f, 0.72f, 0.78f, 0.22f);
@@ -64,6 +80,12 @@ namespace Moonlight.Rendering
         private AudioClip generatedDiveSound;
         private Renderer waterSurfaceRenderer;
 
+        // Two independent submersion signals, combined with OR: the camera dipping
+        // below sea level (RTS zoom) and a tracked unit's own dive/surface order.
+        private bool cameraSubmerged;
+        private bool unitSubmerged;
+        private DiveInteraction subscribedDiveUnit;
+
         private void OnEnable()
         {
             EnsureAudioSource();
@@ -73,7 +95,11 @@ namespace Moonlight.Rendering
 
             ResolveWaterSurfaceRenderer();
 
-            isUnderwater = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
+            cameraSubmerged = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
+            unitSubmerged = trackedDiveUnit != null && trackedDiveUnit.IsSubmerged;
+            isUnderwater = cameraSubmerged || unitSubmerged;
+
+            SubscribeToTrackedUnit();
             ApplyState();
         }
 
@@ -85,11 +111,17 @@ namespace Moonlight.Rendering
             if (targetCamera != null)
             {
                 float cameraY = targetCamera.transform.position.y;
-                if (!isUnderwater && cameraY < SurfaceHeight - surfaceHysteresis)
-                    Dive();
-                else if (isUnderwater && cameraY > SurfaceHeight + surfaceHysteresis)
-                    Surface();
+                if (!cameraSubmerged && cameraY < SurfaceHeight - surfaceHysteresis)
+                    cameraSubmerged = true;
+                else if (cameraSubmerged && cameraY > SurfaceHeight + surfaceHysteresis)
+                    cameraSubmerged = false;
             }
+
+            bool wantsUnderwater = cameraSubmerged || unitSubmerged;
+            if (!isUnderwater && wantsUnderwater)
+                Dive();
+            else if (isUnderwater && !wantsUnderwater)
+                Surface();
 
             if (isTransitioning)
             {
@@ -103,7 +135,11 @@ namespace Moonlight.Rendering
             ApplyState();
         }
 
-        private void OnDisable() => UnderwaterTransitionState.Reset();
+        private void OnDisable()
+        {
+            UnsubscribeFromTrackedUnit();
+            UnderwaterTransitionState.Reset();
+        }
 
         private void OnDestroy()
         {
@@ -117,9 +153,43 @@ namespace Moonlight.Rendering
             waterSurface = null;
             waterSurfaceRenderer = null;
             waterHeight = surfaceHeight;
-            isUnderwater = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
+            cameraSubmerged = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
+            isUnderwater = cameraSubmerged || unitSubmerged;
             ApplyState();
         }
+
+        /// <summary>
+        /// Assigns (or clears, with null) the unit whose dive/surface orders drive this
+        /// transition alongside camera height. Safe to call at runtime, e.g. when the
+        /// player's controlled submarine changes.
+        /// </summary>
+        public void SetTrackedUnit(DiveInteraction unit)
+        {
+            UnsubscribeFromTrackedUnit();
+            trackedDiveUnit = unit;
+            unitSubmerged = trackedDiveUnit != null && trackedDiveUnit.IsSubmerged;
+            SubscribeToTrackedUnit();
+        }
+
+        private void SubscribeToTrackedUnit()
+        {
+            if (trackedDiveUnit == null || subscribedDiveUnit == trackedDiveUnit)
+                return;
+
+            subscribedDiveUnit = trackedDiveUnit;
+            subscribedDiveUnit.OnDiveStateChanged += HandleDiveStateChanged;
+        }
+
+        private void UnsubscribeFromTrackedUnit()
+        {
+            if (subscribedDiveUnit == null)
+                return;
+
+            subscribedDiveUnit.OnDiveStateChanged -= HandleDiveStateChanged;
+            subscribedDiveUnit = null;
+        }
+
+        private void HandleDiveStateChanged(bool isSubmerged) => unitSubmerged = isSubmerged;
 
         public void Dive()
         {
@@ -253,6 +323,16 @@ namespace Moonlight.Rendering
             UnderwaterTransitionState.IsTransitioning = isTransitioning;
             UnderwaterTransitionState.WaterLevel = SurfaceHeight;
 
+            // Single continuous 0..1 signal (0 = surfaced, 1 = fully submerged) that sweeps
+            // smoothly through the crossing regardless of dive/surface direction. Shader
+            // effects that should ramp with "how underwater are we" read this instead of
+            // juggling TransitionAmount + Direction themselves.
+            UnderwaterTransitionState.TransitionProgress = isTransitioning
+                ? (UnderwaterTransitionState.Direction > 0f
+                    ? UnderwaterTransitionState.TransitionAmount
+                    : 1f - UnderwaterTransitionState.TransitionAmount)
+                : (isUnderwater ? 1f : 0f);
+
             // Fog & Bathymetry parameters
             UnderwaterTransitionState.ShallowWaterColor = shallowWaterColor;
             UnderwaterTransitionState.DeepWaterColor = deepWaterColor;
@@ -276,6 +356,10 @@ namespace Moonlight.Rendering
             UnderwaterTransitionState.MarineSnowIntensity = enableMarineSnow ? marineSnowIntensity : 0f;
             UnderwaterTransitionState.MarineSnowScale = marineSnowScale;
             UnderwaterTransitionState.MarineSnowSpeed = marineSnowSpeed;
+
+            // God Rays & Debris
+            UnderwaterTransitionState.GodRayIntensity = godRayIntensity;
+            UnderwaterTransitionState.DebrisDensity = debrisDensity;
         }
     }
 
@@ -284,6 +368,7 @@ namespace Moonlight.Rendering
         internal static float TransitionAmount;
         internal static float Direction = 1f;
         internal static float UnderwaterAmount;
+        internal static float TransitionProgress;
         internal static Color Color = Color.white;
         internal static float DistortionStrength;
         internal static float EdgeWidth = 0.07f;
@@ -311,12 +396,16 @@ namespace Moonlight.Rendering
         internal static float MarineSnowScale = 1.2f;
         internal static float MarineSnowSpeed = 0.08f;
 
+        internal static float GodRayIntensity = 0.5f;
+        internal static float DebrisDensity = 1f;
+
         internal static bool ShouldRender => IsTransitioning || UnderwaterAmount > 0f;
 
         internal static void Reset()
         {
             TransitionAmount = 0f;
             UnderwaterAmount = 0f;
+            TransitionProgress = 0f;
             IsTransitioning = false;
         }
     }

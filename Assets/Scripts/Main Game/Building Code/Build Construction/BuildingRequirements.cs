@@ -43,8 +43,18 @@ public class BuildingRequirements : MonoBehaviour
 
     public bool AreBuildingRequirementsMet(Vector3 position)
     {
+        // No BuildingData asset means no requirements to satisfy, so the site passes.
+        // The Depot has no BuildingData, so this threw on every placement click and took
+        // the whole InputCheck down with it - the building could never be placed.
+        if (currentBuildingData == null || currentBuildingData.BuildingRequirements == null)
+        {
+            return true;
+        }
+
         foreach (BuildingRequirement req in currentBuildingData.BuildingRequirements)
         {
+            if (req == null) continue;
+
             if (!req.IsSatisfied()) // This will call the appropriate IsSatisfied method for each requirement.
                 return false;
         }

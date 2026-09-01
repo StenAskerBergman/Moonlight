@@ -42,7 +42,7 @@ public class WaterNavMeshCarver : MonoBehaviour
 
     [Tooltip("Grow each carved rectangle outwards by this much, in cells, to keep ships " +
              "off the shoreline. 0 carves the exact land footprint.")]
-    [SerializeField] private float shoreMargin = 0f;
+    [SerializeField] private float shoreMargin = 4f; //1.5f;
 
     [Tooltip("Log how many volumes each island produced.")]
     [SerializeField] private bool logCarving = false;

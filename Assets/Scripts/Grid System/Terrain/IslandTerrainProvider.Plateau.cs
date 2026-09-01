@@ -77,6 +77,7 @@ public sealed partial class IslandTerrainProvider
                 plateau);
 
         float sandLength = rockLength * plateau.sandDescentLengthMultiplier;
+        float influenceLength = plateau.sandOpeningCount > 0 ? sandLength : rockLength;
         float sandProgress = Mathf.Clamp01(signedPerimeterDistance / Mathf.Max(0.001f, sandLength));
         float sandMask = EvaluateSandOpeningMask(
             footprint.WorldAngle,
@@ -93,7 +94,7 @@ public sealed partial class IslandTerrainProvider
         float height = Mathf.Lerp(rockHeight, sandHeight, sandMask);
         float influence = isTabletop
             ? 1f
-            : 1f - SmootherStep01(signedPerimeterDistance / Mathf.Max(1f, Mathf.Max(rockLength, sandLength)));
+            : 1f - SmootherStep01(signedPerimeterDistance / Mathf.Max(1f, influenceLength));
 
         float rimWeight = 1f - SmootherStep01(
             Mathf.Abs(signedPerimeterDistance) / Mathf.Max(0.5f, plateau.rockyRimWidth));
@@ -110,6 +111,23 @@ public sealed partial class IslandTerrainProvider
         float sandWeight = Mathf.Max(buildableWeight, activeSandSlope);
         float reefWeight = (1f - activeSandSlope)
             * Mathf.Max(rimWeight, isTabletop ? 0f : (1f - abyssFade) * 0.35f);
+        // Secondary sediment weights reuse the geology fields already sampled for
+        // shape and relief, so material variety remains deterministic without adding
+        // more procedural-noise work to every visual sample.
+        float materialMacro = geologyNoise * 0.5f + 0.5f;
+        float materialDetail = tabletopNoise * 0.5f + 0.5f;
+        float mixedSediment = Mathf.Clamp01(Mathf.Min(sandWeight, rockWeight) * 2.8f);
+        float gravelWeight = (rimWeight * 0.38f + mixedSediment * 0.78f)
+            * SmootherStep01(Mathf.InverseLerp(0.34f, 0.76f, materialDetail))
+            * (1f - abyssFade);
+        float mudWeight = buildableWeight
+            * (1f - rimWeight)
+            * (1f - Mathf.Clamp01(formationWeight))
+            * SmootherStep01(Mathf.InverseLerp(0.38f, 0.73f, 1f - materialMacro))
+            * 0.72f;
+        float siltWeight = Mathf.Max(
+            SmootherStep01(Mathf.InverseLerp(0.22f, 0.9f, abyssFade)),
+            (1f - activeSandSlope) * (1f - rockWeight) * (isTabletop ? 0f : 0.32f));
         PlateauZone zone = influence <= 0.001f
             ? PlateauZone.None
             : isTabletop
@@ -130,6 +148,9 @@ public sealed partial class IslandTerrainProvider
             rockWeight,
             sandWeight,
             reefWeight,
+            gravelWeight,
+            mudWeight,
+            siltWeight,
             abyssFade);
 
         return new TerrainSample(
@@ -173,7 +194,7 @@ public sealed partial class IslandTerrainProvider
         switch (shape)
         {
             case PlateauShapeMode.Elongated:
-                majorScale = plateau.elongation;
+                majorScale = Mathf.Sqrt(plateau.elongation);
                 minorScale = 1f / Mathf.Sqrt(plateau.elongation);
                 break;
             case PlateauShapeMode.Crescent:
@@ -190,8 +211,12 @@ public sealed partial class IslandTerrainProvider
                 break;
         }
 
-        float normalizedX = shapeX / (halfSize * majorScale);
-        float normalizedZ = shapeZ / (halfSize * minorScale);
+        // The plateau owns a bounded radial generation domain. Uniform containment
+        // keeps its complete profile inside the chunk while preserving an organic
+        // silhouette; no side or corner of the square chunk participates in shaping.
+        float footprintRadius = halfSize * 0.55f;
+        float normalizedX = shapeX / (footprintRadius * majorScale);
+        float normalizedZ = shapeZ / (footprintRadius * minorScale);
         if (shape == PlateauShapeMode.Crescent)
         {
             float direction = SeedUnit(97) < 0.5f ? -1f : 1f;
@@ -273,11 +298,30 @@ public sealed partial class IslandTerrainProvider
             + catalogueLobing,
             0.27f,
             0.70f);
+
+        float maximumUpperWidth = plateau.upperEscarpmentWidth * (1f + plateau.profileAsymmetry);
+        float maximumLowerWidth = plateau.lowerApronWidth * (1f + plateau.profileAsymmetry * 0.55f);
+        float maximumProfileLength = maximumUpperWidth + maximumLowerWidth;
+        if (plateau.sandOpeningCount > 0)
+        {
+            maximumProfileLength *= plateau.sandDescentLengthMultiplier;
+        }
+
+        float maximumAxisScale = Mathf.Max(majorScale, minorScale);
+        float maximumDomainWarp = Mathf.Min(
+            settings.domainWarp.amplitude,
+            Mathf.Min(7.5f, size * 0.20f)) * 0.38f;
+        float maximumCentreDisplacement = Mathf.Sqrt(2f)
+            * (halfSize * 0.08f + maximumDomainWarp);
+        float maximumBoundaryRadius = (halfSize - maximumCentreDisplacement - maximumProfileLength - 1f)
+            / Mathf.Max(0.001f, footprintRadius * maximumAxisScale);
+        float containedBoundaryRadius = Mathf.Clamp(maximumBoundaryRadius, 0.05f, 0.72f);
+        boundaryRadius01 = Mathf.Min(boundaryRadius01, containedBoundaryRadius);
         boundaryRadius01 = Mathf.Clamp(
             boundaryRadius01 + macroAsymmetry + localizedLobes - localizedNotches,
-            0.24f,
-            0.72f);
-        float distanceScale = halfSize * Mathf.Min(majorScale, minorScale);
+            Mathf.Min(0.18f, containedBoundaryRadius),
+            containedBoundaryRadius);
+        float distanceScale = footprintRadius * maximumAxisScale;
         float signedDistance = (normalizedRadius - boundaryRadius01) * distanceScale;
         float radialDistance = Mathf.Sqrt(deformedX * deformedX + deformedZ * deformedZ);
         float boundaryDistance = Mathf.Max(1f, radialDistance - signedDistance);
@@ -423,7 +467,7 @@ public sealed partial class IslandTerrainProvider
             profileHeight += apronFracture;
         }
 
-        return profileHeight;
+        return Mathf.Max(abyssHeight, profileHeight);
     }
 
     private float EvaluateSandOpeningMask(

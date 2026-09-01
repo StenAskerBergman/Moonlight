@@ -23,6 +23,20 @@ public class BuildingPreview : MonoBehaviour
     [SerializeField] private Material truePlacement;
     [SerializeField] private Material falsePlacement;
 
+    [Header("Facing Arrow")]
+    [Tooltip("Turn the blueprint so its front points away from the island, out to sea.")]
+    [SerializeField] private bool faceAwayFromIsland = true;
+    [SerializeField] private float arrowLength = 5f;
+    [SerializeField] private float arrowHeight = 2.5f;
+    [SerializeField] private Color arrowValidColor = new Color(0.25f, 1f, 0.35f, 0.85f);
+    [SerializeField] private Color arrowInvalidColor = new Color(1f, 0.25f, 0.25f, 0.85f);
+
+    private GameObject facingArrow;
+    private Material facingArrowMaterial;
+    private GridSystem visibleBuildGrid;
+    private Island centerCachedIsland;
+    private Vector3 cachedIslandCenter;
+
     // Building Data
     public BuildingData buildingData;
     public BuildingProperties buildingProperties;
@@ -42,14 +56,23 @@ public class BuildingPreview : MonoBehaviour
             buildingData = GetBuildingData();
             buildingProperties = GetPropertiesData();
 
+            // Blueprints for buildings without art would otherwise be invisible, leaving nothing
+            // for SetPreviewMaterial to tint green/red. Built after buildingData is resolved so
+            // the stand-in matches the real footprint.
+            BuildingPlaceholderModel.Ensure(gameObject, withCollider: false);
+
             buildingRequirements = FindObjectOfType<BuildingRequirements>();
-            buildingRequirements.SetRequirements(this);   // Set the building requirements for the preview
+            if (buildingRequirements != null)
+            {
+                buildingRequirements.SetRequirements(this);   // Set the building requirements for the preview
+            }
 
             IslandManager.instance.OnGridSystemDetected += OnGridSystemDetected;
             IslandManager.instance.OnPlayerEnterIsland += OnPlayerEnterIsland;
         }
         private void OnDestroy()
         {
+            SetVisibleBuildGrid(null);
             IslandManager.instance.OnGridSystemDetected -= OnGridSystemDetected;
             IslandManager.instance.OnPlayerEnterIsland -= OnPlayerEnterIsland;
         }
@@ -65,12 +88,29 @@ public class BuildingPreview : MonoBehaviour
 
     private void OnGridSystemDetected(GridSystem detectedGridSystem)
     {
-        gridSystem = detectedGridSystem;
+        UpdateGridSystem(detectedGridSystem);
     }
 
     public void UpdateGridSystem(GridSystem newGridSystem)
     {
         gridSystem = newGridSystem;
+        SetVisibleBuildGrid(newGridSystem);
+    }
+
+    private void SetVisibleBuildGrid(GridSystem newGridSystem)
+    {
+        if (visibleBuildGrid == newGridSystem) return;
+
+        if (visibleBuildGrid != null)
+        {
+            visibleBuildGrid.SetBuildGridVisible(false);
+        }
+
+        visibleBuildGrid = newGridSystem;
+        if (visibleBuildGrid != null)
+        {
+            visibleBuildGrid.SetBuildGridVisible(true);
+        }
     }
 
     #endregion
@@ -81,14 +121,122 @@ public class BuildingPreview : MonoBehaviour
     public void SetPreviewMaterial(bool canPlace)
     {
         localCanPlace = canPlace;
+
+        EnsureFacingArrow();
+
         MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
         Material targetMaterial = canPlace ? truePlacement : falsePlacement;
 
         foreach (MeshRenderer renderer in renderers)
         {
+            // The arrow is signage, not part of the silhouette, so it keeps its own
+            // material and only follows the valid/invalid colour.
+            if (facingArrow != null && renderer.gameObject == facingArrow) continue;
+
             renderer.material = targetMaterial;
         }
+
+        OverlayMaterial.SetColor(facingArrowMaterial, canPlace ? arrowValidColor : arrowInvalidColor);
     }
+
+    #region Facing Arrow
+
+    private void EnsureFacingArrow()
+    {
+        if (facingArrow != null) return;
+
+        facingArrow = new GameObject("Placement Facing Arrow");
+        facingArrow.transform.SetParent(transform, false);
+        facingArrow.transform.localPosition = new Vector3(0f, arrowHeight, 0f);
+
+        facingArrow.AddComponent<MeshFilter>().sharedMesh = BuildArrowMesh(arrowLength);
+
+        MeshRenderer arrowRenderer = facingArrow.AddComponent<MeshRenderer>();
+        arrowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        arrowRenderer.receiveShadows = false;
+
+        facingArrowMaterial = OverlayMaterial.Create(arrowValidColor);
+        arrowRenderer.sharedMaterial = facingArrowMaterial;
+    }
+
+    /// <summary>
+    /// A flat arrow lying in the XZ plane pointing along local +Z, so it reads as the
+    /// direction the building faces when seen from the game's overhead camera.
+    /// </summary>
+    private static Mesh BuildArrowMesh(float length)
+    {
+        length = Mathf.Max(1f, length);
+
+        float shaftLength = length * 0.6f;
+        float shaftHalfWidth = length * 0.09f;
+        float headHalfWidth = length * 0.22f;
+
+        Vector3[] vertices =
+        {
+            new Vector3(-shaftHalfWidth, 0f, 0f),
+            new Vector3( shaftHalfWidth, 0f, 0f),
+            new Vector3( shaftHalfWidth, 0f, shaftLength),
+            new Vector3(-shaftHalfWidth, 0f, shaftLength),
+
+            new Vector3(-headHalfWidth, 0f, shaftLength),
+            new Vector3( headHalfWidth, 0f, shaftLength),
+            new Vector3(0f, 0f, length),
+        };
+
+        int[] triangles =
+        {
+            0, 3, 2,
+            0, 2, 1,
+            4, 6, 5,
+        };
+
+        Mesh mesh = new Mesh { name = "PlacementFacingArrow" };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    /// <summary>
+    /// Centre of the island the blueprint is over, so "outwards" can be resolved as
+    /// "away from the island", which for a harbor means facing the open water.
+    /// </summary>
+    private Vector3 GetIslandCenter(Island island)
+    {
+        if (island == centerCachedIsland) return cachedIslandCenter;
+
+        Collider[] colliders = island.GetComponentsInChildren<Collider>();
+        Vector3 center = island.transform.position;
+
+        if (colliders.Length > 0)
+        {
+            Bounds bounds = colliders[0].bounds;
+            for (int i = 1; i < colliders.Length; i++)
+            {
+                bounds.Encapsulate(colliders[i].bounds);
+            }
+            center = bounds.center;
+        }
+
+        centerCachedIsland = island;
+        cachedIslandCenter = center;
+        return center;
+    }
+
+    private void FaceOutwards()
+    {
+        if (!faceAwayFromIsland || currentIsland == null) return;
+
+        Vector3 outward = transform.position - GetIslandCenter(currentIsland);
+        outward.y = 0f;
+
+        if (outward.sqrMagnitude > 0.0001f)
+        {
+            transform.rotation = Quaternion.LookRotation(outward.normalized, Vector3.up);
+        }
+    }
+
+    #endregion
 
     public void SetRendererColor(Color color)
     {
@@ -135,7 +283,11 @@ public class BuildingPreview : MonoBehaviour
 
             // Strip logic, physics, and audio from the visual ghost
             foreach (var col in _clonedVisuals.GetComponentsInChildren<Collider>(true)) Destroy(col);
-            foreach (var mb in _clonedVisuals.GetComponentsInChildren<MonoBehaviour>(true)) Destroy(mb);
+            var mbs = _clonedVisuals.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = mbs.Length - 1; i >= 0; i--)
+            {
+                if (mbs[i] != null) Destroy(mbs[i]);
+            }
             foreach (var aud in _clonedVisuals.GetComponentsInChildren<AudioSource>(true)) Destroy(aud);
 
             // Hide the default placeholder cube renderer so only target geometry shows
@@ -182,7 +334,9 @@ public class BuildingPreview : MonoBehaviour
                 RaycastHit hit;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                if (Physics.Raycast(ray, out hit, 1000f, groundLayer))
+                // Same reason as BuildingChecker: the island's tall hover trigger sits on
+                // the Ground layer and would otherwise catch the ray before the terrain.
+                if (Physics.Raycast(ray, out hit, 1000f, groundLayer, QueryTriggerInteraction.Ignore))
                 {
                     Vector3 newPos = hit.point;
                     newPos.y = offsetY;
@@ -201,6 +355,7 @@ public class BuildingPreview : MonoBehaviour
                     }
 
                     transform.position = newPos;
+                    FaceOutwards();
                 }
             }
             else
@@ -215,8 +370,13 @@ public class BuildingPreview : MonoBehaviour
     // Get Building Data 
     public BuildingData GetBuildingData()
     {
-        BuildingData buildingData = this.buildingPrefab.GetComponent<BuildingProperties>().buildingData;
-        return buildingData;
+        // Both may legitimately be absent: not every building prefab carries a
+        // BuildingData asset, and a null here means "no data driven rules", not a fault.
+        BuildingProperties properties = this.buildingPrefab != null
+            ? this.buildingPrefab.GetComponent<BuildingProperties>()
+            : null;
+
+        return properties != null ? properties.buildingData : null;
     }
     public BuildingData GetBuildingData2()
     {

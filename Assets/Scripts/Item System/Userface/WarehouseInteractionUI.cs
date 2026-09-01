@@ -73,7 +73,8 @@ public class WarehouseInteractionUI : MonoBehaviour
 
         // Check if building is a Warehouse/Depot
         Depot depot = building.GetComponent<Depot>();
-        if (depot != null) 
+        WarehouseSockets sockets = building.GetComponent<WarehouseSockets>();
+        if (depot != null || sockets != null) 
         {
             // Find the Island
             currentIsland = building.GetComponentInParent<Island>();

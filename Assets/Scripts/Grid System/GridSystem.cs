@@ -18,6 +18,14 @@ public class GridSystem : MonoBehaviour
     public Vector3 gridPosition;
     public Vector3 offset = new Vector3(0, 0, 0);
     private Cell[,] grid;
+    private GameObject buildGridOverlay;
+    private Mesh buildGridMesh;
+    private Material buildGridMaterial;
+    private bool buildGridVisible;
+
+    [Header("Build Grid Visualization")]
+    [SerializeField] private Color buildGridColor = new Color(0.2f, 0.85f, 1f, 0.65f);
+    [SerializeField, Min(0f)] private float buildGridHeightOffset = 0.08f;
     public Bank bank;
     public BuildingChecker buildingChecker;
     private int gridCount;
@@ -153,6 +161,105 @@ public class GridSystem : MonoBehaviour
         {
             grid = new Cell[gridSize, gridSize];
         }
+
+        RebuildBuildGridOverlay();
+    }
+
+    /// <summary>
+    /// Shows the exact cells used by snapping and placement validation. The overlay is
+    /// generated from this GridSystem's adopted MapGrid.Cell array, so it cannot drift
+    /// from the per-island gameplay grid.
+    /// </summary>
+    public void SetBuildGridVisible(bool visible)
+    {
+        buildGridVisible = visible;
+
+        if (visible && buildGridOverlay == null)
+        {
+            RebuildBuildGridOverlay();
+        }
+
+        if (buildGridOverlay != null)
+        {
+            buildGridOverlay.SetActive(visible);
+        }
+    }
+
+    private void RebuildBuildGridOverlay()
+    {
+        if (buildGridOverlay != null)
+        {
+            Destroy(buildGridOverlay);
+        }
+        if (buildGridMesh != null)
+        {
+            Destroy(buildGridMesh);
+        }
+        if (buildGridMaterial != null)
+        {
+            Destroy(buildGridMaterial);
+        }
+
+        buildGridOverlay = null;
+        buildGridMesh = null;
+        buildGridMaterial = null;
+
+        if (grid == null || gridSize <= 0) return;
+
+        // Four independent edges per cell deliberately preserve height changes between
+        // neighbouring cells instead of flattening the display to the island origin.
+        var vertices = new List<Vector3>(gridSize * gridSize * 8);
+        var indices = new List<int>(gridSize * gridSize * 8);
+
+        for (int x = 0; x < gridSize; x++)
+        {
+            for (int z = 0; z < gridSize; z++)
+            {
+                Cell cell = grid[x, z];
+                if (cell == null) continue;
+
+                float y = cell.height + buildGridHeightOffset;
+                AddGridLine(vertices, indices, new Vector3(x, y, z), new Vector3(x + 1f, y, z));
+                AddGridLine(vertices, indices, new Vector3(x + 1f, y, z), new Vector3(x + 1f, y, z + 1f));
+                AddGridLine(vertices, indices, new Vector3(x + 1f, y, z + 1f), new Vector3(x, y, z + 1f));
+                AddGridLine(vertices, indices, new Vector3(x, y, z + 1f), new Vector3(x, y, z));
+            }
+        }
+
+        buildGridMesh = new Mesh { name = $"{name} Build Grid" };
+        if (vertices.Count > 65535)
+        {
+            buildGridMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        }
+        buildGridMesh.SetVertices(vertices);
+        buildGridMesh.SetIndices(indices, MeshTopology.Lines, 0);
+        buildGridMesh.RecalculateBounds();
+
+        buildGridOverlay = new GameObject("Build Grid Overlay");
+        buildGridOverlay.transform.SetParent(transform, false);
+        buildGridOverlay.AddComponent<MeshFilter>().sharedMesh = buildGridMesh;
+
+        MeshRenderer renderer = buildGridOverlay.AddComponent<MeshRenderer>();
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        buildGridMaterial = OverlayMaterial.Create(buildGridColor);
+        renderer.sharedMaterial = buildGridMaterial;
+        buildGridOverlay.SetActive(buildGridVisible);
+    }
+
+    private static void AddGridLine(List<Vector3> vertices, List<int> indices, Vector3 start, Vector3 end)
+    {
+        int first = vertices.Count;
+        vertices.Add(start);
+        vertices.Add(end);
+        indices.Add(first);
+        indices.Add(first + 1);
+    }
+
+    private void OnDestroy()
+    {
+        if (buildGridMesh != null) Destroy(buildGridMesh);
+        if (buildGridMaterial != null) Destroy(buildGridMaterial);
     }
 
     /*
@@ -200,9 +307,9 @@ public class GridSystem : MonoBehaviour
     {
         Vector3 localPos = transform.InverseTransformPoint(pos);
         Vector3 snappedLocalPos = new Vector3(
-            Mathf.Round(localPos.x / cellSize) * cellSize, 
+            (Mathf.Floor(localPos.x / cellSize) + 0.5f) * cellSize, 
             localPos.y, 
-            Mathf.Round(localPos.z / cellSize) * cellSize
+            (Mathf.Floor(localPos.z / cellSize) + 0.5f) * cellSize
         );
         return transform.TransformPoint(snappedLocalPos);
     }
@@ -234,17 +341,14 @@ public class GridSystem : MonoBehaviour
     public Vector3 GetNearestPointOnGrid(Vector3 position)
     {
         Vector3 snappedPos = SnapToGrid(position);
-        snappedPos.y = 1f;
         Cell cell = GetCellAtPosition(snappedPos);
 
         if (cell != null)
         {
-            return snappedPos;
+            return transform.TransformPoint(cell.localCenter);
         }
-        else
-        {
-            return snappedPos; // simplified fallback
-        }
+
+        return snappedPos;
     }
     // Add the bounds to the GridSystem class
     public Bounds gridBounds;

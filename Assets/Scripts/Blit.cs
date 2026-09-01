@@ -36,11 +36,17 @@ as a workaround for 2D Renderer not supporting features (prior to 2021.2). Uncom
 
 			private BlitSettings settings;
 
-			private RenderTargetIdentifier source { get; set; }
-			private RenderTargetIdentifier destination { get; set; }
+			private RTHandle source { get; set; }
+			private RTHandle destination { get; set; }
 
-			RenderTargetHandle m_TemporaryColorTexture;
-			RenderTargetHandle m_DestinationTexture;
+			RTHandle m_TemporaryColorTexture;
+			RTHandle m_DestinationTexture;
+			RTHandle m_SrcTextureIdHandle;
+			RTHandle m_SrcTextureObjectHandle;
+			RTHandle m_DstTextureObjectHandle;
+			string m_CurrentSrcTextureId;
+			RenderTexture m_CurrentSrcTextureObject;
+			RenderTexture m_CurrentDstTextureObject;
 			string m_ProfilerTag;
 
 #if !UNITY_2020_2_OR_NEWER // v8
@@ -52,10 +58,6 @@ as a workaround for 2D Renderer not supporting features (prior to 2021.2). Uncom
 				this.settings = settings;
 				blitMaterial = settings.blitMaterial;
 				m_ProfilerTag = tag;
-				m_TemporaryColorTexture.Init("_TemporaryColorTexture");
-				if (settings.dstType == Target.TextureID) {
-					m_DestinationTexture.Init(settings.dstTextureId);
-				}
 			}
 
 			public void Setup(ScriptableRenderer renderer) {
@@ -82,53 +84,74 @@ as a workaround for 2D Renderer not supporting features (prior to 2021.2). Uncom
 
 				// note : Seems this has to be done in here rather than in AddRenderPasses to work correctly in 2021.2+
 				if (settings.srcType == Target.CameraColor) {
-					source = renderer.cameraColorTarget;
+					source = renderer.cameraColorTargetHandle;
 				} else if (settings.srcType == Target.TextureID) {
-					source = new RenderTargetIdentifier(settings.srcTextureId);
+					if (m_SrcTextureIdHandle == null || m_CurrentSrcTextureId != settings.srcTextureId) {
+						m_SrcTextureIdHandle?.Release();
+						m_SrcTextureIdHandle = RTHandles.Alloc(new RenderTargetIdentifier(settings.srcTextureId), name: settings.srcTextureId);
+						m_CurrentSrcTextureId = settings.srcTextureId;
+					}
+					source = m_SrcTextureIdHandle;
 				} else if (settings.srcType == Target.RenderTextureObject) {
-					source = new RenderTargetIdentifier(settings.srcTextureObject);
+					if (m_SrcTextureObjectHandle == null || m_CurrentSrcTextureObject != settings.srcTextureObject) {
+						m_SrcTextureObjectHandle?.Release();
+						m_SrcTextureObjectHandle = settings.srcTextureObject != null ? RTHandles.Alloc(settings.srcTextureObject) : null;
+						m_CurrentSrcTextureObject = settings.srcTextureObject;
+					}
+					source = m_SrcTextureObjectHandle;
 				}
 
 				if (settings.dstType == Target.CameraColor) {
-					destination = renderer.cameraColorTarget;
+					destination = renderer.cameraColorTargetHandle;
 				} else if (settings.dstType == Target.TextureID) {
-					destination = new RenderTargetIdentifier(settings.dstTextureId);
+					if (settings.overrideGraphicsFormat) {
+						opaqueDesc.graphicsFormat = settings.graphicsFormat;
+					}
+					RenderingUtils.ReAllocateIfNeeded(ref m_DestinationTexture, opaqueDesc, filterMode, TextureWrapMode.Clamp, name: settings.dstTextureId);
+					destination = m_DestinationTexture;
 				} else if (settings.dstType == Target.RenderTextureObject) {
-					destination = new RenderTargetIdentifier(settings.dstTextureObject);
+					if (m_DstTextureObjectHandle == null || m_CurrentDstTextureObject != settings.dstTextureObject) {
+						m_DstTextureObjectHandle?.Release();
+						m_DstTextureObjectHandle = settings.dstTextureObject != null ? RTHandles.Alloc(settings.dstTextureObject) : null;
+						m_CurrentDstTextureObject = settings.dstTextureObject;
+					}
+					destination = m_DstTextureObjectHandle;
 				}
 
 				if (settings.setInverseViewMatrix) {
 					Shader.SetGlobalMatrix("_InverseView", renderingData.cameraData.camera.cameraToWorldMatrix);
 				}
 
-				if (settings.dstType == Target.TextureID) {
-					if (settings.overrideGraphicsFormat) {
-						opaqueDesc.graphicsFormat = settings.graphicsFormat;
-					}
-					cmd.GetTemporaryRT(m_DestinationTexture.id, opaqueDesc, filterMode);
+				if (source == null || destination == null) {
+					context.ExecuteCommandBuffer(cmd);
+					CommandBufferPool.Release(cmd);
+					return;
 				}
 
 				//Debug.Log($"src = {source},     dst = {destination} ");
 				// Can't read and write to same color target, use a TemporaryRT
 				if (source == destination || (settings.srcType == settings.dstType && settings.srcType == Target.CameraColor)) {
-					cmd.GetTemporaryRT(m_TemporaryColorTexture.id, opaqueDesc, filterMode);
-					Blit(cmd, source, m_TemporaryColorTexture.Identifier(), blitMaterial, settings.blitMaterialPassIndex);
-					Blit(cmd, m_TemporaryColorTexture.Identifier(), destination);
+					RenderingUtils.ReAllocateIfNeeded(ref m_TemporaryColorTexture, opaqueDesc, filterMode, TextureWrapMode.Clamp, name: "_TemporaryColorTexture");
+					Blit(cmd, source, m_TemporaryColorTexture, blitMaterial, settings.blitMaterialPassIndex);
+					Blit(cmd, m_TemporaryColorTexture, destination);
 				} else {
 					Blit(cmd, source, destination, blitMaterial, settings.blitMaterialPassIndex);
+				}
+
+				if (settings.dstType == Target.TextureID && m_DestinationTexture != null) {
+					cmd.SetGlobalTexture(settings.dstTextureId, m_DestinationTexture);
 				}
 
 				context.ExecuteCommandBuffer(cmd);
 				CommandBufferPool.Release(cmd);
 			}
 
-			public override void FrameCleanup(CommandBuffer cmd) {
-				if (settings.dstType == Target.TextureID) {
-					cmd.ReleaseTemporaryRT(m_DestinationTexture.id);
-				}
-				if (source == destination || (settings.srcType == settings.dstType && settings.srcType == Target.CameraColor)) {
-					cmd.ReleaseTemporaryRT(m_TemporaryColorTexture.id);
-				}
+			public void Dispose() {
+				m_TemporaryColorTexture?.Release();
+				m_DestinationTexture?.Release();
+				m_SrcTextureIdHandle?.Release();
+				m_SrcTextureObjectHandle?.Release();
+				m_DstTextureObjectHandle?.Release();
 			}
 		}
 
@@ -163,6 +186,7 @@ as a workaround for 2D Renderer not supporting features (prior to 2021.2). Uncom
 		public BlitPass blitPass;
 
 		public override void Create() {
+			blitPass?.Dispose();
 			var passIndex = settings.blitMaterial != null ? settings.blitMaterial.passCount - 1 : 1;
 			settings.blitMaterialPassIndex = Mathf.Clamp(settings.blitMaterialPassIndex, -1, passIndex);
 			blitPass = new BlitPass(settings.Event, settings, name);
@@ -176,6 +200,10 @@ as a workaround for 2D Renderer not supporting features (prior to 2021.2). Uncom
 			if (settings.graphicsFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.None) {
 				settings.graphicsFormat = SystemInfo.GetGraphicsFormat(UnityEngine.Experimental.Rendering.DefaultFormat.LDR);
 			}
+		}
+
+		protected override void Dispose(bool disposing) {
+			blitPass?.Dispose();
 		}
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData) {

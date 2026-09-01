@@ -25,12 +25,45 @@ public class ClimateProfile : ScriptableObject
     public Color shallowWaterColor = new Color(0.38f, 0.74f, 0.95f, 1f);
     public Color deepWaterColor = new Color(0.06f, 0.14f, 0.45f, 1f);
 
+    [Header("Underwater Plateau Surface")]
+    [Tooltip("Fine sediment covering the buildable plateau tabletop.")]
+    public Color plateauFineSandColor = new Color(0.62f, 0.59f, 0.47f, 1f);
+    [Tooltip("Darker, larger-grained sand used in broad tabletop patches and sand descents.")]
+    public Color plateauCoarseSandColor = new Color(0.46f, 0.43f, 0.34f, 1f);
+    [Tooltip("Pale shell and limestone fragments scattered through clean sand.")]
+    public Color plateauShellSedimentColor = new Color(0.76f, 0.73f, 0.61f, 1f);
+    [Tooltip("Loose gravel concentrated where sand meets the rocky rim.")]
+    public Color plateauGravelColor = new Color(0.34f, 0.38f, 0.37f, 1f);
+    [Tooltip("Soft organic mud collected in protected tabletop pockets.")]
+    public Color plateauMudColor = new Color(0.20f, 0.23f, 0.20f, 1f);
+    [Tooltip("Deep marine silt covering the lower apron and abyss transition.")]
+    public Color plateauSiltColor = new Color(0.11f, 0.15f, 0.17f, 1f);
+    [Tooltip("Algae and reef growth tint applied around exposed rock.")]
+    public Color plateauReefColor = new Color(0.13f, 0.28f, 0.22f, 1f);
+    [Tooltip("How strongly secondary sand, shell, gravel, mud, and reef patches break up the base surface.")]
+    [Range(0f, 1f)] public float plateauMaterialVariation = 0.78f;
+
     [Header("Foliage Scattering")]
     public GameObject[] treePrefabs;
     [Range(0f, 1f)] public float forestDensity = 0.85f;
     [Range(0f, 1f)] public float plainsTreeDensity = 0.08f;
     public float treeScaleMin = 0.8f;
     public float treeScaleMax = 1.3f;
+
+    [Header("Underwater Plateau Life")]
+    [Tooltip("Decorates every standalone underwater plateau during terrain generation.")]
+    public bool populateUnderwaterPlateaus = true;
+    [Tooltip("Optional rooted seabed prefabs such as kelp, coral, or sea grass. Procedural kelp is used when empty.")]
+    public GameObject[] underwaterFoliagePrefabs;
+    [Tooltip("Optional decorative swimming prefabs. Procedural fish are used when empty.")]
+    public GameObject[] underwaterWildlifePrefabs;
+    [Range(0f, 1f)] public float underwaterFoliageDensity = 0.16f;
+    [Range(0f, 1f)] public float lushBillboardPlantRatio = 0.45f;
+    [Min(0)] public int minimumFoliagePerPlateau = 12;
+    [Min(0)] public int wildlifePerPlateau = 5;
+    public Vector2 underwaterFoliageScale = new Vector2(0.7f, 1.35f);
+    public Vector2 underwaterWildlifeScale = new Vector2(0.55f, 1.1f);
+    [Min(0f)] public float wildlifeHeightAboveSeabed = 1.2f;
     [Header("Splatmap Generation (Textures)")]
     [Tooltip("Offset from surfaceFlatlandHeight. Negative pulls grass up the slope.")]
     public float splatGrassThresholdOffset = -0.05f;

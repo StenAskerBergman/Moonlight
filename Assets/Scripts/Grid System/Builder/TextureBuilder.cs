@@ -127,7 +127,12 @@ public class TextureBuilder
 
                     if (plateauData.IsDefined)
                     {
-                        finalColor = EvaluatePlateauSurfaceColor(plateauData, sand, rock);
+                        finalColor = EvaluatePlateauSurfaceColor(
+                            plateauData,
+                            sand,
+                            rock,
+                            microNoise,
+                            macroNoise);
                     }
                     else if (terrainType == Cell.TerrainType.River && height <= 0.15f)
                     {
@@ -279,31 +284,93 @@ public class TextureBuilder
         return texture;
     }
 
-    private static Color EvaluatePlateauSurfaceColor(
+    private Color EvaluatePlateauSurfaceColor(
         PlateauSampleData plateau,
         Color sand,
-        Color rock)
+        Color rock,
+        float microNoise,
+        float macroNoise)
     {
         // Plateau materials are semantic, not height bands. The tabletop is deep
         // underwater by design, so the generic `height < 0` seabed fade would turn
         // the entire buildable sand surface into the water channel and erase the
         // rocky escarpment. These authored weights are produced with the geometry and
         // are therefore the only stable material interface for this landform.
+        float variation = Mathf.Clamp01(climate.plateauMaterialVariation);
         float sandWeight = plateau.SandWeight * (1f - plateau.AbyssFade);
         float rockWeight = plateau.RockWeight * (1f - plateau.AbyssFade * 0.45f);
         float materialWeight = Mathf.Max(0.0001f, sandWeight + rockWeight);
-        Color formationColor = Color.Lerp(sand, rock, rockWeight / materialWeight);
+        float normalizedRock = rockWeight / materialWeight;
 
-        Color reefTint = new Color(0.16f, 0.27f, 0.22f, 1f);
+        Color fineSand = Color.Lerp(
+            sand,
+            ResolveUnderwaterColor(climate.plateauFineSandColor, sand * 0.86f),
+            0.82f);
+        Color coarseSand = ResolveUnderwaterColor(
+            climate.plateauCoarseSandColor,
+            Color.Lerp(sand, rock, 0.22f));
+        Color shellSediment = ResolveUnderwaterColor(
+            climate.plateauShellSedimentColor,
+            sand * 1.08f);
+        Color gravel = ResolveUnderwaterColor(
+            climate.plateauGravelColor,
+            Color.Lerp(sand, rock, 0.58f));
+        Color mud = ResolveUnderwaterColor(
+            climate.plateauMudColor,
+            Color.Lerp(sand * 0.42f, rock * 0.48f, 0.38f));
+        Color silt = ResolveUnderwaterColor(
+            climate.plateauSiltColor,
+            Color.Lerp(sand * 0.30f, rock * 0.36f, 0.72f));
+        Color reef = ResolveUnderwaterColor(
+            climate.plateauReefColor,
+            new Color(0.16f, 0.27f, 0.22f, 1f));
+
+        float coarseMask = sandWeight
+            * Smooth01(Mathf.InverseLerp(0.34f, 0.76f, macroNoise))
+            * variation * 0.72f;
+        float shellMask = sandWeight
+            * Smooth01(Mathf.InverseLerp(0.70f, 0.92f, microNoise))
+            * Smooth01(Mathf.InverseLerp(0.42f, 0.78f, macroNoise))
+            * variation * 0.46f;
+        float mudMask = plateau.MudWeight
+            * Mathf.Lerp(0.68f, 1f, 1f - microNoise)
+            * variation;
+
+        Color sedimentColor = Color.Lerp(fineSand, coarseSand, coarseMask);
+        sedimentColor = Color.Lerp(sedimentColor, shellSediment, shellMask);
+        sedimentColor = Color.Lerp(sedimentColor, mud, mudMask);
+
+        // Rock remains the dominant escarpment material. Gravel occupies the
+        // continuously mixed sand/rock seam instead of appearing as a new band.
+        Color formationColor = Color.Lerp(sedimentColor, rock, normalizedRock);
+        float gravelMask = plateau.GravelWeight
+            * Mathf.Lerp(0.72f, 1f, microNoise)
+            * variation;
+        formationColor = Color.Lerp(formationColor, gravel, gravelMask);
+
         formationColor = Color.Lerp(
             formationColor,
-            Color.Lerp(formationColor, reefTint, 0.42f),
-            plateau.ReefWeight * 0.34f);
+            Color.Lerp(formationColor, reef, 0.52f),
+            plateau.ReefWeight * variation * 0.48f);
 
-        Color abyssSilt = Color.Lerp(sand * 0.30f, rock * 0.36f, 0.72f);
+        float siltMask = Mathf.Max(plateau.SiltWeight, plateau.AbyssFade);
+        Color abyssSilt = Color.Lerp(mud, silt, Mathf.Clamp01(0.35f + plateau.AbyssFade * 0.65f));
         formationColor.a = 1f;
         abyssSilt.a = 1f;
-        return Color.Lerp(formationColor, abyssSilt, plateau.AbyssFade);
+        return Color.Lerp(formationColor, abyssSilt, siltMask);
+    }
+
+    private static Color ResolveUnderwaterColor(Color authored, Color fallback)
+    {
+        authored.a = 1f;
+        fallback.a = 1f;
+        return authored.maxColorComponent > 0.001f ? authored : fallback;
+    }
+
+    private static float Smooth01(float value)
+    {
+        value = Mathf.Clamp01(value);
+        return value * value * (3f - 2f * value);
     }
 
     private static readonly Color[] RidgePalette = new Color[]

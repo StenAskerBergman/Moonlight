@@ -1,4 +1,5 @@
 ﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.Timeline.csproj" />
   <Project Path="Unity.VisualEffectGraph.Editor.csproj" />
   <Project Path="Unity.Timeline.Editor.csproj" />
@@ -6,7 +7,6 @@
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Unity.PlasticSCM.Editor.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.2D.Tilemap.Editor.csproj" />
   <Project Path="MCPForUnity.Runtime.csproj" />
   <Project Path="MCPForUnity.Editor.csproj" />
@@ -64,8 +64,8 @@
   <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.Barracuda.iOSBLAS.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />
-  <Project Path="Unity.Timeline.Player.csproj" />
   <Project Path="Assembly-CSharp.Player.csproj" />
+  <Project Path="Unity.Timeline.Player.csproj" />
   <Project Path="MCPForUnity.Runtime.Player.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.Player.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Player.csproj" />

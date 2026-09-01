@@ -62,8 +62,14 @@ public class BuildingProperties : MonoBehaviour
         // Fetch Resource Cost Data
         // int[] costResources = costData.costResource;
 
-        // Fetch Size Data
-        buildingSize = buildingData.buildingSize;
+        // Fetch Size Data. A missing BuildingData asset is normal - the Depot has none -
+        // and simply means there is nothing to override the size authored on the prefab.
+        // Reading through it unguarded threw in Start() on every building placed from
+        // such a prefab.
+        if (buildingData != null)
+        {
+            buildingSize = buildingData.buildingSize;
+        }
     }
 
 

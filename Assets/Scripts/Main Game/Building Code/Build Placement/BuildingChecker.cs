@@ -151,7 +151,7 @@ public class BuildingChecker : MonoBehaviour
         // Check if there is a Building Preview Active...
         if (currentBuildingPreview != null)
         {
-            hoveredBoat = null; // Reset every frame, UpdateBuildsite will populate it if valid
+            hoveredBoat = ResolveSettlingBoat();
             
             UpdateBuildsite();
             
@@ -160,11 +160,17 @@ public class BuildingChecker : MonoBehaviour
             // Update the visual settlement ring to follow whatever boat we evaluated
             UpdateSettlingBoatRing(hoveredBoat);
 
+            // Shade the grid so the player can see where this building may stand before
+            // clicking, rather than discovering it from a refused click. Rebuilds only
+            // when the building, the vessel's cell, or the island's influence changes.
+            PlacementValidityOverlay.Show(gridSystem, currentIsland, GetPreviewProperties(), hoveredBoat);
+
             InputCheck();
         }
         else
         {
             UpdateSettlingBoatRing(null); // Ensure it's off if no preview
+            PlacementValidityOverlay.HideAll();
         }
     }
     #endregion
@@ -352,7 +358,10 @@ public class BuildingChecker : MonoBehaviour
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out hit, 1000f, groundLayer))
+        // Triggers are ignored deliberately. Each island carries a 40-unit-tall trigger
+        // box on the Ground layer for hover detection; hitting that instead of the terrain
+        // put the blueprint in mid-air well away from the cursor.
+        if (Physics.Raycast(ray, out hit, 1000f, groundLayer, QueryTriggerInteraction.Ignore))
         {
             // Creates a New Position... 
             Vector3 newPos = hit.point;
@@ -434,8 +443,16 @@ public class BuildingChecker : MonoBehaviour
             // Get the nearest Position to Cursor for 
             // Cell Placement 
 
+            // Everything below reads through newGridSystem, the one just resolved and
+            // null checked. It used to snap through newGridSystem and then look the cell
+            // up through the gridSystem FIELD, which is only ever assigned when the
+            // preview happens to be parented to a GridSystem. Whenever it was null this
+            // line threw every frame, UpdateBuildsite bailed before evaluating anything,
+            // and the click had nothing to act on.
+            gridSystem = newGridSystem;
+
             newPos = newGridSystem.GetNearestPointOnGrid(newPos);
-            Cell cell = gridSystem.GetCellAtWorldPosition(newPos);
+            Cell cell = newGridSystem.GetCellAtWorldPosition(newPos);
 
             // Placement Logic Check 
 
@@ -468,139 +485,42 @@ public class BuildingChecker : MonoBehaviour
 
 
                 // Third,
-                // Get The Build Stats
-                Vector3 buildingSize = buildingProperties.buildingSize;
-                Vector3Int gridPosition = gridSystem.WorldToCell(newPos);
+                // Re-decide from scratch every frame. canPlace used to only ever be
+                // assigned false anywhere in the class, so the blueprint stayed red
+                // forever and no building could be placed.
+                Vector3Int gridPosition = newGridSystem.WorldToCell(newPos);
 
-                // Iterate over the entire size of the building.
-                for (int x = 0; x < buildingSize.x; x++)
-                {
-                    for (int z = 0; z < buildingSize.z; z++)
-                    {
-                        int targetX = gridPosition.x + x;
-                        int targetZ = gridPosition.z + z;
-
-                        Cell targetCell = gridSystem.GetCell(targetX, targetZ);
-                        if (targetCell == null || targetCell.isBlocked || targetCell.isOccupied)
-                        {
-                            canPlace = false;
-                            break;
-                        }
-
-                        // Terrain Validation
-                        BuildingData data = buildingProperties.buildingData;
-                        if (data != null)
-                        {
-                            if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
-                            {
-                                if (targetCell.currentTerrainType != Cell.TerrainType.Beach) { canPlace = false; break; }
-                            }
-                            else if (data.buildingType == BuildingEnums.BuildingType.OffShore.ToString())
-                            {
-                                if (targetCell.currentTerrainType != Cell.TerrainType.Shallow) { canPlace = false; break; }
-                            }
-
-                            // Resource Node Validation
-                            if (data.requiredNodeType != ResourceNodeType.None)
-                            {
-                                if (!targetCell.isDeposit || targetCell.depositNodeType != data.requiredNodeType)
-                                {
-                                    canPlace = false;
-                                    break;
-                                }
-                            }
-
-                            // Grid Requirement Validation
-                            foreach (BuildingRequirement req in data.BuildingRequirements)
-                            {
-                                if (req is GridRequirement gridReq)
-                                {
-                                    gridReq.SetTargetCell(targetCell);
-                                    if (!gridReq.IsSatisfied())
-                                    {
-                                        canPlace = false;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!canPlace) break;
-                        }
-                    }
-
-                    if (!canPlace)
-                    {
-                        break;
-                    }
-                }
+                // The per-cell footprint rules live in PlacementRules now. They used to be
+                // written out inline here, where nothing else could read them - which meant
+                // the placement overlay would have had to re-implement them and could
+                // silently disagree with what the click actually enforces.
+                canPlace = PlacementRules.EvaluateFootprint(
+                    newGridSystem,
+                    gridPosition,
+                    buildingProperties.buildingSize,
+                    buildingProperties.buildingData,
+                    out _);
 
                 if (canPlace)
                 {
-                    InfluenceManager influenceManager = null;
-                    if (currentIsland != null)
+                    InfluenceManager influenceManager = PlacementRules.GetInfluenceManager(currentIsland, createIfMissing: true);
+
+                    // Shared with BuildInteraction and the action bar so all three agree
+                    // on what counts as the founding building. The old inline test
+                    // required a BuildingData asset, which the Depot does not have, so
+                    // the first harbor was judged an ordinary building and demanded
+                    // island influence that cannot exist before it is built.
+                    bool isWarehouse = InfluenceManager.IsHarborBuilding(buildingProperties);
+
+                    canPlace = PlacementRules.EvaluateInfluence(influenceManager, isWarehouse, newPos, newGridSystem,
+                                                               out Unit foundingBoat, out _);
+
+                    // If this is the first warehouse on an unsettled island, verify boat cargo.
+                    // Cargo is a property of the vessel rather than of the site, so the overlay
+                    // deliberately does not shade cells by it - every cell would fail alike.
+                    if (canPlace && isWarehouse && influenceManager != null && !influenceManager.HasWarehouse && foundingBoat != null)
                     {
-                        influenceManager = currentIsland.GetComponent<InfluenceManager>();
-                        if (influenceManager == null && currentIsland.islandObject != null)
-                        {
-                            influenceManager = currentIsland.islandObject.GetComponent<InfluenceManager>();
-                        }
-                        if (influenceManager == null)
-                        {
-                            influenceManager = currentIsland.gameObject.AddComponent<InfluenceManager>();
-                        }
-                    }
-
-                    if (influenceManager != null)
-                    {
-                        BuildingData data = buildingProperties.buildingData;
-                        bool isWarehouse = data != null && (
-                            data.buildingType == BuildingEnums.BuildingType.OnShore.ToString() ||
-                            (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag => tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) || tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase))) ||
-                            (data.buildingName != null && (data.buildingName.IndexOf("Warehouse", System.StringComparison.OrdinalIgnoreCase) >= 0 || data.buildingName.IndexOf("Harbor", System.StringComparison.OrdinalIgnoreCase) >= 0))
-                        );
-
-                        if (isWarehouse)
-                        {
-                            Unit foundingBoat = null;
-                            bool canWarehouse = influenceManager.CanPlaceWarehouse(newPos, gridSystem, out foundingBoat);
-
-                            if (!influenceManager.HasWarehouse)
-                            {
-                                hoveredBoat = InfluenceManager.GetNearestPlayerBoat(newPos);
-                            }
-
-                            // If this is the first warehouse on an unsettled island, verify boat cargo
-                            if (canWarehouse && !influenceManager.HasWarehouse && foundingBoat != null)
-                            {
-                                BuildingCost costComponent = currentBuildingPreview.GetBuildingPrefab()?.GetComponent<BuildingCost>();
-                                if (costComponent != null && costComponent.costData != null)
-                                {
-                                    UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-                                    if (boatInv != null)
-                                    {
-                                        Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
-                                        Dictionary<ItemData, int> costItems = costComponent.costData.GetCostItemsDictionary();
-                                        foreach (var kvp in costItems)
-                                        {
-                                            if (kvp.Key != null && kvp.Value > 0)
-                                            {
-                                                if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
-                                                {
-                                                    canWarehouse = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            canPlace = canPlace && canWarehouse;
-                        }
-                        else
-                        {
-                            canPlace = canPlace && influenceManager.IsWithinBuildableArea(newPos);
-                        }
+                        canPlace = BoatCarriesCost(foundingBoat);
                     }
                 }
 
@@ -631,6 +551,57 @@ public class BuildingChecker : MonoBehaviour
     }
     #endregion
 
+    /// <summary>
+    /// The BuildingProperties of whatever blueprint is currently out, or null. The
+    /// overlay needs the footprint and building data, which live on the prefab.
+    /// </summary>
+    private BuildingProperties GetPreviewProperties()
+    {
+        GameObject prefab = currentBuildingPreview != null ? currentBuildingPreview.GetBuildingPrefab() : null;
+        return prefab != null ? prefab.GetComponent<BuildingProperties>() : null;
+    }
+
+    /// <summary>
+    /// Whether the founding vessel is carrying what the harbor costs. Extracted from
+    /// UpdateBuildsite so the site rules there read as site rules.
+    /// </summary>
+    private bool BoatCarriesCost(Unit foundingBoat)
+    {
+        BuildingCost costComponent = currentBuildingPreview.GetBuildingPrefab()?.GetComponent<BuildingCost>();
+        if (costComponent == null || costComponent.costData == null) return true;
+
+        UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
+        if (boatInv == null) return true;
+
+        Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
+        Dictionary<ItemData, int> costItems = costComponent.costData.GetCostItemsDictionary();
+
+        foreach (var kvp in costItems)
+        {
+            if (kvp.Key == null || kvp.Value <= 0) continue;
+
+            if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// The vessel whose influence circle is shown while a harbor blueprint is out. It is
+    /// anchored to the selected boat rather than to the hovered cell, so the circle stays
+    /// up for the whole placement instead of blinking off over every invalid tile.
+    /// </summary>
+    private Unit ResolveSettlingBoat()
+    {
+        if (currentBuildingPreview == null) return null;
+        if (!InfluenceManager.IsHarborBuilding(currentBuildingPreview.GetBuildingPrefab())) return null;
+
+        Unit selected = InfluenceManager.GetSelectedPlayerBoat();
+        if (selected != null) return selected;
+
+        return InfluenceManager.GetNearestPlayerBoat(currentBuildingPreview.transform.position);
+    }
+
     private void UpdateSettlingBoatRing(Unit newBoat)
     {
         if (currentSettlingBoat != newBoat)
@@ -651,6 +622,7 @@ public class BuildingChecker : MonoBehaviour
     public void CancelBuilding()
     {
         UpdateSettlingBoatRing(null);
+        PlacementValidityOverlay.HideAll();
         if (currentBuildingPreview != null)
         {
             if (currentBuildingPreview.gameObject != null)

@@ -1,0 +1,355 @@
+Yes. The **production-line renderer** is the part worth copying. It behaves more like a tiny dependency-graph UI than a normal button grid.
+
+![Image](https://images.openai.com/static-rsc-4/ZiGZ3_C1prrTW8vMbxLY8g4Yiw0tBaigoCZW239cgN0QC7sq9odq6kTe5IinkvFHdzGpVpNNfA7HbVWe0Cv5aKeyqJtjAD55CpatB1DPU4v0EwXd2_BFSUNTwVcQiFkmVRubXBOL2oXLs-1J2uwUWPAt0_rLBjnHPJnGonZuEiN7h-zhU7yqh4h-LKwdiUdA?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/c1-WzC1joiNEfu-SfHGq-ksRsVR6kPYgn1KFewjJcV0am37wDuiqP88wNdnvw9D48SZw1hLqtgMKotnifee8RgWk_YIk_7komA0RGCi9P2clONGGKcNWF7xsFNf30zoISX5nwhy7ArByI5YnrDHbcRyL20OjGy3GM_ntl_LxaAlq7AMEnRtLW_Ux1tGtK8j0?purpose=fullsize)
+
+## Actual anatomy
+
+```text
+Production: Steel
+┌─────────────────────────────────────┐
+│                CHAIN CANVAS         │
+│                                     │
+│ [Ore Mine] ──────┐                  │
+│                  ├─> [Smelter] ──> [Steelworks]
+│ [Coal Source] ───┘                  │
+│ [Alt Coal] ──────┘                  │
+│                                     │
+└─────────────────────────────────────┘
+
+[Steel] [Luxury Food] [Nuclear] [...]
+   ^
+ selected production-chain button
+```
+
+The critical distinction is:
+
+**The bottom buttons choose a production line.
+The large area above them contains the individual build buttons belonging to that line.**
+
+The Steel screenshot demonstrates this directly. Steel itself is a 3-stage dependency, while coal can be supplied through Rotary Excavators or a Coal Mine. ([Anno 2070][1])
+
+---
+
+# The layout rules
+
+### 1. Linear extension
+
+Every extra processing stage extends the graph one column left.
+
+```mermaid
+flowchart LR
+    A["Raw Producer"] --> B["Processor"]
+    B --> C["Final Producer"]
+```
+
+Example:
+
+```text
+Uranium Mine -> Fuel Element Factory -> Nuclear Power Plant
+```
+
+Anno's Nuclear chain is exactly this 3-stage structure. ([Anno 2070][1])
+
+---
+
+### 2. Input expansion
+
+If one building requires multiple inputs, the previous column **expands vertically**.
+
+```mermaid
+flowchart LR
+    A["Input A"] --> C["Factory"]
+    B["Input B"] --> C
+```
+
+Visually:
+
+```text
+[Input A] ─┐
+           ├── [Factory]
+[Input B] ─┘
+```
+
+Example:
+
+```text
+Lobster Farm ─┐
+              ├── Gourmet Factory
+Truffle Farm ─┘
+```
+
+Anno uses 1 Lobster Farm and 4 Truffle Farms for the represented Luxury Meal chain ratio. ([Anno 2070][1])
+
+---
+
+# 3. Extension + reduction
+
+This is the complicated one.
+
+One branch can itself contain another stage:
+
+```mermaid
+flowchart LR
+    A["Raw A"] --> C["Processor A"]
+    B["Raw B"] --> C
+    C --> E["Final Factory"]
+
+    D["Independent Input"] --> E
+```
+
+So visually:
+
+```text
+[Raw A] ─┐
+         ├─ [Processor] ─┐
+[Raw B] ─┘               │
+                         ├─ [Final]
+[Independent Input] ─────┘
+```
+
+The graph:
+
+1. **expands** when dependencies fork;
+2. **extends** when a dependency has its own dependency;
+3. **reduces** when those paths converge again.
+
+That is the fundamental Anno production-line layout behaviour.
+
+---
+
+# 4. Unequal branch depth
+
+The columns are based on **dependency depth**, not rows.
+
+```mermaid
+flowchart LR
+    A["Raw"] --> B["Intermediate"]
+    B --> D["Final"]
+
+    C["Direct Raw Input"] --> D
+```
+
+```text
+[Raw] -> [Intermediate] ─┐
+                         ├-> [Final]
+        [Direct Input] ──┘
+```
+
+Notice the empty space.
+
+Anno does **not** pull `Direct Input` left just because there is room.
+
+It keeps its location relative to the factory it feeds.
+
+That preserves the meaning:
+
+```text
+column = production stage
+```
+
+rather than:
+
+```text
+column = arbitrary available space
+```
+
+---
+
+# 5. Multiple upstream alternatives
+
+Steel is particularly interesting.
+
+The canonical chain can use:
+
+```text
+2 Rotary Excavators
+```
+
+or:
+
+```text
+1 Coal Mine
+```
+
+for its coal supply. ([Anno 2070][1])
+
+The construction UI can therefore expose supplier alternatives alongside the dependency structure rather than pretending there is only one valid chain.
+
+Conceptually:
+
+```mermaid
+flowchart LR
+    Ore["Iron Ore Mine"] --> Smelter["Iron Smelter"]
+
+    Rotary["Rotary Excavator"] --> Smelter
+    CoalMine["Coal Mine"] --> Smelter
+
+    Smelter --> Steel["Steelworks"]
+```
+
+But semantically:
+
+```text
+Iron Ore Mine ──────────┐
+                        ├-> Iron Smelter -> Steelworks
+Rotary Excavator ─ OR ──┤
+Coal Mine ───────────────┘
+```
+
+So your renderer eventually needs something stronger than simply:
+
+```csharp
+List<BuildingData>
+```
+
+It needs dependency relationships.
+
+---
+
+# 6. The canvas changes height
+
+This is one of the most important GUI details.
+
+Compare Steel against the much more complicated Bionic Suits screenshot.
+
+The production area itself gets taller.
+
+```text
+Simple chain
+
+┌─────────────────────┐
+│ [A] -> [B] -> [C]   │
+└─────────────────────┘
+Public
+Special
+```
+
+versus:
+
+```text
+Complex chain
+
+┌─────────────────────┐
+│ [A] ─┐              │
+│ [B] ─┼-> [D] ─┐     │
+│ [C] ─┘        ├->[F]│
+│ [E] ──────────┘     │
+└─────────────────────┘
+Public
+Special
+```
+
+So **Production is variable-height**.
+
+The sections underneath are pushed downward.
+
+This is why recreating it with one fixed Unity `GridLayoutGroup` will become painful.
+
+---
+
+# 7. The actual UI primitives
+
+You really only need about **five graphical primitives**:
+
+```mermaid
+flowchart LR
+    Selector["Production Line Selector"]
+    Node["Building Button"]
+    Horizontal["Horizontal Connector"]
+    Branch["Vertical Branch / Junction"]
+    Canvas["Expandable Chain Canvas"]
+
+    Selector --> Canvas
+    Canvas --> Node
+    Canvas --> Horizontal
+    Canvas --> Branch
+```
+
+### Building node
+
+```text
+┌──────┐
+│ ICON │
+└──────┘
+```
+
+States:
+
+```text
+Normal
+Hovered
+Selected/placement active
+Locked/grey
+Unavailable due to location
+```
+
+The manual confirms unavailable buildings remain represented but are greyed and reveal their population/civilisation unlock requirement on hover. ([Steam CDN][2])
+
+### Connector
+
+```text
+──────
+```
+
+### Merge
+
+```text
+────┐
+    ├────
+────┘
+```
+
+### Split/alternative
+
+```text
+────┬────
+    └────
+```
+
+### Chain background
+
+Anno additionally places the whole dependency diagram inside the large **right-facing arrow silhouette**.
+
+That isn't just decoration. It reinforces:
+
+```text
+INPUTS                      OUTPUT
+   ->                         ->
+```
+
+---
+
+# The layout algorithm I would copy
+
+```mermaid
+flowchart TD
+    Product["Selected final product"]
+    Graph["Get dependency graph"]
+    Depth["Calculate dependency depth"]
+    Columns["Assign X by depth"]
+    Branches["Stack siblings vertically"]
+    Center["Center parents against child"]
+    Junctions["Generate merge connectors"]
+    Bounds["Calculate graph bounds"]
+    Resize["Resize production panel"]
+
+    Product --> Graph
+    Graph --> Depth
+    Depth --> Columns
+    Columns --> Branches
+    Branches --> Center
+    Center --> Junctions
+    Junctions --> Bounds
+    Bounds --> Resize
+```
+
+So the core rule is:
+
+> **Anno's Production panel is a dynamically-sized left-to-right dependency DAG where branches expand vertically, processing depth extends horizontally, and branches reduce again as inputs converge toward the final production building.**
+
+That is the piece I would build first. Everything else in that menu can sit around it. ([Anno 2070][1])
+
+[1]: https://anno2070.fandom.com/wiki/Anno_2070_Wiki%3AProduction_Chains "Anno 2070 Wiki:Production Chains | Anno 2070 Wiki | Fandom"
+[2]: https://cdn.akamai.steamstatic.com/steam/apps/48240/manuals/Manual.pdf?utm_source=chatgpt.com "ANNO_2070_manual_UK_14_09_11.indd"

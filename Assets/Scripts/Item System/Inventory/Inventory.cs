@@ -158,6 +158,13 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
         return GetItemAmount(item) >= quantity;
     }
 
+    /// <summary>
+    /// Per-item stock ceiling, for UI fill bars and "max" labels. 0 means the storage
+    /// manager isn't up yet or reports no limit; callers should treat that as unbounded
+    /// and skip the bar rather than dividing by it.
+    /// </summary>
+    public int GetCapacityLimit() => storageManager != null ? storageManager.GetCapacityLimit() : 0;
+
     public bool CanAdd(ItemData item, int quantity)
     {
         // Was a copy of CanRemove (GetItemAmount(item) >= quantity), so it asked

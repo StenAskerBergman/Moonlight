@@ -13,7 +13,9 @@ GameObject:
   - component: {fileID: 6416447388904724262}
   - component: {fileID: 9061972021387911315}
   - component: {fileID: 302138009402818668}
-  m_Layer: 0
+  - component: {fileID: 302138009402818700}
+  - component: {fileID: 302138009402818701}
+  m_Layer: 8
   m_Name: Depot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67,7 +69,7 @@ MonoBehaviour:
   currentIsland: {fileID: 0}
   gridSystem: {fileID: 0}
   buildingProperties: {fileID: 0}
-  buildingData: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: aebd0274d8f018e409e6acbc490f2a5a, type: 2}
   costData: {fileID: 0}
   buildingSize: {x: 2, y: 1, z: 2}
   buildingName: Depot
@@ -106,6 +108,34 @@ MonoBehaviour:
   retryLimit: 2
   retryDelaySeconds: 2
   assignmentRefreshSeconds: 1
+--- !u!114 &302138009402818700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4944264776614541838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44e02a98eddab3a44a0881ac9363d0f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildingInvData: {fileID: 0}
+--- !u!114 &302138009402818701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4944264776614541838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9698cedf913dd3940973c1a7adfc7475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  level: 1
+  socketedItems:
+  - {fileID: 0}
 --- !u!1 &6489404843122541304
 GameObject:
   m_ObjectHideFlags: 0
@@ -118,7 +148,7 @@ GameObject:
   - component: {fileID: 6145069051216175340}
   - component: {fileID: 1172044475399679882}
   - component: {fileID: 8204007431911065693}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Model - Placeholder
   m_TagString: Untagged
   m_Icon: {fileID: 0}

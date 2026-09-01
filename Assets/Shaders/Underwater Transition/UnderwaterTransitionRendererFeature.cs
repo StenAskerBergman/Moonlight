@@ -70,6 +70,10 @@ namespace Moonlight.Rendering
             private static readonly int MarineSnowScale = Shader.PropertyToID("_MarineSnowScale");
             private static readonly int MarineSnowSpeed = Shader.PropertyToID("_MarineSnowSpeed");
 
+            private static readonly int TransitionProgress = Shader.PropertyToID("_TransitionProgress");
+            private static readonly int GodRayIntensity = Shader.PropertyToID("_GodRayIntensity");
+            private static readonly int DebrisDensity = Shader.PropertyToID("_DebrisDensity");
+
             private static readonly int InverseViewProjection = Shader.PropertyToID("_InverseViewProjection");
 
             private readonly Material material;
@@ -125,6 +129,10 @@ namespace Moonlight.Rendering
                 material.SetFloat(MarineSnowIntensity, UnderwaterTransitionState.MarineSnowIntensity);
                 material.SetFloat(MarineSnowScale, UnderwaterTransitionState.MarineSnowScale);
                 material.SetFloat(MarineSnowSpeed, UnderwaterTransitionState.MarineSnowSpeed);
+
+                material.SetFloat(TransitionProgress, UnderwaterTransitionState.TransitionProgress);
+                material.SetFloat(GodRayIntensity, UnderwaterTransitionState.GodRayIntensity);
+                material.SetFloat(DebrisDensity, UnderwaterTransitionState.DebrisDensity);
 
                 Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(renderingData.cameraData.GetProjectionMatrix(), false);
                 Matrix4x4 viewProj = gpuProj * renderingData.cameraData.GetViewMatrix();

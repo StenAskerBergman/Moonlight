@@ -33,6 +33,9 @@ public class DiveInteraction : MonoBehaviour, IDiveable
     /// <summary>Raised when an order is refused, with the reason. Hook UI to this.</summary>
     public event System.Action<string> OnDiveRefused;
 
+    /// <summary>Raised after a successful dive or surface order, with the new submerged state.</summary>
+    public event System.Action<bool> OnDiveStateChanged;
+
     private NavMeshAgent agent;
     private NavLinkTraversal traversal;
     private float readyAt;
@@ -99,6 +102,7 @@ public class DiveInteraction : MonoBehaviour, IDiveable
         }
 
         readyAt = Time.time + cooldown;
+        OnDiveStateChanged?.Invoke(true);
         return true;
     }
 
@@ -119,6 +123,7 @@ public class DiveInteraction : MonoBehaviour, IDiveable
         }
 
         readyAt = Time.time + cooldown;
+        OnDiveStateChanged?.Invoke(false);
         return true;
     }
 

@@ -13,4 +13,5 @@ public enum ResourceNodeType
     // Underwater
     OreSeabed = 7,      // Plateau cells (deep seabed mineral deposits)
     HydrothermalVent = 8, // Abyssal cells
+    CrudeOil = 9,       // 3x3 extraction sites on buildable underwater plateaus
 }

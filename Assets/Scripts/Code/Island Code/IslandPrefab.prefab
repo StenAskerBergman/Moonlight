@@ -22,6 +22,8 @@ GameObject:
   - component: {fileID: 8062848879954129166}
   - component: {fileID: 7468944127729193773}
   - component: {fileID: 6612044399287104512}
+  - component: {fileID: 6612044399287104600}
+  - component: {fileID: 6612044399287104601}
   m_Layer: 6
   m_Name: IslandPrefab
   m_TagString: Ground
@@ -314,3 +316,30 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &6612044399287104600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10323536c62403a49b49bbd3794a41ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  faction: 1
+  startingPopulation: []
+--- !u!114 &6612044399287104601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a5c1ffebdd82334db327f4a14ff6c92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startingItems: []

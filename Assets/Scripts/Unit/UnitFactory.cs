@@ -21,6 +21,7 @@ internal static class UnitFactory
         Unit unit = go.GetComponent<Unit>();
         if (unit != null)
         {
+            unit.definition = def;
             unit.unitType = def.unitType;
             if (def.movementProfile != null)
             {
@@ -37,6 +38,16 @@ internal static class UnitFactory
         if (def.movementProfile != null)
         {
             def.movementProfile.Apply(go);
+        }
+
+        // Apply naval configuration if applicable
+        if (def is NavalUnitDefinition navalDef)
+        {
+            NavalUnit navalUnit = go.GetComponent<NavalUnit>();
+            if (navalUnit != null)
+            {
+                navalUnit.ApplyDefinition(navalDef);
+            }
         }
 
         // Configuration complete, wake the unit up

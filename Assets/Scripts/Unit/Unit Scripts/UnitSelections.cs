@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine.Events;
 using UnityEngine;
 using System;
-using UnityEditor;
 
 public enum UnitType { Character, House, Drone };
 
@@ -14,6 +13,8 @@ public class UnitSelections : MonoBehaviour
     // Lists
     public List<Unit> unitList = new List<Unit>();
     public List<Unit> unitsSelected = new List<Unit>();
+    public Unit FocusedUnit { get; private set; }
+    public bool LastSelectionWasDrag { get; private set; }
 
     // Flag Bools
     public bool hasSelected = false;
@@ -87,6 +88,15 @@ public class UnitSelections : MonoBehaviour
         else
         {
             _instance = this;
+            if (selectionChanged == null) selectionChanged = new UnityEvent<List<Unit>>();
+            if (GetComponent<MultiUnitSelectionPanel>() == null)
+            {
+                gameObject.AddComponent<MultiUnitSelectionPanel>();
+            }
+            if (GetComponent<IdleUnitQueueNavigator>() == null)
+            {
+                gameObject.AddComponent<IdleUnitQueueNavigator>();
+            }
         }
     }
     #endregion
@@ -96,13 +106,15 @@ public class UnitSelections : MonoBehaviour
     // When Clicked on Unit Then...
     public void ClickSelect(Unit unitToAdd) 
     {
+        LastSelectionWasDrag = false;
         // Handles A single Unit Clicked 
         if (!unitsSelected.Contains(unitToAdd))
         {
             DeselectBuildingWhenSelectingBoat(unitToAdd);
             this.DeselectAll();
             unitsSelected.Add(unitToAdd);
-            selectionChanged.Invoke(unitsSelected);
+            FocusedUnit = unitToAdd;
+            NotifySelectionChanged();
 
             // Call OnSelect on the newly selected unit
             (unitToAdd as ISelectable)?.OnSelect();
@@ -132,6 +144,7 @@ public class UnitSelections : MonoBehaviour
 
     public void ShiftClickSelect(Unit unitToAdd)
     {
+        LastSelectionWasDrag = false;
         if (!unitsSelected.Contains(unitToAdd))
         {
             DeselectBuildingWhenSelectingBoat(unitToAdd);
@@ -141,7 +154,7 @@ public class UnitSelections : MonoBehaviour
             unitToAdd.transform.GetChild(0).gameObject.SetActive(true); 
             unitToAdd.GetComponent<UnitMovement>().enabled = true;
             (unitToAdd as ISelectable)?.OnSelect();
-            selectionChanged.Invoke(unitsSelected);
+            NotifySelectionChanged();
             UserfaceHandler();
             FlagCheck();
         }
@@ -152,7 +165,7 @@ public class UnitSelections : MonoBehaviour
             unitToAdd.transform.GetChild(0).gameObject.SetActive(false);
             (unitToAdd as ISelectable)?.OnDeselect();
             unitsSelected.Remove(unitToAdd);
-            selectionChanged.Invoke(unitsSelected);
+            NotifySelectionChanged();
             UserfaceHandler();
             FlagCheck();
 
@@ -160,7 +173,7 @@ public class UnitSelections : MonoBehaviour
             // isn't left stale or hidden after a shift-deselect.
             if (unitsSelected.Count > 0)
             {
-                unitsSelected[0].ViewUnit();
+                FocusedUnit.ViewUnit();
             }
         }
     }
@@ -170,14 +183,13 @@ public class UnitSelections : MonoBehaviour
 
     public void DragSelect(Unit unitToAdd)
     {
+        LastSelectionWasDrag = true;
         // unitToAdd was dereferenced below its own null check; bail out up front
         // instead, so a null/destroyed entry cannot throw out of the selection sweep.
         if (unitToAdd == null) return;
 
         if (!unitsSelected.Contains(unitToAdd))
         {
-            DeselectBuildingWhenSelectingBoat(unitToAdd);
-
             // Call OnSelect on all drag-selected units (was Character-only,
             // which left ships/submarines without outline or HUD).
             (unitToAdd as ISelectable)?.OnSelect();
@@ -188,7 +200,7 @@ public class UnitSelections : MonoBehaviour
             {
                 unitToAdd.transform.GetChild(0).gameObject.SetActive(true);
             }
-            selectionChanged.Invoke(unitsSelected);
+            NotifySelectionChanged();
         }
 
         UserfaceHandler();
@@ -218,7 +230,8 @@ public class UnitSelections : MonoBehaviour
             (unit as ISelectable)?.OnDeselect();
         }
         unitsSelected.Clear();
-        selectionChanged.Invoke(unitsSelected);
+        LastSelectionWasDrag = false;
+        NotifySelectionChanged();
         UserfaceHandler();
         FlagCheck();
     }
@@ -227,7 +240,7 @@ public class UnitSelections : MonoBehaviour
     #region Deselect
     public void Deselect(GameObject unitToDeselect)
     {
-        selectionChanged.Invoke(unitsSelected);
+        NotifySelectionChanged();
     }
 
     #endregion
@@ -361,6 +374,53 @@ public class UnitSelections : MonoBehaviour
 
     #region Get Selection References
 
+    public int FocusedUnitIndex => FocusedUnit == null ? -1 : unitsSelected.IndexOf(FocusedUnit);
+
+    public void SelectOnly(Unit unit)
+    {
+        if (unit == null) return;
+        if (unitsSelected.Count == 1 && FocusedUnit == unit)
+        {
+            unit.ViewUnit();
+            return;
+        }
+
+        // ClickSelect intentionally ignores an already-selected unit. Clear a
+        // multi-selection first when the FIFO navigator targets one of its members.
+        if (unitsSelected.Contains(unit)) DeselectAll();
+        ClickSelect(unit);
+    }
+
+    public void FocusSelectedUnit(int index)
+    {
+        if (unitsSelected.Count == 0) return;
+
+        index = (index % unitsSelected.Count + unitsSelected.Count) % unitsSelected.Count;
+        Unit nextFocus = unitsSelected[index];
+        if (nextFocus == null) return;
+
+        FocusedUnit = nextFocus;
+        NotifySelectionChanged();
+        FocusedUnit.ViewUnit();
+    }
+
+    public void FocusSelectedUnitOffset(int offset)
+    {
+        int currentIndex = FocusedUnitIndex;
+        FocusSelectedUnit((currentIndex < 0 ? 0 : currentIndex) + offset);
+    }
+
+    private void NotifySelectionChanged()
+    {
+        unitsSelected.RemoveAll(unit => unit == null);
+        if (FocusedUnit == null || !unitsSelected.Contains(FocusedUnit))
+        {
+            FocusedUnit = unitsSelected.Count > 0 ? unitsSelected[0] : null;
+        }
+
+        selectionChanged?.Invoke(unitsSelected);
+    }
+
     // In UnitSelections.cs
     public UnitInventoryUI GetUnitInventoryUI()
     {
@@ -396,7 +456,7 @@ public class UnitSelections : MonoBehaviour
         if (UnitSelections.Instance.unitsSelected.Count > 0)
         {
             // Get the first selected unit
-            Unit selectedUnit = UnitSelections.Instance.unitsSelected[0];
+            Unit selectedUnit = UnitSelections.Instance.FocusedUnit;
 
             // Try to get the component of type T from the selected unit
             T instance = selectedUnit.GetComponent<T>();
@@ -423,8 +483,7 @@ public class UnitSelections : MonoBehaviour
 
     public Unit GetSelectedUnit()
     {
-        // Returns the first unit selected
-        return UnitSelections.Instance.unitsSelected[0];
+        return FocusedUnit;
     }
 
     // In UnitSelections.cs - Get UnitInventory from selected unit
@@ -433,7 +492,8 @@ public class UnitSelections : MonoBehaviour
         QuickCheck();
 
         // Gets the selected unit UnitInventory script
-        if (UnitSelections.Instance.unitsSelected[0].GetInventory()!=null) return UnitSelections.Instance.unitsSelected[0].GetUnitInventory();
+        Unit selectedUnit = FocusedUnit;
+        if (selectedUnit != null && selectedUnit.GetInventory()!=null) return selectedUnit.GetUnitInventory();
         else if (UnitSelections.Instance.GetComponent<UnitInventory>()!=null) return UnitSelections.Instance.GetComponent<UnitInventory>();
         else Debug.Log("<color=red>UnitSelections: Be Aware! - GetSelectedUnitInventory returned UnitInventory as null</color>"); return null;
     }
@@ -444,7 +504,8 @@ public class UnitSelections : MonoBehaviour
         QuickCheck();
 
         // Gets the selected units Inventory script
-        if (UnitSelections.Instance.unitsSelected[0].GetInventory()) return UnitSelections.Instance.unitsSelected[0].GetInventory();
+        Unit selectedUnit = FocusedUnit;
+        if (selectedUnit != null && selectedUnit.GetInventory()) return selectedUnit.GetInventory();
         else if (UnitSelections.Instance.GetComponent<Inventory>() != null) return UnitSelections.Instance.GetComponent<Inventory>();
         else Debug.Log("<color=red>UnitSelections: Be Aware! - GetSelectedUnitInventory returned Inventory as null</color>"); return null;
     }
@@ -455,7 +516,8 @@ public class UnitSelections : MonoBehaviour
         QuickCheck();
 
         // Gets the selected units Inventory script
-        if (UnitSelections.Instance.unitsSelected[0].GetUnitInventoryUIComponent()) return UnitSelections.Instance.unitsSelected[0].GetUnitInventoryUIComponent();
+        Unit selectedUnit = FocusedUnit;
+        if (selectedUnit != null && selectedUnit.GetUnitInventoryUIComponent()) return selectedUnit.GetUnitInventoryUIComponent();
         else if (UnitSelections.Instance.GetComponent<UnitInventoryUI>() != null) return UnitSelections.Instance.GetComponent<UnitInventoryUI>();
         else Debug.Log("<color=red>UnitSelections: Be Aware! - GetSelectedUnitInventory returned Inventory as null</color>"); return null;
     }

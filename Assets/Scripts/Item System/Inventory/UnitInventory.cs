@@ -18,7 +18,7 @@ using System;
 // The Responsibility of this Class is to do the following:
 // 1. Provide a clear interface to the item stacks
 // That means, Creating, Changing, Updating, the ItemStacks
-// That means, Initializing, Sending, and Getting ItemStacks // unsure 89% confidence
+// That means, Initializing, Sending, and Getting ItemStacks // unsure 89% confidence <- Human Confidence
 
 // Like What? > Provide Examples : List Them below 
 //  
@@ -40,12 +40,18 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     public List<ItemEntry> itemListForEditor = new List<ItemEntry>();
 
     // Item Slot Array
-    public ItemSlot[] uiSlots;      // UI slot References 
+    // No uiSlots array here on purpose. It used to hard-wire this unit to one HUD
+    // panel's slots and push into them on every change, regardless of which unit was
+    // actually selected. Presentation is driven solely by OnUnitInventoryChanged, which
+    // the currently inspected UnitInventoryUI subscribes to.
     public ItemSlot[] itemSlots;    // Item Slot References
     // public ItemSlot itemSlot;    // Seems to Serve no purpose?
 
     // Slot Max Quantity - Placeholder Number
     public int maxQuantity { get; private set; }
+
+    [SerializeField] public int configuredSlotCount = 0;
+    [SerializeField] public int configuredMaxStack = 0;
 
     // Note
     // issue is that we are not showing the empty stack > instead we are showing a empty
@@ -111,26 +117,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             index++;
         }
 
-        UpdateUISlots(); // Ensure UI is updated after populating slots
-    }
-
-    private void UpdateUISlots()
-    {
-        if (uiSlots == null) return;
-
-        for (int i = 0; i < uiSlots.Length; i++)
-        {
-            if (uiSlots[i] == null) continue;
-
-            if (itemSlots != null && i < itemSlots.Length && itemSlots[i] != null && itemSlots[i].itemStack != null && itemSlots[i].itemStack.HasItem() && itemSlots[i].itemStack.GetQuantity() > 0)
-            {
-                uiSlots[i].SetItemData(itemSlots[i].itemStack.GetItemData(), itemSlots[i].itemStack.GetQuantity());
-            }
-            else
-            {
-                uiSlots[i].ClearSlot();
-            }
-        }
+        NotifyInventoryChanged(); // Ensure UI is updated after populating slots
     }
 
     private void Awake()
@@ -274,9 +261,7 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         Debug.Log($"<color=yellow>UnitInventory:</color><color=white> Initializing Slots</color>");
         if (itemSlots == null || itemSlots.Length == 0)
         {
-            // Set the desired initial slot count here.
-            // int initialSlotCount = 4;
-            int defaultSlotCount = 4; 
+            int defaultSlotCount = configuredSlotCount > 0 ? configuredSlotCount : 4; 
 
             itemSlots = new ItemSlot[defaultSlotCount]; 
 
@@ -286,6 +271,10 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
                 itemSlots[i] = CreateNewItemSlot(false);
                 itemSlots[i].slotIndex = i;
                 itemSlots[i].cargoSlot = itemSlots[i];
+                if (configuredMaxStack > 0 && itemSlots[i].itemStack != null)
+                {
+                    itemSlots[i].itemStack.SetMaxQuantity(configuredMaxStack);
+                }
             }
 
             Debug.Log($"<color=green> Initialized {defaultSlotCount} item slots.</color>");
@@ -298,9 +287,86 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
                 {
                     itemSlots[i].slotIndex = i;
                     itemSlots[i].cargoSlot = itemSlots[i];
+                    if (configuredMaxStack > 0 && itemSlots[i].itemStack != null)
+                    {
+                        itemSlots[i].itemStack.SetMaxQuantity(configuredMaxStack);
+                    }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Reconfigures the unit's inventory capacity and stack sizes dynamically to match its UnitDefinition.
+    /// </summary>
+    public void ConfigureSlots(int slotCount, int maxStackSize)
+    {
+        if (slotCount <= 0) slotCount = 4;
+        if (maxStackSize <= 0) maxStackSize = 40;
+
+        configuredSlotCount = slotCount;
+        configuredMaxStack = maxStackSize;
+
+        if (unitStorageManager == null)
+        {
+            unitStorageManager = GetComponent<UnitStorageManager>();
+        }
+
+        if (unitStorageManager != null)
+        {
+            unitStorageManager.NormalSlots = slotCount;
+            unitStorageManager.MaxStackSize = maxStackSize;
+        }
+
+        if (itemSlots == null || itemSlots.Length == 0)
+        {
+            itemSlots = new ItemSlot[slotCount];
+            for (int i = 0; i < slotCount; i++)
+            {
+                itemSlots[i] = CreateNewItemSlot(false);
+                itemSlots[i].slotIndex = i;
+                itemSlots[i].cargoSlot = itemSlots[i];
+            }
+        }
+        else if (itemSlots.Length != slotCount)
+        {
+            if (itemSlots.Length > slotCount)
+            {
+                for (int i = slotCount; i < itemSlots.Length; i++)
+                {
+                    if (itemSlots[i] != null)
+                    {
+                        Destroy(itemSlots[i].gameObject);
+                    }
+                }
+                Array.Resize(ref itemSlots, slotCount);
+            }
+            else
+            {
+                int oldLen = itemSlots.Length;
+                Array.Resize(ref itemSlots, slotCount);
+                for (int i = oldLen; i < slotCount; i++)
+                {
+                    itemSlots[i] = CreateNewItemSlot(false);
+                    itemSlots[i].slotIndex = i;
+                    itemSlots[i].cargoSlot = itemSlots[i];
+                }
+            }
+        }
+
+        if (itemSlots != null)
+        {
+            for (int i = 0; i < itemSlots.Length; i++)
+            {
+                var slot = itemSlots[i];
+                if (slot != null && slot.itemStack != null)
+                {
+                    slot.itemStack.SetMaxQuantity(maxStackSize);
+                }
+            }
+        }
+
+        NotifyInventoryChanged();
     }
 
     // UnitInventory.cs - Returns a GO for a Unit's Slot
@@ -432,6 +498,15 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             InitializeItemSlots(); // Method: Additems - UnitInventory.cs
         }
 
+        // Capacity is checked before a slot is touched. Doing it afterwards meant a
+        // rejected add had already written itemData into the slot, which made the empty
+        // slot read as occupied forever and appended a spare slot on the next add.
+        if (unitStorageManager != null && !unitStorageManager.CanAddItem(itemData, amount))
+        {
+            Debug.LogWarning($"<color=orange><b>REJECTED:</b> UnitInventory: </color><color=white>{this.name}</color><color=orange> cannot accept </color><color=white>{itemData.name} x{amount}</color>");
+            return false;
+        }
+
         // Find or create an appropriate slot
         ItemSlot slot = GetSlot(itemData, amount);
 
@@ -451,6 +526,9 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
         //    return;
         //}
 
+        // Remembered so a late rejection can hand the slot back exactly as it was.
+        bool slotWasEmpty = slot.itemStack == null || !slot.itemStack.HasItem();
+
         // Check if Initialize / Update the Item Stack
         if (!InitializeOrUpdateItemStack(slot, itemData))
         {
@@ -463,12 +541,15 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
             Debug.Log($"<color=green><b>Successfully</b></color> added {amount} of {itemData.name} to {slot.name} in {this.name} Unit Inventory.");
             OnUnitInventoryChanged?.Invoke();
             UpdateItemListForEditor();
-            UpdateUISlots();
             return true;
         }
 
         // Rejected by ValidateAndAddItem (capacity, slot budget, ...). It has
         // already logged why; callers must not report this as a success.
+        if (slotWasEmpty && slot.itemStack != null)
+        {
+            slot.itemStack.ClearStack();
+        }
         return false;
     }
 
@@ -570,7 +651,6 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     {
         OnUnitInventoryChanged?.Invoke();
         UpdateItemListForEditor();
-        UpdateUISlots();
     }
 
     public bool AddItemToSlot(ItemSlot targetSlot, ItemData itemData, int amount)
@@ -711,6 +791,83 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
 
         // Handle the case where the item cannot be removed or removal failed
         return false;
+    }
+
+    /// <summary>
+    /// Moves, merges, or swaps two physical cargo stacks without changing the
+    /// aggregate UnitStorage totals. UI ItemSlots call this through their cargoSlot
+    /// mappings so drag/drop changes the inventory authority rather than only the
+    /// temporary HUD copies.
+    /// </summary>
+    public bool MoveStack(ItemSlot sourceSlot, ItemSlot targetSlot)
+    {
+        if (sourceSlot == null || targetSlot == null || sourceSlot == targetSlot)
+        {
+            return false;
+        }
+
+        ItemSlot sourceCargo = sourceSlot.cargoSlot != null ? sourceSlot.cargoSlot : sourceSlot;
+        ItemSlot targetCargo = targetSlot.cargoSlot != null ? targetSlot.cargoSlot : targetSlot;
+
+        if (sourceCargo == targetCargo || sourceCargo.unitInventory != this || targetCargo.unitInventory != this)
+        {
+            return false;
+        }
+
+        ItemStack sourceStack = sourceCargo.itemStack;
+        if (sourceStack == null || !sourceStack.HasItem() || sourceStack.GetQuantity() <= 0)
+        {
+            return false;
+        }
+
+        ItemData sourceData = sourceStack.GetItemData();
+        if (!targetCargo.CanHoldItemType(sourceData.type))
+        {
+            return false;
+        }
+
+        ItemStack targetStack = targetCargo.itemStack;
+        if (targetStack == null)
+        {
+            targetStack = ItemStackFactory.CreateItemStack(targetCargo.transform);
+            targetCargo.itemStack = targetStack;
+        }
+
+        if (!targetStack.HasItem() || targetStack.GetQuantity() <= 0)
+        {
+            targetStack.SetItemData(sourceData, sourceStack.GetQuantity());
+            sourceStack.ClearStack();
+            NotifyInventoryChanged();
+            return true;
+        }
+
+        if (targetStack.GetItemData() == sourceData)
+        {
+            int remainder = targetStack.AddQuantity(sourceStack.GetQuantity());
+            if (remainder == sourceStack.GetQuantity())
+            {
+                return false;
+            }
+
+            if (remainder > 0) sourceStack.SetQuantity(remainder);
+            else sourceStack.ClearStack();
+
+            NotifyInventoryChanged();
+            return true;
+        }
+
+        ItemData targetData = targetStack.GetItemData();
+        if (targetData == null || !sourceCargo.CanHoldItemType(targetData.type))
+        {
+            return false;
+        }
+
+        int sourceQuantity = sourceStack.GetQuantity();
+        int targetQuantity = targetStack.GetQuantity();
+        sourceStack.SetItemData(targetData, targetQuantity);
+        targetStack.SetItemData(sourceData, sourceQuantity);
+        NotifyInventoryChanged();
+        return true;
     }
 
     // Op: This seems Unfinished

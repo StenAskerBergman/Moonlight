@@ -23,16 +23,17 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3044971629883034126}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7409071157391202480}
   - {fileID: 7891102251857296787}
   - {fileID: 654117691071823375}
   - {fileID: 1634557987662578530}
   m_Father: {fileID: 5954858650590249941}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3314405921176822830
 GameObject:
@@ -59,12 +60,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3314405921176822830}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: 0.7071067, w: 0}
   m_LocalPosition: {x: -0.34299403, y: 1.1201937, z: -0.93522084}
   m_LocalScale: {x: 20.446455, y: 7.686098, z: 21.542421}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6342457140866669841}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8676563444211179454
 MeshFilter:
@@ -85,6 +87,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -140,12 +143,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6110195865559998220}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: 0.7071067, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 95, y: 95, z: 95}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6342457140866669841}
-  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &5841400906776382973
 MeshFilter:
@@ -166,6 +170,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -228,14 +233,15 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6478490499486865775}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8139739266507319838}
   - {fileID: 6342457140866669841}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7134491141114632160
 MonoBehaviour:
@@ -249,12 +255,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2ab2cdfa1a54fe4bbd1ae341ffe657c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  moveType: 0
+  unitType: 0
+  moveType: 3
   inventory: {fileID: 0}
+  unitInventory: {fileID: 0}
   inventoryUIPrefab: {fileID: 0}
-  wasViewed: 0
-  isViewed: 0
+  categoryUIPrefab: {fileID: 0}
+  selectionUIElements: []
+  displayName: 
+  owner: {fileID: 0}
+  ownerPrefab: {fileID: 0}
+  definition: {fileID: 0}
   Selectable: 0
   Targetable: 0
 --- !u!195 &-4714119704320106204
@@ -338,9 +349,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6478490499486865775}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 2, y: 2.75, z: 3.5}
   m_Center: {x: 0, y: 0.5, z: 0.5}
 --- !u!114 &3849713764603813255
@@ -355,7 +374,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6290b352cfc28346b1a9e8571f947b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  storage: {fileID: 0}
 --- !u!114 &6026962419599515492
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -381,6 +399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   storageManagerPrefab: {fileID: 3849713764603813255}
+  itemListForEditor: []
 --- !u!1 &6819912826374018650
 GameObject:
   m_ObjectHideFlags: 0
@@ -406,12 +425,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6819912826374018650}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: 0.7071067, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 100, y: 100, z: 100}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6342457140866669841}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2247049265362267694
 MeshFilter:
@@ -432,6 +452,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -487,12 +508,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7462599274617793086}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: 0.7071067, w: 0}
   m_LocalPosition: {x: -0.4117004, y: 2.072678, z: -0.965312}
   m_LocalScale: {x: 2.5942118, y: 2.5942116, z: 85.09921}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6342457140866669841}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2256651453414186107
 MeshFilter:
@@ -513,6 +535,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -568,12 +591,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8315750733679849746}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.7071068, z: 0.7071068, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 101, y: 101, z: 101}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5954858650590249941}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 180}
 --- !u!33 &5801098700832733547
 MeshFilter:
@@ -594,6 +618,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1

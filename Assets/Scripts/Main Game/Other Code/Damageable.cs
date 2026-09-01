@@ -7,7 +7,7 @@ public class Damageable : MonoBehaviour
 {
     [HideInInspector] public UnityEvent onDestroy = new UnityEvent();
     [HideInInspector] public UnityEvent onHit = new UnityEvent();
-    [SerializeField] int totalHealth = 100;
+    public int totalHealth = 100;
     public int currentHealth;
     private void Start()
     {

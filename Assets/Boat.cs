@@ -43,8 +43,6 @@ public class Boat : MonoBehaviour
     // Note: 
     // Shouldn't Have to Say What Slot to add to - Information Should be passed in
     // By itself on arrival using a sorting system for derriving what slot togo to
-
-
     public void AddToInventory(ItemData itemData, int amount)
     {
         if (amount <= 0 || itemData == null) return;
@@ -59,21 +57,5 @@ public class Boat : MonoBehaviour
     public void AddToInventory()
     {
         this.GetComponent<Inventory>().AddItem(startItem, 1);
-    }
-
-    public void AddToUnitInventory(ItemData itemData, int amount)
-    {
-        //if (amount <= 0 || itemData == null) return;
-        //if (unitInventory != null) unitInventory.AddItem(itemData, amount);
-    }
-
-    public void AddToInventory(UnitInventory unitInventory)
-    {
-        //unitInventory.AddItem( startItem, 1);
-    }
-
-    public void AddToUnitInventory()
-    {
-        // this.GetComponent<UnitInventory>().AddItem(startItem, 1);
     }
 }

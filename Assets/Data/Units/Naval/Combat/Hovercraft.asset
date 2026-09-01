@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e5f80e987516c441b3c66bf8905478f, type: 3}
+  m_Name: Hovercraft
+  m_EditorClassIdentifier: 
+  identifier: moonlight:hovercraft
+  displayCategory: Fast Anti-Air Warship
+  prefab: {fileID: 5534667536813841340, guid: 0f7b5ca368825fc49bec53cba5d7b45d, type: 3}
+  unitType: 0
+  movementProfile: {fileID: 11400000, guid: 0dd9cbc0edc45354fbfc70613e20f775, type: 2}
+  nameType: 4
+  displayName: Hovercraft
+  description: 
+  navalClass: 1
+  unlockTier: 1
+  maxHealth: 300
+  movementSpeed: 12
+  acceleration: 8
+  turnSpeed: 120
+  cargoSlotCount: 1
+  cargoCapacityPerSlot: 20
+  equipmentSlotCount: 2
+  attackCapabilities: 3
+  attackRange: 15
+  damage: 20
+  attackCooldown: 1.5
+  canSubmerge: 0
+  canCarryAircraft: 0
+  aircraftCapacity: 0
+  buildCost: 100
+  maintenanceCost: 10
+  abilities: []

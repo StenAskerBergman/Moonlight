@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [Serializable]
 public struct SettlementCost
@@ -16,7 +17,6 @@ public class Settlement : MonoBehaviour
 {
     [SerializeField] private float settleRange = 15f;
     [SerializeField] private bool transferEntireInventoryOnSettlement = true;
-    [SerializeField] private List<SettlementCost> settlementCosts = new List<SettlementCost>();
 
     private Unit unit;
     private UnitInventory unitInventory;
@@ -25,21 +25,34 @@ public class Settlement : MonoBehaviour
 
     [SerializeField] private LineRenderer settleRangeRenderer;
     [SerializeField] private int circleSegments = 64;
+
+    [Header("Range Visual")]
+    [Tooltip("How far past the settle circle the darkened shroud reaches.")]
+    [SerializeField] private float shroudOuterScale = 14f;
+    [SerializeField] private Color shroudColor = new Color(0f, 0f, 0f, 0.55f);
+    [SerializeField] private Color ringColor = Color.white;
+    [SerializeField] private float ringWidth = 0.35f;
+
+    private GameObject shroudObject;
+    private Mesh shroudMesh;
+    private float builtForRange = -1f;
+
+    /// <summary>
+    /// The one number that defines this vessel's founding influence: the white circle is
+    /// drawn at it, and harbor placement is accepted only inside it.
+    /// </summary>
+    public float SettleRange => settleRange > 0f ? settleRange : InfluenceManager.BoatFoundingRange;
+
     private void Awake()
     {
         unit = GetComponent<Unit>();
         unitInventory = GetComponent<UnitInventory>();
 
-        // Guard: settleRangeRenderer may not be assigned in the Inspector yet.
-        if (settleRangeRenderer != null)
-        {
-            DrawSettleRange();
-            settleRangeRenderer.enabled = false;
-        }
-        else
-        {
-            Debug.LogWarning($"Settlement on {gameObject.name}: settleRangeRenderer is not assigned. Settle-range circle will not render.");
-        }
+        // The visuals are built in code rather than wired on the prefab. They used to
+        // depend on an Inspector reference that was never assigned, so the range circle
+        // simply never existed at runtime.
+        EnsureRangeVisuals();
+        SetRangeVisualsVisible(false);
     }
 
     public bool TryingToSettle()
@@ -53,15 +66,24 @@ public class Settlement : MonoBehaviour
     public void BeginSettlement()
     {
         tryingToSettle = true;
-        if (settleRangeRenderer != null)
-            settleRangeRenderer.enabled = true;
+        EnsureRangeVisuals();
+        SetRangeVisualsVisible(true);
     }
 
     public void CancelSettlement()
     {
         tryingToSettle = false;
-        if (settleRangeRenderer != null)
-            settleRangeRenderer.enabled = false;
+        SetRangeVisualsVisible(false);
+    }
+
+    private void LateUpdate()
+    {
+        if (!tryingToSettle) return;
+
+        // The circle and shroud describe a patch of sea, not part of the hull, so they
+        // stay world-aligned while the vessel yaws and pitches under them.
+        if (settleRangeRenderer != null) settleRangeRenderer.transform.rotation = Quaternion.identity;
+        if (shroudObject != null) shroudObject.transform.rotation = Quaternion.identity;
     }
 
     public bool CanSettle(Island island, out string reason)
@@ -98,18 +120,6 @@ public class Settlement : MonoBehaviour
             return false;
         }
 
-        foreach (SettlementCost cost in settlementCosts)
-        {
-            if (cost.item == null || cost.amount <= 0)
-                continue;
-
-            if (unitInventory.GetItemQuantity(cost.item) < cost.amount)
-            {
-                reason = "Not enough " + cost.item.displayName + ".";
-                return false;
-            }
-        }
-
         reason = null;
         return true;
     }
@@ -120,15 +130,6 @@ public class Settlement : MonoBehaviour
     // -> move all remaining ship cargo into settlement
     public void CompleteSettlement(BaseStorageManager islandStorage)
     {
-        // Always consume construction costs
-        foreach (SettlementCost cost in settlementCosts)
-        {
-            if (cost.item == null || cost.amount <= 0)
-                continue;
-
-            unitInventory.RemoveItem(cost.item, cost.amount);
-        }
-
         // Optionally transfer everything remaining from the ship into island storage
         if (transferEntireInventoryOnSettlement && islandStorage != null)
         {
@@ -167,14 +168,108 @@ public class Settlement : MonoBehaviour
             float angle = (float)i / circleSegments * Mathf.PI * 2f;
 
             Vector3 position = new Vector3(
-                Mathf.Cos(angle) * settleRange,
+                Mathf.Cos(angle) * SettleRange,
                 0f,
-                Mathf.Sin(angle) * settleRange
+                Mathf.Sin(angle) * SettleRange
             );
 
             settleRangeRenderer.SetPosition(i, position);
         }
     }
+
+    #region Range Visual
+
+    private void SetRangeVisualsVisible(bool visible)
+    {
+        if (settleRangeRenderer != null) settleRangeRenderer.enabled = visible;
+        if (shroudObject != null) shroudObject.SetActive(visible);
+    }
+
+    private void EnsureRangeVisuals()
+    {
+        if (settleRangeRenderer == null)
+        {
+            GameObject ringObject = new GameObject("Settle Range Ring");
+            ringObject.transform.SetParent(transform, false);
+
+            settleRangeRenderer = ringObject.AddComponent<LineRenderer>();
+            settleRangeRenderer.useWorldSpace = false;
+            settleRangeRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            settleRangeRenderer.receiveShadows = false;
+            settleRangeRenderer.sharedMaterial = OverlayMaterial.Create(ringColor);
+        }
+
+        settleRangeRenderer.startWidth = ringWidth;
+        settleRangeRenderer.endWidth = ringWidth;
+        settleRangeRenderer.startColor = ringColor;
+        settleRangeRenderer.endColor = ringColor;
+
+        if (shroudObject == null)
+        {
+            shroudObject = new GameObject("Settle Range Shroud");
+            shroudObject.transform.SetParent(transform, false);
+
+            shroudObject.AddComponent<MeshFilter>();
+            MeshRenderer shroudRenderer = shroudObject.AddComponent<MeshRenderer>();
+            shroudRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            shroudRenderer.receiveShadows = false;
+            shroudRenderer.sharedMaterial = OverlayMaterial.Create(shroudColor);
+        }
+
+        if (!Mathf.Approximately(builtForRange, SettleRange))
+        {
+            DrawSettleRange();
+
+            shroudMesh = BuildShroudMesh(SettleRange, SettleRange * Mathf.Max(2f, shroudOuterScale), circleSegments);
+            shroudObject.GetComponent<MeshFilter>().sharedMesh = shroudMesh;
+            builtForRange = SettleRange;
+        }
+    }
+
+    /// <summary>
+    /// A flat ring covering everything from the settle radius outwards. The hole in the
+    /// middle is what makes the buildable disk read as see-through while the world
+    /// around it is dimmed.
+    /// </summary>
+    private static Mesh BuildShroudMesh(float innerRadius, float outerRadius, int segments)
+    {
+        segments = Mathf.Max(8, segments);
+
+        Vector3[] vertices = new Vector3[(segments + 1) * 2];
+        int[] triangles = new int[segments * 6];
+
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * Mathf.PI * 2f;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+
+            vertices[i * 2] = new Vector3(cos * innerRadius, 0f, sin * innerRadius);
+            vertices[i * 2 + 1] = new Vector3(cos * outerRadius, 0f, sin * outerRadius);
+        }
+
+        for (int i = 0; i < segments; i++)
+        {
+            int v = i * 2;
+            int t = i * 6;
+
+            triangles[t] = v;
+            triangles[t + 1] = v + 1;
+            triangles[t + 2] = v + 3;
+
+            triangles[t + 3] = v;
+            triangles[t + 4] = v + 3;
+            triangles[t + 5] = v + 2;
+        }
+
+        Mesh mesh = new Mesh { name = "SettleRangeShroud" };
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    #endregion
 
     // build a circle around the unit using the line renderer
     // add a shader to black out around the circle 
