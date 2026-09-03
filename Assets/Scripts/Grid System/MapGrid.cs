@@ -32,6 +32,18 @@ public class MapGrid : MonoBehaviour
     private static readonly int DepositSandColorBProperty = Shader.PropertyToID("_SandColorB");
     private static readonly int DepositRockColorProperty = Shader.PropertyToID("_RockColor");
     private static readonly int DepositEdgeSeedProperty = Shader.PropertyToID("_EdgeSeed");
+    private static readonly int PlateauRockDarkColorProperty = Shader.PropertyToID("_RockDarkColor");
+    private static readonly int PlateauRockMidColorProperty = Shader.PropertyToID("_RockMidColor");
+    private static readonly int PlateauRockLightColorProperty = Shader.PropertyToID("_RockLightColor");
+    private static readonly int PlateauSedimentColorProperty = Shader.PropertyToID("_SedimentColor");
+    private static readonly int PlateauAlgaeColorProperty = Shader.PropertyToID("_AlgaeColor");
+    private static readonly int PlateauGeneratedColorBlendProperty = Shader.PropertyToID("_GeneratedColorBlend");
+    private static readonly int PlateauStrataStrengthProperty = Shader.PropertyToID("_StrataStrength");
+    private static readonly int PlateauSedimentStrengthProperty = Shader.PropertyToID("_SedimentStrength");
+    private static readonly int PlateauAlgaeStrengthProperty = Shader.PropertyToID("_AlgaeStrength");
+    private static readonly int PlateauRippleStrengthProperty = Shader.PropertyToID("_RippleStrength");
+    private static readonly int PlateauSmoothnessProperty = Shader.PropertyToID("_Smoothness");
+    private static readonly int PlateauWorldSeedProperty = Shader.PropertyToID("_WorldSeed");
     private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
     private const string GeneratedDepositVisualsRootName = "Generated Resource Deposits";
     private const int CrudeOilFootprintSize = 3;
@@ -39,6 +51,13 @@ public class MapGrid : MonoBehaviour
     private const int MaxCrudeOilDeposits = 5;
     private const float PreferredCrudeOilDepositSpacing = 10f;
     private const float MinimumCrudeOilDepositSpacing = 4.25f;
+
+    private enum PlateauMaterialRole
+    {
+        Surface,
+        Escarpment,
+        Formation,
+    }
 
 
     #region Variables 
@@ -69,6 +88,8 @@ public class MapGrid : MonoBehaviour
         public Material mountainEdgeMaterial;
 
         [Header("Generated Plateau Materials")]
+        [Tooltip("Optional material for the generated plateau surface. When assigned, it receives the generated semantic colour map plus procedural sand and rock detail.")]
+        public Material plateauSurfaceMaterial;
         [Tooltip("Optional explicit material for the generated underwater cliff shell. Falls back to the configured mountain/cliff material.")]
         public Material plateauEscarpmentMaterial;
         [Tooltip("Optional explicit material for generated underwater boulders, shelves, buttresses, shoulders, and spires. Falls back to the configured mountain/cliff material.")]
@@ -1280,7 +1301,12 @@ public class MapGrid : MonoBehaviour
         meshFilter.sharedMesh = terrainMesh;
 
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() != null ? gameObject.GetComponent<MeshRenderer>() : gameObject.AddComponent<MeshRenderer>();
-        meshRenderer.sharedMaterial = terrainMaterial;
+        bool usePlateauSurface = currentGridType == GridType.Type.Plateau && plateauSurfaceMaterial != null;
+        meshRenderer.sharedMaterial = usePlateauSurface ? plateauSurfaceMaterial : terrainMaterial;
+        if (usePlateauSurface)
+        {
+            ConfigurePlateauMaterial(meshRenderer, PlateauMaterialRole.Surface);
+        }
     }
 
     private void ApplyPlateauGeometry(PlateauGeometryResult geometry)
@@ -1302,12 +1328,14 @@ public class MapGrid : MonoBehaviour
             root.transform,
             "Procedural Escarpment",
             geometry.Escarpment,
-            ResolvePlateauEscarpmentMaterial());
+            ResolvePlateauEscarpmentMaterial(),
+            PlateauMaterialRole.Escarpment);
         ApplyPlateauGeometryLayer(
             root.transform,
             "Rock Formations",
             geometry.Formations,
-            ResolvePlateauFormationMaterial());
+            ResolvePlateauFormationMaterial(),
+            PlateauMaterialRole.Formation);
     }
 
     private void PlaceCrudeOilDeposits()
@@ -1588,7 +1616,8 @@ public class MapGrid : MonoBehaviour
         Transform parent,
         string layerName,
         PlateauGeneratedMeshData meshData,
-        Material material)
+        Material material,
+        PlateauMaterialRole materialRole)
     {
         if (meshData == null || !meshData.HasGeometry) return;
 
@@ -1603,6 +1632,66 @@ public class MapGrid : MonoBehaviour
         filter.sharedMesh = mesh;
         MeshRenderer renderer = layer.AddComponent<MeshRenderer>();
         renderer.sharedMaterial = material;
+        ConfigurePlateauMaterial(renderer, materialRole);
+    }
+
+    private void ConfigurePlateauMaterial(MeshRenderer renderer, PlateauMaterialRole role)
+    {
+        if (renderer == null || renderer.sharedMaterial == null) return;
+
+        ClimateProfile profile = climateProfile;
+        Color darkRock = profile != null
+            ? profile.plateauRockDarkColor
+            : new Color(0.075f, 0.12f, 0.13f, 1f);
+        Color midRock = profile != null
+            ? profile.plateauRockMidColor
+            : new Color(0.22f, 0.31f, 0.32f, 1f);
+        Color lightRock = profile != null
+            ? profile.plateauRockLightColor
+            : new Color(0.48f, 0.57f, 0.56f, 1f);
+        Color sediment = profile != null
+            ? profile.plateauRockSedimentColor
+            : new Color(0.55f, 0.58f, 0.52f, 1f);
+        Color algae = profile != null
+            ? profile.plateauReefColor
+            : new Color(0.13f, 0.28f, 0.22f, 1f);
+        float strata = profile != null ? profile.plateauRockStrataStrength : 0.72f;
+        float sedimentStrength = profile != null ? profile.plateauRockSedimentStrength : 0.42f;
+        float algaeStrength = profile != null ? profile.plateauRockAlgaeStrength : 0.34f;
+        float rockWetness = profile != null ? profile.plateauRockWetness : 0.48f;
+        float rippleStrength = profile != null ? profile.plateauSandRippleStrength : 0.18f;
+        float surfaceWetness = profile != null ? profile.plateauSurfaceWetness : 0.36f;
+
+        float generatedColorBlend = role == PlateauMaterialRole.Surface ? 1f : 0f;
+        float roleStrata = role == PlateauMaterialRole.Surface ? strata * 0.32f : strata;
+        float roleSediment = role == PlateauMaterialRole.Surface
+            ? sedimentStrength * 0.35f
+            : role == PlateauMaterialRole.Formation
+                ? sedimentStrength
+                : sedimentStrength * 0.58f;
+        float roleAlgae = role == PlateauMaterialRole.Surface
+            ? algaeStrength * 0.24f
+            : role == PlateauMaterialRole.Formation
+                ? Mathf.Clamp01(algaeStrength * 1.12f)
+                : algaeStrength;
+
+        MaterialPropertyBlock properties = new MaterialPropertyBlock();
+        renderer.GetPropertyBlock(properties);
+        properties.SetColor(PlateauRockDarkColorProperty, darkRock);
+        properties.SetColor(PlateauRockMidColorProperty, midRock);
+        properties.SetColor(PlateauRockLightColorProperty, lightRock);
+        properties.SetColor(PlateauSedimentColorProperty, sediment);
+        properties.SetColor(PlateauAlgaeColorProperty, algae);
+        properties.SetFloat(PlateauGeneratedColorBlendProperty, generatedColorBlend);
+        properties.SetFloat(PlateauStrataStrengthProperty, roleStrata);
+        properties.SetFloat(PlateauSedimentStrengthProperty, roleSediment);
+        properties.SetFloat(PlateauAlgaeStrengthProperty, roleAlgae);
+        properties.SetFloat(PlateauRippleStrengthProperty,
+            role == PlateauMaterialRole.Surface ? rippleStrength : 0f);
+        properties.SetFloat(PlateauSmoothnessProperty,
+            role == PlateauMaterialRole.Surface ? surfaceWetness : rockWetness);
+        properties.SetFloat(PlateauWorldSeedProperty, activeGenerationSeed * 0.0137f);
+        renderer.SetPropertyBlock(properties);
     }
 
     private void ApplyTexture(Texture2D texture)
@@ -1796,6 +1885,7 @@ public class MapGrid : MonoBehaviour
             || material == plateauEdgeMaterial
             || material == abyssalEdgeMaterial
             || material == mountainEdgeMaterial
+            || material == plateauSurfaceMaterial
             || material == plateauEscarpmentMaterial
             || material == plateauFormationMaterial;
     }

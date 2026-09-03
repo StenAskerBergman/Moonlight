@@ -82,6 +82,10 @@ public class BuildingChecker : MonoBehaviour
             Debug.Log("Island = Null");
             return;
         }
+        if (currentBuildingPreview != null && currentBuildingPreview.IsBoundToIsland)
+        {
+            return;
+        }
         currentIsland = island;
         currentGridSystem = island.GetComponent<GridSystem>();
 
@@ -111,6 +115,15 @@ public class BuildingChecker : MonoBehaviour
 
         // Assign the new buildingPreview to currentBuildingPreview
         currentBuildingPreview = buildingPreview;
+
+        if (currentBuildingPreview != null && currentBuildingPreview.IsBoundToIsland)
+        {
+            currentIsland = currentBuildingPreview.BoundIsland;
+            if (currentIsland != null && currentBuildingPreview.transform.parent == null)
+            {
+                currentBuildingPreview.transform.SetParent(currentIsland.transform);
+            }
+        }
 
         // Check if the BuildingPreview object has a parent
         if (currentBuildingPreview.transform.parent == null)
@@ -451,7 +464,11 @@ public class BuildingChecker : MonoBehaviour
             // and the click had nothing to act on.
             gridSystem = newGridSystem;
 
-            newPos = newGridSystem.GetNearestPointOnGrid(newPos);
+            // Snapped with the blueprint's own footprint so the cell this check reads is
+            // the cell the blueprint is actually standing on. GetNearestPointOnGrid is the
+            // 1x1 case of this and still answers identically for single-cell buildings.
+            Vector2Int previewFootprint = currentBuildingPreview.GetFootprint();
+            newPos = newGridSystem.SnapFootprintToGrid(newPos, previewFootprint);
             Cell cell = newGridSystem.GetCellAtWorldPosition(newPos);
 
             // Placement Logic Check 
@@ -488,7 +505,7 @@ public class BuildingChecker : MonoBehaviour
                 // Re-decide from scratch every frame. canPlace used to only ever be
                 // assigned false anywhere in the class, so the blueprint stayed red
                 // forever and no building could be placed.
-                Vector3Int gridPosition = newGridSystem.WorldToCell(newPos);
+                Vector3Int gridPosition = newGridSystem.GetFootprintOrigin(newPos, previewFootprint);
 
                 // The per-cell footprint rules live in PlacementRules now. They used to be
                 // written out inline here, where nothing else could read them - which meant
@@ -497,7 +514,7 @@ public class BuildingChecker : MonoBehaviour
                 canPlace = PlacementRules.EvaluateFootprint(
                     newGridSystem,
                     gridPosition,
-                    buildingProperties.buildingSize,
+                    previewFootprint,
                     buildingProperties.buildingData,
                     out _);
 

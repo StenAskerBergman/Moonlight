@@ -23,13 +23,20 @@ public class IslandFoliagePlacer : MonoBehaviour
     private void ScatterLand(Cell[,] grid, System.Random random)
     {
         if (climateProfile.treePrefabs == null || climateProfile.treePrefabs.Length == 0) return;
+        float patchOffsetX = RandomRange(random, new Vector2(0f, 1000f));
+        float patchOffsetZ = RandomRange(random, new Vector2(0f, 1000f));
         for (int z = 0; z < grid.GetLength(1); z++)
         for (int x = 0; x < grid.GetLength(0); x++)
         {
             Cell cell = grid[x, z];
             bool forest = cell.currentTerrainType == Cell.TerrainType.Forest;
             bool grass = cell.currentTerrainType == Cell.TerrainType.Land || cell.currentTerrainType == Cell.TerrainType.Plain;
-            float chance = forest ? climateProfile.forestDensity : (grass ? climateProfile.plainsTreeDensity : 0f);
+            float baseChance = forest ? climateProfile.forestDensity : (grass ? climateProfile.plainsTreeDensity : 0f);
+            float patchNoise = Mathf.PerlinNoise(
+                (x + patchOffsetX) * 0.075f,
+                (z + patchOffsetZ) * 0.075f);
+            float patchWeight = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.42f, 0.72f, patchNoise));
+            float chance = baseChance * Mathf.Lerp(0.18f, 2.35f, patchWeight);
             if (Next(random) > chance) continue;
             GameObject prefab = Pick(climateProfile.treePrefabs, random);
             if (prefab == null) continue;

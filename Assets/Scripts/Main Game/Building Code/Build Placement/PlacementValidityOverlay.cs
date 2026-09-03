@@ -24,7 +24,7 @@ public class PlacementValidityOverlay : MonoBehaviour
     [SerializeField] private Color invalidColor = new Color(1f, 0.2f, 0.2f, 0.25f);
 
     [Tooltip("Lifts the shading clear of the terrain so it does not z-fight the ground.")]
-    [SerializeField, Min(0f)] private float heightOffset = 0.06f;
+    [SerializeField, Min(0f)] private float heightOffset = 0.02f;
 
     [Tooltip("Shrinks each shaded quad so individual cells stay readable as tiles.")]
     [SerializeField, Range(0f, 0.4f)] private float cellInset = 0.06f;
@@ -209,8 +209,13 @@ public class PlacementValidityOverlay : MonoBehaviour
                         ok = PlacementRules.EvaluateInfluence(influenceManager, isHarbor, worldPos, gridSystem, out _, out _);
                     }
 
-                    if (ok) AddCellQuad(validVerts, validTris, cell);
-                    else AddCellQuad(invalidVerts, invalidTris, cell);
+                    bool isQuayBuilding = data != null && data.requiresQuayFoundation;
+
+                    // Do not paint sunken red quads on deep water / seabed floor far from coast
+                    if (!ok && cell.IsUnderwater && !isQuayBuilding) continue;
+
+                    if (ok) AddCellQuad(validVerts, validTris, cell, isQuayBuilding);
+                    else AddCellQuad(invalidVerts, invalidTris, cell, isQuayBuilding);
                 }
             }
         }
@@ -306,10 +311,18 @@ public class PlacementValidityOverlay : MonoBehaviour
         return false;
     }
 
-    private void AddCellQuad(List<Vector3> vertices, List<int> triangles, Cell cell)
+    private void AddCellQuad(List<Vector3> vertices, List<int> triangles, Cell cell, bool isQuayBuilding)
     {
         float inset = cellInset * gridSystem.cellSize;
-        float y = cell.height + heightOffset;
+        float y = cell.height;
+
+        if (isQuayBuilding && cell.IsUnderwater)
+        {
+            QuaySystem quay = QuaySystem.GetOrCreate(gridSystem);
+            if (quay != null) y = quay.TopElevationLocal;
+        }
+
+        y += heightOffset;
 
         // Cells are stored by array index and physically span local [x, x+1).
         float x0 = cell.cellPosition.x + inset;

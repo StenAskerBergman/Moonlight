@@ -81,7 +81,7 @@ public class BuildInteraction : MonoBehaviour, IBuildable
         if (buildingSelector != null)
         {
             buildingSelector.CancelPreview();
-            buildingSelector.SpawnPreview(prefabToBuild);
+            buildingSelector.SpawnPreview(prefabToBuild, targetIsland, GetComponent<Unit>());
             OnBuildSucceeded?.Invoke(item);
             return;
         }

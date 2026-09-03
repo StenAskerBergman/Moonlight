@@ -15,12 +15,28 @@ public class CostData : ScriptableObject
     public ItemData[] costItems;    // Array of ItemData for costs
     public int[] costAmounts;       // Corresponding amounts for each ItemData
 
+    /// <summary>
+    /// The item costs as a lookup.
+    ///
+    /// costItems and costAmounts are paired by index and authored by hand, so this reads
+    /// only as far as the shorter of the two - a half-filled asset charges what it
+    /// actually states rather than throwing. A repeated item accumulates instead of
+    /// throwing on a duplicate key, and an empty asset simply costs nothing.
+    /// </summary>
     public Dictionary<ItemData, int> GetCostItemsDictionary()
     {
         Dictionary<ItemData, int> costDict = new Dictionary<ItemData, int>();
-        for (int i = 0; i < costItems.Length; i++)
+        if (costItems == null || costAmounts == null) return costDict;
+
+        int pairedCount = Mathf.Min(costItems.Length, costAmounts.Length);
+        for (int i = 0; i < pairedCount; i++)
         {
-            costDict.Add(costItems[i], costAmounts[i]);
+            ItemData item = costItems[i];
+            if (item == null) continue;
+
+            int existing;
+            costDict.TryGetValue(item, out existing);
+            costDict[item] = existing + costAmounts[i];
         }
         return costDict;
     }

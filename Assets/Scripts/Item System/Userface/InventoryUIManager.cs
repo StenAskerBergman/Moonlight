@@ -39,7 +39,11 @@ public class InventoryUIManager : MonoBehaviour
         else if (_instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+
+        if (buildingInventoryTemplate != null) buildingInventoryTemplate.SetActive(false);
+        if (unitInventoryTemplate != null) unitInventoryTemplate.SetActive(false);
     }
 
     void OnDestroy()
@@ -90,15 +94,13 @@ public class InventoryUIManager : MonoBehaviour
             currentActiveTemplate.SetActive(false);
         }
 
-        // unitInventoryTemplate is a prefab with UnitInventoryUI component
-        UnitInventoryUI unitInventoryUI = unitInventoryTemplate.GetComponent<UnitInventoryUI>();
+        // unitInventoryTemplate is a container or prefab with UnitInventoryUI component
+        UnitInventoryUI unitInventoryUI = unitInventoryTemplate != null
+            ? unitInventoryTemplate.GetComponentInChildren<UnitInventoryUI>(true)
+            : null;
         if (unitInventoryUI != null)
         {
             unitInventoryUI.SetUnitInventory(selectedUnit.GetComponent<UnitInventory>());
-        }
-        else
-        {
-            Debug.LogError("<color=red>InventoryUIManager: UnitInventoryUI component not found on the template.</color>");
         }
     }
 

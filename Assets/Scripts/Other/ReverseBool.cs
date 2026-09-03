@@ -9,6 +9,15 @@ public class ReverseBool : MonoBehaviour
     [SerializeField]
     private GameObject Target;
 
+    private void Awake()
+    {
+        ActiveOp = false;
+        if (Target != null)
+        {
+            Target.SetActive(false);
+        }
+    }
+
     public void InvertBool_Method()
     {
         InvertBool();

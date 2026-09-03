@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 6156809620939564564}
   - component: {fileID: 6138082430266608149}
   - component: {fileID: -5358358584518430087}
+  - component: {fileID: 5639695193343735448}
   m_Layer: 0
   m_Name: City Center
   m_TagString: Untagged
@@ -36,12 +37,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1795415335685326414}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 1, z: 3}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1795415335685326409
 MeshFilter:
@@ -62,6 +64,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -100,9 +103,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1795415335685326414}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &-1067734592801595248
@@ -117,7 +128,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
   buildingInventory: {fileID: -5358358584518430087}
+  islandInventory: {fileID: 0}
   buildingData: {fileID: 11400000, guid: a84cf9061fc8a1041a13d2f424ab3326, type: 2}
 --- !u!114 &639080437203097727
 MonoBehaviour:
@@ -159,14 +172,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  costData: {fileID: 0}
   buildingName: 
+  expense: 0
   price: 0
   revenue: 0
-  cost: 0
-  expense: 0
-  buildingProperties: {fileID: 0}
-  buildingData: {fileID: 0}
-  costData: {fileID: 0}
   resourceType: 0
 --- !u!114 &4020153773986937709
 MonoBehaviour:
@@ -180,7 +190,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2ab2cdfa1a54fe4bbd1ae341ffe657c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 1
+  unitType: 0
+  moveType: 0
+  inventory: {fileID: 0}
+  unitInventory: {fileID: 0}
+  inventoryUIPrefab: {fileID: 0}
+  categoryUIPrefab: {fileID: 0}
+  selectionUIElements: []
+  displayName: 
+  owner: {fileID: 0}
+  ownerPrefab: {fileID: 0}
+  definition: {fileID: 0}
+  Selectable: 0
+  Targetable: 0
 --- !u!114 &2265532723258050634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -259,4 +281,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: a84cf9061fc8a1041a13d2f424ab3326, type: 2}
   inventoryData: {fileID: 11400000, guid: 2970b92aebd159a4d909012a73fbfa50, type: 2}
-  resourceManager: {fileID: 0}
+--- !u!114 &5639695193343735448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795415335685326414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: City Center
+  headerIcon: {fileID: 0}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 0}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

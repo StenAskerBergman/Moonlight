@@ -9,10 +9,12 @@ public class BaseStorageManager : StorageManager
 
 
     // C# Constructor
-    public BaseStorageManager(Storage storage) : base(storage)
-    {
-        this.baseStorage = baseStorage;
-    }
+    public BaseStorageManager(Storage storage) : base(storage) { }
+
+    // Unity never calls a constructor with arguments, and declaring only the one above
+    // removes the implicit parameterless constructor - which BuildingPlacer needs, because
+    // it falls back to AddComponent<BaseStorageManager>() for an island that has none.
+    public BaseStorageManager() { }
 
     // Unity Constructor
     private void Awake()
@@ -27,12 +29,23 @@ public class BaseStorageManager : StorageManager
             storage = baseStorage;
         }
     }
-    // Logic for affordability check - returns true if the player can afford the building
+    // Logic for affordability check - returns true if the player can afford the building.
+    // BuildingCost owns the "what does this cost" question, including what an unassigned
+    // CostData means, so this no longer reaches through to costData itself.
     public bool CanAffordBuilding(BuildingCost buildingCost)
     {
-        Dictionary<ItemData, int> currentItems = baseStorage.GetAllItems();
-        Dictionary<ItemData, int> costItems = buildingCost.costData.GetCostItemsDictionary();
+        if (buildingCost == null) return true;
 
+        Dictionary<ItemData, int> costItems;
+        if (!buildingCost.TryGetCosts(out costItems)) return true;
+
+        if (baseStorage == null)
+        {
+            Debug.LogWarning($"{name}: no BaseStorage to pay from, refusing the purchase.");
+            return false;
+        }
+
+        Dictionary<ItemData, int> currentItems = baseStorage.GetAllItems();
         foreach (var item in costItems)
         {
             if (!currentItems.ContainsKey(item.Key) || currentItems[item.Key] < item.Value)
@@ -57,7 +70,10 @@ public class BaseStorageManager : StorageManager
 
     public void DeductCosts(BuildingCost buildingCost)
     {
-        Dictionary<ItemData, int> costItems = buildingCost.costData.GetCostItemsDictionary();
+        Dictionary<ItemData, int> costItems;
+        if (buildingCost == null || !buildingCost.TryGetCosts(out costItems)) return;
+        if (baseStorage == null) return;
+
         foreach (var item in costItems)
         {
             baseStorage.RemoveItem(item.Key, item.Value);

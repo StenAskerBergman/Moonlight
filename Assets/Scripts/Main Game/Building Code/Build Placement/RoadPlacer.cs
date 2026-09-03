@@ -6,11 +6,16 @@ using UnityEngine;
 // Places and removes road tiles on the grid and keeps RoadNetwork in sync.
 public class RoadPlacer : MonoBehaviour
 {
+    public const int DefaultMaxBridgeSpan = 6;
+    public const float DefaultBridgeDeckHeight = 0.35f;
+
     [Tooltip("Optional. Left empty, the grid of the island the player is currently on is used.")]
     [SerializeField] private GridSystem gridSystem;
     [Tooltip("Optional. Left empty, the RoadNetwork singleton is used.")]
     [SerializeField] private RoadNetwork roadNetwork;
     [SerializeField] private GameObject roadTilePrefab;
+    [Tooltip("Optional visual used when a bridge-capable road crosses water. Falls back to the normal road prefab.")]
+    [SerializeField] private GameObject bridgeTilePrefab;
     [Tooltip("Definition used by the existing PlaceRoad(Cell) interface. Leave empty to retain legacy untyped roads and the fallback prefab.")]
     [SerializeField] private RoadDefinition defaultRoadDefinition;
 
@@ -56,7 +61,17 @@ public class RoadPlacer : MonoBehaviour
             return false;
         }
 
-        if (targetCell.currentTerrainType != Cell.TerrainType.Land
+        bool isBridge = BridgePlacementRules.IsBridgeTerrain(targetCell);
+        if (isBridge)
+        {
+            bool supportsBridges = definition == null || definition.SupportsBridges;
+            int maxSpan = definition != null ? definition.MaxBridgeSpan : DefaultMaxBridgeSpan;
+            if (!supportsBridges || !BridgePlacementRules.TryGetBridgeAxis(ActiveGridSystem, targetCell, maxSpan, out _))
+            {
+                return false;
+            }
+        }
+        else if (targetCell.currentTerrainType != Cell.TerrainType.Land
             && targetCell.currentTerrainType != Cell.TerrainType.Beach)
         {
             return false;
@@ -120,6 +135,16 @@ public class RoadPlacer : MonoBehaviour
         if (targetCell == null || !targetCell.isRoad) return false;
         if (targetCell.roadDefinition == definition) return true;
 
+        if (BridgePlacementRules.IsBridgeTerrain(targetCell))
+        {
+            int maxSpan = definition != null ? definition.MaxBridgeSpan : DefaultMaxBridgeSpan;
+            if ((definition != null && !definition.SupportsBridges)
+                || !BridgePlacementRules.TryGetBridgeAxis(ActiveGridSystem, targetCell, maxSpan, out _))
+            {
+                return false;
+            }
+        }
+
         targetCell.SetRoad(true, definition);
         RefreshLocalArea(targetCell);
         OnRoadPlaced?.Invoke(targetCell);
@@ -147,7 +172,7 @@ public class RoadPlacer : MonoBehaviour
                 if (cell == null || !cell.isRoad) continue;
                 if (_placedRoadTiles.TryGetValue(cell, out RoadTileVisual visual) && visual != null)
                 {
-                    visual.Apply(RoadTopologyResolver.Resolve(grid, cell, roadTilePrefab));
+                    visual.Apply(RoadTopologyResolver.Resolve(grid, cell, roadTilePrefab, bridgeTilePrefab));
                 }
             }
         }

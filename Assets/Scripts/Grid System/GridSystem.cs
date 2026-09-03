@@ -25,7 +25,9 @@ public class GridSystem : MonoBehaviour
 
     [Header("Build Grid Visualization")]
     [SerializeField] private Color buildGridColor = new Color(0.2f, 0.85f, 1f, 0.65f);
-    [SerializeField, Min(0f)] private float buildGridHeightOffset = 0.08f;
+    [Tooltip("Clears z-fighting against the terrain and nothing more. The grid follows the " +
+             "terrain surface itself, so this stays small enough to read as flush.")]
+    [SerializeField, Min(0f)] private float buildGridHeightOffset = 0.02f;
     public Bank bank;
     public BuildingChecker buildingChecker;
     private int gridCount;
@@ -64,6 +66,104 @@ public class GridSystem : MonoBehaviour
 
         return new Vector3Int(x, y, z);
     }
+
+    #region Footprint coordinate convention
+
+    // ------------------------------------------------------------------------------
+    // THE convention. Cell (x,z) physically occupies grid-local [x, x+1) on both axes
+    // and its centre is (x+0.5, z+0.5) - see Cell.localCenter. A building's footprint is
+    // CENTRED on its transform, which falls out of that as:
+    //
+    //     odd footprint  -> pivot sits on a cell centre   (identical to what
+    //                       GetNearestPointOnGrid has always returned)
+    //     even footprint -> pivot sits on a cell boundary
+    //
+    // A 1x1 building therefore snaps exactly where it always did; only multi-cell
+    // footprints move, and they move from "model half a cell off its reserved cells" to
+    // "model centred on them".
+    //
+    // Every consumer that turns a world position into cells - the blueprint's snap, the
+    // placement check, cell reservation, the quay foundation - goes through these
+    // methods, so none of them can drift apart again.
+    // ------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The footprint in cells for a building of this size at this rotation. A quarter
+    /// turn about Y exchanges the axes, so a 3x2 building becomes 2x3.
+    /// </summary>
+    public static Vector2Int GetFootprint(Vector3 buildingSize, Quaternion rotation)
+    {
+        Vector2Int footprint = GetFootprint(buildingSize);
+        int quarterTurns = Mathf.RoundToInt(rotation.eulerAngles.y / 90f) & 3;
+        return (quarterTurns & 1) == 1 ? new Vector2Int(footprint.y, footprint.x) : footprint;
+    }
+
+    /// <summary>The unrotated footprint in cells, never smaller than one cell.</summary>
+    public static Vector2Int GetFootprint(Vector3 buildingSize)
+    {
+        return new Vector2Int(
+            Mathf.Max(1, Mathf.RoundToInt(buildingSize.x)),
+            Mathf.Max(1, Mathf.RoundToInt(buildingSize.z)));
+    }
+
+    /// <summary>The -X/-Z cell of the footprint a building centred here would cover.</summary>
+    public Vector3Int GetFootprintOrigin(Vector3 worldPosition, Vector2Int footprint)
+    {
+        Vector3 local = transform.InverseTransformPoint(worldPosition);
+        return new Vector3Int(
+            RoundHalfUp(local.x / cellSize - footprint.x * 0.5f),
+            0,
+            RoundHalfUp(local.z / cellSize - footprint.y * 0.5f));
+    }
+
+    /// <summary>Keeps a whole footprint on the island rather than only its origin cell.</summary>
+    public Vector3Int ClampFootprintOrigin(Vector3Int origin, Vector2Int footprint)
+    {
+        return new Vector3Int(
+            Mathf.Clamp(origin.x, 0, Mathf.Max(0, gridSize - footprint.x)),
+            origin.y,
+            Mathf.Clamp(origin.z, 0, Mathf.Max(0, gridSize - footprint.y)));
+    }
+
+    /// <summary>
+    /// Where a footprint of this size comes to rest over a point. The multi-cell
+    /// generalisation of GetNearestPointOnGrid, which it reduces to exactly at 1x1.
+    /// </summary>
+    public Vector3 SnapFootprintToGrid(Vector3 worldPosition, Vector2Int footprint)
+    {
+        Vector3Int origin = ClampFootprintOrigin(GetFootprintOrigin(worldPosition, footprint), footprint);
+        return GetFootprintCenterWorld(origin, footprint);
+    }
+
+    /// <summary>World centre of the footprint anchored at this origin cell.</summary>
+    public Vector3 GetFootprintCenterWorld(Vector3Int origin, Vector2Int footprint)
+    {
+        // Elevation comes from the cell the centre falls in, which is what
+        // GetNearestPointOnGrid returned through Cell.localCenter.
+        Cell centerCell = GetCell(origin.x + (footprint.x - 1) / 2, origin.z + (footprint.y - 1) / 2);
+        float y = centerCell != null ? centerCell.height : 0f;
+
+        return transform.TransformPoint(new Vector3(
+            (origin.x + footprint.x * 0.5f) * cellSize,
+            y,
+            (origin.z + footprint.y * 0.5f) * cellSize));
+    }
+
+    /// <summary>World centre of one cell - the position MarkCellAsOccupied expects.</summary>
+    public Vector3 GetCellCenterWorld(int x, int z)
+    {
+        return transform.TransformPoint(new Vector3((x + 0.5f) * cellSize, 0f, (z + 0.5f) * cellSize));
+    }
+
+    // Mathf.RoundToInt sends .5 to the nearest EVEN integer, so an even footprint resting
+    // exactly over a cell centre would snap left or right depending on where on the island
+    // it happened to be. Rounding .5 consistently upwards keeps the snap uniform.
+    private static int RoundHalfUp(float value)
+    {
+        return Mathf.FloorToInt(value + 0.5f);
+    }
+
+    #endregion
 
     // Empty Cell Check 
     public bool IsCellEmpty(Vector3 position)
@@ -185,6 +285,17 @@ public class GridSystem : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Regenerates the build grid after something changed which cells are buildable or
+    /// how high they sit - a quay deck being laid or removed, in practice. Cheap enough
+    /// to call on those events and never called per frame.
+    /// </summary>
+    public void RefreshBuildGridOverlay()
+    {
+        if (grid == null) return;
+        RebuildBuildGridOverlay();
+    }
+
     private void RebuildBuildGridOverlay()
     {
         if (buildGridOverlay != null)
@@ -211,6 +322,15 @@ public class GridSystem : MonoBehaviour
         var vertices = new List<Vector3>(gridSize * gridSize * 8);
         var indices = new List<int>(gridSize * gridSize * 8);
 
+        QuaySystem quaySystem = GetComponent<QuaySystem>();
+
+        // The same sampled heightfield the terrain mesh is built from, so a grid line and
+        // the ground under it agree at every cell corner. Cell.height is one quantised
+        // value for the whole cell and cannot follow a continuous surface - reading it
+        // here is what made the overlay step and float over beaches and slopes.
+        TerrainSampleCache heightField = ResolveTerrainHeightField();
+        float quayTop = quaySystem != null ? quaySystem.TopElevationLocal : 0f;
+
         for (int x = 0; x < gridSize; x++)
         {
             for (int z = 0; z < gridSize; z++)
@@ -218,11 +338,29 @@ public class GridSystem : MonoBehaviour
                 Cell cell = grid[x, z];
                 if (cell == null) continue;
 
-                float y = cell.height + buildGridHeightOffset;
-                AddGridLine(vertices, indices, new Vector3(x, y, z), new Vector3(x + 1f, y, z));
-                AddGridLine(vertices, indices, new Vector3(x + 1f, y, z), new Vector3(x + 1f, y, z + 1f));
-                AddGridLine(vertices, indices, new Vector3(x + 1f, y, z + 1f), new Vector3(x, y, z + 1f));
-                AddGridLine(vertices, indices, new Vector3(x, y, z + 1f), new Vector3(x, y, z));
+                bool hasQuay = quaySystem != null && quaySystem.HasQuay(new Vector2Int(x, z));
+
+                // Construction grid on the open seabed means nothing - nothing can be
+                // built there until a quay deck exists to build on.
+                if (cell.IsUnderwater && !hasQuay) continue;
+
+                // A quay deck is flat by construction, so its cell reads one elevation.
+                // Land and beach follow the terrain corner by corner instead.
+                float c00 = hasQuay ? quayTop : SampleCornerHeight(heightField, cell, x, z);
+                float c10 = hasQuay ? quayTop : SampleCornerHeight(heightField, cell, x + 1, z);
+                float c11 = hasQuay ? quayTop : SampleCornerHeight(heightField, cell, x + 1, z + 1);
+                float c01 = hasQuay ? quayTop : SampleCornerHeight(heightField, cell, x, z + 1);
+
+                float o = buildGridHeightOffset;
+                Vector3 p00 = new Vector3(x, c00 + o, z);
+                Vector3 p10 = new Vector3(x + 1f, c10 + o, z);
+                Vector3 p11 = new Vector3(x + 1f, c11 + o, z + 1f);
+                Vector3 p01 = new Vector3(x, c01 + o, z + 1f);
+
+                AddGridLine(vertices, indices, p00, p10);
+                AddGridLine(vertices, indices, p10, p11);
+                AddGridLine(vertices, indices, p11, p01);
+                AddGridLine(vertices, indices, p01, p00);
             }
         }
 
@@ -245,6 +383,31 @@ public class GridSystem : MonoBehaviour
         buildGridMaterial = OverlayMaterial.Create(buildGridColor);
         renderer.sharedMaterial = buildGridMaterial;
         buildGridOverlay.SetActive(buildGridVisible);
+    }
+
+    /// <summary>
+    /// The terrain heightfield this island's mesh was generated from, or null when the
+    /// island was not built through IslandTerrainProvider. Already cached by the provider,
+    /// so this is a lookup rather than a regeneration.
+    /// </summary>
+    private TerrainSampleCache ResolveTerrainHeightField()
+    {
+        MapGrid grid = GetComponent<MapGrid>();
+        if (grid == null || grid.TerrainSource == null || grid.generationSettings == null) return null;
+
+        return grid.TerrainSource.GetOrCreateSampleCache(grid.generationSettings.visualSamplesPerCell);
+    }
+
+    /// <summary>
+    /// Terrain height at grid corner (x, z), falling back to the cell's own quantised
+    /// height when there is no sampled field to read.
+    /// </summary>
+    private static float SampleCornerHeight(TerrainSampleCache heightField, Cell cell, int x, int z)
+    {
+        if (heightField == null) return cell.height;
+
+        int samples = heightField.VisualSamplesPerCell;
+        return heightField.GetHeight(x * samples, z * samples);
     }
 
     private static void AddGridLine(List<Vector3> vertices, List<int> indices, Vector3 start, Vector3 end)

@@ -34,15 +34,19 @@ public enum PlateauShapeMode
 [Serializable]
 public sealed class CoastalMountainSettings
 {
+    private const int CurrentDataVersion = 1;
+
+    [SerializeField, HideInInspector] private int dataVersion;
+
     public bool enabled = true;
-    [Range(0, 8)] public int minRidges = 3;
-    [Range(0, 8)] public int maxRidges = 5;
-    [Min(3f)] public float minRidgeLength = 22f;
-    [Min(3f)] public float maxRidgeLength = 48f;
-    [Min(2f)] public float minRidgeWidth = 8f;
-    [Min(2f)] public float maxRidgeWidth = 16f;
-    [Range(1f, 8f)] public float ridgePeakHeight = 3.2f;
-    [Range(0.5f, 3f)] public float cliffSharpness = 1.4f;
+    [Range(0, 8)] public int minRidges = 4;
+    [Range(0, 8)] public int maxRidges = 6;
+    [Min(3f)] public float minRidgeLength = 8f;
+    [Min(3f)] public float maxRidgeLength = 18f;
+    [Min(2f)] public float minRidgeWidth = 5f;
+    [Min(2f)] public float maxRidgeWidth = 10f;
+    [Range(1f, 8f)] public float ridgePeakHeight = 4.0f;
+    [Range(0.5f, 3f)] public float cliffSharpness = 1.55f;
 
     [Header("Structural validation")]
     [Range(0.1f, 1f)] public float minimumPeakRatio = 0.55f;
@@ -55,6 +59,27 @@ public sealed class CoastalMountainSettings
 
     public void Validate()
     {
+        if (dataVersion < CurrentDataVersion)
+        {
+            // The original defaults described continent-scale 22-48m ridges on a
+            // 60m island. Candidate generation had to ignore those values and still
+            // produced long one-sided ribbons. Migrate only that legacy envelope to
+            // compact coastal massifs which can be repeated around the shore.
+            if (minRidgeLength >= 21.9f && maxRidgeLength >= 47.9f)
+            {
+                minRidges = Mathf.Max(4, minRidges);
+                maxRidges = Mathf.Max(6, maxRidges);
+                minRidgeLength = 8f;
+                maxRidgeLength = 18f;
+                minRidgeWidth = 5f;
+                maxRidgeWidth = 10f;
+                ridgePeakHeight = Mathf.Max(4f, ridgePeakHeight);
+                cliffSharpness = Mathf.Max(1.55f, cliffSharpness);
+            }
+
+            dataVersion = CurrentDataVersion;
+        }
+
         minRidges = Mathf.Max(0, minRidges);
         maxRidges = Mathf.Max(minRidges, maxRidges);
         minRidgeLength = Mathf.Max(3f, minRidgeLength);
@@ -323,6 +348,14 @@ public sealed class TerrainGenerationSettings
     [Range(0.01f, 1.5f)] public float falloffEnd = 1.05f;
     [Range(0f, 0.4f)] public float coastWarp = 0.16f;
 
+    [Header("Mainland shape contract")]
+    [Tooltip("Normalized radius which must remain continuously above the shoreline for every island seed.")]
+    [Range(0.20f, 0.45f)] public float guaranteedMainlandRadius = 0.32f;
+    [Tooltip("Fraction of the wider mainland survey disc raised above the shoreline. Prevents crescent and ribbon islands.")]
+    [Range(0.45f, 0.90f)] public float targetMainlandCoverage = 0.72f;
+    [Tooltip("Normalized radius used for the target mainland coverage survey.")]
+    [Range(0.40f, 0.65f)] public float mainlandSurveyRadius = 0.56f;
+
     [Header("Semantic bands")]
     [Range(-1f, 1f)] public float abyssUpper = 0f;
     [Range(-1f, 1f)] public float deepUpper = 0.2f;
@@ -382,6 +415,18 @@ public sealed class TerrainGenerationSettings
 
         underwaterPlateauHeight = Mathf.Min(-0.01f, underwaterPlateauHeight);
         falloffEnd = Mathf.Max(falloffStart + 0.01f, falloffEnd);
+
+        // Newly-added serialized floats deserialize as zero in existing scenes.
+        // Repair that state in memory so old map prefabs receive the new contract.
+        if (guaranteedMainlandRadius <= 0f) guaranteedMainlandRadius = 0.32f;
+        if (targetMainlandCoverage <= 0f) targetMainlandCoverage = 0.72f;
+        if (mainlandSurveyRadius <= 0f) mainlandSurveyRadius = 0.56f;
+        guaranteedMainlandRadius = Mathf.Clamp(guaranteedMainlandRadius, 0.20f, 0.45f);
+        targetMainlandCoverage = Mathf.Clamp(targetMainlandCoverage, 0.45f, 0.90f);
+        mainlandSurveyRadius = Mathf.Clamp(
+            mainlandSurveyRadius,
+            Mathf.Max(0.40f, guaranteedMainlandRadius + 0.05f),
+            0.65f);
 
         legacyIslandScale = Mathf.Max(0.0001f, legacyIslandScale);
         visualSamplesPerCell = Mathf.Clamp(visualSamplesPerCell, 1, 16);

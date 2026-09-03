@@ -1,5 +1,4 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.Timeline.csproj" />
   <Project Path="Unity.VisualEffectGraph.Editor.csproj" />
   <Project Path="Unity.Timeline.Editor.csproj" />
@@ -7,6 +6,7 @@
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Unity.PlasticSCM.Editor.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.2D.Tilemap.Editor.csproj" />
   <Project Path="MCPForUnity.Runtime.csproj" />
   <Project Path="MCPForUnity.Editor.csproj" />
@@ -25,6 +25,7 @@
   <Project Path="UnityEngine.UI.csproj" />
   <Project Path="Unity.AI.Navigation.Editor.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="PPv2URPConverters.csproj" />
   <Project Path="Unity.Postprocessing.Runtime.csproj" />
   <Project Path="Unity.ML-Agents.CommunicatorObjects.csproj" />
@@ -33,7 +34,6 @@
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.VisualEffectGraph.Runtime.csproj" />
   <Project Path="Unity.AI.Navigation.Editor.ConversionSystem.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.Burst.CodeGen.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="Unity.Barracuda.ONNX.csproj" />
@@ -64,8 +64,8 @@
   <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.Barracuda.iOSBLAS.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />
-  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="Unity.Timeline.Player.csproj" />
+  <Project Path="Assembly-CSharp.Player.csproj" />
   <Project Path="MCPForUnity.Runtime.Player.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.Player.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Player.csproj" />

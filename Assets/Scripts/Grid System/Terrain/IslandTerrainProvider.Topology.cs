@@ -174,41 +174,57 @@ private float EvaluateIslandInfluence(float localX, float localZ, float warpX, f
 
 private float CalculateIslandEmergenceOffset()
 {
-    // Island ids select different Perlin offsets. Some valid ids previously landed
-    // on a low patch whose highest point remained below the shoreline. Survey the
-    // broad, low-frequency field and apply only the smallest smooth interior lift
-    // needed to guarantee one dry mainland sample. The chunk-edge blend remains
-    // untouched, so neighbouring ocean chunks still meet exactly.
-    const float minimumDryMainlandField = 0.48f;
-    const int surveySteps = 8;
-    float surveyMargin = Mathf.Min(12f, size * 0.25f);
-    float surveySpan = Mathf.Max(0f, size - surveyMargin * 2f);
-    float smallestRequiredOffset = float.PositiveInfinity;
+    // Seeded Perlin patches can be locally low across half an island. Guaranteeing
+    // only one dry sample allowed valid seeds to collapse into the thin hooks seen in
+    // the old captures. Survey the complete low-frequency footprint and solve for a
+    // single smooth lift which gives every island a connected central mainland plus
+    // a broad, but still irregular, surrounding landmass.
+    const int surveySteps = 24;
+    float targetDryField = settings.waterUpper + 0.045f;
+    float center = size * 0.5f;
+    var coverageOffsets = new List<float>((surveySteps + 1) * (surveySteps + 1));
+    float coreRequiredOffset = 0f;
 
     for (int z = 0; z <= surveySteps; z++)
     {
-        float localZ = surveyMargin + surveySpan * (z / (float)surveySteps);
+        float localZ = size * (z / (float)surveySteps);
         for (int x = 0; x <= surveySteps; x++)
         {
-            float localX = surveyMargin + surveySpan * (x / (float)surveySteps);
+            float localX = size * (x / (float)surveySteps);
             float worldX = chunkWorldOrigin.x + localX;
             float worldZ = chunkWorldOrigin.y + localZ;
             EvaluateDomainWarp(worldX, worldZ, worldSeed, out float warpX, out float warpZ);
 
-            float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
-            float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, true);
+            float warpedNormX = ((localX + warpX) - center) / Mathf.Max(1f, center);
+            float warpedNormZ = ((localZ + warpZ) - center) / Mathf.Max(1f, center);
+            float warpedRadius = Mathf.Sqrt(warpedNormX * warpedNormX + warpedNormZ * warpedNormZ);
+            if (warpedRadius > settings.mainlandSurveyRadius) continue;
+
             float influence = EvaluateIslandInfluence(localX, localZ, warpX, warpZ);
             if (influence <= 0.001f) continue;
 
-            float currentField = Mathf.Lerp(sharedBase, Mathf.Max(sharedBase, localField), influence);
-            float requiredOffset = (minimumDryMainlandField - currentField) / influence;
-            smallestRequiredOffset = Mathf.Min(smallestRequiredOffset, requiredOffset);
+            float sharedBase = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
+            float localField = EvaluateLocalIslandField(localX, localZ, warpX, warpZ, true);
+            float requiredLocalField = sharedBase
+                + (targetDryField - sharedBase) / influence;
+            float requiredOffset = Mathf.Max(0f, requiredLocalField - localField);
+            coverageOffsets.Add(requiredOffset);
+
+            if (warpedRadius <= settings.guaranteedMainlandRadius)
+            {
+                coreRequiredOffset = Mathf.Max(coreRequiredOffset, requiredOffset);
+            }
         }
     }
 
-    return float.IsInfinity(smallestRequiredOffset)
-        ? 0f
-        : Mathf.Max(0f, smallestRequiredOffset);
+    if (coverageOffsets.Count == 0) return coreRequiredOffset;
+
+    coverageOffsets.Sort();
+    int targetIndex = Mathf.Clamp(
+        Mathf.CeilToInt(coverageOffsets.Count * settings.targetMainlandCoverage) - 1,
+        0,
+        coverageOffsets.Count - 1);
+    return Mathf.Max(coreRequiredOffset, coverageOffsets[targetIndex]);
 }
 
 private float CalculateIslandField(float x, float z, float noise)

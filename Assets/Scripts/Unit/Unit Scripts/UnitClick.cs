@@ -62,7 +62,7 @@ public class UnitClick : MonoBehaviour
             Ray ray = myCam.ScreenPointToRay(Input.mousePosition);
 
             // Shoot ray from the Camera to the mouse position
-            if (Physics.Raycast(ray, out hit, Mathf.Infinity, clickable, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, clickable))
             {
                 // if we hit a clickable object
                 if (Input.GetKey(KeyCode.LeftShift))

@@ -32,6 +32,11 @@ public class Building : MonoBehaviour, ISelectable
     // Building Data
     public BuildingData buildingData;   
 
+    // Unity never calls a constructor with arguments, and declaring only the one below
+    // removes the implicit parameterless constructor - which AddComponent<Building>()
+    // needs. Same defect StorageManager and BaseStorageManager carried.
+    public Building() { }
+
     public Building(BuildingEnums.BuildingType buildingType, int id ) // , ResourceManager resourceManager) // Local Legacy Code
     {
         this.BuildingId = id;

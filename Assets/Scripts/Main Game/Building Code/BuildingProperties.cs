@@ -55,6 +55,23 @@ public class BuildingProperties : MonoBehaviour
         SetData();
     }
 
+    /// <summary>
+    /// The footprint this building will actually have.
+    ///
+    /// <see cref="SetData"/> lets BuildingData override the prefab's serialized size at
+    /// runtime, but it only runs in Start - so anything reading buildingSize before that
+    /// (the blueprint, and BuildingPlacer on the frame of the click) saw a stale value.
+    /// City Center's prefab says 0x0 while its BuildingData says 6x8, which silently
+    /// reduced it to a single cell. Both now resolve the size the same way.
+    /// </summary>
+    public static Vector3 ResolveSize(BuildingProperties properties, BuildingData data)
+    {
+        if (data != null && data.buildingSize != Vector3.zero) return data.buildingSize;
+        if (properties != null && properties.buildingSize != Vector3.zero) return properties.buildingSize;
+
+        return Vector3.one;
+    }
+
     public void SetData()
     {
         /// Edit: In the future include, what replacement was added in its place!

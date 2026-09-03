@@ -38,12 +38,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7038287545543584486}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5251832945145122524
 MonoBehaviour:
@@ -59,6 +60,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hasMountainsGenerated: 0
   treePrefabs: []
+  climateProfile: {fileID: 11400000, guid: 2b9dc1a0e3d45f7488cd5e66bbfce9e4, type: 2}
   edgeMaterial: {fileID: 2100000, guid: 0eba097ae0ca2cf4aa14f7a6bb46df16, type: 2}
   terrainMaterial: {fileID: 2100000, guid: 8203fa58b2d25bd4dbc00bfa4736b9e6, type: 2}
   hillEdgeMaterial: {fileID: 2100000, guid: aadd5a709a48466c887296bb5b1b8110, type: 2}
@@ -71,9 +73,11 @@ MonoBehaviour:
   plateauEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
   abyssalEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
   mountainEdgeMaterial: {fileID: 2100000, guid: bffa15793aaa4bf4f8ed7d1b89f5f982, type: 2}
+  plateauSurfaceMaterial: {fileID: 2100000, guid: 299caab7b9ad44dd8d95b4e3dfaf2e0e, type: 2}
+  plateauEscarpmentMaterial: {fileID: 2100000, guid: 6f89ebf1b15747b385639d0329b3b235, type: 2}
+  plateauFormationMaterial: {fileID: 2100000, guid: d877f50712cb49aaa81ca713c078601c, type: 2}
   cookingOptions: -1
   meshCollider: {fileID: 0}
-  ref_navMeshGameManager: {fileID: 0}
   mountainThreshold: 0.8
   landLevel: 0.6
   waterLevel: 0.4
@@ -82,6 +86,132 @@ MonoBehaviour:
   plateauThreshold: 0.2
   deepSeaThreshold: 0.2
   abyssThreshold: 0
+  generationSettings:
+    seed: 1337
+    domainWarp:
+      enabled: 1
+      scale: 36
+      amplitude: 22
+      octaves: 3
+      persistence: 0.5
+      lacunarity: 2
+    standalonePlateau:
+      dataVersion: 0
+      shapeMode: 0
+      tabletopRadius: 0.56
+      elongation: 1.32
+      curvature: 0.18
+      silhouetteLobing: 0.12
+      silhouetteNoise: 0.07
+      tabletopRelief: 0.06
+      edgeSquareness: 2.65
+      boundaryNotchCount: 2
+      boundaryNotchDepth: 0.075
+      rockyRimWidth: 3
+      upperEscarpmentWidth: 1.8
+      lowerApronWidth: 5.5
+      cliffDropDepth: 8
+      lowerApronDrop: 2
+      rimOutcropHeight: 1.35
+      occasionalSpireHeight: 4.8
+      perimeterSpireCount: 3
+      spireBaseWidth: 2.6
+      rimErosionHeight: 0.45
+      cliffFractureStrength: 1.1
+      profileAsymmetry: 0.32
+      perimeterClusterCount: 5
+      perimeterClusterHeight: 3.8
+      perimeterClusterWidth: 5.8
+      perimeterClusterDepth: 3.4
+      generateVolumetricRockGeometry: 1
+      escarpmentContourSegments: 112
+      escarpmentStrata: 6
+      rocksPerCluster: 5
+      sandOpeningCount: 0
+      sandOpeningTopWidth: 4.5
+      sandOpeningWidthMultiplier: 2
+      sandDescentLengthMultiplier: 1.55
+      tabletopDepthBelowWater: 6
+      minimumFormationClearance: 2.5
+    noiseLayers:
+    - name: Island mass
+      enabled: 1
+      scale: 52
+      octaves: 3
+      persistence: 0.52
+      lacunarity: 2
+      weight: 0.72
+      offset: {x: 0, y: 0}
+      mode: 0
+    - name: Regional variation
+      enabled: 1
+      scale: 19
+      octaves: 2
+      persistence: 0.45
+      lacunarity: 2.2
+      weight: 0.28
+      offset: {x: 0, y: 0}
+      mode: 1
+    legacyIslandScale: 0.025
+    legacyMountainThreshold: 0.8
+    legacyMountainPeakThreshold: 1.1
+    noiseContribution: 0.55
+    islandMaskContribution: 0.55
+    fieldBias: 0.1
+    falloffStart: 0.36
+    falloffEnd: 1.05
+    coastWarp: 0.16
+    abyssUpper: 0
+    deepUpper: 0.2
+    underwaterPlateauUpper: 0.2
+    shallowUpper: 0.3
+    waterUpper: 0.4
+    beachUpper: 0.415
+    surfaceFlatlandUpper: 0.7
+    hillUpper: 0.76
+    cliffUpper: 0.82
+    mountainUpper: 0.88
+    coastalMountains:
+      enabled: 1
+      minRidges: 3
+      maxRidges: 5
+      minRidgeLength: 22
+      maxRidgeLength: 48
+      minRidgeWidth: 8
+      maxRidgeWidth: 16
+      ridgePeakHeight: 3.2
+      cliffSharpness: 1.4
+      minimumPeakRatio: 0.55
+      minimumWidthRatio: 0.55
+      minimumUsefulSlope: 0.08
+      maximumSlope: 1.25
+      minimumSurvivingMassRatio: 0.45
+      minimumConnectedMassRatio: 0.9
+      minimumMountainSamples: 24
+    riverCorridors:
+      enabled: 1
+      minRivers: 1
+      maxRivers: 2
+      channelRadius: 1.4
+      clearanceRadius: 6
+      valleyDepth: 1.2
+    abyssHeight: -5
+    deepHeight: -3.5
+    naturalPlateauHeight: -2.5
+    underwaterPlateauHeight: -1.8
+    shallowHeight: -1.5
+    waterHeight: -0.6
+    beachHeight: 0.25
+    surfaceFlatlandHeight: 0.85
+    hillHeight: 1.6
+    cliffHeight: 2.4
+    mountainHeight: 3.2
+    mountainPeakHeight: 4.2
+    authoritativeWaterSurfaceHeight: -0.6
+    maxBuildableHeightVariance: 0.2
+    visualSamplesPerCell: 8
+    visualTransitionWidth: 0.035
+  debugViewMode: 0
   scale: 0.025
   treeNoiseScale: 0.05
   treeDensity: 0.5
@@ -113,6 +243,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -204,7 +335,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78dc3c956d225e540ae1f008caeda510, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  storage: {fileID: 1430667336206208412}
 --- !u!114 &1430667336206208412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -279,6 +409,8 @@ MonoBehaviour:
   cellSize: 1
   gridPosition: {x: 0, y: 0, z: 0}
   offset: {x: 5, y: 0, z: 5}
+  buildGridColor: {r: 0.2, g: 0.85, b: 1, a: 0.65}
+  buildGridHeightOffset: 0.02
   bank: {fileID: 0}
   buildingChecker: {fileID: 0}
   localBuildings: []
@@ -310,9 +442,17 @@ MeshCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7038287545543584486}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 4
+  serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}

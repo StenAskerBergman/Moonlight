@@ -32,9 +32,22 @@ MonoBehaviour:
   plateauSiltColor: {r: 0.11, g: 0.15, b: 0.17, a: 1}
   plateauReefColor: {r: 0.13, g: 0.28, b: 0.22, a: 1}
   plateauMaterialVariation: 0.78
-  treePrefabs: []
+  plateauRockDarkColor: {r: 0.075, g: 0.12, b: 0.13, a: 1}
+  plateauRockMidColor: {r: 0.22, g: 0.31, b: 0.32, a: 1}
+  plateauRockLightColor: {r: 0.48, g: 0.57, b: 0.56, a: 1}
+  plateauRockSedimentColor: {r: 0.55, g: 0.58, b: 0.52, a: 1}
+  plateauRockStrataStrength: 0.72
+  plateauRockSedimentStrength: 0.42
+  plateauRockAlgaeStrength: 0.34
+  plateauRockWetness: 0.48
+  plateauSandRippleStrength: 0.18
+  plateauSurfaceWetness: 0.36
+  treePrefabs:
+  - {fileID: 9133109144522407855, guid: eb06d692b9392d340ba49f6c8fd1b8de, type: 3}
+  - {fileID: 2831983132322889251, guid: 047c34677e63c2a4083c9e2abf5e3e87, type: 3}
+  - {fileID: 5567729816855960017, guid: 65b57ebc5af393c4d9ad05397b4b5b0b, type: 3}
   forestDensity: 0.85
-  plainsTreeDensity: 0.08
+  plainsTreeDensity: 0.012
   treeScaleMin: 0.8
   treeScaleMax: 1.3
   splatGrassThresholdOffset: -0.05

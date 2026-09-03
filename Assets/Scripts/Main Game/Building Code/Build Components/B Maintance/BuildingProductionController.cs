@@ -24,6 +24,24 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
         if (output == null) output = gameObject.AddComponent<BuildingOutput>();
     }
 
+    public float ProductionIntervalSeconds => productionIntervalSeconds;
+    public float NextProductionTime => nextProductionTime;
+    public float CycleProgress
+    {
+        get
+        {
+            if (building == null || building.CurrentState != BuildingEnums.BuildingState.Active) return 0f;
+            if (output != null && output.IsFull) return 0f;
+            BuildingSupply supply = GetComponent<BuildingSupply>();
+            if (supply != null && !supply.HasRequiredSupplies()) return 0f;
+
+            if (productionIntervalSeconds <= 0f) return 1f;
+            float remaining = nextProductionTime - Time.time;
+            if (remaining <= 0f) return 1f;
+            return Mathf.Clamp01(1f - (remaining / productionIntervalSeconds));
+        }
+    }
+
     private void Update()
     {
         if (building == null || building.CurrentState != BuildingEnums.BuildingState.Active) return;

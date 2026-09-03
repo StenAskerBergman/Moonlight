@@ -154,6 +154,8 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         // Initially hide all info panels
         if (InfoPanel != null) InfoPanel.SetActive(false);
+
+        if (strategicMapButton != null) strategicMapButton.onClick.AddListener(ToggleStrategicMap);
     }
 
     private void OnDestroy()
@@ -161,11 +163,18 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         // Unsubscribes on Destruction
         IslandManager.instance.OnPlayerHoverIsland -= OnCurrentIslandChanged;
         IslandManager.instance.OnPlayerEnterIsland -= OnCurrentIslandChanged;
+
+        if (strategicMapButton != null) strategicMapButton.onClick.RemoveListener(ToggleStrategicMap);
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            ToggleStrategicMap();
+        }
+
         if (currentIsland != null)
         {
             // Player Based
@@ -401,5 +410,30 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         // We already have a method updating the text value of the resource detail panel.
 
     }
+
+    #region Strategic Map Integration
+
+    [Header("Strategic Map")]
+    [SerializeField] private Button strategicMapButton;
+
+    public void ToggleStrategicMap()
+    {
+        if (StrategicMapUI.Instance == null)
+        {
+            var map = FindObjectOfType<StrategicMapUI>(true);
+            if (map == null)
+            {
+                GameObject go = new GameObject("StrategicMapUI");
+                go.AddComponent<StrategicMapUI>();
+            }
+        }
+
+        if (StrategicMapUI.Instance != null)
+        {
+            StrategicMapUI.Instance.Toggle();
+        }
+    }
+
+    #endregion
 
 }

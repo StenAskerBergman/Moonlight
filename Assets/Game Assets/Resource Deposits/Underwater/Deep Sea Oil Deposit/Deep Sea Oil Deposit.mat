@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   version: 7
 --- !u!21 &2100000
 Material:
@@ -24,18 +24,17 @@ Material:
   m_Shader: {fileID: 4800000, guid: e34cbe0a25f74fd8955b9fdc3f84e22b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
+  m_ValidKeywords: []
+  m_InvalidKeywords:
   - _NORMALMAP
   - _PARALLAXMAP
-  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2980
-  stringTagMap:
-    RenderType: Transparent
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -61,6 +60,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _HeightMap:
+        m_Texture: {fileID: 2800000, guid: 718db7a9ec2d43bca5943bbaffbe5465, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -110,15 +113,23 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EdgeSeed: 0
     - _EnvironmentReflections: 1
+    - _FadeEnd: 0.98
+    - _FadeStart: 0.74
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _HeightScale: 0.1
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.025
+    - _ParallaxBlend: 1
+    - _ParallaxMaxSteps: 64
+    - _ParallaxMinSteps: 32
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _SandBlendStart: 0.64
     - _Smoothness: 0.28
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -131,5 +142,8 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _RockColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
+    - _SandColorA: {r: 0.75, g: 0.75, b: 0.7, a: 1}
+    - _SandColorB: {r: 0.7, g: 0.7, b: 0.65, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []

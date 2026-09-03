@@ -24,7 +24,12 @@ using System;
 public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 {
     // Unique ID
-    public string ID { get; private set; }
+    private string _id;
+    public string ID
+    {
+        get => !string.IsNullOrEmpty(_id) ? _id : (_id = Guid.NewGuid().ToString());
+        private set => _id = value;
+    }
 
     private SelectionOutlineTarget outline;
 
@@ -33,6 +38,11 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     private SelectionOutlineTarget Outline =>
         outline ??= GetComponent<SelectionOutlineTarget>()
                    ?? gameObject.AddComponent<SelectionOutlineTarget>();
+
+    private UnitCommandExecutor commandExecutor;
+    public UnitCommandExecutor CommandExecutor =>
+        commandExecutor ??= GetComponent<UnitCommandExecutor>()
+                          ?? gameObject.AddComponent<UnitCommandExecutor>();
 
     // Unit Types
     public UnitType unitType;
@@ -247,6 +257,10 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
             unitInventoryUI.RefreshInventoryDisplay(); // Manually call refresh
             unitInventoryUI.SetUnitInventory(GetUnitInventory()); // Manually call SetUnitInventory
             UnitSelections.Instance.inventoryUIPanel.SetActive(true);
+            if (InventoryUIManager.Instance != null)
+            {
+                InventoryUIManager.Instance.DisplayInventoryForUnit(this);
+            }
                 
             // Verify that the UnitInventoryUI was Found!
             Debug.Log("Unit: UnitInventoryUI component found in the scene. Name: " + unitInventoryUI.name);
@@ -452,7 +466,6 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 
             case UnitType.Character:
                 UnitSelections.Instance.RemoveCharacterCount();
-                GetComponent<UnitMovement>().enabled = false;
                 break;
 
             case UnitType.House:

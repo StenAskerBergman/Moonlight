@@ -190,61 +190,78 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
         meanRadius /= Mathf.Max(1, rayCount);
         float sizeFactor = Mathf.Clamp01((meanRadius - halfSize * 0.25f) / (halfSize * 0.40f));
 
-        int maxCoastalAllowed = Mathf.Max(1, Mathf.RoundToInt(mountainSettings.maxRidges * sizeFactor));
-        int ridgeCount = random.Next(Mathf.Min(mountainSettings.minRidges, maxCoastalAllowed), maxCoastalAllowed + 1);
-        List<int> candidateHeadlands = new List<int>(headlandRays.Count > 0 ? headlandRays : new int[] { rayCount / 4, rayCount * 3 / 4 });
+        int minimumCoastalRequired = Mathf.Min(mountainSettings.minRidges, mountainSettings.maxRidges);
+        int maxCoastalAllowed = Mathf.Clamp(
+            Mathf.RoundToInt(mountainSettings.maxRidges * sizeFactor),
+            minimumCoastalRequired,
+            mountainSettings.maxRidges);
+        int ridgeCount = random.Next(minimumCoastalRequired, maxCoastalAllowed + 1);
 
-        // Coastal Ridges bounded generation & validation
-        int maxCoastalAttempts = ridgeCount * 5;
-        int coastalAccepted = 0;
-        for (int attempt = 0; attempt < maxCoastalAttempts && coastalAccepted < ridgeCount && candidateHeadlands.Count > 0; attempt++)
+        // Divide the circumference into seeded sectors. The previous candidate list
+        // contained only sharp one-ray headlands, then removed a candidate even when
+        // validation rejected it. Broad coastlines therefore got one mountain at one
+        // end of a crescent. Sector-local retries produce several separated coastal
+        // massifs while keeping every candidate close to its assigned sector.
+        int attemptsPerSector = 6;
+        int sectorPhase = random.Next(rayCount);
+        for (int sector = 0; sector < ridgeCount; sector++)
         {
-            int pickIdx = random.Next(candidateHeadlands.Count);
-            int rayIdx = candidateHeadlands[pickIdx];
-            candidateHeadlands.RemoveAt(pickIdx);
+            int sectorCenter = (sectorPhase + Mathf.RoundToInt(sector * rayCount / (float)ridgeCount)) % rayCount;
+            bool acceptedInSector = false;
 
-            Vector2 coastPt = coastPoints[rayIdx];
-            Vector2 normal = coastNormals[rayIdx];
-            Vector2 tangent = new Vector2(-normal.y, normal.x);
-
-            float maxAllowedLength = Mathf.Clamp(meanRadius * 0.90f, 8f, 22f);
-            float maxAllowedWidth = Mathf.Clamp(meanRadius * 0.35f, 3.5f, 6.5f);
-
-            float ridgeLength = RandomRange(random, 8f, maxAllowedLength);
-            float ridgeWidth = RandomRange(random, 3.2f, maxAllowedWidth);
-            float peakHeight = CapPeakToWidth(mountainSettings.ridgePeakHeight * RandomRange(random, 1.0f, 1.35f), ridgeWidth);
-
-            // Orient along the coastal contour and across the headland
-            float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
-            Vector2 ridgeDir = (tangent * tanSign * RandomRange(random, 0.85f, 1f) - normal * RandomRange(random, -0.05f, 0.20f)).normalized;
-            // Set the ridge AXIS (its crest line) this far inland of the coast point. The ridge
-            // reaches 1.8 * Width transversely, so at this offset the crest sits comfortably on
-            // land while the seaward flank still overhangs the waterline by roughly 1.2 * Width -
-            // a mountain whose slope runs into the sea, which is the intent.
-            //
-            // At 0.15 the crest landed essentially ON the waterline, so half of it was offshore
-            // and the ridge only realised a fraction of its requested peak over land; those
-            // candidates were then rejected by the realized-peak check and the survivors were
-            // ridges sitting further inland, leaving sand between mountain and water.
-            Vector2 origin = coastPt - normal * (ridgeWidth * 0.55f);
-
-            FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
-                origin, ridgeDir, ridgeLength, ridgeWidth, peakHeight, mountainSettings.cliffSharpness);
-
-            bool passed = TryAddValidatedRidge(map, ridge, out string rejection, out RidgeValidationMetrics rMetrics);
-            Debug.Log($"<color={(passed ? "lime" : "yellow")}>[Mountain Candidate - Coastal #{attempt + 1}]</color> {(passed ? "ACCEPTED" : "REJECTED")}: {rMetrics} | Rejection: {rejection ?? "None"}");
-
-            if (passed)
+            for (int sectorAttempt = 0; sectorAttempt < attemptsPerSector && !acceptedInSector; sectorAttempt++)
             {
-                coastalAccepted++;
-                float ridgeAngle = Mathf.Atan2(coastPt.y - mapCenter.y, coastPt.x - mapCenter.x);
-                sectorMap.AddSector(PerimeterSectorType.MountainCoast, ridgeAngle - 0.35f, ridgeAngle + 0.35f, 0.15f);
+                int searchOffset = AlternatingSearchOffset(sectorAttempt);
+                int jitter = sectorAttempt == 0 ? 0 : random.Next(-1, 2);
+                int rayIdx = (sectorCenter + searchOffset + jitter + rayCount) % rayCount;
+
+                Vector2 coastPt = coastPoints[rayIdx];
+                Vector2 normal = coastNormals[rayIdx];
+                Vector2 tangent = new Vector2(-normal.y, normal.x);
+
+                float maxAllowedLength = Mathf.Min(
+                    mountainSettings.maxRidgeLength,
+                    Mathf.Clamp(meanRadius * 1.00f, 9f, 20f));
+                float minAllowedLength = Mathf.Min(
+                    maxAllowedLength,
+                    Mathf.Max(6f, mountainSettings.minRidgeLength));
+                float maxAllowedWidth = Mathf.Min(
+                    mountainSettings.maxRidgeWidth,
+                    Mathf.Clamp(meanRadius * 0.52f, 5.5f, 10f));
+                float minAllowedWidth = Mathf.Min(
+                    maxAllowedWidth,
+                    Mathf.Max(4.5f, mountainSettings.minRidgeWidth));
+
+                float ridgeLength = RandomRange(random, minAllowedLength, maxAllowedLength);
+                float ridgeWidth = RandomRange(random, minAllowedWidth, maxAllowedWidth);
+                float peakHeight = CapPeakToWidth(mountainSettings.ridgePeakHeight * RandomRange(random, 0.95f, 1.25f), ridgeWidth);
+
+                // Centre the ridge on its chosen coast sector. The old origin was the
+                // beginning of the capsule, so the entire formation trailed off to one
+                // side and frequently left the land it was meant to crown.
+                float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
+                Vector2 ridgeDir = (tangent * tanSign - normal * RandomRange(random, -0.05f, 0.18f)).normalized;
+                Vector2 axisCenter = coastPt - normal * (ridgeWidth * 0.68f);
+                Vector2 origin = axisCenter - ridgeDir * (ridgeLength * 0.5f);
+
+                FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
+                    origin, ridgeDir, ridgeLength, ridgeWidth, peakHeight, mountainSettings.cliffSharpness);
+
+                bool passed = TryAddValidatedRidge(map, ridge, out string rejection, out RidgeValidationMetrics rMetrics);
+                Debug.Log($"<color={(passed ? "lime" : "yellow")}>[Mountain Candidate - Coastal S{sector + 1}.{sectorAttempt + 1}]</color> {(passed ? "ACCEPTED" : "REJECTED")}: {rMetrics} | Rejection: {rejection ?? "None"}");
+
+                if (passed)
+                {
+                    acceptedInSector = true;
+                    float ridgeAngle = Mathf.Atan2(coastPt.y - mapCenter.y, coastPt.x - mapCenter.x);
+                    sectorMap.AddSector(PerimeterSectorType.MountainCoast, ridgeAngle - 0.42f, ridgeAngle + 0.42f, 0.15f);
+                }
             }
         }
 
         // Interior Ridges bounded generation & validation
-        int maxInteriorAllowed = Mathf.Max(1, Mathf.RoundToInt(3 * sizeFactor));
-        int interiorRidges = random.Next(1, maxInteriorAllowed + 1);
+        int maxInteriorAllowed = sizeFactor >= 0.65f ? 1 : 0;
+        int interiorRidges = maxInteriorAllowed > 0 ? random.Next(0, maxInteriorAllowed + 1) : 0;
         int maxInteriorAttempts = interiorRidges * 6;
         int interiorAccepted = 0;
 
@@ -341,6 +358,13 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
     }
 
     return map;
+}
+
+private static int AlternatingSearchOffset(int attempt)
+{
+    if (attempt <= 0) return 0;
+    int magnitude = (attempt + 1) / 2;
+    return (attempt & 1) == 1 ? magnitude : -magnitude;
 }
 
 // A ridge's realized gradient scales with peak/width, and ValidateMountainHeightfield bounds the

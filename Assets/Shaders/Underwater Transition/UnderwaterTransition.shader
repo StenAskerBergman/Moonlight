@@ -34,6 +34,9 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
             float _AbyssDepthThreshold;
             float _SunScatteringIntensity;
             float _SunDepthExtinction;
+            float _LowerApronFadeStart;
+            float _LowerApronFadeEnd;
+            float _LowerApronFadeStrength;
 
             float _CausticsStrength;
             float _CausticsScale;
@@ -49,6 +52,10 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
             float _TransitionProgress;
             float _GodRayIntensity;
             float _DebrisDensity;
+            float _DebrisBrightness;
+            float _DebrisDriftSpeed;
+            float _DropletIntensity;
+            float _DropletFallSpeed;
 
             float4x4 _InverseViewProjection;
 
@@ -68,14 +75,14 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                             lerp(Hash21(i + float2(0, 1)), Hash21(i + 1), f.x), f.y);
             }
 
-            // Cheap animated voronoi: distance from p to the nearest of 9 jittered
-            // feature points (one per neighboring cell), each orbiting its cell center
-            // over time so the pattern shimmers instead of just scrolling.
-            float VoronoiCaustic(float2 p, float t)
+            // Thin irregular refracted caustics network using cellular edge distance (F2 - F1)
+            // combined with wave coordinate perturbation.
+            float VoronoiEdgeDistance(float2 p, float t)
             {
                 float2 cell = floor(p);
                 float2 f = frac(p);
-                float minDist = 8.0;
+                float d1 = 8.0;
+                float d2 = 8.0;
 
                 [unroll]
                 for (int y = -1; y <= 1; y++)
@@ -85,27 +92,52 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     {
                         float2 neighbor = float2(x, y);
                         float2 rnd = float2(Hash21(cell + neighbor), Hash21(cell + neighbor + 19.19));
-                        float2 featurePoint = neighbor + 0.5 + 0.5 * sin(t + rnd * 6.2831853);
-                        minDist = min(minDist, length(featurePoint - f));
+                        float2 featurePoint = neighbor + 0.5 + 0.35 * sin(t + rnd * 6.2831853);
+                        float dist = length(featurePoint - f);
+                        if (dist < d1)
+                        {
+                            d2 = d1;
+                            d1 = dist;
+                        }
+                        else if (dist < d2)
+                        {
+                            d2 = dist;
+                        }
                     }
                 }
 
-                return minDist;
+                return d2 - d1;
             }
 
-            // Two voronoi layers at different scale/speed, summed and brightened, so the
-            // thin bright cell-boundary veins from each layer cross and reinforce each
-            // other -- the broken, refracting look of real sunlight through a moving
-            // surface rather than one clean repeating pattern.
+            // Dual-layer refracted caustic network: evaluates cellular edge difference (F2 - F1)
+            // at wave-perturbed world coordinates. Cell centers are dark; light is focused strictly
+            // into thin irregular filaments that intersect and shimmer with temporal wave motion.
             float CalculateCaustics(float2 worldXZ, float t)
             {
-                float layer1 = VoronoiCaustic(worldXZ * _CausticsScale, t * _CausticsSpeed);
-                float layer2 = VoronoiCaustic(worldXZ * _CausticsScale * 1.7 + 13.7, t * _CausticsSpeed * -1.35);
+                // Wave-induced coordinate refraction
+                float2 wave1 = float2(
+                    sin(worldXZ.y * 1.8 + t * 2.2) + cos(worldXZ.x * 1.4 - t * 1.7),
+                    cos(worldXZ.x * 1.8 + t * 2.5) + sin(worldXZ.y * 1.4 - t * 1.9)
+                ) * 0.15;
 
-                float bright1 = pow(saturate(1.0 - layer1 * 2.2), 3.0);
-                float bright2 = pow(saturate(1.0 - layer2 * 2.2), 3.0);
+                float2 wave2 = float2(
+                    cos(worldXZ.y * 2.4 - t * 1.8) + sin(worldXZ.x * 2.1 + t * 2.1),
+                    sin(worldXZ.x * 2.4 - t * 2.2) + cos(worldXZ.y * 2.1 + t * 1.6)
+                ) * 0.12;
 
-                return saturate((bright1 + bright2) * 1.35);
+                float2 uv1 = worldXZ * _CausticsScale + wave1;
+                float2 uv2 = worldXZ * (_CausticsScale * 1.45) + 17.3 + wave2;
+
+                float edge1 = VoronoiEdgeDistance(uv1, t * _CausticsSpeed);
+                float edge2 = VoronoiEdgeDistance(uv2, t * (_CausticsSpeed * -1.25));
+
+                // Sharp thin lines along cell boundaries (F2 - F1 close to 0)
+                float line1 = pow(saturate(1.0 - edge1 / 0.14), 3.0);
+                float line2 = pow(saturate(1.0 - edge2 / 0.14), 3.0);
+
+                // Combining intersecting caustic veins
+                float caustic = saturate(line1 * 0.75 + line2 * 0.75 + pow(line1 * line2, 0.5) * 1.5);
+                return caustic;
             }
 
             // Classic screen-space radial light shafts: march a handful of samples from
@@ -146,39 +178,117 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 return accum * radialFalloff * depthFade * shimmer * _GodRayIntensity * half3(0.55, 0.85, 0.95);
             }
 
-            // One drifting speck layer: a sparse grid of jittered dots that scroll slowly
-            // in screen space. Three layers at different scale/speed (called below) fake
-            // parallax -- the "nearer" layer is bigger and drifts faster.
-            float DebrisLayer(float2 uv, float aspect, float scale, float speed, float seed, float time)
+            // World-anchored suspended organic sediment / debris in the water volume.
+            // Tests candidate 3D cells along the camera view ray within the water column.
+            // Each cell's speck has a fixed world coordinate Q with subtle micro-drift.
+            // Camera translation and rotation reveal different specks with full 3D parallax,
+            // rather than dragging screen-space dots or sticking to geometry surfaces.
+            float Hash31(float3 p)
             {
-                float2 p = uv * float2(aspect, 1.0) * scale;
-                p.y -= time * speed;
-                float2 cell = floor(p);
-                float2 f = frac(p) - 0.5;
-
-                float rnd = Hash21(cell + seed);
-                float2 jitter = (float2(Hash21(cell + seed + 1.7), Hash21(cell + seed + 3.1)) - 0.5) * 0.6;
-                float dist = length(f - jitter);
-                float speck = 1.0 - smoothstep(0.02, 0.09, dist);
-                return speck * step(0.82, rnd);
+                p = frac(p * float3(123.34, 456.21, 789.13));
+                p += dot(p, p.yzx + 45.32);
+                return frac((p.x + p.y) * p.z);
             }
 
-            // Procedural plankton/sediment: no particle system, just animated noise dots
-            // in screen space, layered for a sense of depth as they drift upward.
-            float3 ComputeDebris(float2 uv, float progress, float camDepth, float time)
+            float3 ComputeWorldDebris(float3 camPos, float3 rayDir, float sceneDist, float camDepth, float progress, float time)
             {
-                if (_DebrisDensity < 0.001)
+                if (_DebrisDensity < 0.001 || progress < 0.001)
                     return float3(0, 0, 0);
 
-                float aspect = _ScreenParams.x / max(_ScreenParams.y, 1.0);
-                float debris = 0.0;
-                debris += DebrisLayer(uv, aspect, 14.0, 0.015, 11.0, time) * 1.0;
-                debris += DebrisLayer(uv, aspect, 22.0, 0.028, 47.0, time) * 0.8;
-                debris += DebrisLayer(uv, aspect, 34.0, 0.045, 91.0, time) * 0.6;
+                // Determine ray segment inside water volume
+                float tEnter = 0.35; // Near clip buffer
+                if (camPos.y >= _WaterLevel)
+                {
+                    if (rayDir.y >= -0.001)
+                        return float3(0, 0, 0); // Ray pointing away/parallel above water
+                    tEnter = max(0.35, (_WaterLevel - camPos.y) / rayDir.y);
+                }
 
-                float fade = saturate(progress * 1.4) * exp(-camDepth * 0.03);
-                return saturate(debris) * _DebrisDensity * fade * half3(0.85, 0.95, 0.9);
+                float tExit = min(sceneDist, 14.0); // Debris visible within near-to-mid water column
+                if (rayDir.y > 0.001 && camPos.y < _WaterLevel)
+                {
+                    float tSurface = (_WaterLevel - camPos.y) / rayDir.y;
+                    tExit = min(tExit, tSurface);
+                }
+
+                if (tEnter >= tExit)
+                    return float3(0, 0, 0);
+
+                const float cellSize = 1.35;
+                const int STEPS = 8;
+                float stepSize = (tExit - tEnter) / (float)STEPS;
+                
+                float totalDebris = 0.0;
+                float3 prevCell = float3(-999.0, -999.0, -999.0);
+
+                [unroll]
+                for (int i = 0; i < STEPS; i++)
+                {
+                    float tSample = tEnter + (i + 0.5) * stepSize;
+                    float3 sampleWs = camPos + rayDir * tSample;
+                    float3 cell = floor(sampleWs / cellSize);
+
+                    if (all(cell == prevCell))
+                        continue;
+                    prevCell = cell;
+
+                    float rnd = Hash31(cell);
+                    // Sparse presence: only ~16% of cells contain a sediment speck
+                    if (rnd > 0.84)
+                    {
+                        // Fixed base position in world space within this cell
+                        float3 jitter = float3(
+                            Hash21(cell.xy + 3.17),
+                            Hash21(cell.yz + 7.81),
+                            Hash21(cell.zx + 11.43)
+                        ) - 0.5;
+
+                        // Extremely subtle local drift to read as gently suspended dirt/sediment
+                        float3 drift = float3(
+                            sin(time * 0.25 * _DebrisDriftSpeed + cell.y * 0.5 + rnd * 6.28) * 0.035,
+                            cos(time * 0.20 * _DebrisDriftSpeed + cell.z * 0.5 + rnd * 4.12) * 0.025,
+                            sin(time * 0.22 * _DebrisDriftSpeed + cell.x * 0.5 + rnd * 5.31) * 0.035
+                        );
+
+                        float3 speckPosWS = (cell + 0.5 + jitter * 0.75) * cellSize + drift;
+
+                        // Ensure speck is submerged
+                        if (speckPosWS.y < _WaterLevel)
+                        {
+                            // Closest distance from camera ray to the world speck
+                            float3 toSpeck = speckPosWS - camPos;
+                            float tProj = dot(toSpeck, rayDir);
+
+                            if (tProj >= tEnter && tProj <= tExit)
+                            {
+                                float distSq = dot(toSpeck, toSpeck) - tProj * tProj;
+                                float speckRadius = lerp(0.015, 0.035, frac(rnd * 23.47));
+                                float radiusSq = speckRadius * speckRadius;
+
+                                if (distSq < radiusSq)
+                                {
+                                    // Falloff across speck disc
+                                    float profile = smoothstep(radiusSq, radiusSq * 0.15, distSq);
+                                    
+                                    // Distance fade and water extinction
+                                    float distFade = saturate(1.0 - tProj / 13.0);
+                                    float waterFade = exp(-_FogDensity * tProj * 3.5);
+                                    
+                                    // Subtle shimmer
+                                    float shimmer = 0.75 + 0.25 * sin(time * 0.8 + rnd * 10.0);
+                                    
+                                    totalDebris += profile * distFade * waterFade * shimmer * lerp(0.35, 0.85, frac(rnd * 13.7));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                float transitionFade = saturate(progress * 1.5) * exp(-camDepth * 0.03);
+                half3 debrisColor = lerp(_ShallowWaterColor.rgb, half3(0.72, 0.82, 0.85), 0.55);
+                return saturate(totalDebris) * _DebrisDensity * _DebrisBrightness * transitionFade * debrisColor;
             }
+
 
             float CalculateMarineSnow(float3 wsPos, float t)
             {
@@ -190,8 +300,39 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 float rnd = Hash21(cell.xy + float2(cell.z * 17.13, cell.z * 31.79));
                 float3 particlePos = (float3(Hash21(cell.xy), Hash21(cell.yz), Hash21(cell.zx)) - 0.5) * 0.75;
                 float dist = length(fracP - particlePos);
-                float sparkle = 1.0 - smoothstep(0.015, 0.075, dist);
-                return sparkle * step(0.68, rnd);
+                float sparkle = 1.0 - smoothstep(0.01, 0.055, dist);
+                float pulse = 0.35 + 0.65 * saturate(sin(t * 1.7 + rnd * 12.0) * 0.5 + 0.5);
+                return sparkle * step(0.86, rnd) * pulse;
+            }
+
+            float SurfaceDroplets(float2 uv, float progress)
+            {
+                if (_TransitionDirection >= 0.0 || _DropletIntensity < 0.001)
+                    return 0.0;
+
+                float aspect = _ScreenParams.x / max(_ScreenParams.y, 1.0);
+                float droplets = 0.0;
+
+                [unroll]
+                for (int dropletIndex = 0; dropletIndex < 18; dropletIndex++)
+                {
+                    float seed = Hash21(float2(dropletIndex * 2.17, dropletIndex * 9.31));
+                    float x = frac(seed * 13.71 + dropletIndex * 0.137);
+                    float speed = _DropletFallSpeed * lerp(0.55, 1.25, frac(seed * 23.17));
+                    float y = 1.08 - frac(seed * 7.91) * 0.32 - progress * speed;
+                    float radius = lerp(0.008, 0.022, frac(seed * 31.47));
+                    float2 delta = float2((uv.x - x) * aspect, uv.y - y);
+
+                    float head = 1.0 - smoothstep(radius * 0.45, radius, length(float2(delta.x, delta.y * 0.68)));
+                    float trailX = 1.0 - smoothstep(radius * 0.18, radius * 0.65, abs(delta.x));
+                    float trailY = smoothstep(-radius * 0.2, radius * 0.4, delta.y)
+                        * (1.0 - smoothstep(radius * 1.5, radius * 7.0, delta.y));
+                    droplets += head + trailX * trailY * 0.32;
+                }
+
+                float appear = smoothstep(0.02, 0.14, progress);
+                float drain = 1.0 - smoothstep(0.62, 1.0, progress);
+                return saturate(droplets) * appear * drain * _DropletIntensity;
             }
 
             float BubbleField(float2 uv, float progress)
@@ -230,10 +371,9 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                            + sin(uv.x * 31.0 - time * 2.7) * 0.006;
                 wave += (ValueNoise(float2(uv.x * 9.0, time * 0.8)) - 0.5) * 0.018;
 
-                // Entry travels down the screen; exit travels upward.
-                float surfaceLine = lerp(1.12, -0.12, _TransitionAmount);
-                if (_TransitionDirection < 0.0)
-                    surfaceLine = 1.0 - surfaceLine;
+                // Diving fills the frame from bottom to top. Surfacing retraces that
+                // coverage from top to bottom as TransitionProgress falls back to zero.
+                float surfaceLine = lerp(-0.12, 1.12, _TransitionProgress);
 
                 float distanceToSurface = abs(uv.y - (surfaceLine + wave));
                 float edge = 1.0 - smoothstep(0.0, max(_EdgeWidth, 0.001), distanceToSurface);
@@ -323,13 +463,32 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 float fogAmount = 1.0 - exp(-_FogDensity * waterDistance);
                 float3 inscattering = ambientWaterColor * sunScatter * sunLightAtten * fogAmount;
 
-                // 3. Submerged Surface Caustics
+                // 3. Submerged Surface Caustics (World-anchored with depth fade and slope rejection)
                 float3 caustics = float3(0, 0, 0);
                 if (_CausticsStrength > 0.001 && !isBackground && positionWS.y < _WaterLevel)
                 {
+                    // Derive world surface normal from screen derivatives of reconstructed world position
+                    float3 ddxPos = ddx(positionWS);
+                    float3 ddyPos = ddy(positionWS);
+                    float3 worldNormal = normalize(cross(ddxPos, ddyPos));
+                    if (dot(worldNormal, rayDir) > 0.0)
+                        worldNormal = -worldNormal;
+
+                    // Reject steep/vertical surfaces: caustics only project onto upward-facing surfaces (seabed),
+                    // strongly attenuating on slopes and completely vanishing on vertical cliff faces.
+                    float slopeFactor = smoothstep(0.45, 0.8, saturate(worldNormal.y));
+
+                    // Strong depth fade: caustics extinguish rapidly as depth below water increases
+                    float depthBelowWater = max(0.0, _WaterLevel - positionWS.y);
+                    float depthFade = saturate(1.0 - depthBelowWater / max(_CausticsFadeDepth, 0.5));
+                    depthFade = depthFade * depthFade * exp(-depthBelowWater * 0.35);
+                    depthFade *= exp(-waterDistance * _FogDensity * 1.2);
+
                     float causticVal = CalculateCaustics(positionWS.xz, time);
-                    float depthFade = exp(-pixelDepth / max(_CausticsFadeDepth, 0.5));
-                    caustics = _ShallowWaterColor.rgb * causticVal * _CausticsStrength * depthFade * sunLightAtten;
+
+                    // Natural sunlight tint: avoid globally washing terrain cyan; caustics read as focused sun rays
+                    half3 sunCausticColor = lerp(half3(1.0, 0.98, 0.92), _ShallowWaterColor.rgb, 0.22) * mainLight.color;
+                    caustics = sunCausticColor * causticVal * _CausticsStrength * depthFade * sunLightAtten * slopeFactor;
                 }
 
                 // 4. Marine Snow / Suspended Micro-Particles
@@ -356,6 +515,14 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     underwaterView = backgroundAtmosphere + marineSnow;
                 }
 
+                // Let the deepest part of the generated lower apron disappear into
+                // abyssal water instead of ending in a visibly flat/static boundary.
+                float lowerApronFade = smoothstep(
+                    _LowerApronFadeStart,
+                    max(_LowerApronFadeEnd, _LowerApronFadeStart + 0.1),
+                    pixelDepth) * _LowerApronFadeStrength;
+                underwaterView = lerp(underwaterView, _AbyssalColor.rgb, lowerApronFade);
+
                 // 5. Murk / Turbidity: desaturate and pull toward a uniform ambient tone
                 // as fog builds up and the transition deepens. Clear near the surface,
                 // a flat blue-green soup once fogAmount and progress both ramp up.
@@ -365,7 +532,7 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                 underwaterView = lerp(underwaterView, ambientWaterColor, murkAmount * 0.35);
 
                 // Transition blending across waterline
-                float transitionSide = smoothstep(
+                float transitionSide = 1.0 - smoothstep(
                     surfaceLine + wave - _EdgeWidth, surfaceLine + wave + _EdgeWidth, uv.y);
                 float tintAmount = saturate(max(_UnderwaterAmount, transitionSide));
                 half3 color = lerp(scene.rgb, underwaterView, tintAmount);
@@ -387,10 +554,17 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
 
                 color = lerp(color, half3(0.82, 0.96, 1.0), bubbles * 0.92);
 
-                // 7. God Rays & Debris, confined to the underwater side of the frame by
+                // Lens water appears only while surfacing, then drains downward and
+                // clears before the transition finishes.
+                float droplets = SurfaceDroplets(uv, saturate(_TransitionAmount));
+                half3 dropletColor = lerp(color * 0.72, _ShallowWaterColor.rgb, 0.28);
+                color = lerp(color, dropletColor, droplets * 0.55);
+                color += droplets * half3(0.12, 0.2, 0.22);
+
+                // 7. God Rays & World Debris, confined to the underwater side of the frame by
                 // the same tintAmount used to blend the underwater view in above.
                 color += ComputeGodRays(uv, warpedUv, _TransitionProgress, camDepth, time) * tintAmount;
-                color += ComputeDebris(uv, _TransitionProgress, camDepth, time) * tintAmount;
+                color += ComputeWorldDebris(camPos, rayDir, rayDist, camDepth, _TransitionProgress, time) * tintAmount;
 
                 return half4(color, scene.a);
             }
@@ -398,4 +572,3 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
         }
     }
 }
-

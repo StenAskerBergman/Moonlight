@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1669848914233407727
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1248331131771750282}
+  - component: {fileID: 1440118664961439131}
+  - component: {fileID: 3823507620737445776}
+  - component: {fileID: 3108247452045483268}
+  - component: {fileID: 3383367696991136223}
+  - component: {fileID: 2673073541578114211}
+  - component: {fileID: 4012270242939689852}
+  m_Layer: 8
+  m_Name: Ozone Maker station
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1248331131771750282
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1440118664961439131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
+  buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
+  buildingData: {fileID: 0}
+--- !u!114 &3823507620737445776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 0}
+  costData: {fileID: 0}
+  buildingSize: {x: 0, y: 0, z: 0}
+  buildingName: Ozone Maker station
+  buildingDescription: 
+  buildingTags: []
+--- !u!114 &3108247452045483268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  costData: {fileID: 0}
+  buildingName: 
+  expense: 0
+  price: 0
+  revenue: 0
+  resourceType: 0
+--- !u!114 &3383367696991136223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c165f18ba855be438ff9d016c8c2660, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onDestroy:
+    m_PersistentCalls:
+      m_Calls: []
+  onHit:
+    m_PersistentCalls:
+      m_Calls: []
+  totalHealth: 3000
+  currentHealth: 3000
+--- !u!65 &2673073541578114211
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3, y: 3, z: 3}
+  m_Center: {x: 0, y: 1.5, z: 0}
+--- !u!114 &4012270242939689852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669848914233407727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 1
+  categoryTitle: ECOBALANCE BUILDINGS
+  buildingDisplayName: Ozone Maker station
+  headerIcon: {fileID: 21300000, guid: 6c007d2c10b7e3846b1df058a2206192, type: 3}
+  portraitImage: {fileID: 21300000, guid: 1b62e750368f19d41831a26ec178da71, type: 3}
+  effectText: +100
+  effectIcon: {fileID: 21300000, guid: 6c007d2c10b7e3846b1df058a2206192, type: 3}
+  inputIcon: {fileID: 0}
+  inputAmount: 500000
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -120
+  energyValue: -60
+  ecobalanceValue: +100
+  maxHealth: 3000
+  currentHealth: 3000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

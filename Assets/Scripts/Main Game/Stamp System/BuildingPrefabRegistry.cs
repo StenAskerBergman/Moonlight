@@ -12,7 +12,25 @@ using UnityEngine;
 /// </summary>
 public class BuildingPrefabRegistry : MonoBehaviour
 {
-    public static BuildingPrefabRegistry Instance { get; private set; }
+    private static BuildingPrefabRegistry _instance;
+
+    /// <summary>
+    /// The scene's registry.
+    ///
+    /// Resolved lazily rather than only in Awake. A static field does not survive a domain
+    /// reload, so after a script recompile - or with Enter Play Mode Options set to skip the
+    /// reload - Instance came back null while the registry object was still sitting in the
+    /// scene. ProductionPlacementAdapter reads only this, and a null here made every
+    /// building in the construction menu silently unplaceable with nothing logged.
+    /// </summary>
+    public static BuildingPrefabRegistry Instance
+    {
+        get
+        {
+            if (_instance == null) _instance = FindObjectOfType<BuildingPrefabRegistry>();
+            return _instance;
+        }
+    }
 
     [Header("Manual Overrides")]
     [Tooltip("Drag prefabs here if they aren't reachable via BuildingButton UI.")]
@@ -22,14 +40,15 @@ public class BuildingPrefabRegistry : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
+        // The backing field, deliberately - the lazy getter would find THIS component and
+        // then send it down the duplicate branch to destroy its own GameObject.
+        if (_instance == null)
         {
-            Instance = this;
+            _instance = this;
         }
-        else
+        else if (_instance != this)
         {
             Destroy(gameObject);
-            return;
         }
     }
 
@@ -40,7 +59,7 @@ public class BuildingPrefabRegistry : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (_instance == this) _instance = null;
     }
 
     // ───────── Public API ─────────
@@ -52,6 +71,12 @@ public class BuildingPrefabRegistry : MonoBehaviour
     public GameObject GetPrefab(string identifier)
     {
         if (string.IsNullOrEmpty(identifier)) return null;
+
+        // Start() normally fills this. Resolving on first use as well means a caller that
+        // beats Start - or that arrives after a domain reload cleared the statics - still
+        // gets an answer instead of an empty registry.
+        if (_lookup.Count == 0) InitializeFromScene();
+
         _lookup.TryGetValue(identifier, out GameObject prefab);
         return prefab;
     }

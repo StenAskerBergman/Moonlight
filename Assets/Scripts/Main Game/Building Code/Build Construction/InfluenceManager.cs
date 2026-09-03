@@ -199,7 +199,7 @@ public class InfluenceManager : MonoBehaviour
         {
             if (gridSystem == null) return false;
             Cell cell = gridSystem.GetCellAtWorldPosition(worldPosition);
-            if (cell == null || cell.currentTerrainType != Cell.TerrainType.Beach) return false;
+            if (cell == null || !QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType)) return false;
 
             foundingBoat = GetNearestPlayerBoat(worldPosition);
             return foundingBoat != null;

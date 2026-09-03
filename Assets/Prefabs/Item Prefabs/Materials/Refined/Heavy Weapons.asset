@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 810460c2124948d47841d13e30ab2dd1, type: 3}
+  m_Name: Heavy Weapons
+  m_EditorClassIdentifier: 
+  identifier: core:heavy_weapons
+  displayName: Heavy Weapons
+  itemName: heavy_weapons
+  description: Military hardware. Consumed by the Missile Launch Pad.
+  baseValue: 120
+  type: 0
+  Icon: {fileID: 0}
+  unlock:
+    faction: 0
+    populationClass: 0
+    requiredPopulation: 0
+  isSocketable: 0
+  activation:
+    kind: 0
+    allowedScopes: 3
+    durationSeconds: 0
+    charges: 1
+    secondsPerCharge: 0
+  oldSlot: {fileID: 0}
+  newSlot: {fileID: 0}
+  factor: 0
+  powerLevel: 0
+  rarity: 0
+  uses: 0
+  maxStackSize: 0
+  productionRate: 0
+  isStackable: 1
+  isConsumable: 0
+  isCraftable: 0
+  isTradeable: 1
+  isUnique: 0
+  isPerishable: 0
+  isMissionItem: 0

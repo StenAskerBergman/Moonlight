@@ -40,6 +40,17 @@ public static class PlacementRules
     public static bool EvaluateFootprint(GridSystem gridSystem, Vector3Int gridOrigin, Vector3 buildingSize,
                                          BuildingData data, out PlacementVerdict verdict)
     {
+        return EvaluateFootprint(gridSystem, gridOrigin, GridSystem.GetFootprint(buildingSize), data, out verdict);
+    }
+
+    /// <summary>
+    /// The rotation-aware overload. Callers that know the blueprint's facing pass the
+    /// already-rotated footprint so a quarter-turned rectangle tests the cells it will
+    /// actually occupy rather than its unrotated ones.
+    /// </summary>
+    public static bool EvaluateFootprint(GridSystem gridSystem, Vector3Int gridOrigin, Vector2Int footprint,
+                                         BuildingData data, out PlacementVerdict verdict)
+    {
         verdict = PlacementVerdict.Valid;
         if (gridSystem == null)
         {
@@ -47,8 +58,8 @@ public static class PlacementRules
             return false;
         }
 
-        int sizeX = Mathf.Max(1, Mathf.RoundToInt(buildingSize.x));
-        int sizeZ = Mathf.Max(1, Mathf.RoundToInt(buildingSize.z));
+        int sizeX = Mathf.Max(1, footprint.x);
+        int sizeZ = Mathf.Max(1, footprint.y);
 
         for (int x = 0; x < sizeX; x++)
         {
@@ -101,7 +112,15 @@ public static class PlacementRules
         // "data != null" block below, so a building whose BuildingData was never assigned
         // had no terrain rule at all and could be dropped straight into the sea. A
         // building that wants to sit on water has to say so via its buildingType.
-        if (IsWater(cell.currentTerrainType) && !AllowsWater(data))
+        if (data != null && data.requiresQuayFoundation)
+        {
+            if (!QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType))
+            {
+                verdict = PlacementVerdict.WrongTerrain;
+                return false;
+            }
+        }
+        else if (IsWater(cell.currentTerrainType) && !AllowsWater(data))
         {
             verdict = PlacementVerdict.WrongTerrain;
             return false;
@@ -111,7 +130,7 @@ public static class PlacementRules
         {
             if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
             {
-                if (cell.currentTerrainType != Cell.TerrainType.Beach)
+                if (!data.requiresQuayFoundation && cell.currentTerrainType != Cell.TerrainType.Beach)
                 {
                     verdict = PlacementVerdict.WrongTerrain;
                     return false;
@@ -141,6 +160,20 @@ public static class PlacementRules
                 {
                     if (req is GridRequirement gridReq)
                     {
+                        // The quay footprint deliberately spans the land/water boundary,
+                        // so a single-terrain GridRequirement cannot describe it. Keep its
+                        // orthogonal road-access rule, while QuaySystem owns terrain legality.
+                        if (data.requiresQuayFoundation)
+                        {
+                            if (gridReq.requiresRoadAccess
+                                && (RoadNetwork.Instance == null || !RoadNetwork.Instance.HasRoadAccess(cell)))
+                            {
+                                verdict = PlacementVerdict.UnmetRequirement;
+                                return false;
+                            }
+                            continue;
+                        }
+
                         gridReq.SetTargetCell(cell);
                         if (!gridReq.IsSatisfied())
                         {

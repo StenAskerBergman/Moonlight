@@ -9,8 +9,34 @@ public class BuildingCost : MonoBehaviour
 
     public List<ItemData> GetAllCostItems()
     {
-        return new List<ItemData>(costData.costItems);
+        return costData != null && costData.costItems != null
+            ? new List<ItemData>(costData.costItems)
+            : new List<ItemData>();
     }
+
+    /// <summary>
+    /// The item cost of this building, and whether it has one at all.
+    ///
+    /// This is the single place that decides what an unassigned CostData means. No
+    /// building prefab in the project currently carries one, and every reader used to
+    /// dereference costData directly - BaseStorageManager.CanAffordBuilding threw the
+    /// moment an island had a warehouse and placement started routing through island
+    /// storage. A building with no CostData asset states no cost, so it is free; it is
+    /// not "unaffordable", which would make the whole island unbuildable.
+    /// </summary>
+    public bool TryGetCosts(out Dictionary<ItemData, int> costItems)
+    {
+        if (costData == null)
+        {
+            costItems = EmptyCosts;
+            return false;
+        }
+
+        costItems = costData.GetCostItemsDictionary();
+        return costItems.Count > 0;
+    }
+
+    private static readonly Dictionary<ItemData, int> EmptyCosts = new Dictionary<ItemData, int>();
 
     [SerializeField] private string buildingName; 
     [SerializeField] private int expense;          
@@ -50,28 +76,57 @@ public class BuildingCost : MonoBehaviour
             return resourceType;
         }
         
+        /// <summary>
+        /// What this building is called, for the bank's ledger and the UI.
+        ///
+        /// The sibling BuildingProperties is the prefab's authority on identity; this
+        /// component's own buildingData field is never assigned by anything. Falling
+        /// straight through to costData.name meant every building was booked under its
+        /// cost asset - "Basalt Crusher Cost" rather than "Basalt Crusher".
+        /// </summary>
         public string SetBuildingName()
         {
-            buildingName = buildingData.buildingName;    
+            if (buildingData != null && !string.IsNullOrEmpty(buildingData.buildingName))
+            {
+                buildingName = buildingData.buildingName;
+                return buildingName;
+            }
 
+            BuildingProperties properties = GetComponent<BuildingProperties>();
+            if (properties != null)
+            {
+                if (properties.buildingData != null && !string.IsNullOrEmpty(properties.buildingData.buildingName))
+                {
+                    buildingName = properties.buildingData.buildingName;
+                    return buildingName;
+                }
+                if (!string.IsNullOrEmpty(properties.buildingName))
+                {
+                    buildingName = properties.buildingName;
+                    return buildingName;
+                }
+            }
+
+            // Instantiated objects carry a "(Clone)" suffix that has no place in a ledger.
+            buildingName = gameObject.name.Replace("(Clone)", string.Empty).Trim();
             return buildingName;
         }
         
         public int SetExpense()
         {
-            expense = costData.expense;
+            if (costData != null) expense = costData.expense;
             return expense;
         }
     
         public int SetPrice()
         {
-            price = costData.price;
+            if (costData != null) price = costData.price;
             return price;   
         }
 
         public int SetRevenue()
         {
-            revenue = costData.revenue;
+            if (costData != null) revenue = costData.revenue;
             return revenue;
         }
 
@@ -85,22 +140,22 @@ public class BuildingCost : MonoBehaviour
 
         public string GetBuildingName()
         {
-            return costData.name;
+            return SetBuildingName();
         }
 
         public int GetExpense()
         {
-            return costData.expense;
+            return SetExpense();
         }
 
         public int GetPrice()
         {
-            return costData.price;
+            return SetPrice();
         }
 
         public int GetRevenue()
         {
-            return costData.revenue;
+            return SetRevenue();
         }
 
     #endregion

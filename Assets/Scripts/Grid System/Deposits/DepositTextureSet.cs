@@ -24,4 +24,36 @@ public sealed class DepositTextureSet : MonoBehaviour
     public Texture2D Height => height;
     public Texture2D Bump => bump;
     public Texture2D Parallax => parallax;
+
+    private void Awake()
+    {
+        ApplyTextures();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ApplyTextures();
+    }
+#endif
+
+    public void ApplyTextures()
+    {
+        if (material == null)
+            return;
+
+        if (albedo != null)
+            material.SetTexture("_BaseMap", albedo);
+
+        Texture2D normalTexture = normal != null ? normal : bump;
+
+        if (normalTexture != null)
+            material.SetTexture("_BumpMap", normalTexture);
+
+        if (height != null)
+            material.SetTexture("_HeightMap", height);
+
+        if (parallax != null)
+            material.SetTexture("_ParallaxMap", parallax);
+    }
 }

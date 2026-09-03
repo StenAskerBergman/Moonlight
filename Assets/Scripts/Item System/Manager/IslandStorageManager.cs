@@ -24,6 +24,29 @@ public class IslandStorageManager : StorageManager
             storage = islandStorage;
         }
     }
-    // Override or add new methods to add island-specific behavior.
+    /// <summary>
+    /// Returns the quantity of this commodity legally available for export,
+    /// strictly respecting the island's protected minimum stock (IslandTradeRules.MinStockToRetain).
+    /// </summary>
+    public int GetAvailableForExport(ItemData item)
+    {
+        if (item == null) return 0;
+        int currentStock = GetItemQuantity(item);
+        IslandTradeRules rules = GetComponent<IslandTradeRules>();
+        int reserve = (rules != null) ? Mathf.Max(0, rules.GetRule(item).MinStockToRetain) : 0;
+        return Mathf.Max(0, currentStock - reserve);
+    }
+
+    /// <summary>
+    /// Returns the remaining storage capacity for this item on the island.
+    /// </summary>
+    public int GetRemainingCapacity(ItemData item)
+    {
+        if (item == null) return 0;
+        int limit = GetCapacityLimit();
+        if (limit <= 0) return 9999;
+        int currentStock = GetItemQuantity(item);
+        return Mathf.Max(0, limit - currentStock);
+    }
 }
 

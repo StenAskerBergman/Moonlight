@@ -891,7 +891,28 @@ public class UnitInventory : MonoBehaviour, IUniqueIdentifier
     public int GetItemQuantity(ItemData itemData)
     {
         // Return the quantity of the given item
-        return unitStorageManager.GetItemQuantity(itemData);
+        if (unitStorageManager == null) unitStorageManager = GetComponent<UnitStorageManager>();
+        return unitStorageManager != null ? unitStorageManager.GetItemQuantity(itemData) : 0;
+    }
+
+    /// <summary>
+    /// Returns the remaining capacity the ship's hold can take for this item.
+    /// Respects slot availability if the ship does not currently carry this item.
+    /// </summary>
+    public int GetRemainingCapacity(ItemData itemData)
+    {
+        if (itemData == null) return 0;
+        if (unitStorageManager == null) unitStorageManager = GetComponent<UnitStorageManager>();
+
+        int current = GetItemQuantity(itemData);
+        if (current == 0 && unitStorageManager != null && !unitStorageManager.CanAddItem(itemData, 1))
+        {
+            // Ship has no free slot available for this item type
+            return 0;
+        }
+
+        int max = configuredMaxStack > 0 ? configuredMaxStack : (unitStorageManager != null ? unitStorageManager.maxQuantity : 40);
+        return Mathf.Max(0, max - current);
     }
     #endregion
 

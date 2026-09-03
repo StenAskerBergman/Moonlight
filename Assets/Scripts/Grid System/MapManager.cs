@@ -568,9 +568,6 @@ public class MapManager : MonoBehaviour
     // The LATTICE SLOT pitch, not the chunk width. See LatticeSlotSpacing.
     [FormerlySerializedAs("islandSpacing")]
     [SerializeField, HideInInspector] private float legacyIslandSpacing = 20f;
-    [Tooltip("VESTIGIAL. Chunk bounds are now sized from ChunkWorldSize so they match " +
-             "the generated mesh exactly. Nothing reads this.")]
-    [SerializeField] private float islandSize = 10f;
     [SerializeField] private int IslandHeight;
 
     // ---------------------------------------------------------------------------

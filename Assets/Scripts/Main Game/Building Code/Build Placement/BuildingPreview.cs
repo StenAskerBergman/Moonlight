@@ -2,9 +2,6 @@ using UnityEngine;
 
 public class BuildingPreview : MonoBehaviour
 {    
-    // Building Data
-    // public BuildingData buildingData; 
-
     // Inspector Settings and Adjustments 
     // And all the variable used in the code
 
@@ -24,13 +21,16 @@ public class BuildingPreview : MonoBehaviour
     [SerializeField] private Material falsePlacement;
 
     [Header("Facing Arrow")]
-    [Tooltip("Turn the blueprint so its front points away from the island, out to sea.")]
+    [Tooltip("Turn a HARBOR blueprint so its front points away from the island, out to sea. " +
+             "Inland buildings ignore this and keep whatever rotation the player gives them.")]
     [SerializeField] private bool faceAwayFromIsland = true;
     [SerializeField] private float arrowLength = 5f;
     [SerializeField] private float arrowHeight = 2.5f;
     [SerializeField] private Color arrowValidColor = new Color(0.25f, 1f, 0.35f, 0.85f);
     [SerializeField] private Color arrowInvalidColor = new Color(1f, 0.25f, 0.25f, 0.85f);
 
+    private BuildingRotator rotator;
+    private QuayFoundationPreview quayPreview;
     private GameObject facingArrow;
     private Material facingArrowMaterial;
     private GridSystem visibleBuildGrid;
@@ -38,6 +38,21 @@ public class BuildingPreview : MonoBehaviour
     private Vector3 cachedIslandCenter;
 
     // Building Data
+    public Island BoundIsland { get; private set; }
+    public Unit BoundBoat { get; private set; }
+    public bool IsBoundToIsland => BoundIsland != null;
+    public void BindToIsland(Island island, Unit boat = null)
+    {
+        BoundIsland = island;
+        BoundBoat = boat;
+        currentIsland = island;
+        if (island != null)
+        {
+            UpdateGridSystem(island.GetComponentInChildren<GridSystem>());
+            transform.SetParent(island.transform);
+        }
+    }
+
     public BuildingData buildingData;
     public BuildingProperties buildingProperties;
     private BuildingRequirements buildingRequirements;
@@ -52,6 +67,7 @@ public class BuildingPreview : MonoBehaviour
 
         private void Start()
         {
+            rotator = GetComponent<BuildingRotator>();
 
             buildingData = GetBuildingData();
             buildingProperties = GetPropertiesData();
@@ -83,6 +99,7 @@ public class BuildingPreview : MonoBehaviour
     
     private void OnPlayerEnterIsland(Island island)
     {
+        if (IsBoundToIsland) return;
         currentIsland = island;
     }
 
@@ -122,7 +139,10 @@ public class BuildingPreview : MonoBehaviour
     {
         localCanPlace = canPlace;
 
-        EnsureFacingArrow();
+        // Only a harbor blueprint gets the seaward arrow - it is the only one whose
+        // facing is decided for it.
+        if (IsHarborBlueprint()) EnsureFacingArrow();
+        else if (facingArrow != null) facingArrow.SetActive(false);
 
         MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
         Material targetMaterial = canPlace ? truePlacement : falsePlacement;
@@ -136,7 +156,22 @@ public class BuildingPreview : MonoBehaviour
             renderer.material = targetMaterial;
         }
 
-        OverlayMaterial.SetColor(facingArrowMaterial, canPlace ? arrowValidColor : arrowInvalidColor);
+        if (facingArrowMaterial != null)
+        {
+            OverlayMaterial.SetColor(facingArrowMaterial, canPlace ? arrowValidColor : arrowInvalidColor);
+        }
+    }
+
+    /// <summary>
+    /// Whether this blueprint is a harbor - the only kind with a seaward side. Uses the
+    /// same test BuildingChecker and BuildInteraction use to decide what founds an island,
+    /// so all three agree on what counts as a harbor.
+    /// </summary>
+    private bool IsHarborBlueprint()
+    {
+        if (buildingData != null && buildingData.requiresQuayFoundation) return true;
+
+        return InfluenceManager.IsHarborBuilding(buildingProperties);
     }
 
     #region Facing Arrow
@@ -226,14 +261,24 @@ public class BuildingPreview : MonoBehaviour
     private void FaceOutwards()
     {
         if (!faceAwayFromIsland || currentIsland == null) return;
+        if (!IsHarborBlueprint()) return;
 
         Vector3 outward = transform.position - GetIslandCenter(currentIsland);
         outward.y = 0f;
+        if (outward.sqrMagnitude <= 0.0001f) return;
 
-        if (outward.sqrMagnitude > 0.0001f)
+        Quaternion facing = Quaternion.LookRotation(outward.normalized, Vector3.up);
+
+        // BuildingRotator owns the blueprint's rotation; this only supplies the
+        // orientation it starts from. Assigning transform.rotation here unconditionally
+        // ran after the rotator every frame and undid every scroll the player made.
+        if (rotator != null)
         {
-            transform.rotation = Quaternion.LookRotation(outward.normalized, Vector3.up);
+            rotator.SetBaseRotation(facing);
+            return;
         }
+
+        transform.rotation = facing;
     }
 
     #endregion
@@ -310,6 +355,8 @@ public class BuildingPreview : MonoBehaviour
         #region Hovering Mechanics 
             
         // Assigns Island
+        if (!IsBoundToIsland)
+        {
             Island hoveredIsland = IslandManager.instance.GetHoveredIsland();
             if (hoveredIsland != null)
             {
@@ -325,47 +372,106 @@ public class BuildingPreview : MonoBehaviour
                     UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
                 }
             }
+        }
+        else
+        {
+            currentIsland = BoundIsland;
+            if (gridSystem == null && currentIsland != null)
+            {
+                UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
+            }
+        }
         
         // Assigns Parent
-            if (currentIsland != null)
+        if (currentIsland != null)
+        {
+            if (transform.parent != currentIsland.transform)
             {
                 transform.SetParent(currentIsland.transform);
-
-                RaycastHit hit;
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-                // Same reason as BuildingChecker: the island's tall hover trigger sits on
-                // the Ground layer and would otherwise catch the ray before the terrain.
-                if (Physics.Raycast(ray, out hit, 1000f, groundLayer, QueryTriggerInteraction.Ignore))
-                {
-                    Vector3 newPos = hit.point;
-                    newPos.y = offsetY;
-
-                    if (currentIsland != null)
-                    {
-                        switch (snapMode)
-                        {
-                            case SnapMode.Grid:
-                                newPos = gridSystem.GetNearestPointOnGrid(newPos);
-                                break;
-                            case SnapMode.Deposit:
-                                newPos = gridSystem.GetNearestDepositPosition(newPos);
-                                break;
-                        }
-                    }
-
-                    transform.position = newPos;
-                    FaceOutwards();
-                }
             }
-            else
+
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            // Same reason as BuildingChecker: the island's tall hover trigger sits on
+            // the Ground layer and would otherwise catch the ray before the terrain.
+            if (Physics.Raycast(ray, out hit, 1000f, groundLayer, QueryTriggerInteraction.Ignore))
             {
-                UpdateGridSystem(null);
-                transform.SetParent(null);
+                Vector3 newPos = hit.point;
+                newPos.y = offsetY;
+
+                if (gridSystem != null)
+                {
+                    switch (snapMode)
+                    {
+                        case SnapMode.Grid:
+                            newPos = gridSystem.SnapFootprintToGrid(hit.point, GetFootprint());
+
+                            if (buildingData != null && buildingData.requiresQuayFoundation)
+                            {
+                                newPos.y = QuaySystem.GetOrCreate(gridSystem).TopElevationWorld;
+                            }
+                            break;
+                        case SnapMode.Deposit:
+                            newPos = gridSystem.GetNearestDepositPosition(newPos);
+                            break;
+                    }
+                }
+
+                transform.position = newPos;
+                FaceOutwards();
+                UpdateQuayFoundationPreview();
             }
+        }
+        else
+        {
+            UpdateGridSystem(null);
+            transform.SetParent(null);
+        }
         #endregion
     }
     // Update Method Ends
+
+    /// <summary>
+    /// Shows the quay platform this blueprint would stand on - the padded deck and its
+    /// outer retaining wall - resolved through the same grid origin and the same
+    /// QuaySystem cell rule the placer will use a moment later.
+    /// </summary>
+    private void UpdateQuayFoundationPreview()
+    {
+        bool wantsQuay = buildingData != null && buildingData.requiresQuayFoundation && gridSystem != null;
+
+        if (!wantsQuay)
+        {
+            if (quayPreview != null) quayPreview.Hide();
+            return;
+        }
+
+        if (quayPreview == null)
+        {
+            quayPreview = gameObject.AddComponent<QuayFoundationPreview>();
+        }
+
+        Vector2Int footprint = GetFootprint();
+        quayPreview.Show(
+            gridSystem,
+            gridSystem.GetFootprintOrigin(transform.position, footprint),
+            footprint,
+            buildingData.quayFoundationPadding,
+            localCanPlace ? truePlacement : falsePlacement);
+    }
+
+    /// <summary>
+    /// The blueprint's footprint in cells, at its current rotation. Everything that asks
+    /// the grid a question about this blueprint asks with this, so the snap, the
+    /// placement check and the reserved cells cannot disagree.
+    /// </summary>
+    public Vector2Int GetFootprint()
+    {
+        return GridSystem.GetFootprint(
+            BuildingProperties.ResolveSize(buildingProperties, buildingData),
+            transform.rotation);
+    }
 
     // Get Building Data 
     public BuildingData GetBuildingData()

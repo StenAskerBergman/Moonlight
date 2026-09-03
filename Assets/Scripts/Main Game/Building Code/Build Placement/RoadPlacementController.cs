@@ -31,6 +31,10 @@ public class RoadPlacementController : MonoBehaviour
     // While a drag is in progress, act only once per cell the cursor crosses.
     private Cell _lastPaintedCell;
 
+    // Which button, if any, began a stroke that this controller owns. A press that
+    // happened while something else owned the cursor never becomes a road stroke.
+    private int _activeStrokeButton = -1;
+
     private RoadPlacer ActivePlacer
     {
         get
@@ -51,7 +55,11 @@ public class RoadPlacementController : MonoBehaviour
             ToggleRoadMode();
         }
 
-        if (!RoadModeActive) return;
+        if (!RoadModeActive)
+        {
+            _activeStrokeButton = -1;
+            return;
+        }
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -59,26 +67,41 @@ public class RoadPlacementController : MonoBehaviour
             return;
         }
 
-        // A building being positioned owns the cursor - don't lay road under it.
-        if (BuildingChecker.instance != null && BuildingChecker.instance.IsPlacingBuilding) return;
-
         // Releasing a button ends the current stroke, so the same cell can be
         // painted again on the next one.
         if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
         {
             _lastPaintedCell = null;
+            _activeStrokeButton = -1;
         }
 
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+        // A building being positioned owns the cursor - don't lay road under it, and do
+        // not let a press made while it did turn into a stroke once it is gone.
+        bool cursorOwnedByBlueprint = BuildingChecker.instance != null
+                                      && BuildingChecker.instance.IsPlacingBuilding;
+        bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        if (Input.GetMouseButton(0))
+        if (cursorOwnedByBlueprint || pointerOverUI)
         {
-            PaintCellUnderCursor(true);
+            // Cancel a stroke in progress rather than resuming it on the far side.
+            _activeStrokeButton = -1;
+            _lastPaintedCell = null;
+            return;
         }
-        else if (Input.GetMouseButton(1))
+
+        // A stroke starts on the press only. Holding a button that went down elsewhere -
+        // over the HUD, or on the click that placed a building - carries no road intent.
+        if (Input.GetMouseButtonDown(0)) _activeStrokeButton = 0;
+        else if (Input.GetMouseButtonDown(1)) _activeStrokeButton = 1;
+
+        if (_activeStrokeButton < 0) return;
+        if (!Input.GetMouseButton(_activeStrokeButton))
         {
-            PaintCellUnderCursor(false);
+            _activeStrokeButton = -1;
+            return;
         }
+
+        PaintCellUnderCursor(_activeStrokeButton == 0);
     }
 
     public void ToggleRoadMode()
@@ -99,6 +122,9 @@ public class RoadPlacementController : MonoBehaviour
 
         RoadModeActive = true;
         _lastPaintedCell = null;
+
+        // Entering road mode on a click must not consume that same click as a road.
+        _activeStrokeButton = -1;
         OnRoadModeChanged?.Invoke(true);
     }
 
@@ -108,6 +134,7 @@ public class RoadPlacementController : MonoBehaviour
 
         RoadModeActive = false;
         _lastPaintedCell = null;
+        _activeStrokeButton = -1;
         OnRoadModeChanged?.Invoke(false);
     }
 

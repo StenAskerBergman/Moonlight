@@ -1,68 +1,62 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class IslandEcology : MonoBehaviour
 {
+    public UnityEvent OnPositiveEco;
+    public UnityEvent OnNegativeEco;
+    public UnityEvent OnEcoChange;
 
-    // Todo
-    // > Apply Eco changes over time
-    // > Create +/- Eco System Events 
-    // > Create Eco System Events
+    public event Action EcologyChanged;
 
-    // Events
-    public UnityEvent OnPositiveEco;    // On Positive Added
-    public UnityEvent OnNegativeEco;    // On Negative Added
-    public UnityEvent OnEcoChange;      // On Ecology Change 
-
-    // Sub - Unsub
-
-    // Logic for Triggering Events on Change
-
-    //  > OnPositiveEco: Eco Increased on Island
-    //  > OnNegativeEco: Eco Decreased on Island
-    //  > OnEcoChange: Eco Change for the Island
-
-
-    // Ints
-    public int NegEco, PosEco, EcoValue;  
-    
-    // Default Value
+    public int NegEco;
+    public int PosEco;
+    public int EcoValue;
     public int DefaultEcoValue;
 
-    public void Start()
+    private void Start()
     {
-        // Sets Start Values
         EcoValue += DefaultEcoValue;
+        NotifyEcologyChanged();
     }
 
     public void ChangeEco(int amount)
     {
-        if(amount > 0){
+        if (amount > 0)
+        {
             PosEco = DefaultEcoValue + amount;
-        } 
-            
-        if (amount < 0){
-            NegEco = DefaultEcoValue - amount;
+            OnPositiveEco?.Invoke();
         }
+        else if (amount < 0)
+        {
+            NegEco = DefaultEcoValue - amount;
+            OnNegativeEco?.Invoke();
+        }
+        else
+        {
+            return;
+        }
+
+        EcoCalc();
     }
 
-    public void EcoCalc(){
-        EcoValue = NegEco + PosEco;
+    public void EcoCalc()
+    {
+        int newEcoValue = NegEco + PosEco;
+        if (EcoValue == newEcoValue) return;
+
+        EcoValue = newEcoValue;
+        NotifyEcologyChanged();
     }
 
-    // Method to get the current Ecology Rate
-    public int GetCurrentEco()
+    private void NotifyEcologyChanged()
     {
-        return EcoValue;
+        OnEcoChange?.Invoke();
+        EcologyChanged?.Invoke();
     }
-    public int GetPositiveEco()
-    {
-        return PosEco;
-    }            
-    public int GetNegativeEco()
-    {
-        return NegEco;
-    }
+
+    public int GetCurrentEco() => EcoValue;
+    public int GetPositiveEco() => PosEco;
+    public int GetNegativeEco() => NegEco;
 }

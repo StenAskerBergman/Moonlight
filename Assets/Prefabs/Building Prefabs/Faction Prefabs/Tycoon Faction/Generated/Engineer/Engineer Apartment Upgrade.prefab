@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3665120816716995224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5197844439847577046}
+  - component: {fileID: 5774241258983207890}
+  - component: {fileID: 3062223070259631908}
+  - component: {fileID: 3781243384606658093}
+  - component: {fileID: 6915029210852073283}
+  - component: {fileID: -4974745153349572868}
+  m_Layer: 0
+  m_Name: Engineer Apartment Upgrade
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5197844439847577046
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5774241258983207890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
+  buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: bb0690ab31ec9b4499c17f01789d073f, type: 2}
+--- !u!114 &3062223070259631908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: bb0690ab31ec9b4499c17f01789d073f, type: 2}
+  costData: {fileID: 11400000, guid: 2142394842638c640a48aea284cee1ec, type: 2}
+  buildingSize: {x: 4, y: 1, z: 4}
+  buildingName: Engineer Apartment Upgrade
+  buildingDescription: Engineer tier Tycoon civic. Placeholder art and footprint.
+    Incremental upgrade cost from Employee House. Not the cumulative building value.
+  buildingTags: []
+--- !u!114 &3781243384606658093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  costData: {fileID: 11400000, guid: 2142394842638c640a48aea284cee1ec, type: 2}
+  buildingName: 
+  expense: 0
+  price: 0
+  revenue: 0
+  resourceType: 0
+--- !u!114 &6915029210852073283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71a266c03791674085d7b2d13603059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  library: {fileID: 0}
+  alwaysUsePlaceholder: 0
+  overrideProfile: 0
+  profileOverride:
+    key: 
+    shape: 0
+    color: {r: 0.62, g: 0.63, b: 0.66, a: 1}
+    accentColor: {r: 0.42, g: 0.44, b: 0.48, a: 1}
+    height: 1.5
+    footprintFill: 0.9
+  fallbackFootprint: {x: 2, y: 2}
+  alignment: 0
+  addCollider: 1
+--- !u!114 &-4974745153349572868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3665120816716995224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: Engineer Apartment Upgrade
+  headerIcon: {fileID: 0}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 0}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

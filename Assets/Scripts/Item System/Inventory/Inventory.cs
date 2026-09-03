@@ -165,6 +165,40 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     /// </summary>
     public int GetCapacityLimit() => storageManager != null ? storageManager.GetCapacityLimit() : 0;
 
+    /// <summary>
+    /// Returns the quantity of this commodity legally available for export,
+    /// respecting the island-side minimum reserve rules.
+    /// </summary>
+    public int GetAvailableForExport(ItemData item)
+    {
+        if (item == null) return 0;
+        if (storageManager is IslandStorageManager ism)
+        {
+            return ism.GetAvailableForExport(item);
+        }
+
+        int currentStock = GetItemAmount(item);
+        IslandTradeRules rules = GetComponent<IslandTradeRules>();
+        int reserve = (rules != null) ? Mathf.Max(0, rules.GetRule(item).MinStockToRetain) : 0;
+        return Mathf.Max(0, currentStock - reserve);
+    }
+
+    /// <summary>
+    /// Returns the remaining storage capacity for this item.
+    /// </summary>
+    public int GetRemainingCapacity(ItemData item)
+    {
+        if (item == null) return 0;
+        if (storageManager is IslandStorageManager ism)
+        {
+            return ism.GetRemainingCapacity(item);
+        }
+
+        int limit = GetCapacityLimit();
+        if (limit <= 0) return 9999;
+        return Mathf.Max(0, limit - GetItemAmount(item));
+    }
+
     public bool CanAdd(ItemData item, int quantity)
     {
         // Was a copy of CanRemove (GetItemAmount(item) >= quantity), so it asked

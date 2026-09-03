@@ -173,10 +173,10 @@ public class BuildingPlacer : MonoBehaviour
             if (foundingBoat != null)
             {
                 UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-                if (buildingCostPrefab != null && buildingCostPrefab.costData != null && boatInv != null)
+                Dictionary<ItemData, int> costItems;
+                if (buildingCostPrefab != null && boatInv != null && buildingCostPrefab.TryGetCosts(out costItems))
                 {
                     Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
-                    Dictionary<ItemData, int> costItems = buildingCostPrefab.costData.GetCostItemsDictionary();
                     foreach (var kvp in costItems)
                     {
                         if (kvp.Key != null && kvp.Value > 0)
@@ -202,6 +202,15 @@ public class BuildingPlacer : MonoBehaviour
             }
         }
 
+        // Credits are the other half of the price. Bank charges them from its
+        // OnBuildingPlaced handler, which only runs once the building already exists, so
+        // without this the balance simply went negative and nothing could refuse it.
+        if (!CanAffordCredits(buildingCostPrefab))
+        {
+            buildingChecker.CancelBuilding();
+            return;
+        }
+
         // Spawn Building
         GameObject buildingInstance = InstantiateBuilding(buildingPreview, islandTransform);
         if (buildingInstance == null)
@@ -211,15 +220,18 @@ public class BuildingPlacer : MonoBehaviour
         }
 
         BuildingProperties buildingProperties = SetBuildingProperties(buildingInstance, buildingPreview);
-        BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>(); 
+        BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>();
+
+        // Credits come out here, in the same method that just verified they were there.
+        ChargeCredits(buildingCost);
 
         if (isUnsettledIsland && foundingBoat != null)
         {
             UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-            if (buildingCost != null && buildingCost.costData != null && boatInv != null)
+            Dictionary<ItemData, int> paidCostItems;
+            if (buildingCost != null && boatInv != null && buildingCost.TryGetCosts(out paidCostItems))
             {
-                Dictionary<ItemData, int> costItems = buildingCost.costData.GetCostItemsDictionary();
-                foreach (var kvp in costItems)
+                foreach (var kvp in paidCostItems)
                 {
                     if (kvp.Key != null && kvp.Value > 0)
                     {
@@ -253,7 +265,34 @@ public class BuildingPlacer : MonoBehaviour
                          ?? islandTransform.GetComponentInChildren<GridSystem>();
         }
 
-        MarkGridCells(buildingInstance, buildingProperties.buildingSize, placementGrid);
+        // One footprint and one origin, resolved through the grid's own convention, then
+        // used both for the reserved cells and for the quay. Deriving them twice is how
+        // the quay came to sit half a cell away from the building it belongs to.
+        Vector2Int footprint = GridSystem.GetFootprint(
+            BuildingProperties.ResolveSize(
+                buildingProperties,
+                buildingProperties != null ? buildingProperties.buildingData : null),
+            buildingInstance.transform.rotation);
+
+        if (buildingProperties != null
+            && buildingProperties.buildingData != null
+            && buildingProperties.buildingData.requiresQuayFoundation
+            && placementGrid != null)
+        {
+            QuaySystem quay = QuaySystem.GetOrCreate(placementGrid);
+            Vector3 quayPosition = buildingInstance.transform.position;
+            quayPosition.y = quay.TopElevationWorld;
+            buildingInstance.transform.position = quayPosition;
+
+            Building quayOwner = buildingInstance.GetComponent<Building>();
+            quay.RegisterAutomaticFoundation(
+                quayOwner,
+                placementGrid.GetFootprintOrigin(buildingInstance.transform.position, footprint),
+                footprint,
+                buildingProperties.buildingData.quayFoundationPadding);
+        }
+
+        MarkGridCells(buildingInstance, footprint, placementGrid);
 
         // Register Influence Zone (Phase 3)
         InfluenceZone zone = buildingInstance.GetComponent<InfluenceZone>();
@@ -367,6 +406,45 @@ public class BuildingPlacer : MonoBehaviour
         return costs;
     }
 
+    /// <summary>
+    /// Takes the building's credit price. The affordability gate above has already run, so
+    /// this is expected to succeed; a refusal here means something spent the balance
+    /// between the check and the build and is worth hearing about.
+    /// </summary>
+    private void ChargeCredits(BuildingCost buildingCost)
+    {
+        if (buildingCost == null || bank == null) return;
+
+        int price = buildingCost.GetPrice();
+        if (price <= 0) return;
+
+        if (!bank.TrySpend(price, buildingCost.GetBuildingName()))
+        {
+            Debug.LogWarning("Balance changed between approving and building " +
+                             buildingCost.GetBuildingName() + " - it was not charged.", buildingCost);
+        }
+    }
+
+    /// <summary>
+    /// Whether the player can pay this building's credit price. Answers true when there is
+    /// no bank or no price, so a project that has not wired credits up yet is not blocked
+    /// from building anything.
+    /// </summary>
+    private bool CanAffordCredits(BuildingCost buildingCost)
+    {
+        if (buildingCost == null) return true;
+
+        if (bank == null) bank = FindObjectOfType<Bank>();
+        if (bank == null) return true;
+
+        int price = buildingCost.GetPrice();
+        if (bank.CanAfford(price)) return true;
+
+        Debug.Log($"Not enough credits for {buildingCost.GetBuildingName()}: " +
+                  $"{price} needed, {bank.Balance} available.");
+        return false;
+    }
+
     private void DeductCosts(BuildingCost buildingCost, BaseStorageManager currentBaseStorageManager)
     {
         // Use the local BaseStorageManager directly
@@ -377,7 +455,7 @@ public class BuildingPlacer : MonoBehaviour
     }
 
 
-    private void MarkGridCells(GameObject buildingInstance, Vector3 buildingSize, GridSystem placementGrid)
+    private void MarkGridCells(GameObject buildingInstance, Vector2Int footprint, GridSystem placementGrid)
     {
         if (placementGrid == null)
         {
@@ -385,27 +463,19 @@ public class BuildingPlacer : MonoBehaviour
             return;
         }
 
-        Vector3 targetPosition = buildingInstance.transform.position;
-        Vector3Int gridPosition = placementGrid.WorldToCell(targetPosition);
+        Vector3Int origin = placementGrid.GetFootprintOrigin(buildingInstance.transform.position, footprint);
         Building building = buildingInstance.GetComponent<Building>();
 
-        for (int x = 0; x < buildingSize.x; x++)
+        for (int x = 0; x < footprint.x; x++)
         {
-            for (int z = 0; z < buildingSize.z; z++)
+            for (int z = 0; z < footprint.y; z++)
             {
-                int targetX = gridPosition.x + x;
-                int targetZ = gridPosition.z + z;
-
                 // Cell indices are grid-local and a cell's centre is index + 0.5. This
                 // used to multiply the index by cellSize and use it as a WORLD position,
                 // ignoring the island's own transform, so it reserved cells belonging to
                 // whatever happened to sit at those world coordinates.
-                Vector3 targetCellWorldPosition = placementGrid.transform.TransformPoint(
-                    new Vector3((targetX + 0.5f) * placementGrid.cellSize,
-                                0f,
-                                (targetZ + 0.5f) * placementGrid.cellSize));
-
-                placementGrid.MarkCellAsOccupied(targetCellWorldPosition, building);
+                placementGrid.MarkCellAsOccupied(
+                    placementGrid.GetCellCenterWorld(origin.x + x, origin.z + z), building);
             }
         }
     }

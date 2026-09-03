@@ -4,10 +4,25 @@ using UnityEngine.UI;
 public class BuildingButton : MonoBehaviour
 {
     [SerializeField] private GameObject buildingPrefab;
+    [Tooltip("Optional. Left empty, the scene's BuildingSelector is used.")]
     [SerializeField] private BuildingSelector buildingSelector;
+
+    // Resolved rather than required. A button dropped in from a prefab asset cannot carry
+    // a scene reference, and there is only one selector to point at anyway.
+    private BuildingSelector ActiveSelector
+    {
+        get
+        {
+            if (buildingSelector == null) buildingSelector = BuildingSelector.Active;
+            return buildingSelector;
+        }
+    }
 
     /// <summary>Returns the building prefab this button is configured to place.</summary>
     public GameObject GetBuildingPrefab() => buildingPrefab;
+
+    /// <summary>Configures the building prefab this button places.</summary>
+    public void SetBuildingPrefab(GameObject prefab) => buildingPrefab = prefab;
 
     private void Start()
     {
@@ -20,21 +35,20 @@ public class BuildingButton : MonoBehaviour
 
         if (buildingPrefab == null) return;
 
-        // buildingSelector points at a scene object, so a button dropped in from a
-        // prefab asset starts unassigned. Report that instead of throwing on click.
-        if (buildingSelector == null)
+        BuildingSelector selector = ActiveSelector;
+        if (selector == null)
         {
             Debug.LogWarning(
-                $"BuildingButton on '{name}' has no BuildingSelector assigned, so '{buildingPrefab.name}' " +
-                "cannot be previewed. Assign the scene's Building Handler selector to this button.",
+                $"BuildingButton on '{name}' found no BuildingSelector in the scene, so " +
+                $"'{buildingPrefab.name}' cannot be previewed.",
                 this);
             return;
         }
 
         // Cancel any previous preview object
-        buildingSelector.CancelPreview();
+        selector.CancelPreview();
 
         // Spawn new preview object
-        buildingSelector.SpawnPreview(buildingPrefab);
+        selector.SpawnPreview(buildingPrefab);
     }
 }

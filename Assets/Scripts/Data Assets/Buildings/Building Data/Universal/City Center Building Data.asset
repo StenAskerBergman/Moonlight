@@ -12,15 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a0aad94677e5a741920afe8dc0cf989, type: 3}
   m_Name: City Center Building Data
   m_EditorClassIdentifier: 
-  identifier: core:city_center_building_data
+  identifier: core:tycoon_city_center
   buildingName: City Center
-  buildingDescription: Your Islands City Center is the core that connects your islands
-    population.
-  buildingType: Civilan
+  buildingDescription: Worker tier Tycoon civic. Placeholder art and footprint.
+  buildingType: Civic
   buildingSize: {x: 6, y: 0, z: 8}
   buildingTags:
   - Universal
   - Civilan
+  requiresQuayFoundation: 0
+  quayFoundationPadding: 1
   requiredNodeType: 0
   BuildingRequirements:
   - {fileID: 11400000, guid: baca84f334285874d9845af34b226eb5, type: 2}

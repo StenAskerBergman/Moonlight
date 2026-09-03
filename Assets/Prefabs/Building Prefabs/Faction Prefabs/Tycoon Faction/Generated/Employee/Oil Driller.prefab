@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6820789248916058742
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6531728842272610100}
+  - component: {fileID: 1773544375968351761}
+  - component: {fileID: 7660476612027067438}
+  - component: {fileID: 4126780004894855547}
+  - component: {fileID: 5798538434338169606}
+  - component: {fileID: 5786128030021942962}
+  m_Layer: 0
+  m_Name: Oil Driller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6531728842272610100
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1773544375968351761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
+  buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: b47f0625c1e2594478e5c7b01450e6a5, type: 2}
+--- !u!114 &7660476612027067438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: b47f0625c1e2594478e5c7b01450e6a5, type: 2}
+  costData: {fileID: 11400000, guid: bf8eae964117f174d9e8896f2628e0b8, type: 2}
+  buildingSize: {x: 3, y: 1, z: 3}
+  buildingName: Oil Driller
+  buildingDescription: Employee tier Tycoon production. Placeholder art and footprint.
+  buildingTags: []
+--- !u!114 &4126780004894855547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  costData: {fileID: 11400000, guid: bf8eae964117f174d9e8896f2628e0b8, type: 2}
+  buildingName: 
+  expense: 0
+  price: 0
+  revenue: 0
+  resourceType: 0
+--- !u!114 &5798538434338169606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71a266c03791674085d7b2d13603059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  library: {fileID: 0}
+  alwaysUsePlaceholder: 0
+  overrideProfile: 0
+  profileOverride:
+    key: 
+    shape: 0
+    color: {r: 0.62, g: 0.63, b: 0.66, a: 1}
+    accentColor: {r: 0.42, g: 0.44, b: 0.48, a: 1}
+    height: 1.5
+    footprintFill: 0.9
+  fallbackFootprint: {x: 2, y: 2}
+  alignment: 0
+  addCollider: 1
+--- !u!114 &5786128030021942962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6820789248916058742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: Oil Driller
+  headerIcon: {fileID: 21300000, guid: c75a913643c389d4eadfbf974977a654, type: 3}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 21300000, guid: c75a913643c389d4eadfbf974977a654, type: 3}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 21300000, guid: c75a913643c389d4eadfbf974977a654, type: 3}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

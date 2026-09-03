@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2947093672633419484
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4456903529997844327}
+  - component: {fileID: 1025612402584693046}
+  - component: {fileID: 4084072753996514685}
+  - component: {fileID: 6417694073122597580}
+  - component: {fileID: 375773204415006155}
+  - component: {fileID: 1769199623530299654}
+  m_Layer: 0
+  m_Name: Rare-Earth Borer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4456903529997844327
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1025612402584693046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
+  buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: a1fa2c5349bc61440b38006a26f3c581, type: 2}
+--- !u!114 &4084072753996514685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: a1fa2c5349bc61440b38006a26f3c581, type: 2}
+  costData: {fileID: 11400000, guid: 7b0a87bd114ac2f408a76a1a4d19a485, type: 2}
+  buildingSize: {x: 3, y: 1, z: 3}
+  buildingName: Rare-Earth Borer
+  buildingDescription: Executive tier Tycoon production. Placeholder art and footprint.
+  buildingTags: []
+--- !u!114 &6417694073122597580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  costData: {fileID: 11400000, guid: 7b0a87bd114ac2f408a76a1a4d19a485, type: 2}
+  buildingName: 
+  expense: 0
+  price: 0
+  revenue: 0
+  resourceType: 0
+--- !u!114 &375773204415006155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71a266c03791674085d7b2d13603059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  library: {fileID: 0}
+  alwaysUsePlaceholder: 0
+  overrideProfile: 0
+  profileOverride:
+    key: 
+    shape: 0
+    color: {r: 0.62, g: 0.63, b: 0.66, a: 1}
+    accentColor: {r: 0.42, g: 0.44, b: 0.48, a: 1}
+    height: 1.5
+    footprintFill: 0.9
+  fallbackFootprint: {x: 2, y: 2}
+  alignment: 0
+  addCollider: 1
+--- !u!114 &1769199623530299654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2947093672633419484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: Rare-Earth Borer
+  headerIcon: {fileID: 0}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 0}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

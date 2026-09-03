@@ -88,10 +88,25 @@ public class UnitMovement : MonoBehaviour
 
     void Update()
     {
-        //Debug.Log("Agent is on Nav Mesh: "+agent.isOnNavMesh);
-        //Debug.Log("closestHit.position " + closestHit.position);
         ProcessMovementOrders();
-        HandleMovementOrder();
+    }
+
+    public bool HasQueuedOrders => destinationQueue != null && destinationQueue.Count > 0;
+
+    public void ClearQueue()
+    {
+        destinationQueue?.Clear();
+    }
+
+    public void SetDirectDestination(Vector3 destination)
+    {
+        destinationQueue?.Clear();
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.SetDestination(destination);
+        }
     }
 
     // PMO

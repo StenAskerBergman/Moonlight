@@ -70,9 +70,51 @@ public class CameraRig : MonoBehaviour
 
         Camera controlledCamera = cameraTransform != null ? cameraTransform.GetComponent<Camera>() : GetComponentInChildren<Camera>();
         underwaterTransition.Configure(controlledCamera, seaLevel);
-        // Debug.Log(blueprintScript.RotationMode);
-        // Debug.Log(rotationMode);
     }
+
+    void OnEnable()
+    {
+        if (underwaterTransition != null)
+            underwaterTransition.OnSubmersionChanged += HandleSubmersionChanged;
+    }
+
+    void OnDisable()
+    {
+        if (underwaterTransition != null)
+            underwaterTransition.OnSubmersionChanged -= HandleSubmersionChanged;
+    }
+
+    private void HandleSubmersionChanged(bool isSubmerged)
+    {
+        // When crossing is committed at 100% concealment, place camera target onto the arriving shelf
+        if (isSubmerged)
+        {
+            float currentTargetY = transform.TransformPoint(newZoom).y;
+            if (currentTargetY >= seaLevel)
+            {
+                SetZoomWorldY(seaLevel - surfaceRestDistance);
+            }
+        }
+        else
+        {
+            float currentTargetY = transform.TransformPoint(newZoom).y;
+            if (currentTargetY <= seaLevel)
+            {
+                SetZoomWorldY(seaLevel + surfaceRestDistance);
+            }
+        }
+    }
+
+    private void SetZoomWorldY(float targetWorldY)
+    {
+        Vector3 worldPos = transform.TransformPoint(newZoom);
+        worldPos.y = targetWorldY;
+        newZoom = transform.InverseTransformPoint(worldPos);
+        if (cameraTransform != null)
+            cameraTransform.position = worldPos;
+        zoomDistance = newZoom.magnitude;
+    }
+
     void Start(){
         
         newPosition = transform.position;
@@ -250,13 +292,40 @@ public class CameraRig : MonoBehaviour
             float activeZoomSpeed = restingAtSurface ? Mathf.Min(zoomTime, surfaceApproachSpeed) : zoomTime;
             cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * activeZoomSpeed);
 
+            // While transition cover is active (before commitment), strictly prevent camera position from dipping across sea level
+            if (underwaterTransition != null && underwaterTransition.IsTransitioning && !underwaterTransition.IsCrossingConcealed)
+            {
+                Vector3 currentCamPos = cameraTransform.position;
+                if (!underwaterTransition.IsUnderwater && currentCamPos.y < seaLevel + 0.05f)
+                {
+                    currentCamPos.y = seaLevel + 0.05f;
+                    cameraTransform.position = currentCamPos;
+                }
+                else if (underwaterTransition.IsUnderwater && currentCamPos.y > seaLevel - 0.05f)
+                {
+                    currentCamPos.y = seaLevel - 0.05f;
+                    cameraTransform.position = currentCamPos;
+                }
+            }
+
         #endregion
     }
     #endregion
 
+    /// <summary>
+    /// While a blueprint is out the wheel belongs to it - BuildingRotator turns the
+    /// building with the same input. Zooming at the same time made every rotation shove
+    /// the camera up or down.
+    /// </summary>
+    private static bool BlueprintOwnsZoomInput =>
+        BuildingChecker.instance != null && BuildingChecker.instance.IsPlacingBuilding;
+
     private void ApplyZoomInput(float input)
     {
         if (Mathf.Approximately(input, 0f) || cameraTransform == null)
+            return;
+
+        if (BlueprintOwnsZoomInput)
             return;
 
         Vector3 proposedZoom = newZoom + input * zoomAmount;
@@ -274,27 +343,60 @@ public class CameraRig : MonoBehaviour
         float proposedWorldY = transform.TransformPoint(proposedZoom).y;
         float currentTargetWorldY = transform.TransformPoint(newZoom).y;
 
-        if (pauseAtSeaSurface && !crossingCommitted && verticalDirection != 0f)
+        bool divingAcross = currentTargetWorldY > seaLevel && proposedWorldY <= seaLevel;
+        bool surfacingAcross = currentTargetWorldY < seaLevel && proposedWorldY >= seaLevel;
+
+        if (pauseAtSeaSurface && verticalDirection != 0f)
         {
-            bool divingAcross = currentTargetWorldY > seaLevel && proposedWorldY <= seaLevel;
-            bool surfacingAcross = currentTargetWorldY < seaLevel && proposedWorldY >= seaLevel;
-            if (divingAcross || surfacingAcross)
+            if (!crossingCommitted)
             {
-                int side = divingAcross ? 1 : -1;
-                if (!restingAtSurface)
+                if (divingAcross || surfacingAcross)
                 {
-                    BeginSurfaceRest(side);
-                    proposedWorldY = seaLevel + side * surfaceRestDistance;
+                    int side = divingAcross ? 1 : -1;
+                    if (!restingAtSurface)
+                    {
+                        BeginSurfaceRest(side);
+                        proposedWorldY = seaLevel + side * surfaceRestDistance;
+                    }
+                    else if (restingSide == side && crossingInputReleased && Time.unscaledTime >= surfaceRestUntil)
+                    {
+                        restingAtSurface = false;
+                        crossingCommitted = true;
+
+                        if (divingAcross && underwaterTransition != null)
+                            underwaterTransition.RequestDive();
+                        else if (surfacingAcross && underwaterTransition != null)
+                            underwaterTransition.RequestSurface();
+
+                        proposedWorldY = seaLevel + side * surfaceRestDistance;
+                    }
+                    else
+                    {
+                        proposedWorldY = seaLevel + side * surfaceRestDistance;
+                    }
                 }
-                else if (restingSide == side && crossingInputReleased && Time.unscaledTime >= surfaceRestUntil)
+            }
+            else
+            {
+                // Crossing is committed. While transition cover ramps, hold zoom on departing side
+                if (underwaterTransition != null && underwaterTransition.IsTransitioning && !underwaterTransition.IsCrossingConcealed)
                 {
-                    crossingCommitted = true;
-                    restingAtSurface = false;
+                    int departingSide = underwaterTransition.IsUnderwater ? -1 : 1;
+                    proposedWorldY = seaLevel + departingSide * surfaceRestDistance;
                 }
-                else
-                {
-                    proposedWorldY = seaLevel + side * surfaceRestDistance;
-                }
+            }
+        }
+        else if (divingAcross || surfacingAcross)
+        {
+            if (divingAcross && underwaterTransition != null && !underwaterTransition.IsCrossingConcealed)
+            {
+                underwaterTransition.RequestDive();
+                proposedWorldY = seaLevel + surfaceRestDistance;
+            }
+            else if (surfacingAcross && underwaterTransition != null && !underwaterTransition.IsCrossingConcealed)
+            {
+                underwaterTransition.RequestSurface();
+                proposedWorldY = seaLevel - surfaceRestDistance;
             }
         }
 
@@ -329,8 +431,7 @@ public class CameraRig : MonoBehaviour
         if (restingAtSurface && !hasZoomInput)
             crossingInputReleased = true;
 
-        if (crossingCommitted && cameraTransform != null
-            && Mathf.Abs(cameraTransform.position.y - seaLevel) > surfaceRestDistance)
+        if (crossingCommitted && (underwaterTransition == null || !underwaterTransition.IsTransitioning))
             crossingCommitted = false;
     }
 

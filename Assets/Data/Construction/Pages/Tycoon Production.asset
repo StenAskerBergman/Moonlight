@@ -1,0 +1,1199 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d80721b4b99c6494e9e5fbcafe47486f, type: 3}
+  m_Name: Tycoon Production
+  m_EditorClassIdentifier: 
+  Faction: 1
+  Section: 0
+  ProductionLines:
+  - Id: tycoon.building_modules
+    DisplayName: Building Modules
+    OutputIcon: {fileID: 21300000, guid: 9454be0044739cf40b9b4ac19622ab7e, type: 3}
+    Tier: 1
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: basalt_crusher
+      BuildingData: {fileID: 11400000, guid: 0b105e6d3b48b494094a1c86518e611a, type: 2}
+      DisplayName: Basalt Crusher
+      Icon: {fileID: 21300000, guid: 9a76c476defb3ed48a4ee7fca2dcc90a, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: smelter
+      BuildingData: {fileID: 11400000, guid: 7c2b31a9d86406149a7ff5ada02398b0, type: 2}
+      DisplayName: Smelter
+      Icon: {fileID: 21300000, guid: 9454be0044739cf40b9b4ac19622ab7e, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections:
+    - FromNodeId: basalt_crusher
+      ToNodeId: smelter
+      Type: 0
+      JunctionPosition: 0.5
+  - Id: tycoon.liquor
+    DisplayName: Liquor
+    OutputIcon: {fileID: 21300000, guid: 8e1cb91f156c17f449975114029b875b, type: 3}
+    Tier: 1
+    UnlockCondition:
+      faction: 1
+      populationClass: 1
+      requiredPopulation: 60
+    Nodes:
+    - Id: distillery
+      BuildingData: {fileID: 11400000, guid: 607902fabcec6614cb2062176b24db28, type: 2}
+      DisplayName: Distillery
+      Icon: {fileID: 21300000, guid: 8e1cb91f156c17f449975114029b875b, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 1
+        requiredPopulation: 60
+    Connections: []
+  - Id: tycoon.fish
+    DisplayName: Fish
+    OutputIcon: {fileID: 21300000, guid: da36336fb2802ff489cdad5316df6556, type: 3}
+    Tier: 1
+    UnlockCondition:
+      faction: 1
+      populationClass: 1
+      requiredPopulation: 1
+    Nodes:
+    - Id: fishery
+      BuildingData: {fileID: 11400000, guid: 895e74eef1477db418fa6373c3a24a9a, type: 2}
+      DisplayName: Fishery
+      Icon: {fileID: 21300000, guid: da36336fb2802ff489cdad5316df6556, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 1
+        requiredPopulation: 1
+    Connections: []
+  - Id: tycoon.coal_power
+    DisplayName: Coal Power
+    OutputIcon: {fileID: 21300000, guid: 04b266f09b8d7434ba3a2c9e6a46460c, type: 3}
+    Tier: 1
+    UnlockCondition:
+      faction: 1
+      populationClass: 1
+      requiredPopulation: 1
+    Nodes:
+    - Id: rotary
+      BuildingData: {fileID: 11400000, guid: 6e6958465aec432468459691417a3e53, type: 2}
+      DisplayName: Rotary Excavator
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 1
+        requiredPopulation: 1
+    - Id: coal_power_station
+      BuildingData: {fileID: 11400000, guid: bc8fca6e201372349b2e7fbe7ed6efcc, type: 2}
+      DisplayName: Coal Power Station
+      Icon: {fileID: 21300000, guid: 04b266f09b8d7434ba3a2c9e6a46460c, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 1
+        requiredPopulation: 1
+    Connections:
+    - FromNodeId: rotary
+      ToNodeId: coal_power_station
+      Type: 0
+      JunctionPosition: 0.5
+  - Id: tycoon.tools
+    DisplayName: Tools
+    OutputIcon: {fileID: 21300000, guid: 0c9578037d3ed7e428ed80c85f89011d, type: 3}
+    Tier: 2
+    UnlockCondition:
+      faction: 1
+      populationClass: 2
+      requiredPopulation: 1
+    Nodes:
+    - Id: iron_ore
+      BuildingData: {fileID: 11400000, guid: e55265f21e3550d4ab81a239ceaff673, type: 2}
+      DisplayName: Iron Ore Mine
+      Icon: {fileID: 21300000, guid: df2d10c3fd69e3c4f8cf06361d3adcf9, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    - Id: coal_mine
+      BuildingData: {fileID: 11400000, guid: cbd62aaa94e27d24886af844bc2ef3c5, type: 2}
+      DisplayName: Coal Mine
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    - Id: iron_smelter
+      BuildingData: {fileID: 11400000, guid: 161b43f5b8d85464ea5c791ad5b010ab, type: 2}
+      DisplayName: Iron Smelter
+      Icon: {fileID: 21300000, guid: 85526246851b73a4e977966395dd04e6, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    - Id: tools_workshop
+      BuildingData: {fileID: 11400000, guid: 575371ea57675d341aa9862902c7166a, type: 2}
+      DisplayName: Tools Workshop
+      Icon: {fileID: 21300000, guid: 0c9578037d3ed7e428ed80c85f89011d, type: 3}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    Connections:
+    - FromNodeId: iron_ore
+      ToNodeId: iron_smelter
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: coal_mine
+      ToNodeId: iron_smelter
+      Type: 2
+      JunctionPosition: 0.5
+    - FromNodeId: iron_smelter
+      ToNodeId: tools_workshop
+      Type: 0
+      JunctionPosition: 0.5
+  - Id: tycoon.concrete
+    DisplayName: Concrete
+    OutputIcon: {fileID: 21300000, guid: ebecddc59e4e0ec46b5a67b2c1659d10, type: 3}
+    Tier: 2
+    UnlockCondition:
+      faction: 1
+      populationClass: 2
+      requiredPopulation: 1
+    Nodes:
+    - Id: limestone_quarry
+      BuildingData: {fileID: 11400000, guid: 70ef5dfb17358aa41a667dc417204afd, type: 2}
+      DisplayName: Limestone Quarry
+      Icon: {fileID: 21300000, guid: d2b63bb34636fae49aae045bed3eb01c, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    - Id: sand_extractor
+      BuildingData: {fileID: 11400000, guid: f6c3e3a633963ea4287252444afc518f, type: 2}
+      DisplayName: Sand Extractor
+      Icon: {fileID: 21300000, guid: 71ab9af3d6ac09844a92ba74df14c222, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    - Id: concrete_factory
+      BuildingData: {fileID: 11400000, guid: b2df421a6150e3149a89e3ca961cf502, type: 2}
+      DisplayName: Concrete Factory
+      Icon: {fileID: 21300000, guid: ebecddc59e4e0ec46b5a67b2c1659d10, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 1
+    Connections:
+    - FromNodeId: limestone_quarry
+      ToNodeId: concrete_factory
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: sand_extractor
+      ToNodeId: concrete_factory
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.convenience_food
+    DisplayName: Convenience Food
+    OutputIcon: {fileID: 21300000, guid: 97a6cfa25edaf1243b980b485979473a, type: 3}
+    Tier: 2
+    UnlockCondition:
+      faction: 1
+      populationClass: 2
+      requiredPopulation: 360
+    Nodes:
+    - Id: meat_factory
+      BuildingData: {fileID: 11400000, guid: 5b4289ee25ede694ab088b7b418337ff, type: 2}
+      DisplayName: Meat Factory
+      Icon: {fileID: 21300000, guid: 61fb96b336068b3409a6ba2ca73d73a3, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 360
+    - Id: flavor_lab
+      BuildingData: {fileID: 11400000, guid: 6cc5956a8f6350446971406e799fca2e, type: 2}
+      DisplayName: Flavor Lab
+      Icon: {fileID: 21300000, guid: d6221fc38f02f3146b3061b273adfe7c, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 360
+    - Id: food_supply_factory
+      BuildingData: {fileID: 11400000, guid: 2274508f7742f2a42af5dc8b05ab7245, type: 2}
+      DisplayName: Food Supply Factory
+      Icon: {fileID: 21300000, guid: 97a6cfa25edaf1243b980b485979473a, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 360
+    Connections:
+    - FromNodeId: meat_factory
+      ToNodeId: food_supply_factory
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: flavor_lab
+      ToNodeId: food_supply_factory
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.plastics
+    DisplayName: Plastics
+    OutputIcon: {fileID: 21300000, guid: 9a390433e5acf29498459a2ee54ba5b4, type: 3}
+    Tier: 2
+    UnlockCondition:
+      faction: 1
+      populationClass: 2
+      requiredPopulation: 600
+    Nodes:
+    - Id: oil_driller
+      BuildingData: {fileID: 11400000, guid: b47f0625c1e2594478e5c7b01450e6a5, type: 2}
+      DisplayName: Oil Driller
+      Icon: {fileID: 21300000, guid: c75a913643c389d4eadfbf974977a654, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 600
+    - Id: oil_refinery
+      BuildingData: {fileID: 11400000, guid: 2af36638c987f5f4aa009043a8b2b133, type: 2}
+      DisplayName: Oil Refinery
+      Icon: {fileID: 21300000, guid: 12d36e9b7cd2ba04a9561d5af0df44fd, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 600
+    - Id: plastics_factory
+      BuildingData: {fileID: 11400000, guid: 96a3ce7f88b27274ca6514e916aef672, type: 2}
+      DisplayName: Plastics Factory
+      Icon: {fileID: 21300000, guid: 9a390433e5acf29498459a2ee54ba5b4, type: 3}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 600
+    Connections:
+    - FromNodeId: oil_driller
+      ToNodeId: oil_refinery
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: oil_refinery
+      ToNodeId: plastics_factory
+      Type: 0
+      JunctionPosition: 0.5
+  - Id: tycoon.weapons
+    DisplayName: Weapons
+    OutputIcon: {fileID: 21300000, guid: eb8099ce56f3b5e48a5ff50ae362a205, type: 3}
+    Tier: 2
+    UnlockCondition:
+      faction: 1
+      populationClass: 2
+      requiredPopulation: 750
+    Nodes:
+    - Id: iron_ore
+      BuildingData: {fileID: 11400000, guid: e55265f21e3550d4ab81a239ceaff673, type: 2}
+      DisplayName: Iron Ore Mine
+      Icon: {fileID: 21300000, guid: df2d10c3fd69e3c4f8cf06361d3adcf9, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 750
+    - Id: coal_mine
+      BuildingData: {fileID: 11400000, guid: cbd62aaa94e27d24886af844bc2ef3c5, type: 2}
+      DisplayName: Coal Mine
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 750
+    - Id: iron_smelter
+      BuildingData: {fileID: 11400000, guid: 161b43f5b8d85464ea5c791ad5b010ab, type: 2}
+      DisplayName: Iron Smelter
+      Icon: {fileID: 21300000, guid: 85526246851b73a4e977966395dd04e6, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 750
+    - Id: munitions_factory
+      BuildingData: {fileID: 11400000, guid: a9f900bb46403ca40b040437ad4500f2, type: 2}
+      DisplayName: Munitions Factory
+      Icon: {fileID: 21300000, guid: eb8099ce56f3b5e48a5ff50ae362a205, type: 3}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 2
+        requiredPopulation: 750
+    Connections:
+    - FromNodeId: iron_ore
+      ToNodeId: iron_smelter
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: coal_mine
+      ToNodeId: iron_smelter
+      Type: 2
+      JunctionPosition: 0.5
+    - FromNodeId: iron_smelter
+      ToNodeId: munitions_factory
+      Type: 0
+      JunctionPosition: 0.5
+  - Id: tycoon.steel
+    DisplayName: Steel
+    OutputIcon: {fileID: 21300000, guid: f0f309f7193973a4bb4e83bb0c187237, type: 3}
+    Tier: 3
+    UnlockCondition:
+      faction: 1
+      populationClass: 3
+      requiredPopulation: 1
+    Nodes:
+    - Id: iron_ore
+      BuildingData: {fileID: 11400000, guid: e55265f21e3550d4ab81a239ceaff673, type: 2}
+      DisplayName: Iron Ore Mine
+      Icon: {fileID: 21300000, guid: df2d10c3fd69e3c4f8cf06361d3adcf9, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1
+    - Id: rotary
+      BuildingData: {fileID: 11400000, guid: 6e6958465aec432468459691417a3e53, type: 2}
+      DisplayName: Rotary Excavator
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1
+    - Id: coal_mine
+      BuildingData: {fileID: 11400000, guid: cbd62aaa94e27d24886af844bc2ef3c5, type: 2}
+      DisplayName: Coal Mine
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1
+    - Id: smelter
+      BuildingData: {fileID: 11400000, guid: 161b43f5b8d85464ea5c791ad5b010ab, type: 2}
+      DisplayName: Iron Smelter
+      Icon: {fileID: 21300000, guid: 85526246851b73a4e977966395dd04e6, type: 3}
+      Column: 1
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1
+    - Id: steelworks
+      BuildingData: {fileID: 11400000, guid: bd007d28175f91846831e32037760993, type: 2}
+      DisplayName: Steelworks
+      Icon: {fileID: 21300000, guid: f0f309f7193973a4bb4e83bb0c187237, type: 3}
+      Column: 2
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1
+    Connections:
+    - FromNodeId: iron_ore
+      ToNodeId: smelter
+      Type: 1
+      JunctionPosition: 0.55
+    - FromNodeId: rotary
+      ToNodeId: smelter
+      Type: 0
+      JunctionPosition: 0.55
+    - FromNodeId: coal_mine
+      ToNodeId: smelter
+      Type: 2
+      JunctionPosition: 0.55
+    - FromNodeId: smelter
+      ToNodeId: steelworks
+      Type: 0
+      JunctionPosition: 0.55
+  - Id: tycoon.luxury_meals
+    DisplayName: Gourmet Food
+    OutputIcon: {fileID: 21300000, guid: c5f1652b192dc2a4793bc19557da8617, type: 3}
+    Tier: 3
+    UnlockCondition:
+      faction: 1
+      populationClass: 3
+      requiredPopulation: 250
+    Nodes:
+    - Id: lobster
+      BuildingData: {fileID: 11400000, guid: 357fb7171a146944996670a95793c537, type: 2}
+      DisplayName: Lobster Farm
+      Icon: {fileID: 21300000, guid: 9b25f251b5d5bff44b63cdcdc7038a95, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    - Id: truffle
+      BuildingData: {fileID: 11400000, guid: 4816c49b5b46f4145bd0290badb7f605, type: 2}
+      DisplayName: Truffle Farm
+      Icon: {fileID: 21300000, guid: 1fe8d57ce0300e840b8091aca3ab0ca4, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    - Id: gourmet
+      BuildingData: {fileID: 11400000, guid: fa77d4c625864d2459ded67fa8cd31eb, type: 2}
+      DisplayName: Gourmet Factory
+      Icon: {fileID: 21300000, guid: c5f1652b192dc2a4793bc19557da8617, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    Connections:
+    - FromNodeId: lobster
+      ToNodeId: gourmet
+      Type: 0
+      JunctionPosition: 0.55
+    - FromNodeId: truffle
+      ToNodeId: gourmet
+      Type: 2
+      JunctionPosition: 0.55
+  - Id: tycoon.atomic_power
+    DisplayName: Atomic Power
+    OutputIcon: {fileID: 21300000, guid: 8086d8e6012ab5a46864e5b5e9b63b9c, type: 3}
+    Tier: 3
+    UnlockCondition:
+      faction: 1
+      populationClass: 3
+      requiredPopulation: 250
+    Nodes:
+    - Id: uranium
+      BuildingData: {fileID: 11400000, guid: cf45f43365a7e804e90e15df5f09be59, type: 2}
+      DisplayName: Uranium Mine
+      Icon: {fileID: 21300000, guid: 186bb75f29b6f6948a0ed93845325f57, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    - Id: fuel_elements
+      BuildingData: {fileID: 11400000, guid: 6108af665a0e1d74b8f7735cd4508c58, type: 2}
+      DisplayName: Fuel Element Factory
+      Icon: {fileID: 21300000, guid: e13492ac39281d54abdb767136d76a42, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    - Id: nuclear_plant
+      BuildingData: {fileID: 11400000, guid: 436f40730d1549a4ea436193f48b6dc7, type: 2}
+      DisplayName: Nuclear Power Plant
+      Icon: {fileID: 21300000, guid: 8086d8e6012ab5a46864e5b5e9b63b9c, type: 3}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 250
+    Connections:
+    - FromNodeId: uranium
+      ToNodeId: fuel_elements
+      Type: 0
+      JunctionPosition: 0.55
+    - FromNodeId: fuel_elements
+      ToNodeId: nuclear_plant
+      Type: 0
+      JunctionPosition: 0.55
+  - Id: tycoon.champagne
+    DisplayName: Champagne
+    OutputIcon: {fileID: 21300000, guid: 8b0f1e849af61f54886e8fab17496cab, type: 3}
+    Tier: 3
+    UnlockCondition:
+      faction: 1
+      populationClass: 3
+      requiredPopulation: 950
+    Nodes:
+    - Id: vineyard
+      BuildingData: {fileID: 11400000, guid: 361673ade44a3464d9937a8f91df5d95, type: 2}
+      DisplayName: Vineyard
+      Icon: {fileID: 21300000, guid: 1fdaffa3ad55fc7408cacdb773263fa3, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 950
+    - Id: sugar_beet
+      BuildingData: {fileID: 11400000, guid: 286159f036b95414abfc69db295076d7, type: 2}
+      DisplayName: Sugar Beet Plantation
+      Icon: {fileID: 21300000, guid: 688d9c1f77516b24b89aa57a0a42aaa0, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 950
+    - Id: champagne_cellar
+      BuildingData: {fileID: 11400000, guid: 63be5b31a8086104ebeb4f5f09ee555e, type: 2}
+      DisplayName: Champagne Cellar
+      Icon: {fileID: 21300000, guid: 8b0f1e849af61f54886e8fab17496cab, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 950
+    Connections:
+    - FromNodeId: vineyard
+      ToNodeId: champagne_cellar
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: sugar_beet
+      ToNodeId: champagne_cellar
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.heavy_weapons
+    DisplayName: Heavy Weapons
+    OutputIcon: {fileID: 21300000, guid: e0a590ff15befaa43b53a7ed9257750b, type: 3}
+    Tier: 3
+    UnlockCondition:
+      faction: 1
+      populationClass: 3
+      requiredPopulation: 1200
+    Nodes:
+    - Id: iron_ore
+      BuildingData: {fileID: 11400000, guid: e55265f21e3550d4ab81a239ceaff673, type: 2}
+      DisplayName: Iron Ore Mine
+      Icon: {fileID: 21300000, guid: df2d10c3fd69e3c4f8cf06361d3adcf9, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    - Id: coal_mine
+      BuildingData: {fileID: 11400000, guid: cbd62aaa94e27d24886af844bc2ef3c5, type: 2}
+      DisplayName: Coal Mine
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    - Id: iron_smelter
+      BuildingData: {fileID: 11400000, guid: 161b43f5b8d85464ea5c791ad5b010ab, type: 2}
+      DisplayName: Iron Smelter
+      Icon: {fileID: 21300000, guid: 85526246851b73a4e977966395dd04e6, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    - Id: uranium
+      BuildingData: {fileID: 11400000, guid: cf45f43365a7e804e90e15df5f09be59, type: 2}
+      DisplayName: Uranium Mine
+      Icon: {fileID: 21300000, guid: 186bb75f29b6f6948a0ed93845325f57, type: 3}
+      Column: 0
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    - Id: explosives_factory
+      BuildingData: {fileID: 11400000, guid: 3feb16b35d29bcc4a8719da23ae547e0, type: 2}
+      DisplayName: Explosives Factory
+      Icon: {fileID: 21300000, guid: 8e147e1a9fdd2fe4d8e9bde7ecbb9c42, type: 3}
+      Column: 1
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    - Id: arsenal
+      BuildingData: {fileID: 11400000, guid: e72299db6d07bd34999431b8dabfb192, type: 2}
+      DisplayName: Arsenal
+      Icon: {fileID: 21300000, guid: e0a590ff15befaa43b53a7ed9257750b, type: 3}
+      Column: 2
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 3
+        requiredPopulation: 1200
+    Connections:
+    - FromNodeId: iron_ore
+      ToNodeId: iron_smelter
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: coal_mine
+      ToNodeId: iron_smelter
+      Type: 2
+      JunctionPosition: 0.5
+    - FromNodeId: uranium
+      ToNodeId: explosives_factory
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: iron_smelter
+      ToNodeId: arsenal
+      Type: 1
+      JunctionPosition: 0.5
+    - FromNodeId: explosives_factory
+      ToNodeId: arsenal
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.jewellery
+    DisplayName: Jewellery
+    OutputIcon: {fileID: 21300000, guid: 230117bab589ffe4ea9ef00fa33d0b25, type: 3}
+    Tier: 4
+    UnlockCondition:
+      faction: 1
+      populationClass: 4
+      requiredPopulation: 1
+    Nodes:
+    - Id: gold_refinery
+      BuildingData: {fileID: 11400000, guid: da512c2ba98480b4ca63301fe5553524, type: 2}
+      DisplayName: Gold Refinery
+      Icon: {fileID: 21300000, guid: 4e72fec9c0540724b838a508453374a7, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 1
+    - Id: coal_mine
+      BuildingData: {fileID: 11400000, guid: cbd62aaa94e27d24886af844bc2ef3c5, type: 2}
+      DisplayName: Coal Mine
+      Icon: {fileID: 21300000, guid: 5b892344f365403479ce73c875d4f618, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 1
+    - Id: gold_smeltery
+      BuildingData: {fileID: 11400000, guid: 9e3c3d14b92e8944a84f8709e214c7a4, type: 2}
+      DisplayName: Gold Smeltery
+      Icon: {fileID: 21300000, guid: b126aee843e12104ca9049169ebff2a8, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 1
+    - Id: diamond_harvester
+      BuildingData: {fileID: 11400000, guid: 9aa217aed11f2444ca9fe68ad7adfe8a, type: 2}
+      DisplayName: Diamond Harvester
+      Icon: {fileID: 21300000, guid: d9559dbc8ea9163429a19d547e9049b9, type: 3}
+      Column: 0
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 1
+    - Id: jewelery_manufactory
+      BuildingData: {fileID: 11400000, guid: a7f4987854894c34d9bb69e606f6d13a, type: 2}
+      DisplayName: Jewelery Manufactory
+      Icon: {fileID: 21300000, guid: 230117bab589ffe4ea9ef00fa33d0b25, type: 3}
+      Column: 2
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 1
+    Connections:
+    - FromNodeId: gold_refinery
+      ToNodeId: gold_smeltery
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: coal_mine
+      ToNodeId: gold_smeltery
+      Type: 2
+      JunctionPosition: 0.5
+    - FromNodeId: gold_smeltery
+      ToNodeId: jewelery_manufactory
+      Type: 1
+      JunctionPosition: 0.5
+    - FromNodeId: diamond_harvester
+      ToNodeId: jewelery_manufactory
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.pharmaceuticals
+    DisplayName: Pharmaceuticals
+    OutputIcon: {fileID: 21300000, guid: f15fe5cc879067d41818ab905698e588, type: 3}
+    Tier: 4
+    UnlockCondition:
+      faction: 1
+      populationClass: 4
+      requiredPopulation: 600
+    Nodes:
+    - Id: fat_factory
+      BuildingData: {fileID: 11400000, guid: bf1c01cbff4a88c44a23a428d0319432, type: 2}
+      DisplayName: Fat Factory
+      Icon: {fileID: 21300000, guid: c904fa3a6fe911a439773aa75c402672, type: 3}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    - Id: aquafarm
+      BuildingData: {fileID: 11400000, guid: d798e6939fcf02143ab647bed637bea5, type: 2}
+      DisplayName: Aquafarm
+      Icon: {fileID: 21300000, guid: c318f0bfb1b1162409adfe5b54a87bca, type: 3}
+      Column: 0
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    - Id: chemical_plant
+      BuildingData: {fileID: 11400000, guid: 3cc16428244de084894b8d2553d3aa14, type: 2}
+      DisplayName: Chemical Plant
+      Icon: {fileID: 21300000, guid: 2af8d7d68ee28c44582a4fed2bf94024, type: 3}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    - Id: manganese
+      BuildingData: {fileID: 11400000, guid: 576a7bb20420b8d4fa96020b6568194f, type: 2}
+      DisplayName: Manganese Robot
+      Icon: {fileID: 21300000, guid: 0f1512556c0717248bed203186819f34, type: 3}
+      Column: 0
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    - Id: rare_earth
+      BuildingData: {fileID: 11400000, guid: a1fa2c5349bc61440b38006a26f3c581, type: 2}
+      DisplayName: Rare-Earth Borer
+      Icon: {fileID: 21300000, guid: 0d268f8cf5cf06244aaaabfef9c4b903, type: 3}
+      Column: 1
+      Row: 2
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    - Id: healthcare_office
+      BuildingData: {fileID: 11400000, guid: 54556d638d72d544286bfc62d671c9c6, type: 2}
+      DisplayName: Healthcare Office
+      Icon: {fileID: 21300000, guid: f15fe5cc879067d41818ab905698e588, type: 3}
+      Column: 2
+      Row: 1
+      UnlockCondition:
+        faction: 1
+        populationClass: 4
+        requiredPopulation: 600
+    Connections:
+    - FromNodeId: fat_factory
+      ToNodeId: chemical_plant
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: aquafarm
+      ToNodeId: chemical_plant
+      Type: 2
+      JunctionPosition: 0.5
+    - FromNodeId: manganese
+      ToNodeId: rare_earth
+      Type: 0
+      JunctionPosition: 0.5
+    - FromNodeId: chemical_plant
+      ToNodeId: healthcare_office
+      Type: 1
+      JunctionPosition: 0.5
+    - FromNodeId: rare_earth
+      ToNodeId: healthcare_office
+      Type: 2
+      JunctionPosition: 0.5
+  - Id: tycoon.worker.civic
+    DisplayName: Civic
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: worker_barracks
+      BuildingData: {fileID: 11400000, guid: 775a778245b707e43a1261469b4ec424, type: 2}
+      DisplayName: Worker Barracks
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: city_center
+      BuildingData: {fileID: 11400000, guid: a84cf9061fc8a1041a13d2f424ab3326, type: 2}
+      DisplayName: City Center
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: casino
+      BuildingData: {fileID: 11400000, guid: 9d4249ab960ada6419b9f178820575aa, type: 2}
+      DisplayName: Casino
+      Icon: {fileID: 0}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.worker.fields
+    DisplayName: Fields
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: rice_paddy
+      BuildingData: {fileID: 11400000, guid: c20e0bb62307a0747a85e660b8c7dc2f, type: 2}
+      DisplayName: Rice Paddy
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: pigsty
+      BuildingData: {fileID: 11400000, guid: e180fda8a2dcb9743963a5ac096df2af, type: 2}
+      DisplayName: Pigsty
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: vegetable_cultivation
+      BuildingData: {fileID: 11400000, guid: b22bedc779cc3bc45bd9824923d03447, type: 2}
+      DisplayName: Vegetable Cultivation
+      Icon: {fileID: 0}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.employee.civic
+    DisplayName: Civic
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: employee_house_upgrade
+      BuildingData: {fileID: 11400000, guid: 36e32396ff095734a8bed683bf0d1dc4, type: 2}
+      DisplayName: Employee House Upgrade
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: ministry_of_truth
+      BuildingData: {fileID: 11400000, guid: 7579d1c713fd9da439b457b56ee4a027, type: 2}
+      DisplayName: Ministry of Truth
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: tycoon_shipyard
+      BuildingData: {fileID: 11400000, guid: 4a7ef56d90dc62740ba466bbae5e1c43, type: 2}
+      DisplayName: Tycoon Shipyard
+      Icon: {fileID: 0}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: waste_compactor
+      BuildingData: {fileID: 11400000, guid: 6f5c7cd823d7ad5468f98ab7e5369d23, type: 2}
+      DisplayName: Waste Compactor
+      Icon: {fileID: 0}
+      Column: 3
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.employee.fields
+    DisplayName: Fields
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: slaughterhouse
+      BuildingData: {fileID: 11400000, guid: 245599709ca4dfb468e24278c50c77ae, type: 2}
+      DisplayName: Slaughterhouse
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.engineer.civic
+    DisplayName: Civic
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: engineer_apartment_upgrade
+      BuildingData: {fileID: 11400000, guid: bb0690ab31ec9b4499c17f01789d073f, type: 2}
+      DisplayName: Engineer Apartment Upgrade
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: financial_center
+      BuildingData: {fileID: 11400000, guid: 80dc5e543124a6247beb530e9a4a0b2a, type: 2}
+      DisplayName: Financial Center
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: deacidification_station
+      BuildingData: {fileID: 11400000, guid: f06fd2e6d6ee01648884303bb15daeca, type: 2}
+      DisplayName: Deacidification Station
+      Icon: {fileID: 0}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: banes_avenue
+      BuildingData: {fileID: 11400000, guid: 49643764232271145b14d6cced0c60f4, type: 2}
+      DisplayName: Banes Avenue
+      Icon: {fileID: 0}
+      Column: 3
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.engineer.fields
+    DisplayName: Fields
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: truffle_farm_field
+      BuildingData: {fileID: 11400000, guid: 4d0eca5aa9f339343a2858d07340cc51, type: 2}
+      DisplayName: Truffle Farm Field
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: vineyard_field
+      BuildingData: {fileID: 11400000, guid: bb48c3d992acbf84b95824d1e7de00c9, type: 2}
+      DisplayName: Vineyard Field
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: sugar_beet_field
+      BuildingData: {fileID: 11400000, guid: 4a55a4935e25a0f4db9a0a6f572a5de2, type: 2}
+      DisplayName: Sugar Beet Field
+      Icon: {fileID: 0}
+      Column: 2
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.executive.civic
+    DisplayName: Civic
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: executive_mansion_upgrade
+      BuildingData: {fileID: 11400000, guid: de7757b3c7e94b048b9c328a3d65ec27, type: 2}
+      DisplayName: Executive Mansion Upgrade
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: co2_reservoir
+      BuildingData: {fileID: 11400000, guid: 0519fb31a15c1fd4aa8c5e7f1468f865, type: 2}
+      DisplayName: CO2 Reservoir
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.executive.monuments
+    DisplayName: Monuments
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: missile_launch_pad
+      BuildingData: {fileID: 11400000, guid: c01b56bc40b506c4cbca614eff7c911f, type: 2}
+      DisplayName: Missile Launch Pad
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: corporate_hq_foundation
+      BuildingData: {fileID: 11400000, guid: 4698ed57a3c38e743bedd784c06f2e5f, type: 2}
+      DisplayName: Corporate HQ Foundation
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []
+  - Id: tycoon.executive.fields
+    DisplayName: Fields
+    OutputIcon: {fileID: 0}
+    Tier: 0
+    UnlockCondition:
+      faction: 0
+      populationClass: 0
+      requiredPopulation: 0
+    Nodes:
+    - Id: diamond_harvesting_field
+      BuildingData: {fileID: 11400000, guid: e2a7efe5f234fb84fbb06e77f3e73040, type: 2}
+      DisplayName: Diamond Harvesting Field
+      Icon: {fileID: 0}
+      Column: 0
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    - Id: algae_farm_field
+      BuildingData: {fileID: 11400000, guid: 3eb47d9cfc6a1de4287d5dd44561aee0, type: 2}
+      DisplayName: Algae Farm Field
+      Icon: {fileID: 0}
+      Column: 1
+      Row: 0
+      UnlockCondition:
+        faction: 0
+        populationClass: 0
+        requiredPopulation: 0
+    Connections: []

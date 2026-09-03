@@ -2,6 +2,12 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
+/*
+ Docs
+ https://docs.unity3d.com/2022.3/Documentation/ScriptReference/RenderTexture.html
+ https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@14.0/api/UnityEngine.Rendering.Universal.ScriptableRendererFeature.
+*/
+
 namespace Moonlight.Rendering
 {
     public sealed class UnderwaterTransitionRendererFeature : ScriptableRendererFeature
@@ -18,22 +24,17 @@ namespace Moonlight.Rendering
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            CameraType camType = renderingData.cameraData.cameraType;
-            if ((camType != CameraType.Game && camType != CameraType.SceneView) || !UnderwaterTransitionState.ShouldRender)
+            if (!ShouldRenderForCamera(renderingData.cameraData))
                 return;
 
             renderer.EnqueuePass(pass);
         }
-
-        public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
+        private static bool ShouldRenderForCamera(CameraData cameraData)
         {
-            CameraType camType = renderingData.cameraData.cameraType;
-            if ((camType != CameraType.Game && camType != CameraType.SceneView) || !UnderwaterTransitionState.ShouldRender)
-                return;
-
-            // URP creates camera targets after AddRenderPasses. Accessing the handle
-            // here is required in URP 14 and prevents teardown/Editor camera errors.
-            pass.SetTarget(renderer.cameraColorTargetHandle);
+            return UnderwaterTransitionState.ShouldRender
+                && cameraData.cameraType == CameraType.Game
+                && UnderwaterTransitionState.TargetCamera != null
+                && cameraData.camera == UnderwaterTransitionState.TargetCamera;
         }
 
         protected override void Dispose(bool disposing)
@@ -60,6 +61,9 @@ namespace Moonlight.Rendering
             private static readonly int AbyssDepthThreshold = Shader.PropertyToID("_AbyssDepthThreshold");
             private static readonly int SunScatteringIntensity = Shader.PropertyToID("_SunScatteringIntensity");
             private static readonly int SunDepthExtinction = Shader.PropertyToID("_SunDepthExtinction");
+            private static readonly int LowerApronFadeStart = Shader.PropertyToID("_LowerApronFadeStart");
+            private static readonly int LowerApronFadeEnd = Shader.PropertyToID("_LowerApronFadeEnd");
+            private static readonly int LowerApronFadeStrength = Shader.PropertyToID("_LowerApronFadeStrength");
 
             private static readonly int CausticsStrength = Shader.PropertyToID("_CausticsStrength");
             private static readonly int CausticsScale = Shader.PropertyToID("_CausticsScale");
@@ -73,11 +77,14 @@ namespace Moonlight.Rendering
             private static readonly int TransitionProgress = Shader.PropertyToID("_TransitionProgress");
             private static readonly int GodRayIntensity = Shader.PropertyToID("_GodRayIntensity");
             private static readonly int DebrisDensity = Shader.PropertyToID("_DebrisDensity");
+            private static readonly int DebrisBrightness = Shader.PropertyToID("_DebrisBrightness");
+            private static readonly int DebrisDriftSpeed = Shader.PropertyToID("_DebrisDriftSpeed");
+            private static readonly int DropletIntensity = Shader.PropertyToID("_DropletIntensity");
+            private static readonly int DropletFallSpeed = Shader.PropertyToID("_DropletFallSpeed");
 
             private static readonly int InverseViewProjection = Shader.PropertyToID("_InverseViewProjection");
 
             private readonly Material material;
-            private RTHandle source;
             private RTHandle temporary;
 
             public UnderwaterTransitionPass(RenderPassEvent injectionPoint)
@@ -86,9 +93,9 @@ namespace Moonlight.Rendering
                 var shader = Shader.Find("Hidden/Moonlight/UnderwaterTransition");
                 if (shader != null)
                     material = CoreUtils.CreateEngineMaterial(shader);
-            }
 
-            public void SetTarget(RTHandle cameraColor) => source = cameraColor;
+                ConfigureInput(ScriptableRenderPassInput.Depth);
+            }
 
             public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
             {
@@ -100,6 +107,7 @@ namespace Moonlight.Rendering
 
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
+                RTHandle source = renderingData.cameraData.renderer.cameraColorTargetHandle;
                 if (material == null || source == null)
                     return;
 
@@ -120,6 +128,9 @@ namespace Moonlight.Rendering
                 material.SetFloat(AbyssDepthThreshold, UnderwaterTransitionState.AbyssDepthThreshold);
                 material.SetFloat(SunScatteringIntensity, UnderwaterTransitionState.SunScatteringIntensity);
                 material.SetFloat(SunDepthExtinction, UnderwaterTransitionState.SunDepthExtinction);
+                material.SetFloat(LowerApronFadeStart, UnderwaterTransitionState.LowerApronFadeStart);
+                material.SetFloat(LowerApronFadeEnd, UnderwaterTransitionState.LowerApronFadeEnd);
+                material.SetFloat(LowerApronFadeStrength, UnderwaterTransitionState.LowerApronFadeStrength);
 
                 material.SetFloat(CausticsStrength, UnderwaterTransitionState.CausticsStrength);
                 material.SetFloat(CausticsScale, UnderwaterTransitionState.CausticsScale);
@@ -133,6 +144,10 @@ namespace Moonlight.Rendering
                 material.SetFloat(TransitionProgress, UnderwaterTransitionState.TransitionProgress);
                 material.SetFloat(GodRayIntensity, UnderwaterTransitionState.GodRayIntensity);
                 material.SetFloat(DebrisDensity, UnderwaterTransitionState.DebrisDensity);
+                material.SetFloat(DebrisBrightness, UnderwaterTransitionState.DebrisBrightness);
+                material.SetFloat(DebrisDriftSpeed, UnderwaterTransitionState.DebrisDriftSpeed);
+                material.SetFloat(DropletIntensity, UnderwaterTransitionState.DropletIntensity);
+                material.SetFloat(DropletFallSpeed, UnderwaterTransitionState.DropletFallSpeed);
 
                 Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(renderingData.cameraData.GetProjectionMatrix(), false);
                 Matrix4x4 viewProj = gpuProj * renderingData.cameraData.GetViewMatrix();

@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6457774761679146582
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 647667961924776459}
+  - component: {fileID: 6891055364493159179}
+  - component: {fileID: 1688083228164424460}
+  - component: {fileID: 6803368730202042725}
+  - component: {fileID: 727157708465111352}
+  - component: {fileID: 5798290630650891103}
+  m_Layer: 0
+  m_Name: Diamond Harvesting Field
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &647667961924776459
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6891055364493159179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
+  buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: e2a7efe5f234fb84fbb06e77f3e73040, type: 2}
+--- !u!114 &1688083228164424460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6db63fdf1c9411c469b851c5bdf4879c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentIsland: {fileID: 0}
+  gridSystem: {fileID: 0}
+  buildingProperties: {fileID: 0}
+  buildingData: {fileID: 11400000, guid: e2a7efe5f234fb84fbb06e77f3e73040, type: 2}
+  costData: {fileID: 11400000, guid: d5ac8d62ebb432840ac330f953c79037, type: 2}
+  buildingSize: {x: 1, y: 1, z: 1}
+  buildingName: Diamond Harvesting Field
+  buildingDescription: Executive tier Tycoon field. Placeholder art and footprint.
+    8 fields required.
+  buildingTags: []
+--- !u!114 &6803368730202042725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  costData: {fileID: 11400000, guid: d5ac8d62ebb432840ac330f953c79037, type: 2}
+  buildingName: 
+  expense: 0
+  price: 0
+  revenue: 0
+  resourceType: 0
+--- !u!114 &727157708465111352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71a266c03791674085d7b2d13603059, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  library: {fileID: 0}
+  alwaysUsePlaceholder: 0
+  overrideProfile: 0
+  profileOverride:
+    key: 
+    shape: 0
+    color: {r: 0.62, g: 0.63, b: 0.66, a: 1}
+    accentColor: {r: 0.42, g: 0.44, b: 0.48, a: 1}
+    height: 1.5
+    footprintFill: 0.9
+  fallbackFootprint: {x: 2, y: 2}
+  alignment: 0
+  addCollider: 1
+--- !u!114 &5798290630650891103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6457774761679146582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: Diamond Harvesting Field
+  headerIcon: {fileID: 0}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 0}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0

@@ -88,7 +88,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92c6af76af82c4f70b5c65e919ffea07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 15
+  radius: 26
   zoneType: 5
 --- !u!114 &302138009402818668
 MonoBehaviour:
@@ -133,9 +133,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9698cedf913dd3940973c1a7adfc7475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  slots: []
   level: 1
-  socketedItems:
-  - {fileID: 0}
 --- !u!1 &6489404843122541304
 GameObject:
   m_ObjectHideFlags: 0

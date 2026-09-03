@@ -9,42 +9,82 @@ public class PowerUIManager : MonoBehaviour
     public Text SpentPowerText;
     public Text TotalPowerText;
 
+    [Header("UI References")]
+    [SerializeField] private GameObject powerDisplayRoot;
+    [SerializeField] private Text balanceText;
+    [SerializeField] private Text supplyText;
+    [SerializeField] private Text demandText;
+
     public IslandPower islandPower;
-    private Island currentIsland;
-    public bool IslandSettled = false;
+    public int IslandSettlement;
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromCurrentIsland();
+    }
 
     public void OnCurrentIslandChanged(Island island)
     {
-        if (island == null)
+        UnsubscribeFromCurrentIsland();
+
+        islandPower = island != null ? island.GetComponent<IslandPower>() : null;
+        if (islandPower != null)
         {
-            Debug.Log("Island = Null");
-            IslandSettled = false;
-            return;
+            islandPower.OnPowerChanged += UpdatePowerUI;
         }
-        currentIsland = island;
-        islandPower = island.GetComponent<IslandPower>();
+
         UpdatePowerUI();
+    }
+
+    private void UnsubscribeFromCurrentIsland()
+    {
+        if (islandPower != null)
+        {
+            islandPower.OnPowerChanged -= UpdatePowerUI;
+        }
     }
 
     public void UpdatePowerUI()
     {
-        if (islandPower == null)
+        bool canDisplayPower = islandPower != null && islandPower.Settled;
+        IslandSettlement = canDisplayPower ? 1 : 0;
+
+        if (powerDisplayRoot != null)
         {
-            Debug.Log("islandPower = Null");
-            IslandSettled = false;
+            powerDisplayRoot.SetActive(canDisplayPower);
+        }
+
+        if (!canDisplayPower)
+        {
+            ClearPowerText();
             return;
         }
-        else
-        {
-            if (islandPower.Settled == true)
-            {
-                IslandSettled = islandPower.Settled;
-                // Display the amount of Power in the UI
-                CurrentPowerText.text = "" + islandPower.GetCurrentPower();   // Current Power
-                SpentPowerText.text = "" + islandPower.GetPowerSpent();       // Spent Power
-                TotalPowerText.text = "" + islandPower.GetTotalPower();       // Total Power
-                MadePowerText.text = "" + islandPower.GetMadePower();         // Total Power
-            }
-        }
+
+        SetText(CurrentPowerText, islandPower.GetCurrentPower());
+        SetText(SpentPowerText, islandPower.GetPowerSpent());
+        SetText(TotalPowerText, islandPower.GetTotalPower());
+        SetText(MadePowerText, islandPower.GetMadePower());
+
+        SetText(balanceText, islandPower.GetCurrentPower());
+        SetText(supplyText, islandPower.GetMadePower());
+        SetText(demandText, islandPower.GetPowerSpent());
+    }
+
+    private void ClearPowerText()
+    {
+        SetText(CurrentPowerText, string.Empty);
+        SetText(SpentPowerText, string.Empty);
+        SetText(TotalPowerText, string.Empty);
+        SetText(MadePowerText, string.Empty);
+        SetText(balanceText, string.Empty);
+        SetText(supplyText, string.Empty);
+        SetText(demandText, string.Empty);
+    }
+
+    private static void SetText(Text target, int value) => SetText(target, value.ToString());
+
+    private static void SetText(Text target, string value)
+    {
+        if (target != null) target.text = value;
     }
 }

@@ -97,6 +97,14 @@ public class UnitSelections : MonoBehaviour
             {
                 gameObject.AddComponent<IdleUnitQueueNavigator>();
             }
+            if (GetComponent<PlayerUnitOrderDispatcher>() == null)
+            {
+                gameObject.AddComponent<PlayerUnitOrderDispatcher>();
+            }
+            if (GetComponent<SelectedUnitOrderVisualizer>() == null)
+            {
+                gameObject.AddComponent<SelectedUnitOrderVisualizer>();
+            }
         }
     }
     #endregion
@@ -131,17 +139,6 @@ public class UnitSelections : MonoBehaviour
 
     // Shift Click Select
 
-    /* 
-     * 
-     *  It will always activate the first child 
-     *  of the game object no matter, this also 
-     *  include the first child of any children
-     * 
-     *  Try to always make children unselectable 
-     *  from UC or the US Scripts for less bugs.
-     * 
-     */
-
     public void ShiftClickSelect(Unit unitToAdd)
     {
         LastSelectionWasDrag = false;
@@ -161,7 +158,6 @@ public class UnitSelections : MonoBehaviour
         else
         {
             // Shift Remove
-            unitToAdd.GetComponent<UnitMovement>().enabled = false;
             unitToAdd.transform.GetChild(0).gameObject.SetActive(false);
             (unitToAdd as ISelectable)?.OnDeselect();
             unitsSelected.Remove(unitToAdd);
@@ -184,8 +180,6 @@ public class UnitSelections : MonoBehaviour
     public void DragSelect(Unit unitToAdd)
     {
         LastSelectionWasDrag = true;
-        // unitToAdd was dereferenced below its own null check; bail out up front
-        // instead, so a null/destroyed entry cannot throw out of the selection sweep.
         if (unitToAdd == null) return;
 
         if (!unitsSelected.Contains(unitToAdd))
@@ -193,6 +187,7 @@ public class UnitSelections : MonoBehaviour
             // Call OnSelect on all drag-selected units (was Character-only,
             // which left ships/submarines without outline or HUD).
             (unitToAdd as ISelectable)?.OnSelect();
+
 
             // Add any new Units to Current Selection
             unitsSelected.Add(unitToAdd);
@@ -223,7 +218,6 @@ public class UnitSelections : MonoBehaviour
         foreach (var unit in unitsSelected)
         {
 
-            if (unit.unitType == UnitType.Character) unit.GetComponent<UnitMovement>().enabled = false;
             unit.transform.GetChild(0).gameObject.SetActive(false);
 
             // Call OnDeselect on the deselected units
@@ -410,7 +404,11 @@ public class UnitSelections : MonoBehaviour
         FocusSelectedUnit((currentIndex < 0 ? 0 : currentIndex) + offset);
     }
 
-    private void NotifySelectionChanged()
+    /// <summary>
+    /// Reconciles selection state and notifies selection consumers after a caller has
+    /// changed <see cref="unitsSelected"/> directly.
+    /// </summary>
+    public void NotifySelectionChanged()
     {
         unitsSelected.RemoveAll(unit => unit == null);
         if (FocusedUnit == null || !unitsSelected.Contains(FocusedUnit))

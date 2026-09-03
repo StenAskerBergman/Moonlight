@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class RiverArea : IFeature
 {
-    private bool isBuildable = false;
     private List<Vector3> riverPoints;
 
     // Grid context needed to actually carve a river. IFeature.GenerateFeature() takes
@@ -28,13 +27,7 @@ public class RiverArea : IFeature
 
     public RiverArea()
     {
-        this.isBuildable = false;
         this.riverPoints = new List<Vector3>();
-    }
-
-    public void buildingRoad()
-    {
-        isBuildable = true;
     }
 
     public void GenerateFeature()

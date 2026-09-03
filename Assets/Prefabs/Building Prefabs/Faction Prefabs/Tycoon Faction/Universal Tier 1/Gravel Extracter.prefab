@@ -26,12 +26,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2347878374860206953}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.2, z: 0}
   m_LocalScale: {x: 1.83, y: 0.3780733, z: 1.83}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9011460188820254165}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2596831245876553169
 MeshFilter:
@@ -52,6 +53,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -90,9 +92,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2347878374860206953}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &9011460188820254166
@@ -116,6 +126,7 @@ GameObject:
   - component: {fileID: -7950726100429408182}
   - component: {fileID: -2145090538528256587}
   - component: {fileID: -6376451038893153256}
+  - component: {fileID: 1811873771530257421}
   m_Layer: 0
   m_Name: Gravel Extracter
   m_TagString: notStackable
@@ -130,15 +141,16 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9011460188820254166}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8522881818899326377}
   - {fileID: 9011460189199838193}
   - {fileID: 9011460189800943747}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5458917520764114094
 MonoBehaviour:
@@ -152,7 +164,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  compatibleSeed: {fileID: 0}
   buildingInventory: {fileID: 0}
+  islandInventory: {fileID: 0}
   buildingData: {fileID: 0}
 --- !u!114 &-1891711454010014083
 MonoBehaviour:
@@ -166,14 +180,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  costData: {fileID: 0}
   buildingName: Factory
+  expense: 0
   price: 0
   revenue: 0
-  cost: 0
-  expense: 0
-  buildingProperties: {fileID: 0}
-  buildingData: {fileID: 0}
-  costData: {fileID: 0}
   resourceType: 0
 --- !u!65 &-5547138109784249715
 BoxCollider:
@@ -183,9 +194,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9011460188820254166}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 2, y: 0.1, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!208 &-1122826016688852086
@@ -216,7 +235,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2ab2cdfa1a54fe4bbd1ae341ffe657c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 1
+  unitType: 0
+  moveType: 0
+  inventory: {fileID: 0}
+  unitInventory: {fileID: 0}
+  inventoryUIPrefab: {fileID: 0}
+  categoryUIPrefab: {fileID: 0}
+  selectionUIElements: []
+  displayName: 
+  owner: {fileID: 0}
+  ownerPrefab: {fileID: 0}
+  definition: {fileID: 0}
+  Selectable: 0
+  Targetable: 0
 --- !u!114 &2681780460320286326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -266,14 +297,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756ef739100712641bb170c5f30db08f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  costData: {fileID: 0}
   buildingName: Gravel Extracter
+  expense: 10
   price: 20
   revenue: 0
-  cost: 10
-  expense: 10
-  buildingProperties: {fileID: 0}
-  buildingData: {fileID: 0}
-  costData: {fileID: 0}
   resourceType: 0
 --- !u!114 &4324319228194213602
 MonoBehaviour:
@@ -301,6 +329,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 352f987dc83aa394e9954d0f41df590e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _data: {fileID: 0}
+  fallbackResource: 0
+  fallbackProductionRate: 1
+  productionIntervalSeconds: 2
 --- !u!114 &-2145090538528256587
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -313,6 +345,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c1b21b832abcf14fa409cb7450b23d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  requiredSupplies: []
 --- !u!114 &-6376451038893153256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -327,7 +360,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: 70e338e39eeb92a4584b9dda30c49d81, type: 2}
   inventoryData: {fileID: 0}
-  resourceManager: {fileID: 0}
+--- !u!114 &1811873771530257421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011460188820254166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d1468080137ad4e9c8373a57ef5d98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelMode: 0
+  categoryTitle: PRODUCTION BUILDINGS
+  buildingDisplayName: Gravel Extracter
+  headerIcon: {fileID: 0}
+  portraitImage: {fileID: 0}
+  effectText: +100
+  effectIcon: {fileID: 0}
+  inputIcon: {fileID: 0}
+  inputAmount: 594484
+  inputLabelOverride: 
+  outputIcon: {fileID: 0}
+  outputCapacityOverride: 30
+  upkeepCredits: -50
+  energyValue: -20
+  ecobalanceValue: '-'
+  maxHealth: 1000
+  currentHealth: 1000
+  forcedProductionRate: 100
+  useForcedProductionRate: 0
 --- !u!1 &9011460189199838194
 GameObject:
   m_ObjectHideFlags: 0
@@ -354,12 +417,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9011460189199838194}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9011460188820254165}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9011460189199838198
 MeshFilter:
@@ -380,6 +444,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -452,12 +517,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9011460189800943772}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.2324, y: 1.2324, z: 1.2324}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 9011460188820254165}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &9011460189800943744
 MeshFilter:
@@ -478,6 +544,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1

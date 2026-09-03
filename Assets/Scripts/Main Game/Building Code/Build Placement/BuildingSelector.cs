@@ -2,9 +2,36 @@ using UnityEngine;
 
 public class BuildingSelector : MonoBehaviour
 {
+    private static BuildingSelector active;
+
+    /// <summary>
+    /// The scene's building selector. There is only ever one worth having: it carries no
+    /// per-caller state, so a button, the production menu and a vessel's build interaction
+    /// all want the same instance.
+    /// </summary>
+    public static BuildingSelector Active
+    {
+        get
+        {
+            if (active == null) active = FindObjectOfType<BuildingSelector>();
+            return active;
+        }
+    }
+
+    private void Awake()
+    {
+        if (active == null) active = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (active == this) active = null;
+    }
+
     #region Variables
     [SerializeField] private BuildingChecker buildingChecker;
     [SerializeField] private BuildingRequirements buildingRequirements;
+    [Tooltip("The blueprint object spawned for every building. Assets/Scripts/Main Game/Building Code/BuildingPreview.prefab.")]
     [SerializeField] private GameObject buildingPreviewPrefab;
     [SerializeField] private Vector3 buildingPlacementSize;
 
@@ -55,8 +82,19 @@ public class BuildingSelector : MonoBehaviour
     
     public void SpawnPreview(GameObject buildingPrefab)
     {
+        SpawnPreview(buildingPrefab, null, null);
+    }
+
+    public void SpawnPreview(GameObject buildingPrefab, Island boundIsland, Unit foundingBoat = null)
+    {
         // Destroy any current preview object
         CancelPreview();
+
+        if (buildingPreviewPrefab == null)
+        {
+            Debug.LogError($"{name}: buildingPreviewPrefab is not assigned - no blueprint can be spawned.");
+            return;
+        }
 
         GameObject previewObject = Instantiate(buildingPreviewPrefab);
         BuildingPreview bp = previewObject.GetComponent<BuildingPreview>();
@@ -68,11 +106,18 @@ public class BuildingSelector : MonoBehaviour
             return;
         }
 
-        // Set the correct gridSystem for the new BuildingPreview
-        GridSystem currentIslandGridSystem = GetCurrentIslandGridSystem();
-        if (currentIslandGridSystem != null)
+        if (boundIsland != null)
         {
-            bp.UpdateGridSystem(currentIslandGridSystem);
+            bp.BindToIsland(boundIsland, foundingBoat);
+        }
+        else
+        {
+            // Set the correct gridSystem for the new BuildingPreview
+            GridSystem currentIslandGridSystem = GetCurrentIslandGridSystem();
+            if (currentIslandGridSystem != null)
+            {
+                bp.UpdateGridSystem(currentIslandGridSystem);
+            }
         }
 
         bp.SetBuildingPrefab(buildingPrefab);       // Set the building prefab that the preview represents
