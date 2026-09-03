@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 /// texture objects. Rebuild loaded map previews once assemblies settle so recompiling
 /// scripts does not leave otherwise valid generated chunks white or incomplete.
 /// </summary>
-[InitializeOnLoad]
+// [InitializeOnLoad]
 public static class TerrainGenerationDomainReloadRestorer
 {
     private const int MaximumRestoreFrames = 30;
@@ -18,13 +18,13 @@ public static class TerrainGenerationDomainReloadRestorer
     static TerrainGenerationDomainReloadRestorer()
     {
         EditorSceneManager.sceneOpened += OnSceneOpened;
-        ScheduleRestore();
+        // ScheduleRestore();
     }
 
-    [DidReloadScripts]
+    // [DidReloadScripts]
     private static void OnScriptsReloaded()
     {
-        ScheduleRestore();
+        // ScheduleRestore();
     }
 
     private static void OnSceneOpened(Scene scene, OpenSceneMode mode)
