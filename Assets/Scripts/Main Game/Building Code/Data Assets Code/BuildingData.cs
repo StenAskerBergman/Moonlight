@@ -22,6 +22,10 @@ public class BuildingData : ScriptableObject, IIdentifiable
     public Vector3 buildingSize;
     public string[] buildingTags;
 
+    [Header("Influence & Territory")]
+    [Tooltip("The candidate radius in grid units that this building provides/projects for construction and settlement.")]
+    public float influenceRadius = 0f;
+
     [Header("Harbor Foundation")]
     [Tooltip("Builds this footprint on the island's shared quay platform. Quay buildings may span beach, coast, shallow water, and water cells.")]
     public bool requiresQuayFoundation;

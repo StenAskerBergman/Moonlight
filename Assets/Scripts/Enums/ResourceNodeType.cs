@@ -14,4 +14,9 @@ public enum ResourceNodeType
     OreSeabed = 7,      // Plateau cells (deep seabed mineral deposits)
     HydrothermalVent = 8, // Abyssal cells
     CrudeOil = 9,       // 3x3 extraction sites on buildable underwater plateaus
+    // Inland-water slots. Appended to preserve every existing serialized value.
+    RiverSource = 10,   // Mountain spring feeding a river
+    Waterfall = 11,     // Mountain drop at a river head
+    LakeShore = 12,     // Buildable shore adjoining an alpine lake
+    RiverMouth = 13,    // Estuary where a river pours into the sea
 }

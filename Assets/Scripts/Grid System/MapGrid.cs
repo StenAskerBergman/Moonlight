@@ -45,6 +45,7 @@ public class MapGrid : MonoBehaviour
     private static readonly int PlateauSmoothnessProperty = Shader.PropertyToID("_Smoothness");
     private static readonly int PlateauWorldSeedProperty = Shader.PropertyToID("_WorldSeed");
     private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
+    private const string GeneratedInlandWaterRootName = "Generated Inland Water";
     private const string GeneratedDepositVisualsRootName = "Generated Resource Deposits";
     private const int CrudeOilFootprintSize = 3;
     private const int MinCrudeOilDeposits = 2;
@@ -81,6 +82,8 @@ public class MapGrid : MonoBehaviour
         public Material coastEdgeMaterial;
         public Material beachEdgeMaterial;
         public Material riverEdgeMaterial;  
+        [Tooltip("Optional material for generated river and alpine-lake surfaces. Falls back to the shallow-water material.")]
+        public Material inlandWaterMaterial;
         public Material shallowEdgeMaterial;
         public Material deepSeaEdgeMaterial;
         public Material plateauEdgeMaterial;
@@ -1010,6 +1013,7 @@ public class MapGrid : MonoBehaviour
         TrackGeneratedVisualResource(terrainMesh);
         ApplyTerrainMesh(terrainMesh);
         ApplyPlateauGeometry(plateauGeometry);
+        ApplyInlandWater(InlandWaterMeshBuilder.Build(TerrainSource?.Reservations));
         long meshUploadMs = stageSw.ElapsedMilliseconds;
         if (profile != null) profile.meshUploadMs = meshUploadMs;
 
@@ -1336,6 +1340,28 @@ public class MapGrid : MonoBehaviour
             geometry.Formations,
             ResolvePlateauFormationMaterial(),
             PlateauMaterialRole.Formation);
+    }
+
+    private void ApplyInlandWater(Mesh waterMesh)
+    {
+        Transform existing = transform.Find(GeneratedInlandWaterRootName);
+        if (existing != null)
+        {
+            if (Application.isPlaying) Destroy(existing.gameObject);
+            else DestroyImmediate(existing.gameObject);
+        }
+        if (waterMesh == null || waterMesh.vertexCount == 0) return;
+
+        TrackGeneratedVisualResource(waterMesh);
+        GameObject water = new GameObject(GeneratedInlandWaterRootName);
+        water.layer = gameObject.layer;
+        water.transform.SetParent(transform, false);
+        MeshFilter filter = water.AddComponent<MeshFilter>();
+        filter.sharedMesh = waterMesh;
+        MeshRenderer renderer = water.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = inlandWaterMaterial != null ? inlandWaterMaterial : shallowEdgeMaterial;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
     }
 
     private void PlaceCrudeOilDeposits()

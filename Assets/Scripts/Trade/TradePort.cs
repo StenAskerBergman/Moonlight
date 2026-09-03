@@ -47,6 +47,8 @@ public class TradePort : MonoBehaviour
 
     /// <summary>
     /// Dynamic throughput capacity: scales based on operational harbor facilities on this island.
+    /// <summary>
+    /// Dynamic throughput capacity: scales based on operational harbor facilities on this island.
     /// </summary>
     public int MaxDockingSlots
     {
@@ -58,7 +60,9 @@ public class TradePort : MonoBehaviour
                 int harborCount = 0;
                 foreach (var b in Island.buildings)
                 {
-                    if (b != null && b.gameObject.activeInHierarchy && b.CurrentState != BuildingEnums.BuildingState.Destroyed)
+                    if (b != null && b.gameObject.activeInHierarchy 
+                        && b.CurrentState != BuildingEnums.BuildingState.Destroyed 
+                        && b.CurrentState != BuildingEnums.BuildingState.UnderConstruction)
                     {
                         var props = b.GetComponent<BuildingProperties>();
                         if (props != null && InfluenceManager.IsHarborBuilding(props))
@@ -94,6 +98,7 @@ public class TradePort : MonoBehaviour
             {
                 if (!harborBuilding.gameObject.activeInHierarchy) return false;
                 if (harborBuilding.CurrentState == BuildingEnums.BuildingState.Destroyed) return false;
+                if (harborBuilding.CurrentState == BuildingEnums.BuildingState.UnderConstruction) return false;
                 return true;
             }
 
@@ -108,18 +113,18 @@ public class TradePort : MonoBehaviour
 
     private void Update()
     {
-        // Reconcile any destroyed or inactive ships
-        activeDockedShips.RemoveAll(s => s == null || !s.isActiveAndEnabled);
-        waitingQueue.RemoveAll(s => s == null || !s.isActiveAndEnabled);
+        // Reconcile any destroyed, inactive, or paused ships
+        activeDockedShips.RemoveAll(s => s == null || !s.isActiveAndEnabled || s.IsPaused);
+        waitingQueue.RemoveAll(s => s == null || !s.isActiveAndEnabled || s.IsPaused || s.CurrentState != TradeRouteState.WaitingForDock);
 
-        // Process waiting queue if slots opened up
+        // Process waiting queue if slots opened up (strict FIFO)
         int maxSlots = MaxDockingSlots;
         while (activeDockedShips.Count < maxSlots && waitingQueue.Count > 0)
         {
             var nextShip = waitingQueue[0];
             waitingQueue.RemoveAt(0);
 
-            if (nextShip != null && nextShip.isActiveAndEnabled && nextShip.CurrentState == TradeRouteState.WaitingForDock)
+            if (nextShip != null && nextShip.isActiveAndEnabled && !nextShip.IsPaused && nextShip.CurrentState == TradeRouteState.WaitingForDock)
             {
                 activeDockedShips.Add(nextShip);
                 nextShip.OnDockGranted(this);
@@ -137,22 +142,26 @@ public class TradePort : MonoBehaviour
     #region Docking Throughput
 
     /// <summary>
-    /// Requests a docking slot. Returns true if granted immediately, false if queued.
+    /// Requests a docking slot following strict FIFO queue order.
+    /// Returns true if granted immediately, false if queued.
     /// </summary>
     public bool RequestDock(ShipTradeRouteController ship)
     {
-        if (ship == null) return false;
+        if (ship == null || !ship.isActiveAndEnabled || ship.IsPaused) return false;
 
         // Clean stale references
-        activeDockedShips.RemoveAll(s => s == null || !s.isActiveAndEnabled);
-        waitingQueue.RemoveAll(s => s == null || !s.isActiveAndEnabled);
+        activeDockedShips.RemoveAll(s => s == null || !s.isActiveAndEnabled || s.IsPaused);
+        waitingQueue.RemoveAll(s => s == null || !s.isActiveAndEnabled || s.IsPaused || (s != ship && s.CurrentState != TradeRouteState.WaitingForDock));
 
         if (activeDockedShips.Contains(ship))
         {
             return true;
         }
 
-        if (activeDockedShips.Count < MaxDockingSlots)
+        int maxSlots = MaxDockingSlots;
+
+        // Strict FIFO: Ship can only take an available slot if queue is empty or this ship is first in line
+        if (activeDockedShips.Count < maxSlots && (waitingQueue.Count == 0 || waitingQueue[0] == ship))
         {
             waitingQueue.Remove(ship);
             activeDockedShips.Add(ship);
@@ -204,6 +213,13 @@ public class TradePort : MonoBehaviour
 
     #region Spatial Coordinates (Approach, Berths & Waiting Anchors)
 
+    private int ResolveShipAgentTypeId(NavMeshAgent shipAgent)
+    {
+        if (shipAgent != null) return shipAgent.agentTypeID;
+        int id = NavAgentTypes.Id("Ship");
+        return id != 0 ? id : -1372625422;
+    }
+
     /// <summary>
     /// Calculates or returns the optimal navigable water approach point near this port.
     /// </summary>
@@ -215,19 +231,18 @@ public class TradePort : MonoBehaviour
         }
 
         Vector3 searchCenter = transform.position;
+        Vector3 seaward = GetSeawardDirection();
         if (harborBuilding != null)
         {
             // Center slightly seaward of the harbor building
-            Vector3 fwd = harborBuilding.transform.forward;
-            fwd.y = 0f;
-            searchCenter = harborBuilding.transform.position + (fwd.normalized * 8f);
+            searchCenter = harborBuilding.transform.position + (seaward * 10f);
         }
         else if (Island != null)
         {
             var depot = Island.GetComponentInChildren<Depot>();
             if (depot != null)
             {
-                searchCenter = depot.transform.position;
+                searchCenter = depot.transform.position + (seaward * 10f);
             }
             else
             {
@@ -235,7 +250,7 @@ public class TradePort : MonoBehaviour
             }
         }
 
-        int agentTypeId = shipAgent != null ? shipAgent.agentTypeID : 0;
+        int agentTypeId = ResolveShipAgentTypeId(shipAgent);
         int areaMask = shipAgent != null ? shipAgent.areaMask : -1;
 
         var filter = new NavMeshQueryFilter
@@ -276,7 +291,7 @@ public class TradePort : MonoBehaviour
         float sign = (slotIndex % 2 == 1) ? 1f : -1f;
         Vector3 candidate = basePoint + lateralDir * (offsetDistance * sign);
 
-        int agentTypeId = shipAgent != null ? shipAgent.agentTypeID : 0;
+        int agentTypeId = ResolveShipAgentTypeId(shipAgent);
         int areaMask = shipAgent != null ? shipAgent.areaMask : -1;
         var filter = new NavMeshQueryFilter { agentTypeID = agentTypeId, areaMask = areaMask };
 
@@ -303,7 +318,7 @@ public class TradePort : MonoBehaviour
 
         Vector3 candidate = basePoint + (seawardDir * distance) + (lateralDir * stagger);
 
-        int agentTypeId = shipAgent != null ? shipAgent.agentTypeID : 0;
+        int agentTypeId = ResolveShipAgentTypeId(shipAgent);
         int areaMask = shipAgent != null ? shipAgent.areaMask : -1;
         var filter = new NavMeshQueryFilter { agentTypeID = agentTypeId, areaMask = areaMask };
 
@@ -317,21 +332,38 @@ public class TradePort : MonoBehaviour
 
     private Vector3 GetSeawardDirection()
     {
+        Vector3 seaward = Vector3.forward;
+
         if (harborBuilding != null)
         {
             Vector3 fwd = harborBuilding.transform.forward;
             fwd.y = 0f;
-            if (fwd.sqrMagnitude > 0.01f) return fwd.normalized;
+            if (fwd.sqrMagnitude > 0.01f)
+            {
+                seaward = fwd.normalized;
+            }
         }
 
-        if (Island != null && cachedApproachPoint.HasValue)
+        // Validate that seaward direction actually points away from island interior
+        if (Island != null)
         {
-            Vector3 outFromCenter = cachedApproachPoint.Value - Island.bounds.center;
+            Vector3 islandCenter = Island.bounds.center;
+            Vector3 harborPos = (harborBuilding != null) ? harborBuilding.transform.position : transform.position;
+            Vector3 outFromCenter = harborPos - islandCenter;
             outFromCenter.y = 0f;
-            if (outFromCenter.sqrMagnitude > 0.01f) return outFromCenter.normalized;
+
+            if (outFromCenter.sqrMagnitude > 0.01f)
+            {
+                outFromCenter.Normalize();
+                // If harbor's forward vector points inland (dot < 0), prioritize outFromCenter so it points seaward!
+                if (Vector3.Dot(seaward, outFromCenter) < 0f)
+                {
+                    seaward = outFromCenter;
+                }
+            }
         }
 
-        return Vector3.forward;
+        return seaward;
     }
 
     #endregion
@@ -488,7 +520,7 @@ public class TradePort : MonoBehaviour
             foreach (var b in targetIsland.buildings)
             {
                 if (b == null || !b.gameObject.activeInHierarchy) continue;
-                if (b.CurrentState == BuildingEnums.BuildingState.Destroyed) continue;
+                if (b.CurrentState == BuildingEnums.BuildingState.Destroyed || b.CurrentState == BuildingEnums.BuildingState.UnderConstruction) continue;
                 var props = b.GetComponent<BuildingProperties>();
                 if (props != null && InfluenceManager.IsHarborBuilding(props))
                 {
@@ -501,7 +533,7 @@ public class TradePort : MonoBehaviour
         if (depot != null && depot.gameObject.activeInHierarchy)
         {
             var b = depot.GetComponent<Building>();
-            if (b == null || b.CurrentState != BuildingEnums.BuildingState.Destroyed)
+            if (b == null || (b.CurrentState != BuildingEnums.BuildingState.Destroyed && b.CurrentState != BuildingEnums.BuildingState.UnderConstruction))
             {
                 return true;
             }
@@ -524,7 +556,7 @@ public class TradePort : MonoBehaviour
             foreach (var b in targetIsland.buildings)
             {
                 if (b == null || !b.gameObject.activeInHierarchy) continue;
-                if (b.CurrentState == BuildingEnums.BuildingState.Destroyed) continue;
+                if (b.CurrentState == BuildingEnums.BuildingState.Destroyed || b.CurrentState == BuildingEnums.BuildingState.UnderConstruction) continue;
 
                 var props = b.GetComponent<BuildingProperties>();
                 if (props != null && InfluenceManager.IsHarborBuilding(props))
@@ -557,7 +589,7 @@ public class TradePort : MonoBehaviour
         {
             if (depot == null || !depot.gameObject.activeInHierarchy) continue;
             var b = depot.GetComponent<Building>();
-            if (b != null && b.CurrentState == BuildingEnums.BuildingState.Destroyed) continue;
+            if (b != null && (b.CurrentState == BuildingEnums.BuildingState.Destroyed || b.CurrentState == BuildingEnums.BuildingState.UnderConstruction)) continue;
 
             var port = depot.GetComponent<TradePort>();
             if (port == null)

@@ -229,6 +229,7 @@ public static class BridgePlacementRules
         switch (cell.currentTerrainType)
         {
             case Cell.TerrainType.River:
+            case Cell.TerrainType.Lake:
             case Cell.TerrainType.Stream:
             case Cell.TerrainType.Shallow:
             case Cell.TerrainType.Water:

@@ -198,6 +198,14 @@ public class UnitInventoryUI : InventoryUserface
 
     protected virtual void Awake()
     {
+        // Suppress legacy visual background so modern Anno 2070 UI takes visual precedence
+        var rootImg = GetComponent<Image>();
+        if (rootImg != null && (rootImg.sprite == null || rootImg.sprite.name.Contains("UISprite")))
+        {
+            rootImg.color = new Color(0, 0, 0, 0);
+            rootImg.raycastTarget = false;
+        }
+
         SyncSlots();
     }
 

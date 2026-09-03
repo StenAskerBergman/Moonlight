@@ -29,7 +29,10 @@ public class DisplayManager : MonoBehaviour
         {
             if (_instance != null && _instance != this)
             {
-                Destroy(this.gameObject);
+                if (Application.isPlaying)
+                    Destroy(this.gameObject);
+                else
+                    DestroyImmediate(this.gameObject);
             }
             else
             {

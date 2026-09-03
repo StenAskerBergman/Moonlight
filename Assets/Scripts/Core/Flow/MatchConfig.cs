@@ -27,6 +27,9 @@ public class MatchConfig
     [Tooltip("Whether the starter flagship begins with colonization resources (modules, tools, fish).")]
     public bool startWithResources = true;
 
+    [Tooltip("The player's colour. Drives all ownership accents, selection rings and order-destination buoys.")]
+    public Color playerColor = new Color(1f, 0.87f, 0.15f, 1f);
+
     /// <summary>
     /// A copy, so the lobby can keep editing its own instance after handing one
     /// off - and so the match cannot mutate what the lobby still holds.
@@ -38,7 +41,8 @@ public class MatchConfig
             matchName          = matchName,
             spawnPattern       = spawnPattern,
             startingFactions   = new List<Faction>(startingFactions),
-            startWithResources = startWithResources
+            startWithResources = startWithResources,
+            playerColor        = playerColor
         };
     }
 

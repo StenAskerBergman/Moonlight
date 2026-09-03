@@ -135,7 +135,8 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     /// <returns>Int</returns>
     public int GetItemAmount(ItemData itemData)
     {
-        return storageManager.GetItemQuantity(itemData);
+        EnsureStorageManager();
+        return storageManager != null ? storageManager.GetItemQuantity(itemData) : 0;
     }
     // idea: add boolean to check if item / amount is more than 0 or not
     
@@ -153,9 +154,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
     public bool CanRemove(ItemData item, int quantity)
     {
-        // Implement logic to check if the item can be removed
-        // For example, check if the inventory contains enough of the item
-        return GetItemAmount(item) >= quantity;
+        return item != null && quantity > 0 && GetItemAmount(item) >= quantity;
     }
 
     /// <summary>
@@ -207,28 +206,63 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
         // TradeInteraction.ExecuteTrade fail against any empty inventory.
         // Capacity is the storage manager's business, so ask it.
         if (item == null || quantity <= 0) return false;
+        EnsureStorageManager();
         return storageManager != null && storageManager.CanAddItem(item, quantity);
     }
 
     public void AddItem(ItemData itemData, int amount)
     {
-        storageManager.AddItem(itemData, amount);
-        OnInventoryChanged?.Invoke(); // Notify change
+        TryAddItem(itemData, amount);
+    }
 
-        // After adding the item, update the editor list
-        UpdateItemListForEditor();
+    public bool TryAddItem(ItemData itemData, int amount)
+    {
+        EnsureStorageManager();
+        if (storageManager == null || !storageManager.TryAddItem(itemData, amount)) return false;
 
-        Debug.Log($"<color=orange>Inventory: </color><color=green>Added </color><color=yellow>{amount}</color><color=green> of </color><color=white>{itemData.name}</color><color=green> to the Inventory of </color><color=white>{this.transform.name}</color><color=green>.</color>");
+        PublishChanged(itemData);
+        return true;
     }
 
     public bool RemoveItem(ItemData itemData, int amount)
     {
+        EnsureStorageManager();
+        if (storageManager == null || itemData == null || amount <= 0) return false;
+
         bool removedSuccessfully = storageManager.RemoveItem(itemData, amount);
         if (removedSuccessfully)
         {
-            OnInventoryChanged?.Invoke(); // Notify change
+            PublishChanged(itemData);
         }
         return removedSuccessfully;
+    }
+
+    public bool TryAddItems(IReadOnlyDictionary<ItemData, int> itemsToAdd)
+    {
+        EnsureStorageManager();
+        if (storageManager == null || !storageManager.TryAddItems(itemsToAdd)) return false;
+        PublishChanged(null);
+        return true;
+    }
+
+    public bool TryRemoveItems(IReadOnlyDictionary<ItemData, int> itemsToRemove)
+    {
+        EnsureStorageManager();
+        if (storageManager == null || !storageManager.TryRemoveItems(itemsToRemove)) return false;
+        PublishChanged(null);
+        return true;
+    }
+
+    private void EnsureStorageManager()
+    {
+        if (storageManager == null) storageManager = GetComponent<StorageManager>();
+    }
+
+    private void PublishChanged(ItemData item)
+    {
+        UpdateItemListForEditor();
+        if (item != null) OnItemCountChanged?.Invoke(item, GetItemAmount(item));
+        OnInventoryChanged?.Invoke();
     }
 
     #endregion

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -111,6 +111,31 @@ public static class TycoonConstructionMenuBuilder
             }
         }
     };
+
+    /// <summary>
+    /// Every building prefab already reachable from lane 2 (Public) or lane 3 (Special),
+    /// across all four tier pages.
+    ///
+    /// The production page's appender consults this so a building shown in a civic lane
+    /// does not also get a node in the production graph. Reading it from the same tables
+    /// that build the lanes keeps the two from drifting - a slot added below disappears
+    /// from the production page on the next regenerate, with nothing else to update.
+    /// </summary>
+    public static HashSet<string> GetCivicLanePrefabPaths()
+    {
+        var paths = new HashSet<string>();
+
+        foreach (TierDef tier in Tiers)
+        {
+            if (tier.PublicSlots != null)
+                foreach (SlotDef slot in tier.PublicSlots) paths.Add(slot.PrefabPath);
+
+            if (tier.SpecialSlots != null)
+                foreach (SlotDef slot in tier.SpecialSlots) paths.Add(slot.PrefabPath);
+        }
+
+        return paths;
+    }
 
     [InitializeOnLoadMethod]
     private static void OnDomainReload()

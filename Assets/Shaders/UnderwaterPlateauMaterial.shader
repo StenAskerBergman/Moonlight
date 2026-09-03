@@ -106,17 +106,17 @@ Shader "Custom/UnderwaterPlateauMaterial"
                 float _WorldSeed;
             CBUFFER_END
 
-            float Hash21(float2 point)
+            float Hash21(float2 samplePosition)
             {
-                point = frac(point * float2(123.34, 456.21));
-                point += dot(point, point + 45.32);
-                return frac(point.x * point.y);
+                samplePosition = frac(samplePosition * float2(123.34, 456.21));
+                samplePosition += dot(samplePosition, samplePosition + 45.32);
+                return frac(samplePosition.x * samplePosition.y);
             }
 
-            float ValueNoise(float2 point)
+            float ValueNoise(float2 samplePosition)
             {
-                float2 cell = floor(point);
-                float2 local = frac(point);
+                float2 cell = floor(samplePosition);
+                float2 local = frac(samplePosition);
                 local = local * local * (3.0 - 2.0 * local);
 
                 float a = Hash21(cell);
@@ -126,11 +126,11 @@ Shader "Custom/UnderwaterPlateauMaterial"
                 return lerp(lerp(a, b, local.x), lerp(c, d, local.x), local.y);
             }
 
-            float FractalNoise(float2 point)
+            float FractalNoise(float2 samplePosition)
             {
-                float value = ValueNoise(point) * 0.58;
-                value += ValueNoise(point * 2.03 + 17.7) * 0.29;
-                value += ValueNoise(point * 4.11 - 9.2) * 0.13;
+                float value = ValueNoise(samplePosition) * 0.58;
+                value += ValueNoise(samplePosition * 2.03 + 17.7) * 0.29;
+                value += ValueNoise(samplePosition * 4.11 - 9.2) * 0.13;
                 return value;
             }
 

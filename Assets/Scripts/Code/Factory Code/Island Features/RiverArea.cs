@@ -63,6 +63,10 @@ public class RiverArea : IFeature
 
         if (reservations != null)
         {
+            foreach (var lake in reservations.Lakes)
+            {
+                ApplyReservedLake(grid, size, lake);
+            }
             if (reservations.Rivers.Count > 0)
             {
                 foreach (var river in reservations.Rivers)
@@ -95,6 +99,39 @@ public class RiverArea : IFeature
         foreach (Cell source in sources)
         {
             CarveRiver(grid, size, source);
+        }
+    }
+
+    private void ApplyReservedLake(Cell[,] grid, int size, FeatureReservationMap.LakeBasin lake)
+    {
+        int minX = Mathf.Max(0, Mathf.FloorToInt(lake.Center.x - lake.Radius - 1f));
+        int maxX = Mathf.Min(size - 1, Mathf.CeilToInt(lake.Center.x + lake.Radius + 1f));
+        int minZ = Mathf.Max(0, Mathf.FloorToInt(lake.Center.y - lake.Radius - 1f));
+        int maxZ = Mathf.Min(size - 1, Mathf.CeilToInt(lake.Center.y + lake.Radius + 1f));
+        bool shoreSlotPlaced = false;
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int z = minZ; z <= maxZ; z++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, z), lake.Center);
+                Cell cell = grid[x, z];
+                if (distance <= lake.Radius)
+                {
+                    cell.ChangeTerrainType(Cell.TerrainType.Lake);
+                    cell.SetRiverData(Cell.RiverStatus.LakeSource, Cell.RiverDirection.None);
+                    continue;
+                }
+
+                if (!shoreSlotPlaced
+                    && distance <= lake.Radius + 1.25f
+                    && !cell.IsUnderwater
+                    && !cell.isDeposit)
+                {
+                    cell.SetDeposit(ResourceNodeType.LakeShore);
+                    shoreSlotPlaced = true;
+                }
+            }
         }
     }
 
@@ -151,11 +188,17 @@ public class RiverArea : IFeature
             {
                 cell.SetRiverData(Cell.RiverStatus.RiverSource, dir);
                 cell.ChangeTerrainType(Cell.TerrainType.River);
+                if (!cell.isDeposit)
+                {
+                    cell.SetDeposit(river.SourceKind == FeatureReservationMap.RiverSourceKind.Lake
+                        ? ResourceNodeType.RiverSource
+                        : ResourceNodeType.Waterfall);
+                }
             }
             else if (isLast)
             {
                 cell.SetRiverData(Cell.RiverStatus.RiverMouth, Cell.RiverDirection.None);
-                cell.SetDeposit(ResourceNodeType.LakeMouth);
+                cell.SetDeposit(ResourceNodeType.RiverMouth);
             }
             else if (cell.IsUnderwater)
             {

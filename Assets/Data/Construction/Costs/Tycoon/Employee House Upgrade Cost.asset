@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Employee House Upgrade Cost
   m_EditorClassIdentifier: 
   price: 0
-  revenue: 0
+  revenue: 16
   expense: 0
   costItems:
   - {fileID: 11400000, guid: a41889ecb1c1814469492da25cb01036, type: 2}

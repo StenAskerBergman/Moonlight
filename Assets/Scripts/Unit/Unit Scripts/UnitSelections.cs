@@ -93,6 +93,10 @@ public class UnitSelections : MonoBehaviour
             {
                 gameObject.AddComponent<MultiUnitSelectionPanel>();
             }
+            if (GetComponent<UnitInformationPanel>() == null && UnitInformationPanel.Instance == null)
+            {
+                gameObject.AddComponent<UnitInformationPanel>();
+            }
             if (GetComponent<IdleUnitQueueNavigator>() == null)
             {
                 gameObject.AddComponent<IdleUnitQueueNavigator>();

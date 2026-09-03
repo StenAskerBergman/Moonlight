@@ -61,6 +61,12 @@ public static class TycoonBuildingCatalogGenerator
         public int Row;          // parallel input within that step
         public string FeedsInto; // name of the building this one supplies, for the connector
 
+        // Monthly economy. Left unset, both are derived from the build price - see
+        // DerivedExpense/DerivedRevenue. Set explicitly for anything the rule cannot know.
+        public int Revenue;
+        public int Expense;
+        public bool HasEconomy;
+
         public Entry(string name, Tier tier, Kind kind, int credits, int modules, int tools,
                      int concrete, int steel, int heavyWeapons = 0, string note = null)
         {
@@ -69,12 +75,25 @@ public static class TycoonBuildingCatalogGenerator
             Concrete = concrete; Steel = steel; HeavyWeapons = heavyWeapons;
             Note = note;
             Line = null; Column = 0; Row = 0; FeedsInto = null;
+            // Unset means "derive from the build price" - see DerivedExpense/DerivedRevenue.
+            Revenue = 0; Expense = 0; HasEconomy = false;
         }
 
         /// <summary>Places this building in the construction menu graph.</summary>
         public Entry At(string line, int column, int row = 0, string feedsInto = null)
         {
             Line = line; Column = column; Row = row; FeedsInto = feedsInto;
+            return this;
+        }
+
+        /// <summary>
+        /// States this building's monthly income and upkeep in credits, overriding the
+        /// price-derived defaults. Use it where the category rule cannot be right -
+        /// residences earn tax and pay no upkeep, which no formula over a build cost knows.
+        /// </summary>
+        public Entry Economy(int revenue, int expense)
+        {
+            Revenue = revenue; Expense = expense; HasEconomy = true;
             return this;
         }
     }
@@ -87,9 +106,9 @@ public static class TycoonBuildingCatalogGenerator
     private static readonly Entry[] Catalog =
     {
         // ---- Worker -------------------------------------------------------------
-        new Entry("Worker Barracks",         Tier.Worker, Kind.Civic,       0,  2,  0,  0,  0).At("Civic", 0, 0, "City Center"),
+        new Entry("Worker Barracks",         Tier.Worker, Kind.Civic,       0,  2,  0,  0,  0).At("Civic", 0, 0, "City Center").Economy(8, 0),
         new Entry("City Center",             Tier.Worker, Kind.Civic,     300,  5,  3,  0,  0).At("Civic", 1, 0, "Casino"),
-        new Entry("Casino",                  Tier.Worker, Kind.Civic,     300,  4,  4,  0,  0).At("Civic", 2, 0, null),
+        new Entry("Casino",                  Tier.Worker, Kind.Civic,     300,  4,  4,  0,  0).At("Civic", 2, 0, null).Economy(40, 24),
         new Entry("Basalt Crusher",          Tier.Worker, Kind.Production, 50,  0,  1,  0,  0).At("Building Modules", 0, 0, "Smelter"),
         new Entry("Smelter",                 Tier.Worker, Kind.Production, 50,  0,  2,  0,  0).At("Building Modules", 1, 0, null),
         new Entry("Distillery",              Tier.Worker, Kind.Production, 50,  2,  1,  0,  0).At("Liquor", 0, 0, null),
@@ -99,7 +118,7 @@ public static class TycoonBuildingCatalogGenerator
 
         // ---- Employee -----------------------------------------------------------
         new Entry("Employee House Upgrade",  Tier.Employee, Kind.Civic,      0,  0,  1,  0,  0, 0,
-                  "Incremental upgrade cost from Worker Barracks. The Employee House already contains the original Barracks investment; do not charge it again.").At("Civic", 0, 0, null),
+                  "Incremental upgrade cost from Worker Barracks. The Employee House already contains the original Barracks investment; do not charge it again.").At("Civic", 0, 0, null).Economy(16, 0),
         new Entry("Iron Ore Mine",           Tier.Employee, Kind.Production, 600, 2,  4,  0,  0).At("Tools", 0, 0, "Iron Smelter"),
         new Entry("Coal Mine",               Tier.Employee, Kind.Production, 600, 2,  2,  0,  0).At("Tools", 0, 1, "Iron Smelter"),
         new Entry("Iron Smelter",            Tier.Employee, Kind.Production, 400, 2,  4,  0,  0).At("Tools", 1, 0, "Tools Workshop"),
@@ -120,7 +139,7 @@ public static class TycoonBuildingCatalogGenerator
 
         // ---- Engineer -----------------------------------------------------------
         new Entry("Engineer Apartment Upgrade", Tier.Engineer, Kind.Civic,     0,  2,  2,  3,  0, 0,
-                  "Incremental upgrade cost from Employee House. Not the cumulative building value.").At("Civic", 0, 0, null),
+                  "Incremental upgrade cost from Employee House. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(32, 0),
         new Entry("Steelworks",              Tier.Engineer, Kind.Production, 400, 6,  6,  8,  0).At("Steel", 0, 0, null),
         new Entry("Lobster Farm",            Tier.Engineer, Kind.Production, 300, 5,  3,  6,  4).At("Gourmet", 0, 0, "Gourmet Factory"),
         new Entry("Truffle Farm",            Tier.Engineer, Kind.Production, 200, 0,  3,  8,  3).At("Gourmet", 0, 1, "Gourmet Factory"),
@@ -133,14 +152,14 @@ public static class TycoonBuildingCatalogGenerator
         new Entry("Champagne Cellar",        Tier.Engineer, Kind.Production, 400, 7,  8, 12,  5).At("Champagne", 1, 0, null),
         new Entry("Explosives Factory",      Tier.Engineer, Kind.Production, 600, 0,  6,  8,  5).At("Military", 0, 0, "Arsenal"),
         new Entry("Arsenal",                 Tier.Engineer, Kind.Production,1000, 4,  8,  0, 12).At("Military", 1, 0, null),
-        new Entry("Financial Center",        Tier.Engineer, Kind.Civic,     1200,20,  8, 30, 15).At("Civic", 1, 0, null),
+        new Entry("Financial Center",        Tier.Engineer, Kind.Civic,     1200,20,  8, 30, 15).At("Civic", 1, 0, null).Economy(150, 96),
         new Entry("Deacidification Station", Tier.Engineer, Kind.Production,2000,15, 20, 15, 10).At("Civic", 2, 0, null),
         new Entry("Banes Avenue",            Tier.Engineer, Kind.Road,        30, 0,  0,  0,  0, 0,
                   "Priced PER TILE. Multiply by the number of tiles laid.").At("Civic", 3, 0, null),
 
         // ---- Executive ----------------------------------------------------------
         new Entry("Executive Mansion Upgrade", Tier.Executive, Kind.Civic,     0,  1,  3,  3,  4, 0,
-                  "Incremental upgrade cost from Engineer Apartment. Not the cumulative building value.").At("Civic", 0, 0, null),
+                  "Incremental upgrade cost from Engineer Apartment. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(64, 0),
         new Entry("Gold Refinery",           Tier.Executive, Kind.Production, 400, 7, 12,  0,  8).At("Jewellery", 0, 0, "Gold Smeltery"),
         new Entry("Gold Smeltery",           Tier.Executive, Kind.Production, 500, 8,  6, 15,  6).At("Jewellery", 1, 0, "Jewelery Manufactory"),
         new Entry("Diamond Harvesting Station", Tier.Executive, Kind.Production,2000,20,12, 0, 0).At("Jewellery", 1, 1, "Jewelery Manufactory"),
@@ -371,8 +390,19 @@ public static class TycoonBuildingCatalogGenerator
         var page = AssetDatabase.LoadAssetAtPath<ConstructionPageDefinition>(PagePath);
         if (page == null) return 0;
 
-        var existingLines = new List<ProductionLineDefinition>(
-            page.ProductionLines ?? new ProductionLineDefinition[0]);
+        // Lines this generator appended previously are dropped and rebuilt. Authored
+        // lines use ids like "tycoon.tools"; appended ones carry a tier segment
+        // ("tycoon.worker.fields"), so the two are told apart without a marker field.
+        var existingLines = new List<ProductionLineDefinition>();
+        foreach (ProductionLineDefinition line in page.ProductionLines ?? new ProductionLineDefinition[0])
+        {
+            if (line != null && IsGeneratedLineId(line.Id)) continue;
+            existingLines.Add(line);
+        }
+        int removed = (page.ProductionLines != null ? page.ProductionLines.Length : 0) - existingLines.Count;
+
+        // Buildings the civic lanes already show must not also appear as production nodes.
+        HashSet<string> civicLanePaths = TycoonConstructionMenuBuilder.GetCivicLanePrefabPaths();
 
         var onPage = new HashSet<BuildingData>();
         var usedLineIds = new HashSet<string>();
@@ -400,6 +430,9 @@ public static class TycoonBuildingCatalogGenerator
 
                 BuildingData data = FindBuildingDataByName(entry.Name);
                 if (data == null || onPage.Contains(data)) continue;
+
+                // Already reachable from a Public or Special lane on this page.
+                if (civicLanePaths.Contains($"{PrefabFolder}/{entry.Tier}/{entry.Name}.prefab")) continue;
 
                 string lineName = string.IsNullOrEmpty(entry.Line) ? "Other" : entry.Line;
                 if (!byLine.TryGetValue(lineName, out List<Entry> bucket))
@@ -465,7 +498,7 @@ public static class TycoonBuildingCatalogGenerator
             }
         }
 
-        if (appended == 0) return 0;
+        if (appended == 0 && removed == 0) return 0;
 
         page.ProductionLines = existingLines.ToArray();
         EditorUtility.SetDirty(page);
@@ -476,6 +509,21 @@ public static class TycoonBuildingCatalogGenerator
         }
 
         return appended;
+    }
+
+    /// <summary>
+    /// Whether a production line id was written by this generator rather than authored by
+    /// hand. Generated ids carry the tier as their second segment.
+    /// </summary>
+    private static bool IsGeneratedLineId(string lineId)
+    {
+        if (string.IsNullOrEmpty(lineId)) return false;
+
+        foreach (Tier tier in new[] { Tier.Worker, Tier.Employee, Tier.Engineer, Tier.Executive })
+        {
+            if (lineId.StartsWith($"tycoon.{tier.ToString().ToLowerInvariant()}.")) return true;
+        }
+        return false;
     }
 
     private static Dictionary<BuildingData, Sprite> CollectAuthoredIcons(ConstructionPageDefinition page)
@@ -666,10 +714,53 @@ public static class TycoonBuildingCatalogGenerator
         Add(costItems, costAmounts, items[HeavyWeaponsItem], entry.HeavyWeapons);
 
         cost.price = entry.Credits;
+        cost.revenue = entry.HasEconomy ? entry.Revenue : DerivedRevenue(entry);
+        cost.expense = entry.HasEconomy ? entry.Expense : DerivedExpense(entry);
         cost.costItems = costItems.ToArray();
         cost.costAmounts = costAmounts.ToArray();
         EditorUtility.SetDirty(cost);
         return cost;
+    }
+
+    // ---------------------------------------------------------------------------------
+    // MONTHLY ECONOMY
+    //
+    // These are DERIVED, not extracted. The cost tables state build costs only, so upkeep
+    // is taken as a fraction of the build price per category and income is stated
+    // explicitly for the few buildings that earn credits directly.
+    //
+    // The bank applies (revenue - expense) across every standing building once a month,
+    // so these are the numbers that decide whether an economy is survivable. Treat them as
+    // a coherent starting point to balance against, not as Anno's real figures.
+    // ---------------------------------------------------------------------------------
+
+    /// <summary>Monthly upkeep in credits, as a fraction of what the building cost to put up.</summary>
+    private static int DerivedExpense(Entry entry)
+    {
+        if (entry.Credits <= 0) return 0;
+
+        float rate;
+        switch (entry.Kind)
+        {
+            case Kind.Power:    rate = 0.20f; break;  // fuel and staff dominate
+            case Kind.Civic:    rate = 0.08f; break;  // cheap to keep open
+            case Kind.Monument: rate = 0.02f; break;  // enormous to build, modest to run
+            case Kind.Field:
+            case Kind.Road:     rate = 0f;    break;  // upkeep belongs to the parent building
+            default:            rate = 0.10f; break;  // Production
+        }
+
+        return Mathf.RoundToInt(entry.Credits * rate);
+    }
+
+    /// <summary>
+    /// Monthly income in credits. Zero for production buildings by design: they earn by
+    /// selling what they make, which the production and warehouse systems handle - booking
+    /// that as bank revenue as well would pay the player twice for the same goods.
+    /// </summary>
+    private static int DerivedRevenue(Entry entry)
+    {
+        return 0;
     }
 
     private static void Add(List<ItemData> items, List<int> amounts, ItemData item, int amount)

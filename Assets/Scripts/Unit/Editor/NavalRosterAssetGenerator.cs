@@ -29,6 +29,7 @@ public static class NavalRosterAssetGenerator
             def.description = "Submerge to deep water or surface.";
             def.abilityType = AbilityType.Toggle;
             def.cooldown = 8f;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/Under_Water_icon.png");
         });
 
         var empAbility = GetOrCreateAsset<EMPModuleAbilityDefinition>($"{DataRoot}/Abilities/Ability_EMPModule.asset", def =>
@@ -41,6 +42,7 @@ public static class NavalRosterAssetGenerator
             def.duration = 60f;
             def.cooldown = 300f;
             def.targetRestrictions = CombatTargetCapabilities.All;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/EMP-range-icon.png");
         });
 
         var droneAbility = GetOrCreateAsset<AttackDroneAbilityDefinition>($"{DataRoot}/Abilities/Ability_AttackDrone.asset", def =>
@@ -53,6 +55,7 @@ public static class NavalRosterAssetGenerator
             def.duration = 45f;
             def.range = 25f;
             def.targetRestrictions = CombatTargetCapabilities.All;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/Drone-icon.png");
         });
 
         var depthChargesAbility = GetOrCreateAsset<DepthChargesAbilityDefinition>($"{DataRoot}/Abilities/Ability_DepthCharges.asset", def =>
@@ -66,6 +69,7 @@ public static class NavalRosterAssetGenerator
             def.damage = 120;
             def.areaOfEffect = 8f;
             def.targetRestrictions = CombatTargetCapabilities.Submarine;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/Explosive-icon.png");
         });
 
         var fleetRepairAbility = GetOrCreateAsset<FleetRepairAbilityDefinition>($"{DataRoot}/Abilities/Ability_FleetRepair.asset", def =>
@@ -76,6 +80,7 @@ public static class NavalRosterAssetGenerator
             def.abilityType = AbilityType.Passive;
             def.range = 18f;
             def.repairAmountPerPulse = 10;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/Repair-icon.png");
         });
 
         var hangarAbility = GetOrCreateAsset<AircraftHangarAbilityDefinition>($"{DataRoot}/Abilities/Ability_AircraftHangar.asset", def =>
@@ -86,6 +91,7 @@ public static class NavalRosterAssetGenerator
             def.abilityType = AbilityType.Passive;
             def.lightAircraftCapacity = 2;
             def.heavyAircraftCapacity = 1;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/Aircraft-slot-icon.png");
         });
 
         var silentRunningAbility = GetOrCreateAsset<SilentRunningAbilityDefinition>($"{DataRoot}/Abilities/Ability_SilentRunning.asset", def =>
@@ -95,6 +101,7 @@ public static class NavalRosterAssetGenerator
             def.description = "Baffles propulsion noise, significantly reducing enemy detection visibility while submerged.";
             def.abilityType = AbilityType.Passive;
             def.detectionModifierWhenSubmerged = 0.1f;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/GlblTrustTrimaran_Icon.png");
         });
 
         var missileAbility = GetOrCreateAsset<MediumRangeMissileAbilityDefinition>($"{DataRoot}/Abilities/Ability_MediumRangeMissile.asset", def =>
@@ -108,6 +115,7 @@ public static class NavalRosterAssetGenerator
             def.missileDamage = 250;
             def.areaOfEffect = 12f;
             def.targetRestrictions = CombatTargetCapabilities.Surface;
+            def.icon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Imports/Anno2070/Icons/One_Missile_icon.png");
         });
 
         // 2. Generate Movement Profiles
@@ -152,7 +160,9 @@ public static class NavalRosterAssetGenerator
             speed: 8f, cargoSlots: 3, maxStack: 40, itemSlots: 1, maxHealth: 350,
             targets: CombatTargetCapabilities.None, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1f, 1f, 1f), subModelIndex: 0
+            scale: new Vector3(1f, 1f, 1f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Freight-ship-icon.png",
+            factionCategory: "TRADE SHIP", maintenanceCost: 20
         );
 
         CreateNavalEntry(
@@ -160,7 +170,9 @@ public static class NavalRosterAssetGenerator
             speed: 9f, cargoSlots: 4, maxStack: 50, itemSlots: 1, maxHealth: 450,
             targets: CombatTargetCapabilities.None, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.15f, 1.15f, 1.3f), subModelIndex: 0
+            scale: new Vector3(1.15f, 1.15f, 1.3f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Cargo-liner-icon.png",
+            factionCategory: "ECO TRADE SHIP", maintenanceCost: 25
         );
 
         CreateNavalEntry(
@@ -168,7 +180,9 @@ public static class NavalRosterAssetGenerator
             speed: 6.5f, cargoSlots: 6, maxStack: 60, itemSlots: 2, maxHealth: 650,
             targets: CombatTargetCapabilities.None, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.5f, 1.3f, 1.7f), subModelIndex: 0
+            scale: new Vector3(1.5f, 1.3f, 1.7f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Container-ship-icon.png",
+            factionCategory: "TYCOON TRADE SHIP", maintenanceCost: 30
         );
 
         CreateNavalEntry(
@@ -176,7 +190,9 @@ public static class NavalRosterAssetGenerator
             speed: 6f, cargoSlots: 8, maxStack: 60, itemSlots: 0, maxHealth: 700,
             targets: CombatTargetCapabilities.None, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.6f, 1.25f, 1.8f), subModelIndex: 0
+            scale: new Vector3(1.6f, 1.25f, 1.8f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Oiltanker_Icon.png",
+            factionCategory: "BULK TRANSPORT", maintenanceCost: 40
         );
 
         // --- Surface Combat Ships ---
@@ -185,7 +201,10 @@ public static class NavalRosterAssetGenerator
             speed: 8f, cargoSlots: 3, maxStack: 40, itemSlots: 1, maxHealth: 500,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Air, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.2f, 1.2f, 1.2f), subModelIndex: 0
+            scale: new Vector3(1.2f, 1.2f, 1.2f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Commando-ship-icon.png",
+            factionCategory: "WARSHIP", maintenanceCost: 20,
+            damageSurface: 20, damageAir: 20, damageSubmarine: 0
         );
 
         CreateNavalEntry(
@@ -193,7 +212,10 @@ public static class NavalRosterAssetGenerator
             speed: 10f, cargoSlots: 2, maxStack: 40, itemSlots: 1, maxHealth: 400,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Submarine, submerge: false,
             abilities: new AbilityDefinition[] { droneAbility }, moveProfile: shipMovement,
-            scale: new Vector3(0.9f, 0.9f, 1.1f), subModelIndex: 0
+            scale: new Vector3(0.9f, 0.9f, 1.1f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Viper-ship-icon.png",
+            factionCategory: "TYCOON WARSHIP", maintenanceCost: 25,
+            damageSurface: 20, damageAir: 0, damageSubmarine: 20
         );
 
         CreateNavalEntry(
@@ -201,7 +223,10 @@ public static class NavalRosterAssetGenerator
             speed: 12f, cargoSlots: 1, maxStack: 20, itemSlots: 2, maxHealth: 300,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Air, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: hoverMovement,
-            scale: new Vector3(0.85f, 0.75f, 0.9f), subModelIndex: 0
+            scale: new Vector3(0.85f, 0.75f, 0.9f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Hovercraft-icon.png",
+            factionCategory: "ECO WARSHIP", maintenanceCost: 25,
+            damageSurface: 26, damageAir: 17, damageSubmarine: 0
         );
 
         CreateNavalEntry(
@@ -209,7 +234,10 @@ public static class NavalRosterAssetGenerator
             speed: 5f, cargoSlots: 1, maxStack: 40, itemSlots: 2, maxHealth: 1200,
             targets: CombatTargetCapabilities.Surface, submerge: false,
             abilities: new AbilityDefinition[] { depthChargesAbility }, moveProfile: shipMovement,
-            scale: new Vector3(2f, 1.6f, 2.2f), subModelIndex: 0
+            scale: new Vector3(2f, 1.6f, 2.2f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Colossus-icon.png",
+            factionCategory: "TYCOON WARSHIP", maintenanceCost: 40,
+            damageSurface: 26, damageAir: 0, damageSubmarine: 39
         );
 
         CreateNavalEntry(
@@ -217,7 +245,10 @@ public static class NavalRosterAssetGenerator
             speed: 9f, cargoSlots: 2, maxStack: 40, itemSlots: 3, maxHealth: 600,
             targets: CombatTargetCapabilities.All, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.3f, 1.1f, 1.4f), subModelIndex: 0
+            scale: new Vector3(1.3f, 1.1f, 1.4f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Shark-icon.png",
+            factionCategory: "TECH WARSHIP", maintenanceCost: 25,
+            damageSurface: 21, damageAir: 21, damageSubmarine: 21
         );
 
         CreateNavalEntry(
@@ -225,7 +256,10 @@ public static class NavalRosterAssetGenerator
             speed: 10f, cargoSlots: 2, maxStack: 40, itemSlots: 2, maxHealth: 480,
             targets: CombatTargetCapabilities.All, submerge: false,
             abilities: new AbilityDefinition[0], moveProfile: shipMovement,
-            scale: new Vector3(1.05f, 1.0f, 1.15f), subModelIndex: 0
+            scale: new Vector3(1.05f, 1.0f, 1.15f), subModelIndex: 0,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Raider-ship-icon.png",
+            factionCategory: "CORSAIR WARSHIP", maintenanceCost: 25,
+            damageSurface: 15, damageAir: 15, damageSubmarine: 0
         );
 
         // --- Support ---
@@ -235,7 +269,9 @@ public static class NavalRosterAssetGenerator
             targets: CombatTargetCapabilities.None, submerge: false,
             abilities: new AbilityDefinition[] { fleetRepairAbility, hangarAbility }, moveProfile: shipMovement,
             scale: new Vector3(2.2f, 1.5f, 2.5f), subModelIndex: 0,
-            aircraftCapacity: 2
+            aircraftCapacity: 2,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/Atlas_Icon.png",
+            factionCategory: "FLEET SUPPORT", maintenanceCost: 50
         );
 
         // --- Submarines ---
@@ -244,7 +280,9 @@ public static class NavalRosterAssetGenerator
             speed: 11f, cargoSlots: 4, maxStack: 40, itemSlots: 2, maxHealth: 400,
             targets: CombatTargetCapabilities.None, submerge: true,
             abilities: new AbilityDefinition[] { diveAbility, empAbility }, moveProfile: subMovement,
-            scale: new Vector3(1f, 1f, 1f), subModelIndex: 1
+            scale: new Vector3(1f, 1f, 1f), subModelIndex: 1,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/sub/Trimaran-ocean-glider-icon.png",
+            factionCategory: "EXPLORATION SUBMARINE", maintenanceCost: 30
         );
 
         CreateNavalEntry(
@@ -252,7 +290,9 @@ public static class NavalRosterAssetGenerator
             speed: 7.5f, cargoSlots: 6, maxStack: 60, itemSlots: 0, maxHealth: 700,
             targets: CombatTargetCapabilities.None, submerge: true,
             abilities: new AbilityDefinition[] { diveAbility, silentRunningAbility }, moveProfile: subMovement,
-            scale: new Vector3(1.5f, 1.2f, 1.6f), subModelIndex: 2
+            scale: new Vector3(1.5f, 1.2f, 1.6f), subModelIndex: 2,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/sub/Sisyphus_Icon.png",
+            factionCategory: "CARGO SUBMARINE", maintenanceCost: 40
         );
 
         CreateNavalEntry(
@@ -260,7 +300,10 @@ public static class NavalRosterAssetGenerator
             speed: 8f, cargoSlots: 1, maxStack: 40, itemSlots: 2, maxHealth: 550,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Submarine, submerge: true,
             abilities: new AbilityDefinition[] { diveAbility }, moveProfile: subMovement,
-            scale: new Vector3(1.1f, 1.1f, 1.2f), subModelIndex: 3
+            scale: new Vector3(1.1f, 1.1f, 1.2f), subModelIndex: 3,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/sub/Deep-sea-hunter.png",
+            factionCategory: "ATTACK SUBMARINE", maintenanceCost: 40,
+            damageSurface: 0, damageAir: 20, damageSubmarine: 20
         );
 
         CreateNavalEntry(
@@ -268,7 +311,10 @@ public static class NavalRosterAssetGenerator
             speed: 6f, cargoSlots: 1, maxStack: 40, itemSlots: 1, maxHealth: 650,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Submarine, submerge: true,
             abilities: new AbilityDefinition[] { diveAbility, missileAbility }, moveProfile: subMovement,
-            scale: new Vector3(1.4f, 1.3f, 1.5f), subModelIndex: 4
+            scale: new Vector3(1.4f, 1.3f, 1.5f), subModelIndex: 4,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/sub/Orca_icon.png",
+            factionCategory: "MISSILE SUBMARINE", maintenanceCost: 80,
+            damageSurface: 0, damageAir: 40, damageSubmarine: 40
         );
 
         CreateNavalEntry(
@@ -276,7 +322,10 @@ public static class NavalRosterAssetGenerator
             speed: 6f, cargoSlots: 1, maxStack: 40, itemSlots: 1, maxHealth: 750,
             targets: CombatTargetCapabilities.Surface | CombatTargetCapabilities.Submarine, submerge: true,
             abilities: new AbilityDefinition[] { diveAbility, missileAbility }, moveProfile: subMovement,
-            scale: new Vector3(1.45f, 1.35f, 1.55f), subModelIndex: 5
+            scale: new Vector3(1.45f, 1.35f, 1.55f), subModelIndex: 5,
+            iconPath: "Assets/Imports/Anno2070/WEBP - Item Icons/vessels/sub/Erebos_icon.png",
+            factionCategory: "ADVANCED SUBMARINE", maintenanceCost: 100,
+            damageSurface: 0, damageAir: 40, damageSubmarine: 40
         );
 
         AssetDatabase.SaveAssets();
@@ -304,6 +353,12 @@ public static class NavalRosterAssetGenerator
         MovementProfile moveProfile,
         Vector3 scale,
         int subModelIndex,
+        string iconPath = null,
+        string factionCategory = null,
+        int maintenanceCost = 10,
+        int damageSurface = 0,
+        int damageAir = 0,
+        int damageSubmarine = 0,
         int aircraftCapacity = 0
     )
     {
@@ -331,6 +386,16 @@ public static class NavalRosterAssetGenerator
             def.unitType = UnitType.Character;
             def.movementProfile = moveProfile;
             def.nameType = NameType.Ship;
+            def.factionCategory = factionCategory ?? GetCategoryName(vesselName, navalClass);
+            def.maintenanceCost = maintenanceCost;
+            def.damageSurface = damageSurface;
+            def.damageAir = damageAir;
+            def.damageSubmarine = damageSubmarine;
+
+            if (!string.IsNullOrEmpty(iconPath))
+            {
+                def.portraitIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
+            }
 
             def.abilities.Clear();
             if (abilities != null)

@@ -6,7 +6,7 @@ using UnityEngine;
 // Places and removes road tiles on the grid and keeps RoadNetwork in sync.
 public class RoadPlacer : MonoBehaviour
 {
-    public const int DefaultMaxBridgeSpan = 6;
+    public const int DefaultMaxBridgeSpan = 12;
     public const float DefaultBridgeDeckHeight = 0.35f;
 
     [Tooltip("Optional. Left empty, the grid of the island the player is currently on is used.")]
@@ -172,7 +172,9 @@ public class RoadPlacer : MonoBehaviour
                 if (cell == null || !cell.isRoad) continue;
                 if (_placedRoadTiles.TryGetValue(cell, out RoadTileVisual visual) && visual != null)
                 {
-                    visual.Apply(RoadTopologyResolver.Resolve(grid, cell, roadTilePrefab, bridgeTilePrefab));
+                    RoadTopologyResolver.Result topology = RoadTopologyResolver.Resolve(grid, cell, roadTilePrefab, bridgeTilePrefab);
+                    BridgeAppearance bridge = BridgeSpanResolver.Resolve(grid, cell, cell.roadDefinition);
+                    visual.Apply(topology, bridge);
                 }
             }
         }

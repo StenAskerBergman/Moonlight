@@ -54,6 +54,7 @@ public class Cell
             {
                 case TerrainType.Abyssal:
                 case TerrainType.River:
+                case TerrainType.Lake:
                 case TerrainType.Water:
                 case TerrainType.Stream:
                 case TerrainType.Sea:
@@ -80,6 +81,47 @@ public class Cell
     public bool IsBuildableUnderwaterPlateau => IsDeliberateUnderwaterPlateau
         && currentTerrainType == TerrainType.Plateau
         && IsSlopeSuitableForBuilding;
+
+    /// <summary>
+    /// Checks whether the terrain is an impassable mountain or cliff feature.
+    /// In Anno 2070, mountains and cliffs cut into buildable influence areas.
+    /// </summary>
+    public bool IsBlockedByMountainOrCliff
+    {
+        get
+        {
+            switch (currentTerrainType)
+            {
+                case TerrainType.Mountain:
+                case TerrainType.MountainWall:
+                case TerrainType.MountainPeak:
+                case TerrainType.MountainSummit:
+                case TerrainType.Cliff:
+                case TerrainType.CliffWall:
+                case TerrainType.CliffPeak:
+                case TerrainType.Rocky:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    // Authoritative semantic properties matching grid specifications
+    public Vector2Int GridCoordinate => new Vector2Int(cellPosition.x, cellPosition.z);
+    public Vector3 WorldPosition => position;
+    public Building Occupant => occupyingBuilding;
+    public bool ResourceDeposit => isDeposit;
+    public ResourceNodeType ResourceSlot => depositNodeType;
+
+    // Influence territory tracking
+    public int InfluenceOwner { get; private set; } = -1;
+    public bool HasInfluence => InfluenceOwner >= 0;
+
+    public void SetInfluenceOwner(int ownerId)
+    {
+        InfluenceOwner = ownerId;
+    }
 
     public (EdgeTypes, EdgeType) Edges { get; set; }
 
@@ -132,7 +174,8 @@ public class Cell
         None,
         River,
         RiverSource,
-        RiverMouth
+        RiverMouth,
+        LakeSource
     }
     public enum RiverDirection
     {
@@ -163,6 +206,7 @@ public class Cell
         // Water Types
         Abyssal,
         River,
+        Lake,
         Water,
         Stream, 
         Sea,

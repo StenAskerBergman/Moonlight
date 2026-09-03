@@ -35,7 +35,12 @@ public class StorageManager : MonoBehaviour
     // Add & Remove methods
     public virtual void AddItem(ItemData itemData, int quantity)
     {
-        storage.AddItem(itemData, quantity);
+        TryAddItem(itemData, quantity);
+    }
+
+    public virtual bool TryAddItem(ItemData itemData, int quantity)
+    {
+        return storage != null && storage.TryAddItem(itemData, quantity);
     }
 
     public virtual bool RemoveItem(ItemData itemData, int quantity)
@@ -47,14 +52,12 @@ public class StorageManager : MonoBehaviour
     // Validation methods
     public virtual bool CanAddItem(ItemData itemData, int quantity)
     {
-        // Maybe check against storage's capacity
-        Debug.Log("StorageManager: HasReachedCapacity: "+!storage.HasReachedCapacity(quantity));
-        return !storage.HasReachedCapacity(quantity);
+        return storage != null && storage.CanAddItem(itemData, quantity);
     }
 
     public virtual bool CanRemoveItem(ItemData itemData, int quantity)
     {
-        return storage.GetItemQuantity(itemData) >= quantity;
+        return storage != null && itemData != null && quantity > 0 && storage.GetItemQuantity(itemData) >= quantity;
     }
 
     // Capacity - Limit methods
@@ -69,13 +72,10 @@ public class StorageManager : MonoBehaviour
         
 
         // Note: If capacityLimit has a value, return it. Otherwise, return 0.
-        int capacityLeft, itemQuant, itemCap;
-
-        itemQuant = GetItemQuantity(itemData); 
-        
-        itemCap = storage.GetCapacityLimit();
-
-        return capacityLeft = Mathf.Max(0, itemCap - itemQuant);
+        if (storage == null) return 0;
+        int itemCap = storage.GetCapacityLimit();
+        if (itemCap <= 0) return int.MaxValue;
+        return Mathf.Max(0, itemCap - storage.GetCurrentQuantity());
     }
 
     public virtual bool HasReachedCapacity(int quantityToAdd)
@@ -93,6 +93,16 @@ public class StorageManager : MonoBehaviour
         }
     }
 
+    public virtual bool TryAddItems(IReadOnlyDictionary<ItemData, int> itemsToAdd)
+    {
+        return storage != null && storage.TryAddItems(itemsToAdd);
+    }
+
+    public virtual bool TryRemoveItems(IReadOnlyDictionary<ItemData, int> itemsToRemove)
+    {
+        return storage != null && storage.TryRemoveItems(itemsToRemove);
+    }
+
     // Wrong Way to do it? Not sure why
     //public virtual Dictionary<ItemData, int> GetAllItemsB()
     //{
@@ -102,5 +112,4 @@ public class StorageManager : MonoBehaviour
     // Additional management logic can go here.
 
 }
-
 

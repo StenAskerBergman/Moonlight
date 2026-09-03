@@ -174,9 +174,11 @@ public class BuildingChecker : MonoBehaviour
             UpdateSettlingBoatRing(hoveredBoat);
 
             // Shade the grid so the player can see where this building may stand before
-            // clicking, rather than discovering it from a refused click. Rebuilds only
-            // when the building, the vessel's cell, or the island's influence changes.
-            PlacementValidityOverlay.Show(gridSystem, currentIsland, GetPreviewProperties(), hoveredBoat);
+            // clicking, rather than discovering it from a refused click. In Anno 2070 style,
+            // this evaluates candidate influence and shows valid green cells and blocked red cells
+            // with a stepped cell boundary centered on the candidate building location.
+            Vector3? previewPos = currentBuildingPreview != null ? (Vector3?)currentBuildingPreview.transform.position : null;
+            PlacementValidityOverlay.Show(gridSystem, currentIsland, GetPreviewProperties(), hoveredBoat, previewPos);
 
             InputCheck();
         }

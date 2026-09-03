@@ -120,7 +120,7 @@ public class StackedNavMeshLayers : MonoBehaviour
     private static readonly HashSet<TerrainType> NavigableWater = new HashSet<TerrainType>
     {
         TerrainType.Abyssal, TerrainType.Deep, TerrainType.Plateau, TerrainType.Shallow,
-        TerrainType.Water, TerrainType.Sea, TerrainType.Ocean, TerrainType.River, TerrainType.Stream,
+        TerrainType.Water, TerrainType.Sea, TerrainType.Ocean, TerrainType.River, TerrainType.Lake, TerrainType.Stream,
     };
 
     private static readonly HashSet<TerrainType> DeepSeabed = new HashSet<TerrainType>

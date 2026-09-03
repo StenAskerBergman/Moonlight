@@ -18,6 +18,7 @@ MonoBehaviour:
   buildingType: Production
   buildingSize: {x: 3, y: 1, z: 3}
   buildingTags: []
+  influenceRadius: 0
   requiresQuayFoundation: 0
   quayFoundationPadding: 2
   requiredNodeType: 0

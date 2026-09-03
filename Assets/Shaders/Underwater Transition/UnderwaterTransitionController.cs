@@ -195,6 +195,7 @@ namespace Moonlight.Rendering
 
             UpdateTransitionOrchestration();
             CheckProximityCrossingTriggers();
+            CheckAboveWaterFailsafe();
 
             ApplyState();
             UpdateAudioMuffling();
@@ -417,6 +418,51 @@ namespace Moonlight.Rendering
             }
         }
 
+        private void CheckAboveWaterFailsafe()
+        {
+            if (targetCamera == null)
+                return;
+
+            float cameraY = targetCamera.transform.position.y;
+            float surface = SurfaceHeight;
+
+            // If camera is above water and not in a valid dive transition near the surface,
+            // immediately ensure the underwater shader and states are completely deactivated.
+            if (cameraY > surface + 0.15f && isUnderwater && !isTransitioning)
+            {
+                ForceSurfaced();
+            }
+            else if (cameraY > surface + 3.5f && (isUnderwater || isTransitioning))
+            {
+                // If catapulted or bumped far above water even during transition, abort to surfaced
+                ForceSurfaced();
+            }
+        }
+
+        public void ForceSurfaced()
+        {
+            isUnderwater = false;
+            cameraSubmerged = false;
+            currentPhase = TransitionPhase.Surfaced;
+            TransitionCover = 0f;
+            isTransitioning = false;
+            phaseTimer = 0f;
+
+            UnderwaterTransitionState.TransitionAmount = 0f;
+            UnderwaterTransitionState.UnderwaterAmount = 0f;
+            UnderwaterTransitionState.TransitionProgress = 0f;
+            UnderwaterTransitionState.IsTransitioning = false;
+
+            if (uiConcealmentLayer != null)
+                uiConcealmentLayer.SetCoverAmount(0f);
+
+            SwitchHudState(false);
+            ApplyState();
+            UpdateAudioMuffling();
+            UpdateHudConcealment();
+            OnSubmersionChanged?.Invoke(false);
+        }
+
         public void RequestDive() => Dive();
         public void RequestSurface() => Surface();
 
@@ -425,6 +471,10 @@ namespace Moonlight.Rendering
             if (isUnderwater && currentPhase == TransitionPhase.Underwater)
                 return;
             if (currentPhase == TransitionPhase.DivingCover || currentPhase == TransitionPhase.DivingReveal)
+                return;
+
+            // Cannot trigger dive if camera is high above water
+            if (targetCamera != null && targetCamera.transform.position.y > SurfaceHeight + 3.5f)
                 return;
 
             currentPhase = TransitionPhase.DivingCover;

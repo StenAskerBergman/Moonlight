@@ -326,8 +326,29 @@ public class Bank : MonoBehaviour
         Deposit(amount);
     }
 
+    /// <summary>
+    /// Stops tracking a demolished building, which removes both its revenue and its
+    /// upkeep in one step.
+    /// </summary>
+    public void UntrackBuilding(BuildingCost buildingCost)
+    {
+        if (buildingCost == null) return;
+
+        RemoveBuilding(buildingCost.GetBuildingName());
+    }
+
+    /// <summary>
+    /// Reduces the monthly upkeep of EVERY tracked building by this amount.
+    ///
+    /// This is not the demolition path, whatever its name suggests - use
+    /// <see cref="UntrackBuilding"/> for that. Demolition used to call this, which was
+    /// invisible only because every expense was zero; with real upkeep it charges the
+    /// removal to every other building the player owns.
+    /// </summary>
     public void RemoveMonthlyExpense(int amount)
     {
+        if (amount == 0 || buildings == null) return;
+
         foreach (Building building in buildings)
         {
             building.expense -= amount;

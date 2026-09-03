@@ -34,8 +34,8 @@ public class BuildingDestroyer : MonoBehaviour
                 // No Return the direct cost to the player's balance
                 // bank.AddIncome(buildingCost.GetPrice()); // Commented out Since No Cash is Given
 
-                // Remove the indirect cost from the monthly expenses
-                bank.RemoveMonthlyExpense(buildingCost.GetExpense());
+                // Stop tracking it, which drops its upkeep and its revenue together
+                bank.UntrackBuilding(buildingCost);
 
                 // Destroy the building GameObject
                 Destroy(building);
@@ -46,8 +46,8 @@ public class BuildingDestroyer : MonoBehaviour
                 // Return the direct cost to the player's balance
                 bank.AddIncome(buildingCost.GetPrice());
 
-                // Remove the indirect cost from the monthly expenses
-                bank.RemoveMonthlyExpense(buildingCost.GetExpense());
+                // Stop tracking it, which drops its upkeep and its revenue together
+                bank.UntrackBuilding(buildingCost);
 
                 // Destroy the building GameObject
                 Destroy(building);
@@ -58,8 +58,8 @@ public class BuildingDestroyer : MonoBehaviour
                 // Return half of the direct cost to the player's balance
                 bank.AddIncome(buildingCost.GetPrice() / 2);
 
-                // Remove the indirect cost from the monthly expenses
-                bank.RemoveMonthlyExpense(buildingCost.GetExpense());
+                // Stop tracking it, which drops its upkeep and its revenue together
+                bank.UntrackBuilding(buildingCost);
 
                 // Destroy the building GameObject
                 Destroy(building);
@@ -70,8 +70,8 @@ public class BuildingDestroyer : MonoBehaviour
                 // Return a quarter of the direct cost to the player's balance
                 bank.AddIncome(buildingCost.GetPrice() / 4);
 
-                // Remove the indirect cost from the monthly expenses
-                bank.RemoveMonthlyExpense(buildingCost.GetExpense());
+                // Stop tracking it, which drops its upkeep and its revenue together
+                bank.UntrackBuilding(buildingCost);
 
                 // Destroy the building GameObject
                 Destroy(building);
@@ -82,8 +82,8 @@ public class BuildingDestroyer : MonoBehaviour
                 // Return no direct cost to the player's balance
                 bank.AddIncome(0);
 
-                // Remove the indirect cost from the monthly expenses
-                bank.RemoveMonthlyExpense(buildingCost.GetExpense());
+                // Stop tracking it, which drops its upkeep and its revenue together
+                bank.UntrackBuilding(buildingCost);
 
                 // Destroy the building GameObject
                 Destroy(building);

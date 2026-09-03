@@ -81,6 +81,8 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
 
     void Start()
     {
+        PlayerOwnershipVisual.Ensure(gameObject, owner);
+
         // Name Check - Ensure Name is assigned
         if (string.IsNullOrWhiteSpace(displayName))
         {
@@ -183,6 +185,10 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
     {
         // Enable the Selection's first child GameObject
         transform.GetChild(0).gameObject.SetActive(true);
+
+        // The ring means "this unit is yours", so it carries the player's colour
+        // rather than whatever hue the prefab's material happens to ship with.
+        PlayerColors.ApplySelectionTint(transform.GetChild(0));
 
         // Stencil-outline silhouette over this unit's renderers (see
         // SelectionOutlineTarget/SelectionOutlineRendererFeature). Additive to the

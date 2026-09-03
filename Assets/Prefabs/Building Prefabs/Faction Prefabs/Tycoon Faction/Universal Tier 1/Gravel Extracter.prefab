@@ -331,6 +331,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _data: {fileID: 0}
   fallbackResource: 0
+  fallbackItemData: {fileID: 11400000, guid: 1532d05600817a441b7f47270bd5ea1e, type: 2}
   fallbackProductionRate: 1
   productionIntervalSeconds: 2
 --- !u!114 &-2145090538528256587

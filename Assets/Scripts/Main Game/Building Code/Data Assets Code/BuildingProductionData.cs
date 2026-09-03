@@ -9,6 +9,8 @@ public class BuildingProductionData : ScriptableObject
     public int ProductionRate;
     public int ProductionCapacity;
     public ResourceType ProducedResource;
+    [Tooltip("Canonical commodity deposited into the settlement stockpile for ProducedResource.")]
+    public ItemData ProducedItemData;
     public int ProducedCapacity;
 
 }

@@ -294,6 +294,15 @@ public class BuildingPlacer : MonoBehaviour
 
         MarkGridCells(buildingInstance, footprint, placementGrid);
 
+        // Lead the placement thud by one perceptible instant with material pushed out from
+        // every edge of the footprint. Quay/offshore construction uses suspended sediment;
+        // ordinary terrain uses a heavier one-second dirt displacement.
+        BuildingPlacementImpact.Play(
+            buildingInstance,
+            placementGrid,
+            footprint,
+            IsUnderwaterPlacement(buildingProperties, placementGrid, buildingInstance.transform.position));
+
         // Register Influence Zone (Phase 3)
         InfluenceZone zone = buildingInstance.GetComponent<InfluenceZone>();
         if (zone != null)
@@ -309,6 +318,25 @@ public class BuildingPlacer : MonoBehaviour
         InitializePlacedBuilding(buildingInstance);
 
         buildingChecker.CancelBuilding();
+    }
+
+    private static bool IsUnderwaterPlacement(
+        BuildingProperties properties,
+        GridSystem placementGrid,
+        Vector3 position)
+    {
+        BuildingData data = properties != null ? properties.buildingData : null;
+        if (data != null && data.requiresQuayFoundation) return true;
+
+        string buildingType = data != null ? data.buildingType : null;
+        if (buildingType == BuildingEnums.BuildingType.OffShore.ToString()
+            || buildingType == BuildingEnums.BuildingType.DeepSea.ToString())
+        {
+            return true;
+        }
+
+        Cell cell = placementGrid != null ? placementGrid.GetCellAtWorldPosition(position) : null;
+        return cell != null && cell.IsUnderwater;
     }
 
     /// <summary>
@@ -480,4 +508,3 @@ public class BuildingPlacer : MonoBehaviour
         }
     }
 }
-

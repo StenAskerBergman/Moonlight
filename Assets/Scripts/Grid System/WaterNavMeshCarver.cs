@@ -63,6 +63,7 @@ public class WaterNavMeshCarver : MonoBehaviour
         TerrainType.Sea,
         TerrainType.Ocean,
         TerrainType.River,
+        TerrainType.Lake,
         TerrainType.Stream,
     };
 

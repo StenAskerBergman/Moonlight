@@ -268,6 +268,56 @@ public class TradingRouteManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Validates a route configuration and returns true if fully viable, false with an issue message.
+    /// </summary>
+    public bool ValidateRoute(TradingRoute route, out string validationMessage)
+    {
+        if (route == null)
+        {
+            validationMessage = "Route is null.";
+            return false;
+        }
+
+        if (route.stations == null || route.stations.Count == 0)
+        {
+            validationMessage = "Route has no stations assigned.";
+            return false;
+        }
+
+        if (route.stations.Count < 2 && route.mode != TradeRouteMode.OneTime)
+        {
+            validationMessage = "Continuous/Smart routes require at least 2 stations to loop.";
+            return false;
+        }
+
+        for (int i = 0; i < route.stations.Count; i++)
+        {
+            var station = route.stations[i];
+            Island isl = ResolveIsland(station);
+            if (isl == null)
+            {
+                validationMessage = $"Station #{i + 1} '{station.stationName}' island could not be found.";
+                return false;
+            }
+
+            if (!TradePort.HasOperationalHarborOnIsland(isl))
+            {
+                validationMessage = $"Station #{i + 1} '{station.stationName}' has no operational harbor infrastructure.";
+                return false;
+            }
+        }
+
+        if (route.assignedShipIds == null || route.assignedShipIds.Count == 0)
+        {
+            validationMessage = "No ships assigned to this route.";
+            return true; // Valid configuration, just unassigned
+        }
+
+        validationMessage = "Route is valid and operational.";
+        return true;
+    }
+
+    /// <summary>
     /// Safely purges destroyed or invalid ship references across all routes.
     /// </summary>
     public void ReconcileDestroyedShips()

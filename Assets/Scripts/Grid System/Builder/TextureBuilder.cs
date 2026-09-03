@@ -9,7 +9,7 @@ public enum TerrainDebugViewMode
     DeltaHeatmap,         // Net height delta from base (carved = red, raised = green)
     MountainBoostOnly,    // Isolated ridge mountain boost
     RiverCarveOnly,       // Isolated river carve depths
-    TerraceDeltaOnly,     // Terracing offsets
+    MainlandReliefOnly,   // Mainland micro-relief offsets
     PlateauDeltaOnly,     // Underwater plateau shifts
     SlopeField,           // Steepness gradient
     SemanticClassification,// Discrete terrain types
@@ -134,7 +134,7 @@ public class TextureBuilder
                             microNoise,
                             macroNoise);
                     }
-                    else if (terrainType == Cell.TerrainType.River && height <= 0.15f)
+                    else if ((terrainType == Cell.TerrainType.River || terrainType == Cell.TerrainType.Lake) && height <= 0.15f)
                     {
                         finalColor = Color.Lerp(sand, rock, 0.35f); // Riverbed sand/gravel
                     }
@@ -188,8 +188,11 @@ public class TextureBuilder
                         // untouched no matter how close to the water it is.
                         float coastalRockAssist = 1f - Mathf.Clamp01(height / CoastalRockAssistHeight);
                         coastalRockAssist = coastalRockAssist * coastalRockAssist * (3f - 2f * coastalRockAssist);
-                        float boostFloor = Mathf.Lerp(0.08f, 0.015f, coastalRockAssist);
-                        float boostRange = Mathf.Lerp(0.35f, 0.13f, coastalRockAssist);
+                        // Away from the shoreline, low ridge boost is a grassy
+                        // foothill rather than rock. The coast assist still lets a
+                        // true mountain face meet the sea without a sand collar.
+                        float boostFloor = Mathf.Lerp(0.22f, 0.025f, coastalRockAssist);
+                        float boostRange = Mathf.Lerp(0.50f, 0.16f, coastalRockAssist);
 
                         float mountainFactor = Mathf.Clamp01((mountainBoost - boostFloor) / boostRange);
                         float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.25f);
@@ -269,7 +272,7 @@ public class TextureBuilder
                         finalColor = climate.rockColor1;
                     else if (tType == Cell.TerrainType.MountainPeak)
                         finalColor = climate.snowColor;
-                    else if (tType == Cell.TerrainType.River)
+                    else if (tType == Cell.TerrainType.River || tType == Cell.TerrainType.Lake)
                         finalColor = Color.Lerp(climate.sandColor1, climate.rockColor1, 0.3f);
                     else
                         finalColor = Color.Lerp(climate.sandColor1 * 0.75f, climate.rockColor2 * 0.6f, 0.5f); // Natural dark seabed
@@ -426,6 +429,7 @@ public class TextureBuilder
             case Cell.TerrainType.Mountain: return new Color(0.45f, 0.45f, 0.45f);
             case Cell.TerrainType.MountainPeak: return new Color(0.95f, 0.95f, 1.0f);
             case Cell.TerrainType.River: return new Color(0.0f, 0.85f, 0.95f);
+            case Cell.TerrainType.Lake: return new Color(0.0f, 0.55f, 0.90f);
             default: return Color.gray;
         }
     }
@@ -458,7 +462,7 @@ public class TextureBuilder
 
         TerrainAttributionData attr = cache.Attribution;
         float rawBaseHeight = attr != null ? attr.RawBaseHeights[idx] : height;
-        float terraceDelta = attr != null ? attr.TerraceDeltas[idx] : 0f;
+        float reliefDelta = attr != null ? attr.ReliefDeltas[idx] : 0f;
         float plateauDelta = attr != null ? attr.PlateauDeltas[idx] : 0f;
         short ridgeId = attr != null ? attr.DominantRidgeIds[idx] : (short)-1;
         short riverId = attr != null ? attr.DominantRiverIds[idx] : (short)-1;
@@ -482,12 +486,12 @@ public class TextureBuilder
                 {
                     return Color.Lerp(new Color(0.9f, 0.75f, 0.1f), new Color(1f, 0.95f, 0.3f), plateauInfluence);
                 }
-                // 4. Terrace Step / Grade Break Adjustment
-                if (Mathf.Abs(terraceDelta) > 0.015f)
+                // 4. Mainland micro-relief offset
+                if (Mathf.Abs(reliefDelta) > 0.015f)
                 {
-                    return terraceDelta > 0f
-                        ? Color.Lerp(new Color(0.2f, 0.35f, 0.35f), new Color(0f, 0.9f, 0.8f), Mathf.Clamp01(terraceDelta / 0.15f))
-                        : Color.Lerp(new Color(0.2f, 0.35f, 0.35f), new Color(0.1f, 0.3f, 0.9f), Mathf.Clamp01(-terraceDelta / 0.15f));
+                    return reliefDelta > 0f
+                        ? Color.Lerp(new Color(0.2f, 0.35f, 0.35f), new Color(0f, 0.9f, 0.8f), Mathf.Clamp01(reliefDelta / 0.15f))
+                        : Color.Lerp(new Color(0.2f, 0.35f, 0.35f), new Color(0.1f, 0.3f, 0.9f), Mathf.Clamp01(-reliefDelta / 0.15f));
                 }
                 // 5. Base Island / Seabed Landform
                 if (height < 0f)
@@ -525,12 +529,12 @@ public class TextureBuilder
                 return Color.Lerp(Color.black, new Color(0f, 0.7f, 1f), t);
             }
 
-            case TerrainDebugViewMode.TerraceDeltaOnly:
+            case TerrainDebugViewMode.MainlandReliefOnly:
             {
-                if (terraceDelta > 0.001f)
-                    return Color.Lerp(Color.black, Color.cyan, Mathf.Clamp01(terraceDelta / 0.2f));
-                if (terraceDelta < -0.001f)
-                    return Color.Lerp(Color.black, Color.magenta, Mathf.Clamp01(-terraceDelta / 0.2f));
+                if (reliefDelta > 0.001f)
+                    return Color.Lerp(Color.black, Color.cyan, Mathf.Clamp01(reliefDelta / 0.2f));
+                if (reliefDelta < -0.001f)
+                    return Color.Lerp(Color.black, Color.magenta, Mathf.Clamp01(-reliefDelta / 0.2f));
                 return Color.black;
             }
 
@@ -640,7 +644,7 @@ public class TextureBuilder
                         float rock = plateauData.RockWeight * (1f - plateauData.AbyssFade);
                         finalColor = new Color(0f, sand, rock, 1f);
                     }
-                    else if (height < -0.10f || (terrainType == Cell.TerrainType.River && height <= 0.05f))
+                    else if (height < -0.10f || ((terrainType == Cell.TerrainType.River || terrainType == Cell.TerrainType.Lake) && height <= 0.05f))
                     {
                         finalColor = new Color(0f, 0f, 0f, 1f); // Water / Submerged (Black)
                     }
@@ -655,6 +659,7 @@ public class TextureBuilder
                     else if (terrainType == Cell.TerrainType.Beach
                         || terrainType == Cell.TerrainType.Shore
                         || terrainType == Cell.TerrainType.River
+                        || terrainType == Cell.TerrainType.Lake
                         || height < 0.45f)
                     {
                         finalColor = new Color(0f, 1f, 0f, 1f); // Beach / Sand (Green)

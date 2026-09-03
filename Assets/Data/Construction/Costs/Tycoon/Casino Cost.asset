@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Casino Cost
   m_EditorClassIdentifier: 
   price: 300
-  revenue: 0
-  expense: 0
+  revenue: 40
+  expense: 24
   costItems:
   - {fileID: 11400000, guid: c03b7fa539f40a94fa8e7ef95a915c30, type: 2}
   - {fileID: 11400000, guid: a41889ecb1c1814469492da25cb01036, type: 2}

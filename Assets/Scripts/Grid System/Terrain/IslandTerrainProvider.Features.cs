@@ -109,78 +109,11 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
     // Base sector around entire perimeter is Beach
     sectorMap.AddSector(PerimeterSectorType.Beach, -Mathf.PI, Mathf.PI, 0.25f);
 
-    // 3. River Corridors Reservation
+    // Rivers are routed after ridges exist, so their sources can be selected from
+    // actual generated mountain mass rather than an arbitrary short coastal offset.
     RiverCorridorSettings riverSettings = settings.riverCorridors;
-    if (riverSettings.enabled && riverSettings.maxRivers > 0)
-    {
-        int riverCount = random.Next(riverSettings.minRivers, riverSettings.maxRivers + 1);
-        for (int r = 0; r < riverCount; r++)
-        {
-            // Pick exit point along coast (prefer sheltered bays)
-            int exitRay = random.Next(rayCount);
-            if (bayRays.Count > 0 && random.NextDouble() < 0.85)
-            {
-                exitRay = bayRays[random.Next(bayRays.Count)];
-            }
-            Vector2 mouth = coastPoints[exitRay] + coastNormals[exitRay] * 2.0f;
 
-            // River source starts in the interior and flows outward towards the mouth on the same side
-            Vector2 toCenter = (mapCenter - mouth).normalized;
-            float distToCenter = Vector2.Distance(mapCenter, mouth);
-            float riverLength = RandomRange(random, 6f, Mathf.Min(12f, distToCenter * 0.55f));
-            Vector2 source = mouth + toCenter * riverLength;
-
-            FeatureReservationMap.RiverCorridor corridor = new FeatureReservationMap.RiverCorridor(
-                riverSettings.valleyDepth, riverSettings.channelRadius, riverSettings.clearanceRadius);
-
-            float totalDist = Vector2.Distance(source, mouth);
-            int waypointCount = Mathf.Clamp(Mathf.RoundToInt(totalDist / 2.5f), 8, 24);
-            Vector2 riverDir = (mouth - source).normalized;
-            Vector2 riverPerp = new Vector2(-riverDir.y, riverDir.x);
-
-            float phi1 = (float)random.NextDouble() * Mathf.PI * 2f;
-            float phi2 = (float)random.NextDouble() * Mathf.PI * 2f;
-            float phi3 = (float)random.NextDouble() * Mathf.PI * 2f;
-            float meanderAmp1 = RandomRange(random, 1.2f, 2.4f);
-            float meanderAmp2 = RandomRange(random, 0.4f, 1.0f);
-            float meanderAmp3 = RandomRange(random, 0.15f, 0.4f);
-
-            float baseChannel = riverSettings.channelRadius;
-            float baseClearance = riverSettings.clearanceRadius;
-
-            for (int w = 0; w < waypointCount; w++)
-            {
-                float t = w / (float)(waypointCount - 1);
-
-                // Multi-harmonic compound meandering with envelope anchoring at source and mouth
-                float envelope = Mathf.Sin(t * Mathf.PI);
-                float meander = (Mathf.Sin(t * Mathf.PI * 2f + phi1) * meanderAmp1 +
-                                 Mathf.Sin(t * Mathf.PI * 4f + phi2) * meanderAmp2 +
-                                 Mathf.Sin(t * Mathf.PI * 8f + phi3) * meanderAmp3) * envelope;
-
-                Vector2 wpPos = Vector2.Lerp(source, mouth, t) + riverPerp * meander;
-
-                // Dynamic width: narrow upstream (0.4m), broadening to delta mouth (1.4m)
-                float tChannel = Mathf.Pow(t, 1.35f);
-                float channelRad = Mathf.Lerp(baseChannel * 0.35f, baseChannel * 1.15f, tChannel);
-                float clearanceRad = Mathf.Lerp(baseClearance * 0.55f, baseClearance * 1.15f, t);
-
-                // Subtle organic width wobble along the stream
-                float wobble = 1f + 0.05f * Mathf.Sin(t * Mathf.PI * 10f + phi2);
-                channelRad *= wobble;
-
-                corridor.Waypoints.Add(new FeatureReservationMap.RiverWaypoint(wpPos, channelRad, clearanceRad));
-            }
-
-            corridor.ComputeBounds();
-            map.AddRiver(corridor);
-
-            float mouthAngle = Mathf.Atan2(mouth.y - mapCenter.y, mouth.x - mapCenter.x);
-            sectorMap.AddSector(PerimeterSectorType.RiverMouth, mouthAngle - 0.15f, mouthAngle + 0.15f, 0.08f);
-        }
-    }
-
-    // 4. Coastal Mountain Ridges Allocation
+    // 3. Coastal Mountain Ridges Allocation
     CoastalMountainSettings mountainSettings = settings.coastalMountains;
     if (mountainSettings.enabled && mountainSettings.maxRidges > 0)
     {
@@ -221,16 +154,16 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
 
                 float maxAllowedLength = Mathf.Min(
                     mountainSettings.maxRidgeLength,
-                    Mathf.Clamp(meanRadius * 1.00f, 9f, 20f));
+                    Mathf.Clamp(meanRadius * 0.85f, 7f, 16f));
                 float minAllowedLength = Mathf.Min(
                     maxAllowedLength,
                     Mathf.Max(6f, mountainSettings.minRidgeLength));
                 float maxAllowedWidth = Mathf.Min(
                     mountainSettings.maxRidgeWidth,
-                    Mathf.Clamp(meanRadius * 0.52f, 5.5f, 10f));
+                    Mathf.Clamp(meanRadius * 0.32f, 3.5f, 7f));
                 float minAllowedWidth = Mathf.Min(
                     maxAllowedWidth,
-                    Mathf.Max(4.5f, mountainSettings.minRidgeWidth));
+                    Mathf.Max(3.25f, mountainSettings.minRidgeWidth));
 
                 float ridgeLength = RandomRange(random, minAllowedLength, maxAllowedLength);
                 float ridgeWidth = RandomRange(random, minAllowedWidth, maxAllowedWidth);
@@ -241,7 +174,7 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
                 // side and frequently left the land it was meant to crown.
                 float tanSign = random.Next(0, 2) == 0 ? 1f : -1f;
                 Vector2 ridgeDir = (tangent * tanSign - normal * RandomRange(random, -0.05f, 0.18f)).normalized;
-                Vector2 axisCenter = coastPt - normal * (ridgeWidth * 0.68f);
+                Vector2 axisCenter = coastPt - normal * (ridgeWidth * 0.32f);
                 Vector2 origin = axisCenter - ridgeDir * (ridgeLength * 0.5f);
 
                 FeatureReservationMap.CoastalRidge ridge = new FeatureReservationMap.CoastalRidge(
@@ -259,9 +192,9 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
             }
         }
 
-        // Interior Ridges bounded generation & validation
-        int maxInteriorAllowed = sizeFactor >= 0.65f ? 1 : 0;
-        int interiorRidges = maxInteriorAllowed > 0 ? random.Next(0, maxInteriorAllowed + 1) : 0;
+        // Mountains belong to the perimeter. Interior ridges used the same scarce
+        // buildable footprint as the city and could bisect an otherwise good plain.
+        int interiorRidges = 0;
         int maxInteriorAttempts = interiorRidges * 6;
         int interiorAccepted = 0;
 
@@ -302,6 +235,10 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
     {
         Debug.LogWarning($"[Terrain Provider] Bounded candidate retries exhausted for seed {chunkSeed}: 0 mountain ridges passed authoritative validation. Terrain will generate as lowland plain with 0 ridges.");
     }
+
+    BuildMountainFedRivers(
+        map, sectorMap, riverSettings, random, mapCenter,
+        coastPoints, coastNormals, bayRays);
 
     map.Sectors = sectorMap;
 
@@ -358,6 +295,163 @@ private FeatureReservationMap BuildFeatureReservations(int seed)
     }
 
     return map;
+}
+
+private void BuildMountainFedRivers(
+    FeatureReservationMap map,
+    PerimeterSectorMap sectorMap,
+    RiverCorridorSettings riverSettings,
+    System.Random random,
+    Vector2 mapCenter,
+    Vector2[] coastPoints,
+    Vector2[] coastNormals,
+    List<int> bayRays)
+{
+    if (!riverSettings.enabled || riverSettings.maxRivers <= 0 || map.Ridges.Count == 0) return;
+
+    int riverCount = random.Next(riverSettings.minRivers, riverSettings.maxRivers + 1);
+    List<Vector2> usedSources = new List<Vector2>();
+    List<int> usedMouthRays = new List<int>();
+
+    for (int riverIndex = 0; riverIndex < riverCount; riverIndex++)
+    {
+        int exitRay = PickRiverMouthRay(random, coastPoints.Length, bayRays, usedMouthRays);
+        usedMouthRays.Add(exitRay);
+        Vector2 mouth = coastPoints[exitRay] + coastNormals[exitRay] * 2f;
+
+        if (!TryPickMountainRiverSource(map, mouth, riverSettings.minimumRiverLength, random, usedSources,
+                out Vector2 source, out float sourceTerrainHeight))
+        {
+            continue;
+        }
+        usedSources.Add(source);
+
+        bool hasLake = random.NextDouble() < riverSettings.lakeSourceChance;
+        FeatureReservationMap.RiverSourceKind sourceKind = hasLake
+            ? FeatureReservationMap.RiverSourceKind.Lake
+            : FeatureReservationMap.RiverSourceKind.Waterfall;
+        float sourceSurfaceHeight = Mathf.Max(settings.surfaceFlatlandHeight + 0.1f, sourceTerrainHeight - 0.28f);
+
+        if (hasLake)
+        {
+            float lakeRadius = RandomRange(random, riverSettings.minLakeRadius, riverSettings.maxLakeRadius);
+            map.AddLake(new FeatureReservationMap.LakeBasin(
+                source, lakeRadius, sourceSurfaceHeight, riverSettings.lakeDepth));
+        }
+
+        FeatureReservationMap.RiverCorridor corridor = new FeatureReservationMap.RiverCorridor(
+            riverSettings.valleyDepth,
+            riverSettings.channelRadius,
+            riverSettings.clearanceRadius,
+            sourceKind,
+            sourceSurfaceHeight,
+            settings.waterHeight + 0.03f);
+
+        float totalDistance = Vector2.Distance(source, mouth);
+        int waypointCount = Mathf.Clamp(Mathf.CeilToInt(totalDistance / 2f) + 1, 10, 48);
+        Vector2 riverDirection = (mouth - source).normalized;
+        Vector2 riverPerpendicular = new Vector2(-riverDirection.y, riverDirection.x);
+        float phaseA = RandomRange(random, 0f, Mathf.PI * 2f);
+        float phaseB = RandomRange(random, 0f, Mathf.PI * 2f);
+        float meanderScale = Mathf.Clamp(totalDistance * 0.055f, 1.2f, 3.8f);
+
+        for (int waypointIndex = 0; waypointIndex < waypointCount; waypointIndex++)
+        {
+            float t = waypointIndex / (float)(waypointCount - 1);
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            float meander = (Mathf.Sin(t * Mathf.PI * 2f + phaseA)
+                + Mathf.Sin(t * Mathf.PI * 5f + phaseB) * 0.32f) * meanderScale * envelope;
+            Vector2 position = Vector2.Lerp(source, mouth, t) + riverPerpendicular * meander;
+
+            float widthT = Mathf.Pow(t, 1.2f);
+            float channelRadius = Mathf.Lerp(riverSettings.channelRadius * 0.38f,
+                riverSettings.channelRadius * 1.3f, widthT);
+            float clearanceRadius = Mathf.Lerp(riverSettings.clearanceRadius * 0.55f,
+                riverSettings.clearanceRadius * 1.15f, t);
+            corridor.Waypoints.Add(new FeatureReservationMap.RiverWaypoint(
+                position, channelRadius, clearanceRadius));
+        }
+
+        corridor.ComputeBounds();
+        map.AddRiver(corridor);
+
+        float mouthAngle = Mathf.Atan2(mouth.y - mapCenter.y, mouth.x - mapCenter.x);
+        sectorMap.AddSector(PerimeterSectorType.RiverMouth,
+            mouthAngle - 0.15f, mouthAngle + 0.15f, 0.08f);
+    }
+}
+
+private int PickRiverMouthRay(
+    System.Random random,
+    int rayCount,
+    List<int> bayRays,
+    List<int> usedRays)
+{
+    List<int> pool = bayRays.Count > 0 ? bayRays : null;
+    for (int attempt = 0; attempt < rayCount * 2; attempt++)
+    {
+        int candidate = pool != null && random.NextDouble() < 0.85
+            ? pool[random.Next(pool.Count)]
+            : random.Next(rayCount);
+        bool separated = true;
+        for (int i = 0; i < usedRays.Count; i++)
+        {
+            int delta = Mathf.Abs(candidate - usedRays[i]);
+            delta = Mathf.Min(delta, rayCount - delta);
+            if (delta < Mathf.Max(4, rayCount / 8)) { separated = false; break; }
+        }
+        if (separated) return candidate;
+    }
+    return random.Next(rayCount);
+}
+
+private bool TryPickMountainRiverSource(
+    FeatureReservationMap map,
+    Vector2 mouth,
+    float minimumLength,
+    System.Random random,
+    List<Vector2> usedSources,
+    out Vector2 source,
+    out float sourceHeight)
+{
+    List<Vector3> candidates = new List<Vector3>();
+    for (int x = 4; x < size - 4; x += 2)
+    {
+        for (int z = 4; z < size - 4; z += 2)
+        {
+            Vector2 position = new Vector2(x, z);
+            if (Vector2.Distance(position, mouth) < minimumLength) continue;
+
+            float ridgeHeight = map.GetSynthesizedMountainHeight(x, z);
+            if (ridgeHeight < 0.75f) continue;
+            float baseField = CalculateLegacyIslandField(x, z);
+            if (baseField < settings.waterUpper + 0.05f) continue;
+
+            bool tooClose = false;
+            for (int i = 0; i < usedSources.Count; i++)
+            {
+                if (Vector2.Distance(position, usedSources[i]) < 10f) { tooClose = true; break; }
+            }
+            if (tooClose) continue;
+
+            float terrainHeight = CalculateBaseContinuousHeight(baseField) + ridgeHeight;
+            candidates.Add(new Vector3(x, terrainHeight, z));
+        }
+    }
+
+    candidates.Sort((a, b) => b.y.CompareTo(a.y));
+    if (candidates.Count == 0)
+    {
+        source = Vector2.zero;
+        sourceHeight = 0f;
+        return false;
+    }
+
+    int pick = random.Next(Mathf.Min(8, candidates.Count));
+    Vector3 selected = candidates[pick];
+    source = new Vector2(selected.x, selected.z);
+    sourceHeight = selected.y;
+    return true;
 }
 
 private static int AlternatingSearchOffset(int attempt)

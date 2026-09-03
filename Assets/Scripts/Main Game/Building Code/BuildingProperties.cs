@@ -20,6 +20,7 @@ public class BuildingProperties : MonoBehaviour
         
     // Building Settings & Variables
         public Vector3 buildingSize;
+        public float influenceRadius = 0f;
         public string buildingName;
         public string buildingDescription;
         public string[] buildingTags;
@@ -72,6 +73,27 @@ public class BuildingProperties : MonoBehaviour
         return Vector3.one;
     }
 
+    /// <summary>
+    /// Resolves the candidate influence/territory radius for a building.
+    /// Checks BuildingProperties, BuildingData, InfluenceZone component, or uses a default.
+    /// </summary>
+    public static float ResolveInfluenceRadius(BuildingProperties properties, BuildingData data, float fallback = 0f)
+    {
+        if (data != null && data.influenceRadius > 0f) return data.influenceRadius;
+        if (properties != null && properties.influenceRadius > 0f) return properties.influenceRadius;
+
+        if (properties != null)
+        {
+            InfluenceZone zone = properties.GetComponent<InfluenceZone>();
+            if (zone != null && zone.Radius > 0f) return zone.Radius;
+
+            // Harbor / Depot / Warehouse / City Center fallback influence if not configured
+            if (InfluenceManager.IsHarborBuilding(properties)) return 24f;
+        }
+
+        return fallback;
+    }
+
     public void SetData()
     {
         /// Edit: In the future include, what replacement was added in its place!
@@ -86,6 +108,10 @@ public class BuildingProperties : MonoBehaviour
         if (buildingData != null)
         {
             buildingSize = buildingData.buildingSize;
+            if (buildingData.influenceRadius > 0f)
+            {
+                influenceRadius = buildingData.influenceRadius;
+            }
         }
     }
 

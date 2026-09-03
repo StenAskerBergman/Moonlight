@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   price: 800
   revenue: 0
-  expense: 0
+  expense: 64
   costItems:
   - {fileID: 11400000, guid: c03b7fa539f40a94fa8e7ef95a915c30, type: 2}
   - {fileID: 11400000, guid: a41889ecb1c1814469492da25cb01036, type: 2}

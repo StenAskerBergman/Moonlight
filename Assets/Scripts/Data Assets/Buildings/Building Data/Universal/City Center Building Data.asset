@@ -20,6 +20,7 @@ MonoBehaviour:
   buildingTags:
   - Universal
   - Civilan
+  influenceRadius: 0
   requiresQuayFoundation: 0
   quayFoundationPadding: 1
   requiredNodeType: 0

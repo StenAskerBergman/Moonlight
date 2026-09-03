@@ -18,6 +18,7 @@ MonoBehaviour:
   description: 
   baseValue: 15
   type: 0
+  resourceType: 7
   Icon: {fileID: 21300000, guid: 186bb75f29b6f6948a0ed93845325f57, type: 3}
   oldSlot: {fileID: 0}
   newSlot: {fileID: 0}

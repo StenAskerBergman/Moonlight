@@ -34,17 +34,17 @@ public enum PlateauShapeMode
 [Serializable]
 public sealed class CoastalMountainSettings
 {
-    private const int CurrentDataVersion = 1;
+    private const int CurrentDataVersion = 2;
 
     [SerializeField, HideInInspector] private int dataVersion;
 
     public bool enabled = true;
-    [Range(0, 8)] public int minRidges = 4;
-    [Range(0, 8)] public int maxRidges = 6;
-    [Min(3f)] public float minRidgeLength = 8f;
-    [Min(3f)] public float maxRidgeLength = 18f;
-    [Min(2f)] public float minRidgeWidth = 5f;
-    [Min(2f)] public float maxRidgeWidth = 10f;
+    [Range(0, 8)] public int minRidges = 3;
+    [Range(0, 8)] public int maxRidges = 5;
+    [Min(3f)] public float minRidgeLength = 7f;
+    [Min(3f)] public float maxRidgeLength = 15f;
+    [Min(2f)] public float minRidgeWidth = 3.5f;
+    [Min(2f)] public float maxRidgeWidth = 6.5f;
     [Range(1f, 8f)] public float ridgePeakHeight = 4.0f;
     [Range(0.5f, 3f)] public float cliffSharpness = 1.55f;
 
@@ -59,7 +59,7 @@ public sealed class CoastalMountainSettings
 
     public void Validate()
     {
-        if (dataVersion < CurrentDataVersion)
+        if (dataVersion < 1)
         {
             // The original defaults described continent-scale 22-48m ridges on a
             // 60m island. Candidate generation had to ignore those values and still
@@ -77,7 +77,22 @@ public sealed class CoastalMountainSettings
                 cliffSharpness = Mathf.Max(1.55f, cliffSharpness);
             }
 
-            dataVersion = CurrentDataVersion;
+            dataVersion = 1;
+        }
+
+        if (dataVersion < 2)
+        {
+            // Version 1 made the individual ridges shorter than the legacy
+            // continent-scale ribbons, but their 1.8x generated apron still let a
+            // 10m authored width occupy 36m across. Keep several distinct mountain
+            // groups while reserving most of the island interior for buildable land.
+            minRidges = 3;
+            maxRidges = 5;
+            minRidgeLength = 7f;
+            maxRidgeLength = 15f;
+            minRidgeWidth = 3.5f;
+            maxRidgeWidth = 6.5f;
+            dataVersion = 2;
         }
 
         minRidges = Mathf.Max(0, minRidges);
@@ -105,6 +120,13 @@ public sealed class RiverCorridorSettings
     [Range(0.5f, 4f)] public float channelRadius = 1.4f;
     [Range(2f, 16f)] public float clearanceRadius = 6.0f;
     [Range(0.5f, 4f)] public float valleyDepth = 1.2f;
+    [Range(0f, 1f), Tooltip("Chance that a mountain river begins at an alpine lake; otherwise it begins at a waterfall spring.")]
+    public float lakeSourceChance = 0.45f;
+    [Range(1.5f, 6f)] public float minLakeRadius = 2.2f;
+    [Range(1.5f, 8f)] public float maxLakeRadius = 4.2f;
+    [Range(0.1f, 1.5f)] public float lakeDepth = 0.65f;
+    [Range(8f, 80f), Tooltip("Minimum source-to-sea distance. Keeps generated rivers from becoming short coastal ditches.")]
+    public float minimumRiverLength = 18f;
 
     public void Validate()
     {
@@ -113,6 +135,11 @@ public sealed class RiverCorridorSettings
         channelRadius = Mathf.Max(0.5f, channelRadius);
         clearanceRadius = Mathf.Max(channelRadius + 1f, clearanceRadius);
         valleyDepth = Mathf.Max(0.5f, valleyDepth);
+        lakeSourceChance = Mathf.Clamp01(lakeSourceChance);
+        minLakeRadius = Mathf.Max(1.5f, minLakeRadius);
+        maxLakeRadius = Mathf.Max(minLakeRadius, maxLakeRadius);
+        lakeDepth = Mathf.Max(0.1f, lakeDepth);
+        minimumRiverLength = Mathf.Max(8f, minimumRiverLength);
     }
 }
 
@@ -304,6 +331,10 @@ public sealed class StandalonePlateauSettings
 [Serializable]
 public sealed class TerrainGenerationSettings
 {
+    private const int CurrentMainlandShapeDataVersion = 1;
+
+    [SerializeField, HideInInspector] private int mainlandShapeDataVersion = CurrentMainlandShapeDataVersion;
+
     [Header("Determinism")]
     public int seed = 1337;
 
@@ -350,11 +381,11 @@ public sealed class TerrainGenerationSettings
 
     [Header("Mainland shape contract")]
     [Tooltip("Normalized radius which must remain continuously above the shoreline for every island seed.")]
-    [Range(0.20f, 0.45f)] public float guaranteedMainlandRadius = 0.32f;
+    [Range(0.20f, 0.45f)] public float guaranteedMainlandRadius = 0.38f;
     [Tooltip("Fraction of the wider mainland survey disc raised above the shoreline. Prevents crescent and ribbon islands.")]
-    [Range(0.45f, 0.90f)] public float targetMainlandCoverage = 0.72f;
+    [Range(0.45f, 0.90f)] public float targetMainlandCoverage = 0.84f;
     [Tooltip("Normalized radius used for the target mainland coverage survey.")]
-    [Range(0.40f, 0.65f)] public float mainlandSurveyRadius = 0.56f;
+    [Range(0.40f, 0.65f)] public float mainlandSurveyRadius = 0.62f;
 
     [Header("Semantic bands")]
     [Range(-1f, 1f)] public float abyssUpper = 0f;
@@ -393,6 +424,13 @@ public sealed class TerrainGenerationSettings
 
     public float AuthoritativeWaterSurfaceHeight => authoritativeWaterSurfaceHeight;
 
+    [Header("Mainland foundation")]
+    [Tooltip("Peak-to-datum amplitude of the mainland's micro-relief, in world units. The mainland " +
+             "is otherwise dead flat at Surface Flatland Height; every real elevation change comes " +
+             "from a deliberate ridge, valley or river. Set to 0 for a perfectly flat foundation. " +
+             "Keep it well under Max Buildable Height Variance or it starts failing cells' slope gate.")]
+    [Range(0f, 0.25f)] public float mainlandRelief = 0.05f;
+
     [Header("Gameplay suitability")]
     [Min(0f)] public float maxBuildableHeightVariance = 0.2f;
 
@@ -416,17 +454,43 @@ public sealed class TerrainGenerationSettings
         underwaterPlateauHeight = Mathf.Min(-0.01f, underwaterPlateauHeight);
         falloffEnd = Mathf.Max(falloffStart + 0.01f, falloffEnd);
 
-        // Newly-added serialized floats deserialize as zero in existing scenes.
-        // Repair that state in memory so old map prefabs receive the new contract.
-        if (guaranteedMainlandRadius <= 0f) guaranteedMainlandRadius = 0.32f;
-        if (targetMainlandCoverage <= 0f) targetMainlandCoverage = 0.72f;
-        if (mainlandSurveyRadius <= 0f) mainlandSurveyRadius = 0.56f;
+        // Existing scenes carry the smaller first-generation mainland contract.
+        // Migrate only that known envelope (or missing serialized fields) so an
+        // intentionally customized island remains authored rather than overwritten.
+        if (mainlandShapeDataVersion < CurrentMainlandShapeDataVersion)
+        {
+            bool missingContract = guaranteedMainlandRadius <= 0f
+                || targetMainlandCoverage <= 0f
+                || mainlandSurveyRadius <= 0f;
+            bool firstGenerationContract = Mathf.Approximately(guaranteedMainlandRadius, 0.32f)
+                && Mathf.Approximately(targetMainlandCoverage, 0.72f)
+                && Mathf.Approximately(mainlandSurveyRadius, 0.56f);
+
+            if (missingContract || firstGenerationContract)
+            {
+                guaranteedMainlandRadius = 0.38f;
+                targetMainlandCoverage = 0.84f;
+                mainlandSurveyRadius = 0.62f;
+            }
+
+            mainlandShapeDataVersion = CurrentMainlandShapeDataVersion;
+        }
+
+        if (guaranteedMainlandRadius <= 0f) guaranteedMainlandRadius = 0.38f;
+        if (targetMainlandCoverage <= 0f) targetMainlandCoverage = 0.84f;
+        if (mainlandSurveyRadius <= 0f) mainlandSurveyRadius = 0.62f;
         guaranteedMainlandRadius = Mathf.Clamp(guaranteedMainlandRadius, 0.20f, 0.45f);
         targetMainlandCoverage = Mathf.Clamp(targetMainlandCoverage, 0.45f, 0.90f);
         mainlandSurveyRadius = Mathf.Clamp(
             mainlandSurveyRadius,
             Mathf.Max(0.40f, guaranteedMainlandRadius + 0.05f),
             0.65f);
+
+        // Deliberately NOT repaired from 0 the way the mainland-shape fields above are. Zero is a
+        // legitimate authored value here - it means a perfectly flat foundation - so a scene or
+        // prefab that predates this field comes up dead flat rather than silently acquiring relief
+        // nobody asked for. Raise it in the Inspector to put micro-relief back.
+        mainlandRelief = Mathf.Clamp(mainlandRelief, 0f, 0.25f);
 
         legacyIslandScale = Mathf.Max(0.0001f, legacyIslandScale);
         visualSamplesPerCell = Mathf.Clamp(visualSamplesPerCell, 1, 16);

@@ -42,11 +42,29 @@ public class IslandStorageManager : StorageManager
     /// </summary>
     public int GetRemainingCapacity(ItemData item)
     {
-        if (item == null) return 0;
-        int limit = GetCapacityLimit();
-        if (limit <= 0) return 9999;
-        int currentStock = GetItemQuantity(item);
-        return Mathf.Max(0, limit - currentStock);
+        return islandStorage != null ? islandStorage.GetRemainingCapacity(item) : 0;
     }
+
+    public override bool CanAddItem(ItemData itemData, int quantity) =>
+        islandStorage != null && islandStorage.CanAddItem(itemData, quantity);
+
+    public bool TryReserve(ItemData itemData, int requested, out int amount)
+    {
+        amount = 0;
+        return islandStorage != null && islandStorage.TryReserve(itemData, requested, out amount);
+    }
+
+    public bool HasReservation(ItemData itemData, int amount) =>
+        islandStorage != null && islandStorage.HasReservation(itemData, amount);
+
+    public bool CommitReservation(ItemData itemData, int amount) =>
+        islandStorage != null && islandStorage.CommitReservation(itemData, amount);
+
+    public void ReleaseReservation(ItemData itemData, int amount) =>
+        islandStorage?.ReleaseReservation(itemData, amount);
+
+    public void AddCapacityContribution(int amount) => islandStorage?.AddStructureCapacity(amount);
+    public void RemoveCapacityContribution(int amount) => islandStorage?.RemoveStructureCapacity(amount);
+    public void AddEnhancementCapacity(int amount) => islandStorage?.AddEnhancementCapacity(amount);
 }
 

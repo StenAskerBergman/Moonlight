@@ -41,6 +41,8 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
     private TradePort currentTargetPort;
     private float stateTimer = 0f;
     private float smartCheckTimer = 0f;
+    private float stationRetryTimer = 0f;
+    private string offlineStationIssue = null;
     private Vector3 currentDestination;
 
     public string AssignedRouteId => assignedRouteId;
@@ -68,6 +70,13 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
 
             var r = TradingRouteManager.Instance != null ? TradingRouteManager.Instance.GetRoute(assignedRouteId) : null;
             string stationName = (r != null && currentStationIndex < r.stations.Count) ? r.stations[currentStationIndex].stationName : "Station";
+            var station = (r != null && currentStationIndex < r.stations.Count) ? r.stations[currentStationIndex] : null;
+
+            if (!string.IsNullOrEmpty(offlineStationIssue))
+            {
+                return $"Waiting: {offlineStationIssue}";
+            }
+
             switch (currentState)
             {
                 case TradeRouteState.Travelling: return $"Sailing to {stationName}";
@@ -76,11 +85,32 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
                     string rankStr = queueRank > 0 ? $" (Queue #{queueRank})" : "";
                     return $"Waiting for dock at {stationName}{rankStr}";
                 case TradeRouteState.Trading: return $"Trading cargo at {stationName}";
-                case TradeRouteState.WaitingForCargoCondition: return $"Waiting for cargo at {stationName}";
+                case TradeRouteState.WaitingForCargoCondition:
+                    return GetWaitingCargoDescription(station);
                 case TradeRouteState.Advancing: return $"Departing {stationName}";
                 default: return "Idle";
             }
         }
+    }
+
+    private string GetWaitingCargoDescription(TradeRouteStation station)
+    {
+        if (station == null || station.cargoTargets == null || unitInventory == null) return "Waiting for cargo";
+        foreach (var target in station.cargoTargets)
+        {
+            if (target == null || target.item == null) continue;
+            int current = unitInventory.GetItemQuantity(target.item);
+            int achievable = Mathf.Min(target.desiredShipAmount, GetMaxShipCapacityForItem(target.item));
+            if (current < achievable)
+            {
+                return $"Waiting to load {target.item.displayName} ({current}/{achievable})";
+            }
+            if (current > achievable)
+            {
+                return $"Waiting to unload {target.item.displayName} ({current} -> {achievable})";
+            }
+        }
+        return $"Waiting for cargo at {station.stationName}";
     }
 
     public bool IsActive => !string.IsNullOrEmpty(assignedRouteId) && !isPausedByPlayer;
@@ -150,6 +180,26 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
         }
     }
 
+    /// <summary>
+    /// Forces the ship to immediately depart its current station and proceed to the next station on the route.
+    /// Safely releases dock berth or queue slot.
+    /// </summary>
+    public void DepartStation()
+    {
+        if (string.IsNullOrEmpty(assignedRouteId) || isPausedByPlayer) return;
+
+        TradingRoute route = TradingRouteManager.Instance != null ? TradingRouteManager.Instance.GetRoute(assignedRouteId) : null;
+        if (route == null) return;
+
+        if (currentTargetPort != null)
+        {
+            currentTargetPort.ReleaseDock(this);
+            currentTargetPort = null;
+        }
+
+        AdvanceToNextStation(route);
+    }
+
     #endregion
 
     private void Awake()
@@ -203,18 +253,38 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
         Island targetIsland = ResolveIsland(station);
         if (targetIsland == null)
         {
-            Debug.LogWarning($"[TradeRoute] Station '{station.stationName}' references an unresolved island. Advancing to next station.");
-            AdvanceToNextStation(route);
+            offlineStationIssue = $"Island unresolved for '{station.stationName}'";
+            stationRetryTimer -= Time.deltaTime;
+            if (stationRetryTimer <= 0f)
+            {
+                stationRetryTimer = 3.0f;
+                Debug.LogWarning($"[TradeRoute] Station '{station.stationName}' references an unresolved island. Skipping to next station.");
+                AdvanceToNextStation(route);
+            }
             return;
         }
 
         currentTargetPort = TradePort.ResolveForIsland(targetIsland);
         if (currentTargetPort == null || !currentTargetPort.IsOperational)
         {
-            Debug.LogWarning($"[TradeRoute] Station '{station.stationName}' has no operational harbor infrastructure. Advancing to next station.");
-            AdvanceToNextStation(route);
+            offlineStationIssue = $"Harbor offline at {station.stationName}";
+            stationRetryTimer -= Time.deltaTime;
+            if (stationRetryTimer <= 0f)
+            {
+                stationRetryTimer = 3.5f;
+                if (AreAllStationsOffline(route))
+                {
+                    currentState = TradeRouteState.Idle;
+                    return;
+                }
+                Debug.LogWarning($"[TradeRoute] Station '{station.stationName}' has no operational harbor infrastructure. Advancing to next station.");
+                AdvanceToNextStation(route);
+            }
             return;
         }
+
+        offlineStationIssue = null;
+        stationRetryTimer = 0f;
 
         // State Machine Loop
         switch (currentState)
@@ -322,9 +392,9 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
         // Periodically verify ship is holding its designated queue position
         int queueIdx = port.GetQueueIndex(this);
         Vector3 waitingPoint = port.GetWaitingPoint(queueIdx, agent);
-        if (Vector3.Distance(transform.position, waitingPoint) > 6f)
+        if (Vector3.Distance(transform.position, waitingPoint) > 4f)
         {
-            SteerToPosition(waitingPoint, arrivalTolerance: 5f, description: "Hold queue position");
+            SteerToPosition(waitingPoint, arrivalTolerance: 3f, description: $"Hold queue #{queueIdx + 1}");
         }
     }
 
@@ -408,6 +478,23 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
         {
             currentTargetPort.ReleaseDock(this);
             currentTargetPort = null;
+        }
+
+        if (route == null || route.stations == null || route.stations.Count == 0)
+        {
+            currentState = TradeRouteState.Idle;
+            return;
+        }
+
+        // If OneTime mode, finish at final station without looping back
+        if (route.mode == TradeRouteMode.OneTime && currentStationIndex >= route.stations.Count - 1)
+        {
+            StopRoute();
+            if (TradingRouteManager.Instance != null && unit != null)
+            {
+                TradingRouteManager.Instance.UnassignShip(unit);
+            }
+            return;
         }
 
         currentStationIndex = (currentStationIndex + 1) % route.stations.Count;
@@ -502,12 +589,42 @@ public class ShipTradeRouteController : MonoBehaviour, IAutonomousBehaviorSource
         {
             if (target == null || target.item == null) continue;
             int currentShipAmount = unitInventory.GetItemQuantity(target.item);
-            if (currentShipAmount != target.desiredShipAmount)
+
+            // Clamp target against physical ship hold capacity to prevent deadlocking on impossible quantities
+            int maxCap = GetMaxShipCapacityForItem(target.item);
+            int achievableTarget = Mathf.Min(target.desiredShipAmount, maxCap);
+
+            if (currentShipAmount != achievableTarget)
             {
                 return false;
             }
         }
 
+        return true;
+    }
+
+    public int GetMaxShipCapacityForItem(ItemData item)
+    {
+        if (unitInventory == null) unitInventory = GetComponent<UnitInventory>();
+        if (unitInventory == null) return 40;
+
+        var storageMgr = GetComponent<UnitStorageManager>();
+        int max = unitInventory.configuredMaxStack > 0 ? unitInventory.configuredMaxStack : (storageMgr != null ? storageMgr.maxQuantity : 40);
+        return Mathf.Max(1, max);
+    }
+
+    private bool AreAllStationsOffline(TradingRoute route)
+    {
+        if (route == null || route.stations == null || route.stations.Count == 0) return true;
+        foreach (var st in route.stations)
+        {
+            var isl = ResolveIsland(st);
+            if (isl != null)
+            {
+                var port = TradePort.ResolveForIsland(isl);
+                if (port != null && port.IsOperational) return false;
+            }
+        }
         return true;
     }
 

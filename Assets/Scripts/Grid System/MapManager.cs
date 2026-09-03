@@ -397,6 +397,13 @@ public class MapManager : MonoBehaviour
 
     [HideInInspector] public long LastGenerationTimeMs = -1;
     [HideInInspector] public string LastGenerationBreakStatus = null;
+
+    /// <summary>
+    /// Chunks that threw during the last GenerateMap() and were dropped. Zero is the
+    /// only healthy value - anything else means the generated world is missing slots.
+    /// </summary>
+    [HideInInspector] public int LastGenerationFailedChunks = 0;
+    private int failedChunkCount;
     [Header("Generation Watchdog Guard")]
     [Tooltip("Maximum allowed generation time in seconds before auto-breaking")]
     [SerializeField] private float generationTimeoutSeconds = 15f;
@@ -732,6 +739,8 @@ public class MapManager : MonoBehaviour
         var generationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         LastGenerationTimeMs = -1;
         LastGenerationBreakStatus = null;
+        failedChunkCount = 0;
+        LastGenerationFailedChunks = 0;
 
         ValidateAndMigratePatternData();
         PatternData activePattern = SelectedPatternData;
@@ -978,6 +987,17 @@ public class MapManager : MonoBehaviour
 
         ValidateGeneratedChunkSeparation();
 
+        LastGenerationFailedChunks = failedChunkCount;
+        if (failedChunkCount > 0)
+        {
+            string failureSummary =
+                $"MapManager: {failedChunkCount} chunk(s) failed to generate and are missing from the map. " +
+                "The rest of the world was generated; see the errors above for the failing slots.";
+            LastGenerationBreakStatus = failureSummary;
+            Debug.LogError(failureSummary, this);
+            OnMapGenerationFailed?.Invoke(this, failureSummary);
+        }
+
         OnMapGenerated?.Invoke();
         LastGenerationTimeMs = generationStopwatch.ElapsedMilliseconds;
     }
@@ -1219,7 +1239,29 @@ public class MapManager : MonoBehaviour
             // same abyss datum and remain seamless after a domain reload.
             mapGrid.generationSettings.standalonePlateau = activePattern.plateauSettings.Clone();
             mapGrid.generationSettings.SetAuthoritativeWaterSurfaceHeight(activePattern.waterHeight);
-            mapGrid.InitializeTerrain();
+
+            // One chunk must never take the whole map down with it. Generation used to
+            // run unguarded, so a single throwing chunk aborted the spawn loop midway:
+            // every later slot was silently never created, ValidateGeneratedChunkSeparation
+            // never ran, and OnMapGenerated never fired - the world came up partially
+            // built with nothing saying so. Failing one chunk loudly and continuing keeps
+            // the rest of the map, and the error names the slot that has to be looked at.
+            try
+            {
+                mapGrid.InitializeTerrain();
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError(
+                    $"MapManager: chunk '{islandGO.name}' (slot {data.id}, {resolvedTerrain}) failed to generate " +
+                    $"and was removed from the map. {exception.GetType().Name}: {exception.Message}",
+                    islandGO);
+                Debug.LogException(exception, islandGO);
+                failedChunkCount++;
+                islands.Remove(island);
+                Destroy(islandGO);
+                return;
+            }
 
 
             // If this ID is marked for ocean and we're not inverting, or it's an island and we are inverting

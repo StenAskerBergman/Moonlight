@@ -30,6 +30,12 @@ public class ItemData : ScriptableObject, IIdentifiable
     [Tooltip("ON = a socketable/equippable modifier (warehouse upgrade, seed, vehicle upgrade) shown on the Items tab. OFF = a normal cargo commodity shown on the Goods tab. The two are separate stockpiles, not two views of one list.")]
     public bool isSocketable;
 
+    [Tooltip("Optional bridge used by the legacy production/logistics pipeline. None means this ItemData is not represented by a ResourceType. New economy code should carry ItemData directly.")]
+    [SerializeField] private ItemEnums.ResourceType resourceType = ItemEnums.ResourceType.None;
+
+    public ItemEnums.ResourceType ResourceType => resourceType;
+    public bool HasResourceType => resourceType != ItemEnums.ResourceType.None;
+
     [Header("Activation")]
     [Tooltip("How this item behaves once it is slotted into an Island or Local item slot: whether it can be taken back out, whether it burns charges, and how long it runs. Key characters use this too.")]
     public ItemActivationProfile activation = new ItemActivationProfile();
@@ -69,4 +75,3 @@ public class ItemData : ScriptableObject, IIdentifiable
     //... other properties that define the item type.
 }
 // End - ItemData.cs
-

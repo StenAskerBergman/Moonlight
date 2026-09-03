@@ -18,18 +18,13 @@ public class BuildingSupply : MonoBehaviour
     public bool HasRequiredSupplies()
     {
         if (requiredSupplies == null || requiredSupplies.Count == 0) return true;
-        if (building == null || building.buildingInventory == null) return true;
+        if (building == null || building.buildingInventory == null) return false;
 
         foreach (ResourceRequirement requirement in requiredSupplies)
         {
             if (requirement == null) continue;
 
-            // TODO: ResourceRequirement.requiredResource is matched against ItemEnums.ResourceType
-            // by name until supplies get a proper ResourceType field of their own.
-            if (!System.Enum.TryParse(requirement.requiredResource, out ItemEnums.ResourceType resourceType))
-            {
-                continue;
-            }
+            if (!TryResolveRequirement(requirement, out ItemEnums.ResourceType resourceType, out _)) return false;
 
             int available = building.buildingInventory.GetResourceCount(resourceType);
             if (!requirement.IsSatisfiedBy(available))
@@ -49,7 +44,7 @@ public class BuildingSupply : MonoBehaviour
         foreach (ResourceRequirement requirement in requiredSupplies)
         {
             if (requirement == null || requirement.amount <= 0 ||
-                !System.Enum.TryParse(requirement.requiredResource, out ItemEnums.ResourceType parsed)) continue;
+                !TryResolveRequirement(requirement, out ItemEnums.ResourceType parsed, out _)) continue;
             int onHand = building.buildingInventory.GetResourceCount(parsed);
             int target = Mathf.Max(requirement.amount * 3, requirement.amount);
             int missing = Mathf.Min(target - onHand, building.buildingInventory.FreeCapacity);
@@ -77,10 +72,7 @@ public class BuildingSupply : MonoBehaviour
         {
             if (requirement == null || requirement.amount <= 0) continue;
 
-            if (!System.Enum.TryParse(requirement.requiredResource, out ItemEnums.ResourceType resourceType))
-            {
-                continue;
-            }
+            if (!TryResolveRequirement(requirement, out ItemEnums.ResourceType resourceType, out _)) continue;
 
             building.buildingInventory.TryRemoveResource(resourceType, requirement.amount);
         }
@@ -99,5 +91,45 @@ public class BuildingSupply : MonoBehaviour
         {
             building.SetState(BuildingEnums.BuildingState.Active);
         }
+    }
+
+    public ItemData GetItemDefinition(ItemEnums.ResourceType resource)
+    {
+        if (requiredSupplies == null) return null;
+        foreach (ResourceRequirement requirement in requiredSupplies)
+        {
+            if (TryResolveRequirement(requirement, out ItemEnums.ResourceType parsed, out ItemData item) &&
+                parsed == resource)
+            {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private bool TryResolveRequirement(
+        ResourceRequirement requirement,
+        out ItemEnums.ResourceType resource,
+        out ItemData item)
+    {
+        resource = ItemEnums.ResourceType.None;
+        item = requirement != null ? requirement.item : null;
+        if (requirement == null) return false;
+
+        if (item != null && item.HasResourceType)
+        {
+            resource = item.ResourceType;
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(requirement.requiredResource) &&
+            System.Enum.TryParse(requirement.requiredResource, true, out resource) &&
+            resource != ItemEnums.ResourceType.None)
+        {
+            return true;
+        }
+
+        Debug.LogWarning($"{name}: supply requirement needs an ItemData with a ResourceType mapping.", this);
+        return false;
     }
 }

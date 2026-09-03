@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class Building : MonoBehaviour, ISelectable
 {
+    [Tooltip("Owning player. When empty this is treated as a local-player building.")]
+    public Owner owner;
+
     public int MonthlyReturn { get; set; }
     public int BuildingId { get; set; }
     public BuildingEnums.BuildingType BuildingType { get; set; } = default;
@@ -44,6 +47,11 @@ public class Building : MonoBehaviour, ISelectable
         isSeedBuilding = false;
         currentSeedType = ItemEnums.SeedType.None;
         // this.resourceManager = resourceManager; // Local Legacy Code
+    }
+
+    private void Start()
+    {
+        PlayerOwnershipVisual.Ensure(gameObject, owner);
     }
 
     public bool IsCompatibleWithSeeds(ItemData seedOne, ItemData seedTwo, ItemData seedThree)

@@ -21,6 +21,7 @@ public sealed class TerrainSampleCache
     public float[] MountainAllowances { get; }
     public float[] MountainBoosts { get; }
     public float[] RiverCarveDepths { get; }
+    public bool[] LakeMasks { get; }
     public float[] PlateauInfluences { get; }
     public PlateauSampleData[] PlateauData { get; }
 
@@ -50,6 +51,7 @@ public sealed class TerrainSampleCache
         MountainAllowances = new float[totalCount];
         MountainBoosts = new float[totalCount];
         RiverCarveDepths = new float[totalCount];
+        LakeMasks = new bool[totalCount];
         PlateauInfluences = new float[totalCount];
         PlateauData = includePlateauData ? new PlateauSampleData[totalCount] : null;
 
@@ -105,7 +107,7 @@ public sealed class TerrainSampleCache
 public sealed class TerrainAttributionData
 {
     public float[] RawBaseHeights { get; }
-    public float[] TerraceDeltas { get; }
+    public float[] ReliefDeltas { get; }
     public float[] PlateauDeltas { get; }
     public short[] DominantRidgeIds { get; }
     public short[] DominantRiverIds { get; }
@@ -113,7 +115,7 @@ public sealed class TerrainAttributionData
     public TerrainAttributionData(int totalCount)
     {
         RawBaseHeights = new float[totalCount];
-        TerraceDeltas = new float[totalCount];
+        ReliefDeltas = new float[totalCount];
         PlateauDeltas = new float[totalCount];
         DominantRidgeIds = new short[totalCount];
         DominantRiverIds = new short[totalCount];

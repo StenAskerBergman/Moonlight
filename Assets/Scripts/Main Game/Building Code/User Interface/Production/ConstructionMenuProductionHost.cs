@@ -29,6 +29,14 @@ public sealed class ConstructionMenuProductionHost : MonoBehaviour
     {
         if (isInstalled) return;
 
+        if (tycoonProductionPage == null)
+        {
+#if UNITY_EDITOR
+            tycoonProductionPage = UnityEditor.AssetDatabase.LoadAssetAtPath<ConstructionPageDefinition>(
+                "Assets/Data/Construction/Pages/Tycoon Production.asset");
+#endif
+        }
+
         Transform tycoonRoot = transform.Find("Faction A: Tyc");
         if (tycoonRoot == null)
         {

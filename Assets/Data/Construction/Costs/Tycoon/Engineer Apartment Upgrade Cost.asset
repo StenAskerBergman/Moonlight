@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Engineer Apartment Upgrade Cost
   m_EditorClassIdentifier: 
   price: 0
-  revenue: 0
+  revenue: 32
   expense: 0
   costItems:
   - {fileID: 11400000, guid: c03b7fa539f40a94fa8e7ef95a915c30, type: 2}

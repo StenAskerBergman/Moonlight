@@ -106,11 +106,15 @@ public sealed class BuildingDemolition : MonoBehaviour
 
     private void PayCurrencyRefund()
     {
-        int refund = PreviewCurrencyRefund();
-        if (refund <= 0) return;
-
         Bank bank = FindObjectOfType<Bank>();
-        if (bank != null) bank.AddIncome(refund);
+        if (bank == null) return;
+
+        // Off the books first: a demolished building must stop drawing upkeep and
+        // stop paying revenue whether or not anything is refunded for it.
+        bank.UntrackBuilding(GetComponent<BuildingCost>());
+
+        int refund = PreviewCurrencyRefund();
+        if (refund > 0) bank.AddIncome(refund);
     }
 
     private CostData GetCostData()

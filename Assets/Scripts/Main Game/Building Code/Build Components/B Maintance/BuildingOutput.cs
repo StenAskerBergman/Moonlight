@@ -14,6 +14,7 @@ public class BuildingOutput : MonoBehaviour
 
     public Dictionary<ItemEnums.ResourceType, int> PendingOutput { get; private set; } = new Dictionary<ItemEnums.ResourceType, int>();
     private readonly Dictionary<ItemEnums.ResourceType, int> reservedOutput = new Dictionary<ItemEnums.ResourceType, int>();
+    private readonly Dictionary<ItemEnums.ResourceType, ItemData> itemDefinitions = new Dictionary<ItemEnums.ResourceType, ItemData>();
 
     public int OutputCapacity => outputCapacity;
     public int PickupLoadSize => pickupLoadSize;
@@ -48,6 +49,24 @@ public class BuildingOutput : MonoBehaviour
         }
 
         OnOutputReady?.Invoke(building, resource, accepted);
+    }
+
+    public void RegisterItemDefinition(ItemEnums.ResourceType resource, ItemData item)
+    {
+        if (item == null || resource == ItemEnums.ResourceType.None) return;
+        if (item.HasResourceType && item.ResourceType != resource)
+        {
+            Debug.LogError($"{name}: '{item.name}' maps to {item.ResourceType}, not {resource}.", item);
+            return;
+        }
+        itemDefinitions[resource] = item;
+        ItemCatalog.Register(item);
+    }
+
+    public ItemData GetItemDefinition(ItemEnums.ResourceType resource)
+    {
+        itemDefinitions.TryGetValue(resource, out ItemData item);
+        return item;
     }
 
     public bool TryReservePickup(int capacity, out Dictionary<ItemEnums.ResourceType, int> reservation, bool allowPartial = false)
@@ -99,7 +118,7 @@ public class BuildingOutput : MonoBehaviour
         }
     }
 
-    private bool ReservationMatches(IReadOnlyDictionary<ItemEnums.ResourceType, int> reservation)
+    public bool ReservationMatches(IReadOnlyDictionary<ItemEnums.ResourceType, int> reservation)
     {
         if (reservation == null || reservation.Count == 0) return false;
         foreach (var entry in reservation)

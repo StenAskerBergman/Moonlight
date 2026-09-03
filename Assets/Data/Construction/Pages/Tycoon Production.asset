@@ -867,50 +867,10 @@ MonoBehaviour:
       ToNodeId: healthcare_office
       Type: 2
       JunctionPosition: 0.5
-  - Id: tycoon.worker.civic
-    DisplayName: Civic
-    OutputIcon: {fileID: 0}
-    Tier: 0
-    UnlockCondition:
-      faction: 0
-      populationClass: 0
-      requiredPopulation: 0
-    Nodes:
-    - Id: worker_barracks
-      BuildingData: {fileID: 11400000, guid: 775a778245b707e43a1261469b4ec424, type: 2}
-      DisplayName: Worker Barracks
-      Icon: {fileID: 0}
-      Column: 0
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: city_center
-      BuildingData: {fileID: 11400000, guid: a84cf9061fc8a1041a13d2f424ab3326, type: 2}
-      DisplayName: City Center
-      Icon: {fileID: 0}
-      Column: 1
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: casino
-      BuildingData: {fileID: 11400000, guid: 9d4249ab960ada6419b9f178820575aa, type: 2}
-      DisplayName: Casino
-      Icon: {fileID: 0}
-      Column: 2
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    Connections: []
   - Id: tycoon.worker.fields
     DisplayName: Fields
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 1
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -950,7 +910,7 @@ MonoBehaviour:
   - Id: tycoon.employee.civic
     DisplayName: Civic
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 2
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -966,41 +926,11 @@ MonoBehaviour:
         faction: 0
         populationClass: 0
         requiredPopulation: 0
-    - Id: ministry_of_truth
-      BuildingData: {fileID: 11400000, guid: 7579d1c713fd9da439b457b56ee4a027, type: 2}
-      DisplayName: Ministry of Truth
-      Icon: {fileID: 0}
-      Column: 1
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: tycoon_shipyard
-      BuildingData: {fileID: 11400000, guid: 4a7ef56d90dc62740ba466bbae5e1c43, type: 2}
-      DisplayName: Tycoon Shipyard
-      Icon: {fileID: 0}
-      Column: 2
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: waste_compactor
-      BuildingData: {fileID: 11400000, guid: 6f5c7cd823d7ad5468f98ab7e5369d23, type: 2}
-      DisplayName: Waste Compactor
-      Icon: {fileID: 0}
-      Column: 3
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
     Connections: []
   - Id: tycoon.employee.fields
     DisplayName: Fields
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 2
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -1020,7 +950,7 @@ MonoBehaviour:
   - Id: tycoon.engineer.civic
     DisplayName: Civic
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 3
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -1036,41 +966,11 @@ MonoBehaviour:
         faction: 0
         populationClass: 0
         requiredPopulation: 0
-    - Id: financial_center
-      BuildingData: {fileID: 11400000, guid: 80dc5e543124a6247beb530e9a4a0b2a, type: 2}
-      DisplayName: Financial Center
-      Icon: {fileID: 0}
-      Column: 1
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: deacidification_station
-      BuildingData: {fileID: 11400000, guid: f06fd2e6d6ee01648884303bb15daeca, type: 2}
-      DisplayName: Deacidification Station
-      Icon: {fileID: 0}
-      Column: 2
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: banes_avenue
-      BuildingData: {fileID: 11400000, guid: 49643764232271145b14d6cced0c60f4, type: 2}
-      DisplayName: Banes Avenue
-      Icon: {fileID: 0}
-      Column: 3
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
     Connections: []
   - Id: tycoon.engineer.fields
     DisplayName: Fields
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 3
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -1110,7 +1010,7 @@ MonoBehaviour:
   - Id: tycoon.executive.civic
     DisplayName: Civic
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 4
     UnlockCondition:
       faction: 0
       populationClass: 0
@@ -1126,51 +1026,11 @@ MonoBehaviour:
         faction: 0
         populationClass: 0
         requiredPopulation: 0
-    - Id: co2_reservoir
-      BuildingData: {fileID: 11400000, guid: 0519fb31a15c1fd4aa8c5e7f1468f865, type: 2}
-      DisplayName: CO2 Reservoir
-      Icon: {fileID: 0}
-      Column: 1
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    Connections: []
-  - Id: tycoon.executive.monuments
-    DisplayName: Monuments
-    OutputIcon: {fileID: 0}
-    Tier: 0
-    UnlockCondition:
-      faction: 0
-      populationClass: 0
-      requiredPopulation: 0
-    Nodes:
-    - Id: missile_launch_pad
-      BuildingData: {fileID: 11400000, guid: c01b56bc40b506c4cbca614eff7c911f, type: 2}
-      DisplayName: Missile Launch Pad
-      Icon: {fileID: 0}
-      Column: 0
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
-    - Id: corporate_hq_foundation
-      BuildingData: {fileID: 11400000, guid: 4698ed57a3c38e743bedd784c06f2e5f, type: 2}
-      DisplayName: Corporate HQ Foundation
-      Icon: {fileID: 0}
-      Column: 1
-      Row: 0
-      UnlockCondition:
-        faction: 0
-        populationClass: 0
-        requiredPopulation: 0
     Connections: []
   - Id: tycoon.executive.fields
     DisplayName: Fields
     OutputIcon: {fileID: 0}
-    Tier: 0
+    Tier: 4
     UnlockCondition:
       faction: 0
       populationClass: 0

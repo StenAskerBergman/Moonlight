@@ -9,6 +9,12 @@ using UnityEngine;
 /// </summary>
 public sealed class FeatureReservationMap
 {
+    public enum RiverSourceKind
+    {
+        Waterfall,
+        Lake
+    }
+
     public readonly struct RiverWaypoint
     {
         public Vector2 Position { get; }
@@ -32,6 +38,9 @@ public sealed class FeatureReservationMap
         public float ChannelRadius { get; set; } = 1.0f;
         public float ClearanceRadius { get; set; } = 4.5f;
         public float MaxClearanceRadius { get; private set; } = 8f;
+        public RiverSourceKind SourceKind { get; }
+        public float SourceSurfaceHeight { get; }
+        public float MouthSurfaceHeight { get; }
 
         private float boundsMinX = float.MaxValue;
         private float boundsMinZ = float.MaxValue;
@@ -39,11 +48,55 @@ public sealed class FeatureReservationMap
         private float boundsMaxZ = float.MinValue;
         private bool boundsComputed = false;
 
-        public RiverCorridor(float valleyDepth, float channelRadius = 1.0f, float clearanceRadius = 4.5f)
+        public RiverCorridor(
+            float valleyDepth,
+            float channelRadius = 1.0f,
+            float clearanceRadius = 4.5f,
+            RiverSourceKind sourceKind = RiverSourceKind.Waterfall,
+            float sourceSurfaceHeight = 0f,
+            float mouthSurfaceHeight = 0f)
         {
             ValleyDepth = Mathf.Max(0.5f, valleyDepth);
             ChannelRadius = Mathf.Max(0.2f, channelRadius);
             ClearanceRadius = Mathf.Max(ChannelRadius + 0.8f, clearanceRadius);
+            SourceKind = sourceKind;
+            SourceSurfaceHeight = sourceSurfaceHeight;
+            MouthSurfaceHeight = mouthSurfaceHeight;
+        }
+
+        public float GetSurfaceHeight(float normalizedProgress)
+        {
+            float t = Mathf.Clamp01(normalizedProgress);
+            return Mathf.Lerp(SourceSurfaceHeight, MouthSurfaceHeight, Mathf.Pow(t, 0.82f));
+        }
+
+        public float GetNormalizedProgress(Vector2 point)
+        {
+            if (Waypoints.Count < 2) return 0f;
+
+            float totalLength = 0f;
+            for (int i = 0; i < Waypoints.Count - 1; i++)
+                totalLength += Vector2.Distance(Waypoints[i].Position, Waypoints[i + 1].Position);
+
+            float bestDistanceSq = float.MaxValue;
+            float distanceBeforeBest = 0f;
+            float accumulated = 0f;
+            for (int i = 0; i < Waypoints.Count - 1; i++)
+            {
+                Vector2 a = Waypoints[i].Position;
+                Vector2 b = Waypoints[i + 1].Position;
+                Vector2 ab = b - a;
+                float length = ab.magnitude;
+                float t = length > 0.0001f ? Mathf.Clamp01(Vector2.Dot(point - a, ab) / (length * length)) : 0f;
+                float distanceSq = (point - (a + ab * t)).sqrMagnitude;
+                if (distanceSq < bestDistanceSq)
+                {
+                    bestDistanceSq = distanceSq;
+                    distanceBeforeBest = accumulated + length * t;
+                }
+                accumulated += length;
+            }
+            return totalLength > 0.0001f ? Mathf.Clamp01(distanceBeforeBest / totalLength) : 0f;
         }
 
         public void ComputeBounds()
@@ -108,6 +161,22 @@ public sealed class FeatureReservationMap
         }
     }
 
+    public sealed class LakeBasin
+    {
+        public Vector2 Center { get; }
+        public float Radius { get; }
+        public float SurfaceHeight { get; }
+        public float Depth { get; }
+
+        public LakeBasin(Vector2 center, float radius, float surfaceHeight, float depth)
+        {
+            Center = center;
+            Radius = Mathf.Max(1f, radius);
+            SurfaceHeight = surfaceHeight;
+            Depth = Mathf.Max(0.1f, depth);
+        }
+    }
+
     public sealed class CoastalRidge
     {
         public Vector2 Origin { get; }
@@ -168,14 +237,14 @@ public sealed class FeatureReservationMap
             PeakHeight = Mathf.Max(0.5f, peakHeight);
             CliffSharpness = Mathf.Max(1f, cliffSharpness);
 
-            // Bounded well under the ridge's transverse reach (Width * 1.8): at 0.38 the warp
+            // Bounded well under the ridge's transverse reach (Width * 1.35): at 0.38 the warp
             // could pinch a narrow ridge into separate blobs, tripping the fragmented-component
             // validation and aborting generation for some seeds.
             warpAmplitude = Width * 0.24f;
 
             center = origin + Direction * (Length * 0.5f);
             float maxAlongHalf = (Length + Width) * 0.5f;
-            float maxPerpHalf = Width * 1.8f;
+            float maxPerpHalf = Width * 1.35f;
             // Bounding radius must cover the warped footprint, or the early-out clips the
             // very boundary meander the warp exists to create (re-introducing a straight edge).
             float radius = Mathf.Sqrt(maxAlongHalf * maxAlongHalf + maxPerpHalf * maxPerpHalf) + 1.0f + warpAmplitude;
@@ -232,7 +301,7 @@ public sealed class FeatureReservationMap
 
             Vector2 normal = new Vector2(-Direction.y, Direction.x);
             float perp = Mathf.Abs(Vector2.Dot(delta, normal));
-            float maxPerp = Width * 1.8f;
+            float maxPerp = Width * 1.35f;
             if (perp >= maxPerp) return 0f;
 
             // Longitudinal smooth sine envelope
@@ -240,20 +309,22 @@ public sealed class FeatureReservationMap
             float alongWeight = Mathf.Sin(tAlong * Mathf.PI);
 
             // Transverse smooth profile:
-            // Core spine: [0..Width] smooth cosine curve (1.0 -> 0.35)
-            // Foothill apron: [Width..1.8*Width] smooth cubic Hermite falloff (0.35 -> 0.0)
+            // Core spine: [0..Width] smooth cosine curve (1.0 -> 0.28)
+            // Foothill apron: [Width..1.35*Width] smooth cubic Hermite falloff (0.28 -> 0.0).
+            // Keeping this narrow is what makes these coastal massifs instead of
+            // mountain blankets which consume the island's city-building interior.
             float crossWeight;
             if (perp <= Width)
             {
                 float u = perp / Width;
                 float cos = Mathf.Cos(u * (Mathf.PI * 0.5f));
-                crossWeight = Mathf.Lerp(0.35f, 1.0f, cos * cos);
+                crossWeight = Mathf.Lerp(0.28f, 1.0f, cos * cos);
             }
             else
             {
                 float u = (perp - Width) / (maxPerp - Width);
                 float smooth = (1f - u) * (1f - u) * (1f + 2f * u);
-                crossWeight = 0.35f * smooth;
+                crossWeight = 0.28f * smooth;
             }
 
             return PeakHeight * alongWeight * crossWeight * EvaluateCragModulation(point);
@@ -266,6 +337,7 @@ public sealed class FeatureReservationMap
         public float RawRidgeElevation;
         public float RiverCarveDepth;
         public bool IsInRiverChannel;
+        public bool IsInLake;
         public short DominantRidgeId;
         public short DominantRiverId;
     }
@@ -287,17 +359,24 @@ public sealed class FeatureReservationMap
     }
 
     private readonly List<RiverCorridor> rivers = new List<RiverCorridor>();
+    private readonly List<LakeBasin> lakes = new List<LakeBasin>();
     private readonly List<CoastalRidge> ridges = new List<CoastalRidge>();
     private readonly List<MineAnchor> mineAnchors = new List<MineAnchor>();
 
     public PerimeterSectorMap Sectors { get; set; }
     public IReadOnlyList<RiverCorridor> Rivers => rivers;
+    public IReadOnlyList<LakeBasin> Lakes => lakes;
     public IReadOnlyList<CoastalRidge> Ridges => ridges;
     public IReadOnlyList<MineAnchor> MineAnchors => mineAnchors;
 
     public void AddRiver(RiverCorridor river)
     {
         if (river != null) rivers.Add(river);
+    }
+
+    public void AddLake(LakeBasin lake)
+    {
+        if (lake != null) lakes.Add(lake);
     }
 
     public void AddRidge(CoastalRidge ridge)
@@ -321,11 +400,28 @@ public sealed class FeatureReservationMap
             RawRidgeElevation = 0f,
             RiverCarveDepth = 0f,
             IsInRiverChannel = false,
+            IsInLake = false,
             DominantRidgeId = -1,
             DominantRiverId = -1
         };
 
         Vector2 point = new Vector2(localX, localZ);
+
+        // Alpine lakes use a local, elevated waterline and join their river outlet
+        // in this same reservation pass.
+        for (int i = 0; i < lakes.Count; i++)
+        {
+            LakeBasin lake = lakes[i];
+            float distance = Vector2.Distance(point, lake.Center);
+            if (distance > lake.Radius) continue;
+
+            float edge = Mathf.Clamp01(distance / lake.Radius);
+            float bowl = 1f - edge * edge;
+            float targetBed = lake.SurfaceHeight - lake.Depth * Mathf.Max(0.2f, bowl);
+            eval.RiverCarveDepth = Mathf.Max(eval.RiverCarveDepth, Mathf.Max(0f, currentBaseHeight - targetBed));
+            eval.IsInRiverChannel = true;
+            eval.IsInLake = true;
+        }
 
         // 1. Geological Rivers & Valleys
         for (int i = 0; i < rivers.Count; i++)
@@ -349,11 +445,13 @@ public sealed class FeatureReservationMap
 
                 eval.IsInRiverChannel = distFromSource > 3.0f; // Only mark as open water channel once it deepens towards the coast
 
-                // Riverbed elevation: smoothly descends from highland spring down to MSL waterline (0.0m)
-                float inlandSurface = Mathf.Max(0.15f, currentBaseHeight);
+                // Follow the river's own monotonic water surface. The former -0.20
+                // sea-level constant produced no carve in worlds whose sea is at -3.
+                float inlandSurface = currentBaseHeight;
                 float distToMouth = Vector2.Distance(point, river.Mouth);
-                float totalRiverLen = Mathf.Max(1f, Vector2.Distance(river.Source, river.Mouth));
-                float streamBed = Mathf.Lerp(inlandSurface - 0.18f, -0.20f, Mathf.Clamp01(distFromSource / totalRiverLen));
+                float progress = river.GetNormalizedProgress(point);
+                float channelDepth = Mathf.Lerp(0.18f, Mathf.Max(0.30f, river.ValleyDepth * 0.42f), progress);
+                float streamBed = river.GetSurfaceHeight(progress) - channelDepth;
                 float targetWaterbedHeight = Mathf.Lerp(inlandSurface, streamBed, bedProfile);
 
                 // Estuary transition: near the mouth, smoothly blend into natural coastal seabed

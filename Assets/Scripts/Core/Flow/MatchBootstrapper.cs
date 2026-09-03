@@ -22,6 +22,9 @@ public class MatchBootstrapper : MonoBehaviour
     [Tooltip("Leave empty to find it in the scene.")]
     [SerializeField] private PlayerFactionController factionController;
 
+    [Tooltip("The local player object that owns spawned units and buildings. Leave empty to find it in the scene.")]
+    [SerializeField] private Owner playerOwner;
+
     [SerializeField] private bool showLogs = true;
 
     private void Awake()
@@ -37,6 +40,15 @@ public class MatchBootstrapper : MonoBehaviour
         Log($"applying {config}");
 
         Resolve();
+
+        if (playerOwner != null)
+        {
+            playerOwner.SetPlayerColor(config.playerColor);
+        }
+        else
+        {
+            Debug.LogWarning("MatchBootstrapper: no Owner in the scene - ownership visuals will use the session colour directly.");
+        }
 
         if (mapManager != null)
         {
@@ -73,6 +85,11 @@ public class MatchBootstrapper : MonoBehaviour
         if (factionController == null)
         {
             factionController = FindObjectOfType<PlayerFactionController>(true);
+        }
+
+        if (playerOwner == null)
+        {
+            playerOwner = FindObjectOfType<Owner>(true);
         }
     }
 

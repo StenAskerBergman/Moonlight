@@ -13,57 +13,37 @@ public partial class IslandTerrainProvider
 // frequency noise in `value` gets amplified into visible height ripples on the shoreline
 // ramp. Feeding smoothed input only into visualBaseHeight kills that ripple without moving
 // anything the reservation system depends on.
-// Buildable terrace shaping. Deliberately coarse: the goal is a few broad platforms with sparse,
-// large-scale grade breaks, not fine stepping. TerraceStep is the vertical rise between benches;
-// the flat window is [0, TerraceFlatLower] and [TerraceFlatUpper, 1] of each band.
-private const float TerraceStep = 0.26f;
-// Most of each level is bench, with the rest as the slope band connecting it to the next.
+// Mainland micro-relief.
 //
-// TerraceFlatLower also bounds |f - shaped|, which is what the blend weight's derivative
-// multiplies, so lowering it additionally widens the monotonicity margin (at 0.45 the remap went
-// non-monotonic, slope -0.081, partway through the blend).
-// Flat fraction = TerraceFlatLower + (1 - TerraceFlatUpper) = 0.30 + 0.30 = 60%, leaving 40% as
-// the grade break.
+// The mainland is a CONSTANT foundation at surfaceFlatlandHeight - this is the only thing that
+// varies it, and it exists purely so a large buildable region does not read as a machined table.
+// It is deliberately not a terrain feature: hills, cliffs, valleys and rivers are placed
+// deliberately by the reservation system and displace the foundation inside their own footprints.
 //
-// The break was previously 24%, which concentrated a whole 0.26 step into so little of the band
-// that the transition measured 0.21 world units wide on average - a hairline on a 60-unit
-// island, dropping 0.197 in a single sample. That reads as a concentric retaining wall rather
-// than a landform. Widening the ramp lowers peak gradient through the break from ~6.25 to ~3.75
-// in curve units while still leaving most of each level flat.
-private const float TerraceFlatLower = 0.30f;
-private const float TerraceFlatUpper = 0.70f;
-// Terracing engages well above the beach so the shoreline and the coastal slope below it stay a
-// single clean continuous band. Starting at 0.22 stepped the coastal slope too, which read as
-// tight repeated rings around the shore rather than as a few large-scale levels.
-private const float TerraceStartHeight = 0.36f;
-// Wide on purpose: the blend weight's derivative multiplies the gap between the terraced and
-// untouched fraction, so a narrow band drives the remap non-monotonic.
-// Must be comfortably narrower than the height range actually being terraced (buildable land
-// spans roughly 0.40..0.95), or the terracing never reaches full strength before the land runs
-// out and the benches stay vestigial. Balanced against monotonicity: this band's derivative
-// multiplies TerraceFlatLower * TerraceStep, and too narrow a band drives the remap backwards.
-private const float TerraceBlendBand = 0.45f;
+// Two properties are load-bearing:
+//   - it is SYMMETRIC about zero, so the mean mainland elevation is exactly
+//     surfaceFlatlandHeight and no part of the island drifts off the datum;
+//   - the wavelength is long (~21 world units) against the amplitude (a few centimetres), so the
+//     gradient it contributes is about amplitude/10 per world unit - orders of magnitude below
+//     maxBuildableHeightVariance, and therefore incapable of failing a cell's slope gate.
+//
+// This replaced a terracing pass. Terracing was a remap of HEIGHT, which only made sense while
+// mainland height was a continuous ramp through the noise field: it quantised that ramp into
+// benches. Against a constant foundation it does the opposite of its purpose - a per-position
+// phase offset applied to a single height turns that constant back into a 0.13-unit wobble.
+private const float MainlandReliefScale = 1f / 21f;
 
-// Spatial variation of the terrace phase.
-//
-// A terrace bench edge is an ISO-HEIGHT contour, and on an island an iso-height contour is a
-// closed loop - so every bench edge wrapped the whole coastline as one continuous lip. Measured:
-// 58% of all strong convex ridges on buildable land fell in h[0.70..0.85], peaking at 30% in
-// h[0.75..0.80], which is exactly the bench at 0.78. That single elevation reads as a retaining
-// wall ringing the island.
-//
-// Offsetting the terrace phase by low-frequency noise makes the bench elevation differ from place
-// to place, so the edge meanders and breaks into separate benches instead of closing into a ring.
-// The wavelength is long compared with a grade break (~18 world units against ~0.24), so the
-// offset's own spatial gradient is negligible next to the terrain's and cannot steepen anything.
-private const float TerracePhaseScale = 1f / 18f;
+// Field width over which the relief fades in above coastalUpper. The coastal ramp arrives at
+// exactly surfaceFlatlandHeight, so relief has to start at zero there or it stamps a step along
+// the whole shoreline - an iso-field contour, which on an island closes into a ring.
+private const float MainlandReliefFadeBand = 0.04f;
 
-private float EvaluateTerracePhase(float localX, float localZ)
+private float EvaluateMainlandRelief(float localX, float localZ)
 {
     float n = Mathf.PerlinNoise(
-        localX * TerracePhaseScale + legacyOffsetX + 313.7f,
-        localZ * TerracePhaseScale + legacyOffsetZ + 977.1f);
-    return n * TerraceStep;
+        localX * MainlandReliefScale + legacyOffsetX + 313.7f,
+        localZ * MainlandReliefScale + legacyOffsetZ + 977.1f);
+    return (n * 2f - 1f) * settings.mainlandRelief;
 }
 
 private float CalculateBaseContinuousHeight(float value)
@@ -71,12 +51,17 @@ private float CalculateBaseContinuousHeight(float value)
     return CalculateBaseContinuousHeight(value, 0f);
 }
 
-private float CalculateBaseContinuousHeight(float value, float terracePhase)
+private float CalculateBaseContinuousHeight(float value, float mainlandRelief)
 {
-    return CalculateBaseContinuousHeight(value, terracePhase, out _);
+    return CalculateBaseContinuousHeight(value, mainlandRelief, out _);
 }
 
-private float CalculateBaseContinuousHeight(float value, float terracePhase, out float rawBaseHeight)
+/// <param name="rawBaseHeight">
+/// The foundation before micro-relief - i.e. the flat mainland datum itself on land, and the
+/// plain shelf/shore curve below it. Diagnostics subtract this from the returned value to
+/// isolate what the relief contributed.
+/// </param>
+private float CalculateBaseContinuousHeight(float value, float mainlandRelief, out float rawBaseHeight)
 {
     float waterUpper = settings.waterUpper; // 0.40f (Coastline MSL = 0.0m)
     float coastalUpper = 0.46f;            // Smooth backshore transition up to mainland baseline (+0.85m)
@@ -85,7 +70,7 @@ private float CalculateBaseContinuousHeight(float value, float terracePhase, out
     if (value <= waterUpper)
     {
         // Submerged ocean floor and continental shelf (0.0m at coastline down to abyssHeight)
-        // Smooth continuous ramp without discrete terrace steps
+        // Smooth continuous ramp down to the abyss datum
         float t = Mathf.Clamp01((value - abyssUpper) / Mathf.Max(0.01f, waterUpper - abyssUpper));
         // Smooth concave shelf profile (t=0 -> abyssHeight, t=1 -> 0.0m Mean Sea Level)
         float shelfCurve = Mathf.Pow(t, 1.25f);
@@ -116,69 +101,32 @@ private float CalculateBaseContinuousHeight(float value, float terracePhase, out
 
         float shoreCurve = m0 * (u * u * u - 2f * u * u + u) + (3f * u * u - 2f * u * u * u);
         rawBaseHeight = Mathf.Lerp(0.0f, settings.surfaceFlatlandHeight, shoreCurve);
-        return ApplyBuildableTerraces(rawBaseHeight, terracePhase);
+        return rawBaseHeight;
     }
     else
     {
-        // Inland mainland: +0.85m baseline with organic rolling topography (rises naturally towards the interior)
-        float excess = value - coastalUpper;
-        rawBaseHeight = settings.surfaceFlatlandHeight + excess * 1.15f;
-        return ApplyBuildableTerraces(rawBaseHeight, terracePhase);
+        // Inland mainland: ONE FLAT FOUNDATION at surfaceFlatlandHeight.
+        //
+        // This was `surfaceFlatlandHeight + (value - coastalUpper) * 1.15`, which made every
+        // mainland vertex a linear function of the noise field. That is what made the island a
+        // continuously varying dome rather than a construction surface: measured, "Land" cells
+        // spanned -0.128..1.239 against an intended 0.85, 52% of Land mesh vertices sat more
+        // than 0.15 off the datum, and 73% of Land cells failed the buildable slope gate - only
+        // 1.7% of a chunk came out buildable at all.
+        //
+        // The field still decides WHERE land is (the branch above this one owns the shoreline).
+        // It no longer decides how high that land is. Elevation changes on the mainland now come
+        // only from deliberate features - ridges add mountainBoost, rivers and lakes subtract
+        // riverCarve - each inside its own reserved footprint, tapering to zero at its boundary.
+        // Outside every such footprint the mainland is flat by construction.
+        //
+        // The relief fades in from zero across MainlandReliefFadeBand so the join to the coastal
+        // ramp, which arrives at exactly surfaceFlatlandHeight, stays continuous.
+        float reliefBlend = Mathf.Clamp01((value - coastalUpper) / MainlandReliefFadeBand);
+        reliefBlend = reliefBlend * reliefBlend * (3f - 2f * reliefBlend);
+        rawBaseHeight = settings.surfaceFlatlandHeight;
+        return rawBaseHeight + mainlandRelief * reliefBlend;
     }
-}
-
-// Buildable elevation platforms.
-//
-// Measured on the generated island: of all non-mountain land, ~2.9% sat in EVERY 0.05 height
-// band from 0.00 to 0.70 - a dead-flat histogram, which is the signature of one unbroken linear
-// ramp. That is roughly 40% of the buildable surface spread across a single featureless
-// gradient (the backshore branch maps field 0.40..0.46 onto height 0.00..0.85), which is what
-// makes the island read as one continuously warped surface rather than as terrain with levels.
-//
-// This remaps that ramp into a few broad benches joined by short slope bands. It is a remap of
-// the height CURVE only:
-//   - the coastline is untouched, because the remap is identity at and below the beach band and
-//     T(h) -> h as h -> 0, so the h=0 contour cannot move;
-//   - mountain boost is added after this and is masked off the low-frequency field, so mountain
-//     placement, shape and coastal contact are unaffected and stay organic;
-//   - reservations and the rendered surface both read this same function, so river carves stay
-//     registered to the ground they are cut into.
-//
-// Shape of one level: flat for the first TerraceFlatLower of the band, a smoothstep ramp, then
-// flat again. Smoothstep has zero derivative at both ends, so consecutive levels join with
-// matching (zero) gradient and the whole function is C1 - no crease at a bench edge, which is
-// the failure mode that has produced every visible artifact in this pipeline so far.
-private static float ApplyBuildableTerraces(float height, float terracePhase)
-{
-    if (height <= 0f) return height;
-
-    // terracePhase shifts WHERE the bench boundaries fall, per position. Without it every bench
-    // edge is a pure iso-height contour, which on an island closes into a ring right around the
-    // coastline (and continues across mountains, since boost is added on top of this base). The
-    // phase is subtracted before quantising and added back after, so the level structure is
-    // preserved exactly - only its elevation is displaced.
-    float shifted = height - terracePhase;
-
-    float level = shifted / TerraceStep;
-    float index = Mathf.Floor(level);
-    float f = level - index;
-
-    float u = Mathf.Clamp01((f - TerraceFlatLower) / (TerraceFlatUpper - TerraceFlatLower));
-    float shaped = u * u * (3f - 2f * u);
-
-    // Fade the terracing in above the beach so the shoreline keeps its natural continuous slope
-    // and stays a separate low coastal band.
-    float w = Mathf.Clamp01((height - TerraceStartHeight) / TerraceBlendBand);
-    w = w * w * (3f - 2f * w);
-
-    // Blend INSIDE the level coordinate rather than between the two output heights. Lerping the
-    // outputs adds a w' * (T(h) - h) term to the derivative, and since T(h) sits up to
-    // TerraceFlatLower * TerraceStep BELOW h on a bench, that term goes negative: measured a
-    // slope of -0.272, i.e. the remap ran backwards and would have inverted terrain. Blending the
-    // fraction keeps the result exactly (index + something in [0,1]) * step, which is identity at
-    // w = 0 by construction and shrinks the offending term by a factor of TerraceStep.
-    float blendedFraction = Mathf.Lerp(f, shaped, w);
-    return (index + blendedFraction) * TerraceStep + terracePhase;
 }
 
 // DO NOT drive terrain height off PerimeterSectorMap weights (GetMountainCoastWeight etc).
@@ -211,9 +159,9 @@ private TerrainSample SampleSynthesizedIsland(float localX, float localZ)
     float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
         ? featureReservations.Sectors.GetMountainCoastWeight(localX, localZ)
         : 0f;
-    float terracePhase = EvaluateTerracePhase(localX, localZ);
-    float reservationBaseHeight = CalculateBaseContinuousHeight(baseField, terracePhase);
-    float visualBaseHeight = CalculateBaseContinuousHeight(smoothField, terracePhase);
+    float mainlandRelief = EvaluateMainlandRelief(localX, localZ);
+    float reservationBaseHeight = CalculateBaseContinuousHeight(baseField, mainlandRelief);
+    float visualBaseHeight = CalculateBaseContinuousHeight(smoothField, mainlandRelief);
 
     float mountainBoost = 0f;
     float riverCarve = 0f;
@@ -266,10 +214,24 @@ private Cell.TerrainType ClassifySynthesizedIsland(
         return isInRiverChannel ? Cell.TerrainType.River : Cell.TerrainType.Water;
     }
 
-    // Mountain / Cliff classification: strictly elevated terrain, steep slopes, or mountain coast sector plunging to sea
+    // High mountain material is height-driven. Its gentler shoulders are Hills, and
+    // only genuinely steep faces are Cliffs; mountain boost by itself must not turn
+    // the complete low apron into an unbuildable rock blanket.
     if (height >= settings.mountainPeakHeight - 0.4f) return Cell.TerrainType.MountainPeak;
     if (height >= settings.mountainHeight - 0.5f) return Cell.TerrainType.Mountain;
-    if (height >= 1.6f || (height >= 0.15f && slope > 0.45f) || (height >= 0.05f && mountainBoost > 0.20f))
+
+    if (height >= settings.hillHeight && mountainBoost > 0.3f && slope <= 0.55f)
+    {
+        return Cell.TerrainType.Hill;
+    }
+
+    bool steepMountainFace = height >= 0.15f
+        && slope > 0.55f
+        && mountainBoost > 0.12f;
+    bool rockyCoastalFace = height >= 0.05f
+        && slope > 0.32f
+        && mountainBoost > 0.55f;
+    if (steepMountainFace || rockyCoastalFace)
     {
         return Cell.TerrainType.Cliff;
     }
@@ -281,11 +243,6 @@ private Cell.TerrainType ClassifySynthesizedIsland(
     if (mountainCoastWeight <= 0.45f && mountainBoost <= 0.20f && slope <= 0.45f && height < 0.18f)
     {
         return Cell.TerrainType.Beach;
-    }
-
-    if (height >= settings.hillHeight && mountainBoost > 0.3f)
-    {
-        return Cell.TerrainType.Hill;
     }
 
     return Cell.TerrainType.Land;

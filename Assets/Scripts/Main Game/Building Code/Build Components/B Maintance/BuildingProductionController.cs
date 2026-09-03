@@ -10,6 +10,7 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
     [SerializeField] private BuildingProductionData _data;
     [Header("No-input fallback production")]
     [SerializeField] private ResourceType fallbackResource = ResourceType.RawGravel;
+    [SerializeField] private ItemData fallbackItemData;
     [SerializeField, Min(1)] private int fallbackProductionRate = 1;
     [SerializeField, Min(0.1f)] private float productionIntervalSeconds = 2f;
 
@@ -22,6 +23,7 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
         building = GetComponent<Building>();
         output = GetComponent<BuildingOutput>();
         if (output == null) output = gameObject.AddComponent<BuildingOutput>();
+        output.RegisterItemDefinition(GetProducedResource(), GetProducedItemData());
     }
 
     public float ProductionIntervalSeconds => productionIntervalSeconds;
@@ -78,6 +80,11 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
     public ResourceType GetProducedResource()
     {
         return _data != null ? _data.ProducedResource : fallbackResource;
+    }
+
+    public ItemData GetProducedItemData()
+    {
+        return _data != null && _data.ProducedItemData != null ? _data.ProducedItemData : fallbackItemData;
     }
 
     public void SetProducedResource(ResourceType resource)

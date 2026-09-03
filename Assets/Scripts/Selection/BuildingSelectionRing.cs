@@ -20,8 +20,6 @@ public sealed class BuildingSelectionRing : MonoBehaviour
     [Tooltip("Height above the building's base the ring sits at, to avoid z-fighting with terrain.")]
     [SerializeField] private float groundOffset = 0.05f;
 
-    [SerializeField] private Color color = new Color(0.15f, 0.65f, 1f, 1f);
-
     [Tooltip("Ring colour while the building is marked for demolition.")]
     [SerializeField] private Color markedColor = new Color(1f, 0.25f, 0.2f, 1f);
 
@@ -54,7 +52,7 @@ public sealed class BuildingSelectionRing : MonoBehaviour
 
         ring.enabled = visible;
 
-        Color active = marked ? markedColor : color;
+        Color active = marked ? markedColor : PlayerColors.Active(1f);
         ring.startColor = active;
         ring.endColor = active;
     }
@@ -86,8 +84,8 @@ public sealed class BuildingSelectionRing : MonoBehaviour
         // Sprites/Default is already an always-included shader in this project, so the
         // ring survives a player build without extra graphics settings.
         ring.material = new Material(Shader.Find("Sprites/Default"));
-        ring.startColor = color;
-        ring.endColor = color;
+        ring.startColor = PlayerColors.Active(1f);
+        ring.endColor = PlayerColors.Active(1f);
 
         LayoutRing();
     }

@@ -707,6 +707,17 @@ public class TradingRoutePanelUI : MonoBehaviour
             }, new Color(0.2f, 0.7f, 0.3f, 0.85f));
         }
 
+        // Depart / Skip Button if waiting at station (for cargo or dock)
+        if (controller != null && !controller.IsPaused && 
+            (controller.CurrentState == TradeRouteState.WaitingForCargoCondition || controller.CurrentState == TradeRouteState.WaitingForDock || controller.CurrentState == TradeRouteState.Trading))
+        {
+            CreateMiniButton(row.transform, "⏭", () =>
+            {
+                controller.DepartStation();
+                TradingRouteManager.Instance.NotifyRouteUpdated(TradingRouteManager.Instance.SelectedRoute);
+            }, new Color(0.2f, 0.55f, 0.85f, 0.85f));
+        }
+
         // Unassign Button
         CreateMiniButton(row.transform, "✕", () =>
         {

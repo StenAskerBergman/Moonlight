@@ -92,6 +92,10 @@ public class CropFarmCore : MonoBehaviour
         {
             _buildingOutput = gameObject.AddComponent<BuildingOutput>();
         }
+        if (farmData != null)
+        {
+            _buildingOutput.RegisterItemDefinition(farmData.producedResource, farmData.producedItemData);
+        }
         _properties = GetComponent<BuildingProperties>();
 
         if (farmData != null)
