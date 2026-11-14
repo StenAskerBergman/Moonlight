@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -8,12 +9,16 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Configures and wires the authentic 3-Lane Tycoon Construction Menu across all four tier pages:
+/// Configures and styles the authentic Anno 2070 3-Lane Tycoon Construction Menu across all four tier pages:
 /// AB.Tier 2 (Workers), AB.Tier 3 (Employees), AB.Tier 4 (Engineers), AB.Tier 5 (Executives).
 ///
-/// Lane 1: Production (handled by ProductionSectionUI / ProductionTierPageIntegration)
-/// Lane 2: Public Buildings (handled by TycoonCivicSectionUI)
-/// Lane 3: Special Buildings (handled by TycoonCivicSectionUI)
+/// Aesthetic upgrades applied:
+/// 1. Dark tech-grid page background (Active Tier Page.png) replacing prototype pastel tints.
+/// 2. Header bar with red Tycoon corner accent (House Menu Topbar RedCorner.png) and "Baumenü" title.
+/// 3. Row backplates with authentic bracket accents [ ] (House Menu Row.png) on all 3 lanes.
+/// 4. Beveled metallic building slots (Building Button Unlocked.png) with chevron badges.
+/// 5. Dark glass shelf (Tier Bar.png) with authentic high-res character portraits and crate icon.
+/// 6. Bottom faction navigation bar (Class Bar.png & Civ Bt active/passive tabs: ECOS, TYCOONS, TECHS).
 /// </summary>
 public static class TycoonConstructionMenuBuilder
 {
@@ -24,6 +29,16 @@ public static class TycoonConstructionMenuBuilder
 
     private const string IconFolder = "Assets/Imports/Anno2070/WEBP - Item Icons/";
     private const string PrefabFolder = "Assets/Prefabs/Building Prefabs/Faction Prefabs/Tycoon Faction/Generated/";
+    private const string PortraitsFolder = "Assets/Imports/Anno2070/Icons/People Portraits/";
+
+    private const string TechBgPath = "Assets/GUI/Figma/Building Menu/Tier bar/Active Tier Page.png";
+    private const string HeaderBarPath = "Assets/GUI/Figma/Building Menu/House Menu Topbar RedCorner.png";
+    private const string RowBackplatePath = "Assets/GUI/Figma/Building Menu/Building bar/House Menu Row.png";
+    private const string SlotButtonPath = "Assets/GUI/Figma/Building Menu/Building bar/Building Button Unlocked.png";
+    private const string TierShelfPath = "Assets/GUI/Figma/Building Menu/Tier Bar.png";
+    private const string FactionBarPath = "Assets/GUI/Figma/Building Menu/Faction bar/Class Bar.png";
+    private const string FactionActiveBtnPath = "Assets/GUI/Figma/Building Menu/Faction bar/Civ Bt active 3.png";
+    private const string FactionPassiveBtnPath = "Assets/GUI/Figma/Building Menu/Faction bar/Civ Bt passive 3.png";
 
     private struct SlotDef
     {
@@ -112,15 +127,6 @@ public static class TycoonConstructionMenuBuilder
         }
     };
 
-    /// <summary>
-    /// Every building prefab already reachable from lane 2 (Public) or lane 3 (Special),
-    /// across all four tier pages.
-    ///
-    /// The production page's appender consults this so a building shown in a civic lane
-    /// does not also get a node in the production graph. Reading it from the same tables
-    /// that build the lanes keeps the two from drifting - a slot added below disappears
-    /// from the production page on the next regenerate, with nothing else to update.
-    /// </summary>
     public static HashSet<string> GetCivicLanePrefabPaths()
     {
         var paths = new HashSet<string>();
@@ -182,6 +188,10 @@ public static class TycoonConstructionMenuBuilder
                 else
                 {
                     ConfigureHierarchy(tycoonRoot);
+                    ConfigureTierShelf(tycoonRoot);
+                    ConfigureFactionBar(hud.transform);
+                    AdjustActionBar();
+
                     EditorSceneManager.MarkSceneDirty(activeScene);
                     EditorSceneManager.SaveScene(activeScene);
                     Debug.Log("[TycoonConstructionMenuBuilder] Successfully configured and saved Match.unity!");
@@ -201,6 +211,8 @@ public static class TycoonConstructionMenuBuilder
                     if (tycoonInPrefab != null)
                     {
                         ConfigureHierarchy(tycoonInPrefab);
+                        ConfigureTierShelf(tycoonInPrefab);
+                        ConfigureFactionBar(hudInPrefab);
                         PrefabUtility.SaveAsPrefabAsset(prefabRoot, PrefabBPath);
                         Debug.Log("[TycoonConstructionMenuBuilder] Successfully configured and saved User Interface (B).prefab!");
                     }
@@ -215,11 +227,14 @@ public static class TycoonConstructionMenuBuilder
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[TycoonConstructionMenuBuilder] Configuration complete for all Tycoon tiers!");
+        Debug.Log("[TycoonConstructionMenuBuilder] Visual overhaul complete for Tycoon construction menu!");
     }
 
     private static void ConfigureHierarchy(Transform tycoonRoot)
     {
+        Sprite techBg = AssetDatabase.LoadAssetAtPath<Sprite>(TechBgPath);
+        Sprite headerSprite = AssetDatabase.LoadAssetAtPath<Sprite>(HeaderBarPath);
+
         foreach (var tier in Tiers)
         {
             Transform pageT = tycoonRoot.Find(tier.PageName);
@@ -230,6 +245,59 @@ public static class TycoonConstructionMenuBuilder
             }
 
             var pageRect = (RectTransform)pageT;
+
+            // 1. Tech-grid page background
+            Image pageBg = pageT.GetComponent<Image>();
+            if (pageBg != null && techBg != null)
+            {
+                pageBg.sprite = techBg;
+                pageBg.type = Image.Type.Sliced;
+                pageBg.color = Color.white;
+            }
+
+            // 2. Menu Header with red Tycoon corner tab
+            Transform headerT = pageT.Find("Menu Header");
+            if (headerT == null)
+            {
+                var headerObj = new GameObject("Menu Header", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                headerT = headerObj.transform;
+                headerT.SetParent(pageRect, false);
+            }
+            var headerRect = (RectTransform)headerT;
+            headerRect.anchorMin = new Vector2(0.5f, 0f);
+            headerRect.anchorMax = new Vector2(0.5f, 0f);
+            headerRect.pivot = new Vector2(0.5f, 0f);
+            headerRect.anchoredPosition = new Vector2(0f, 318f);
+            headerRect.sizeDelta = new Vector2(480f, 32f);
+
+            Image headerImg = headerT.GetComponent<Image>();
+            if (headerImg != null && headerSprite != null)
+            {
+                headerImg.sprite = headerSprite;
+                headerImg.type = Image.Type.Sliced;
+                headerImg.color = Color.white;
+            }
+
+            // Header Title
+            Transform titleT = headerT.Find("Menu Title");
+            if (titleT == null)
+            {
+                var titleObj = new GameObject("Menu Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+                titleT = titleObj.transform;
+                titleT.SetParent(headerT, false);
+            }
+            var titleRect = (RectTransform)titleT;
+            titleRect.anchorMin = Vector2.zero;
+            titleRect.anchorMax = Vector2.one;
+            titleRect.offsetMin = new Vector2(38f, 0f);
+            titleRect.offsetMax = new Vector2(-40f, 0f);
+            var titleTmp = titleT.GetComponent<TextMeshProUGUI>();
+            titleTmp.text = "Baumenü";
+            titleTmp.fontSize = 13f;
+            titleTmp.fontStyle = FontStyles.Bold;
+            titleTmp.color = new Color(0.88f, 0.94f, 1.0f, 0.95f);
+            titleTmp.alignment = TextAlignmentOptions.MidlineLeft;
+            titleTmp.raycastTarget = false;
 
             // Remove legacy Mid Row and Bot Row
             Transform midRow = pageT.Find("Mid Row");
@@ -251,7 +319,7 @@ public static class TycoonConstructionMenuBuilder
                 topRow.gameObject.SetActive(false);
             }
 
-            // Ensure Production Section
+            // Ensure Production Section (Lane 1)
             Transform prodT = pageT.Find("Production Section");
             if (prodT == null)
             {
@@ -332,14 +400,181 @@ public static class TycoonConstructionMenuBuilder
                 specUI.AddSlot(slotDef.BuildingName, icon, prefab);
             }
 
-            // Fix sibling ordering: Production Section (0), Top Row (1), Public (2), Special (3)
-            prodT.SetSiblingIndex(0);
-            if (topRow != null) topRow.SetSiblingIndex(1);
-            pubT.SetSiblingIndex(2);
-            specT.SetSiblingIndex(3);
+            // Fix sibling ordering: Menu Header (0), Production Section (1), Top Row (2), Public (3), Special (4)
+            headerT.SetSiblingIndex(0);
+            prodT.SetSiblingIndex(1);
+            if (topRow != null) topRow.SetSiblingIndex(2);
+            pubT.SetSiblingIndex(3);
+            specT.SetSiblingIndex(4);
 
             EditorUtility.SetDirty(pageT.gameObject);
             Debug.Log($"[TycoonConstructionMenuBuilder] Configured {tier.PageName} ({tier.PopulationClass}): Public={tier.PublicSlots.Count} slots, Special={tier.SpecialSlots.Count} slots.");
+        }
+    }
+
+    private static void ConfigureTierShelf(Transform tycoonRoot)
+    {
+        Transform tierManagerT = tycoonRoot.Find("Tier Button Manager");
+        if (tierManagerT == null)
+        {
+            Debug.LogWarning("[TycoonConstructionMenuBuilder] 'Tier Button Manager' not found under tycoon root!");
+            return;
+        }
+
+        // Set shelf background
+        Image shelfImg = tierManagerT.GetComponent<Image>();
+        Sprite shelfSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TierShelfPath);
+        if (shelfImg != null && shelfSprite != null)
+        {
+            shelfImg.sprite = shelfSprite;
+            shelfImg.type = Image.Type.Sliced;
+            shelfImg.color = Color.white;
+        }
+
+        string[] portraitPaths = new string[]
+        {
+            PortraitsFolder + "E.V.E._60px.png",
+            PortraitsFolder + "Tycoon_Worker_60px.png",
+            PortraitsFolder + "Tycoon_Employee_60px.png",
+            PortraitsFolder + "Tycoon_Engineer_60px.png",
+            PortraitsFolder + "Tycoon_Executive_60px.png",
+            IconFolder + "Tycoon_Ornamental_Buildings.png"
+        };
+
+        for (int i = 0; i < tierManagerT.childCount && i < portraitPaths.Length; i++)
+        {
+            Transform btnT = tierManagerT.GetChild(i);
+
+            // Make the button background transparent so portrait rests directly on shelf
+            Image btnImg = btnT.GetComponent<Image>();
+            if (btnImg != null)
+            {
+                btnImg.color = new Color(0f, 0f, 0f, 0f);
+            }
+
+            // Find Icon child
+            Transform iconT = btnT.Find("Icon");
+            if (iconT != null)
+            {
+                Image iconImg = iconT.GetComponent<Image>();
+                if (iconImg != null)
+                {
+                    Sprite pSprite = AssetDatabase.LoadAssetAtPath<Sprite>(portraitPaths[i]);
+                    if (pSprite != null)
+                    {
+                        iconImg.sprite = pSprite;
+                        iconImg.preserveAspect = true;
+                        iconImg.color = Color.white;
+                    }
+                }
+            }
+        }
+
+        EditorUtility.SetDirty(tierManagerT.gameObject);
+        Debug.Log("[TycoonConstructionMenuBuilder] Configured portrait shelf on Tier Button Manager.");
+    }
+
+    private static void ConfigureFactionBar(Transform hudRoot)
+    {
+        Transform factionCtrlT = hudRoot.Find("Player Faction Controller");
+        if (factionCtrlT == null)
+        {
+            Debug.LogWarning("[TycoonConstructionMenuBuilder] 'Player Faction Controller' not found under HUD!");
+            return;
+        }
+
+        // Set faction bar background
+        Image barImg = factionCtrlT.GetComponent<Image>();
+        Sprite barSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FactionBarPath);
+        if (barImg != null && barSprite != null)
+        {
+            barImg.sprite = barSprite;
+            barImg.type = Image.Type.Sliced;
+            barImg.color = Color.white;
+        }
+
+        Sprite activeSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FactionActiveBtnPath);
+        Sprite passiveSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FactionPassiveBtnPath);
+
+        // Tycoon button (A)
+        Transform tycBtn = factionCtrlT.Find("Faction Button A");
+        if (tycBtn != null)
+        {
+            tycBtn.gameObject.SetActive(true);
+            Image img = tycBtn.GetComponent<Image>();
+            if (img != null && activeSprite != null)
+            {
+                img.sprite = activeSprite;
+                img.color = Color.white;
+                img.type = Image.Type.Simple;
+            }
+            var tmp = tycBtn.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null)
+            {
+                tmp.text = "TYCOONS";
+                tmp.fontStyle = FontStyles.Bold;
+                tmp.color = Color.white;
+            }
+        }
+
+        // Eco button (B)
+        Transform ecoBtn = factionCtrlT.Find("Faction Button B");
+        if (ecoBtn != null)
+        {
+            ecoBtn.gameObject.SetActive(true);
+            Image img = ecoBtn.GetComponent<Image>();
+            if (img != null && passiveSprite != null)
+            {
+                img.sprite = passiveSprite;
+                img.color = Color.white;
+                img.type = Image.Type.Simple;
+            }
+            var tmp = ecoBtn.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null)
+            {
+                tmp.text = "ECOS";
+                tmp.fontStyle = FontStyles.Bold;
+                tmp.color = new Color(0.65f, 0.90f, 0.65f);
+            }
+        }
+
+        // Tech button (C)
+        Transform sciBtn = factionCtrlT.Find("Faction Button C");
+        if (sciBtn != null)
+        {
+            sciBtn.gameObject.SetActive(true);
+            Image img = sciBtn.GetComponent<Image>();
+            if (img != null && passiveSprite != null)
+            {
+                img.sprite = passiveSprite;
+                img.color = Color.white;
+                img.type = Image.Type.Simple;
+            }
+            var tmp = sciBtn.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmp != null)
+            {
+                tmp.text = "TECHS";
+                tmp.fontStyle = FontStyles.Bold;
+                tmp.color = new Color(0.65f, 0.85f, 0.95f);
+            }
+        }
+
+        EditorUtility.SetDirty(factionCtrlT.gameObject);
+        Debug.Log("[TycoonConstructionMenuBuilder] Configured faction bar on Player Faction Controller.");
+    }
+
+    private static void AdjustActionBar()
+    {
+        GameObject actionbar = GameObject.Find("HUD (Bot Actionbar)");
+        if (actionbar != null)
+        {
+            var rect = actionbar.GetComponent<RectTransform>();
+            if (rect != null && rect.anchoredPosition.y > -450f)
+            {
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, -500f);
+                EditorUtility.SetDirty(actionbar);
+                Debug.Log("[TycoonConstructionMenuBuilder] Adjusted HUD (Bot Actionbar) position to prevent overlap.");
+            }
         }
     }
 }

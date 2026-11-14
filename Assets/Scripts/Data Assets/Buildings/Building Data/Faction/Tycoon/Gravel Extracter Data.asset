@@ -16,7 +16,10 @@ MonoBehaviour:
   buildingName: Gravel Extracter
   buildingDescription: Extracts gravel for the production of building moduls
   buildingType: Extractor
-  buildingSize: {x: 1, y: 1, z: 1}
+  buildingSize: {x: 4, y: 1, z: 4}
   buildingTags: []
+  influenceRadius: 0
+  requiresQuayFoundation: 0
+  quayFoundationPadding: 2
   requiredNodeType: 0
   BuildingRequirements: []

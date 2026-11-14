@@ -13,8 +13,17 @@ using UnityEngine;
 /// BuildingData that already exists elsewhere in the project is reused rather than
 /// replaced - the Depot, City Center and Gravel Extracter keep their authored assets.
 ///
-/// FOOTPRINTS ARE PLACEHOLDERS. The cost tables carry no size data, so sizes come from the
-/// per-category defaults in <see cref="DefaultSize"/> and are meant to be tuned by hand.
+/// FOOTPRINTS. Every row states its own grid footprint via <c>.Grid(width, depth)</c>, in
+/// cells along X and Z. One cell is one world unit, so the number is also the building's
+/// size on the ground, and it drives three things at once: the BuildingData the placement
+/// rules read, the BuildingProperties on the prefab, and the stand-in geometry and collider
+/// baked under it. Change a footprint here and regenerate; do not edit the three by hand and
+/// hope they agree. <see cref="DefaultSize"/> survives only as a safety net for a row that
+/// forgets to state one.
+///
+/// The sizes are authored for Moonlight's own island grid - scaled by the building's role and
+/// tier, not lifted from another game's tables - so they are meant to be tuned by feel once
+/// the buildings are on an island together.
 /// </summary>
 public static class TycoonBuildingCatalogGenerator
 {
@@ -67,6 +76,11 @@ public static class TycoonBuildingCatalogGenerator
         public int Expense;
         public bool HasEconomy;
 
+        // Grid footprint in cells, unrotated: Width along X, Depth along Z. Zero means the
+        // row states no footprint and falls back to DefaultSize(Kind).
+        public int Width;
+        public int Depth;
+
         public Entry(string name, Tier tier, Kind kind, int credits, int modules, int tools,
                      int concrete, int steel, int heavyWeapons = 0, string note = null)
         {
@@ -77,6 +91,8 @@ public static class TycoonBuildingCatalogGenerator
             Line = null; Column = 0; Row = 0; FeedsInto = null;
             // Unset means "derive from the build price" - see DerivedExpense/DerivedRevenue.
             Revenue = 0; Expense = 0; HasEconomy = false;
+            // Unset means "fall back to the category default" - see DefaultSize.
+            Width = 0; Depth = 0;
         }
 
         /// <summary>Places this building in the construction menu graph.</summary>
@@ -96,6 +112,20 @@ public static class TycoonBuildingCatalogGenerator
             Revenue = revenue; Expense = expense; HasEconomy = true;
             return this;
         }
+
+        /// <summary>
+        /// States this building's grid footprint in cells - width along X, depth along Z.
+        /// One cell is one world unit (GridSystem.cellSize), so this is also the building's
+        /// size on the ground.
+        ///
+        /// Every row states its own, so the shared category default is only a safety net.
+        /// A depth left out means a square footprint, which most buildings are.
+        /// </summary>
+        public Entry Grid(int width, int depth = 0)
+        {
+            Width = width; Depth = depth > 0 ? depth : width;
+            return this;
+        }
     }
 
     // ---------------------------------------------------------------------------------
@@ -106,86 +136,86 @@ public static class TycoonBuildingCatalogGenerator
     private static readonly Entry[] Catalog =
     {
         // ---- Worker -------------------------------------------------------------
-        new Entry("Worker Barracks",         Tier.Worker, Kind.Civic,       0,  2,  0,  0,  0).At("Civic", 0, 0, "City Center").Economy(8, 0),
-        new Entry("City Center",             Tier.Worker, Kind.Civic,     300,  5,  3,  0,  0).At("Civic", 1, 0, "Casino"),
-        new Entry("Casino",                  Tier.Worker, Kind.Civic,     300,  4,  4,  0,  0).At("Civic", 2, 0, null).Economy(40, 24),
-        new Entry("Basalt Crusher",          Tier.Worker, Kind.Production, 50,  0,  1,  0,  0).At("Building Modules", 0, 0, "Smelter"),
-        new Entry("Smelter",                 Tier.Worker, Kind.Production, 50,  0,  2,  0,  0).At("Building Modules", 1, 0, null),
-        new Entry("Distillery",              Tier.Worker, Kind.Production, 50,  2,  1,  0,  0).At("Liquor", 0, 0, null),
-        new Entry("Fishery",                 Tier.Worker, Kind.Production,125,  1,  2,  0,  0).At("Fish", 0, 0, null),
-        new Entry("Rotary Excavator",        Tier.Worker, Kind.Production, 50,  1,  3,  0,  0).At("Gravel", 0, 0, null),
-        new Entry("Coal Power Station",      Tier.Worker, Kind.Power,     350,  1,  4,  0,  0).At("Energy", 0, 0, null),
+        new Entry("Worker Barracks",         Tier.Worker, Kind.Civic,       0,  2,  0,  0,  0).At("Civic", 0, 0, "City Center").Economy(8, 0).Grid(3),
+        new Entry("City Center",             Tier.Worker, Kind.Civic,     300,  5,  3,  0,  0).At("Civic", 1, 0, "Casino").Grid(6, 8),
+        new Entry("Casino",                  Tier.Worker, Kind.Civic,     300,  4,  4,  0,  0).At("Civic", 2, 0, null).Economy(40, 24).Grid(4),
+        new Entry("Basalt Crusher",          Tier.Worker, Kind.Production, 50,  0,  1,  0,  0).At("Building Modules", 0, 0, "Smelter").Grid(3),
+        new Entry("Smelter",                 Tier.Worker, Kind.Production, 50,  0,  2,  0,  0).At("Building Modules", 1, 0, null).Grid(3),
+        new Entry("Distillery",              Tier.Worker, Kind.Production, 50,  2,  1,  0,  0).At("Liquor", 0, 0, null).Grid(3),
+        new Entry("Fishery",                 Tier.Worker, Kind.Production,125,  1,  2,  0,  0).At("Fish", 0, 0, null).Grid(4, 3),
+        new Entry("Rotary Excavator",        Tier.Worker, Kind.Production, 50,  1,  3,  0,  0).At("Gravel", 0, 0, null).Grid(4),
+        new Entry("Coal Power Station",      Tier.Worker, Kind.Power,     350,  1,  4,  0,  0).At("Energy", 0, 0, null).Grid(4),
 
         // ---- Employee -----------------------------------------------------------
         new Entry("Employee House Upgrade",  Tier.Employee, Kind.Civic,      0,  0,  1,  0,  0, 0,
-                  "Incremental upgrade cost from Worker Barracks. The Employee House already contains the original Barracks investment; do not charge it again.").At("Civic", 0, 0, null).Economy(16, 0),
-        new Entry("Iron Ore Mine",           Tier.Employee, Kind.Production, 600, 2,  4,  0,  0).At("Tools", 0, 0, "Iron Smelter"),
-        new Entry("Coal Mine",               Tier.Employee, Kind.Production, 600, 2,  2,  0,  0).At("Tools", 0, 1, "Iron Smelter"),
-        new Entry("Iron Smelter",            Tier.Employee, Kind.Production, 400, 2,  4,  0,  0).At("Tools", 1, 0, "Tools Workshop"),
-        new Entry("Tools Workshop",          Tier.Employee, Kind.Production, 500, 2,  3,  0,  0).At("Tools", 2, 0, null),
-        new Entry("Sand Extractor",          Tier.Employee, Kind.Production, 200, 2,  4,  0,  0).At("Concrete", 0, 1, "Concrete Factory"),
-        new Entry("Limestone Quarry",        Tier.Employee, Kind.Production, 300, 4,  4,  0,  0).At("Concrete", 0, 0, "Concrete Factory"),
-        new Entry("Concrete Factory",        Tier.Employee, Kind.Production, 250, 3,  4,  0,  0).At("Concrete", 1, 0, null),
-        new Entry("Meat Factory",            Tier.Employee, Kind.Production, 100, 1,  2,  3,  0).At("Food", 0, 0, "Flavor Lab"),
-        new Entry("Flavor Lab",              Tier.Employee, Kind.Production, 150, 2,  3,  5,  0).At("Food", 1, 0, "Food Supply Factory"),
-        new Entry("Food Supply Factory",     Tier.Employee, Kind.Production, 200, 2,  4,  7,  0).At("Food", 2, 0, null),
-        new Entry("Oil Driller",             Tier.Employee, Kind.Production, 150, 1,  1,  3,  0).At("Plastics", 0, 0, "Oil Refinery"),
-        new Entry("Oil Refinery",            Tier.Employee, Kind.Production, 400, 2,  6,  0,  0).At("Plastics", 1, 0, "Plastics Factory"),
-        new Entry("Plastics Factory",        Tier.Employee, Kind.Production, 300, 2,  3,  6,  0).At("Plastics", 2, 0, null),
-        new Entry("Munitions Factory",       Tier.Employee, Kind.Production,1000, 4,  6,  0,  0).At("Military", 0, 0, null),
-        new Entry("Ministry of Truth",       Tier.Employee, Kind.Civic,      800,10, 12, 20,  0).At("Civic", 1, 0, null),
-        new Entry("Tycoon Shipyard",         Tier.Employee, Kind.Production, 400, 3,  5,  9,  0).At("Civic", 2, 0, null),
-        new Entry("Waste Compactor",         Tier.Employee, Kind.Production, 800, 4,  5, 12,  0).At("Civic", 3, 0, null),
+                  "Incremental upgrade cost from Worker Barracks. The Employee House already contains the original Barracks investment; do not charge it again.").At("Civic", 0, 0, null).Economy(16, 0).Grid(3),
+        new Entry("Iron Ore Mine",           Tier.Employee, Kind.Production, 600, 2,  4,  0,  0).At("Tools", 0, 0, "Iron Smelter").Grid(4),
+        new Entry("Coal Mine",               Tier.Employee, Kind.Production, 600, 2,  2,  0,  0).At("Tools", 0, 1, "Iron Smelter").Grid(4),
+        new Entry("Iron Smelter",            Tier.Employee, Kind.Production, 400, 2,  4,  0,  0).At("Tools", 1, 0, "Tools Workshop").Grid(4, 3),
+        new Entry("Tools Workshop",          Tier.Employee, Kind.Production, 500, 2,  3,  0,  0).At("Tools", 2, 0, null).Grid(4, 3),
+        new Entry("Sand Extractor",          Tier.Employee, Kind.Production, 200, 2,  4,  0,  0).At("Concrete", 0, 1, "Concrete Factory").Grid(3),
+        new Entry("Limestone Quarry",        Tier.Employee, Kind.Production, 300, 4,  4,  0,  0).At("Concrete", 0, 0, "Concrete Factory").Grid(4),
+        new Entry("Concrete Factory",        Tier.Employee, Kind.Production, 250, 3,  4,  0,  0).At("Concrete", 1, 0, null).Grid(4, 3),
+        new Entry("Meat Factory",            Tier.Employee, Kind.Production, 100, 1,  2,  3,  0).At("Food", 0, 0, "Flavor Lab").Grid(3),
+        new Entry("Flavor Lab",              Tier.Employee, Kind.Production, 150, 2,  3,  5,  0).At("Food", 1, 0, "Food Supply Factory").Grid(3),
+        new Entry("Food Supply Factory",     Tier.Employee, Kind.Production, 200, 2,  4,  7,  0).At("Food", 2, 0, null).Grid(4, 3),
+        new Entry("Oil Driller",             Tier.Employee, Kind.Production, 150, 1,  1,  3,  0).At("Plastics", 0, 0, "Oil Refinery").Grid(3),
+        new Entry("Oil Refinery",            Tier.Employee, Kind.Production, 400, 2,  6,  0,  0).At("Plastics", 1, 0, "Plastics Factory").Grid(5, 4),
+        new Entry("Plastics Factory",        Tier.Employee, Kind.Production, 300, 2,  3,  6,  0).At("Plastics", 2, 0, null).Grid(4, 3),
+        new Entry("Munitions Factory",       Tier.Employee, Kind.Production,1000, 4,  6,  0,  0).At("Military", 0, 0, null).Grid(4),
+        new Entry("Ministry of Truth",       Tier.Employee, Kind.Civic,      800,10, 12, 20,  0).At("Civic", 1, 0, null).Grid(5),
+        new Entry("Tycoon Shipyard",         Tier.Employee, Kind.Production, 400, 3,  5,  9,  0).At("Civic", 2, 0, null).Grid(6, 4),
+        new Entry("Waste Compactor",         Tier.Employee, Kind.Production, 800, 4,  5, 12,  0).At("Civic", 3, 0, null).Grid(4),
 
         // ---- Engineer -----------------------------------------------------------
         new Entry("Engineer Apartment Upgrade", Tier.Engineer, Kind.Civic,     0,  2,  2,  3,  0, 0,
-                  "Incremental upgrade cost from Employee House. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(32, 0),
-        new Entry("Steelworks",              Tier.Engineer, Kind.Production, 400, 6,  6,  8,  0).At("Steel", 0, 0, null),
-        new Entry("Lobster Farm",            Tier.Engineer, Kind.Production, 300, 5,  3,  6,  4).At("Gourmet", 0, 0, "Gourmet Factory"),
-        new Entry("Truffle Farm",            Tier.Engineer, Kind.Production, 200, 0,  3,  8,  3).At("Gourmet", 0, 1, "Gourmet Factory"),
-        new Entry("Gourmet Factory",         Tier.Engineer, Kind.Production, 400, 8,  4, 10,  6).At("Gourmet", 1, 0, null),
-        new Entry("Uranium Mine",            Tier.Engineer, Kind.Production,1000, 7, 12,  8,  2).At("Nuclear", 0, 0, "Fuel Element Factory"),
-        new Entry("Fuel Element Factory",    Tier.Engineer, Kind.Production, 600, 5, 14,  4,  8).At("Nuclear", 1, 0, "Nuclear Power Plant"),
-        new Entry("Nuclear Power Plant",     Tier.Engineer, Kind.Power,     3000,10, 24, 30, 36).At("Nuclear", 2, 0, null),
-        new Entry("Vineyard",                Tier.Engineer, Kind.Production, 200, 0,  4,  7,  8).At("Champagne", 0, 0, "Champagne Cellar"),
-        new Entry("Sugar Beet Plantation",   Tier.Engineer, Kind.Production, 500, 7,  8,  0,  0).At("Champagne", 0, 1, "Champagne Cellar"),
-        new Entry("Champagne Cellar",        Tier.Engineer, Kind.Production, 400, 7,  8, 12,  5).At("Champagne", 1, 0, null),
-        new Entry("Explosives Factory",      Tier.Engineer, Kind.Production, 600, 0,  6,  8,  5).At("Military", 0, 0, "Arsenal"),
-        new Entry("Arsenal",                 Tier.Engineer, Kind.Production,1000, 4,  8,  0, 12).At("Military", 1, 0, null),
-        new Entry("Financial Center",        Tier.Engineer, Kind.Civic,     1200,20,  8, 30, 15).At("Civic", 1, 0, null).Economy(150, 96),
-        new Entry("Deacidification Station", Tier.Engineer, Kind.Production,2000,15, 20, 15, 10).At("Civic", 2, 0, null),
+                  "Incremental upgrade cost from Employee House. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(32, 0).Grid(3),
+        new Entry("Steelworks",              Tier.Engineer, Kind.Production, 400, 6,  6,  8,  0).At("Steel", 0, 0, null).Grid(5, 4),
+        new Entry("Lobster Farm",            Tier.Engineer, Kind.Production, 300, 5,  3,  6,  4).At("Gourmet", 0, 0, "Gourmet Factory").Grid(4, 3),
+        new Entry("Truffle Farm",            Tier.Engineer, Kind.Production, 200, 0,  3,  8,  3).At("Gourmet", 0, 1, "Gourmet Factory").Grid(3),
+        new Entry("Gourmet Factory",         Tier.Engineer, Kind.Production, 400, 8,  4, 10,  6).At("Gourmet", 1, 0, null).Grid(4, 3),
+        new Entry("Uranium Mine",            Tier.Engineer, Kind.Production,1000, 7, 12,  8,  2).At("Nuclear", 0, 0, "Fuel Element Factory").Grid(4),
+        new Entry("Fuel Element Factory",    Tier.Engineer, Kind.Production, 600, 5, 14,  4,  8).At("Nuclear", 1, 0, "Nuclear Power Plant").Grid(4),
+        new Entry("Nuclear Power Plant",     Tier.Engineer, Kind.Power,     3000,10, 24, 30, 36).At("Nuclear", 2, 0, null).Grid(6),
+        new Entry("Vineyard",                Tier.Engineer, Kind.Production, 200, 0,  4,  7,  8).At("Champagne", 0, 0, "Champagne Cellar").Grid(3),
+        new Entry("Sugar Beet Plantation",   Tier.Engineer, Kind.Production, 500, 7,  8,  0,  0).At("Champagne", 0, 1, "Champagne Cellar").Grid(3),
+        new Entry("Champagne Cellar",        Tier.Engineer, Kind.Production, 400, 7,  8, 12,  5).At("Champagne", 1, 0, null).Grid(4, 3),
+        new Entry("Explosives Factory",      Tier.Engineer, Kind.Production, 600, 0,  6,  8,  5).At("Military", 0, 0, "Arsenal").Grid(4),
+        new Entry("Arsenal",                 Tier.Engineer, Kind.Production,1000, 4,  8,  0, 12).At("Military", 1, 0, null).Grid(5, 4),
+        new Entry("Financial Center",        Tier.Engineer, Kind.Civic,     1200,20,  8, 30, 15).At("Civic", 1, 0, null).Economy(150, 96).Grid(6),
+        new Entry("Deacidification Station", Tier.Engineer, Kind.Production,2000,15, 20, 15, 10).At("Civic", 2, 0, null).Grid(5),
         new Entry("Banes Avenue",            Tier.Engineer, Kind.Road,        30, 0,  0,  0,  0, 0,
-                  "Priced PER TILE. Multiply by the number of tiles laid.").At("Civic", 3, 0, null),
+                  "Priced PER TILE. Multiply by the number of tiles laid.").At("Civic", 3, 0, null).Grid(1),
 
         // ---- Executive ----------------------------------------------------------
         new Entry("Executive Mansion Upgrade", Tier.Executive, Kind.Civic,     0,  1,  3,  3,  4, 0,
-                  "Incremental upgrade cost from Engineer Apartment. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(64, 0),
-        new Entry("Gold Refinery",           Tier.Executive, Kind.Production, 400, 7, 12,  0,  8).At("Jewellery", 0, 0, "Gold Smeltery"),
-        new Entry("Gold Smeltery",           Tier.Executive, Kind.Production, 500, 8,  6, 15,  6).At("Jewellery", 1, 0, "Jewelery Manufactory"),
-        new Entry("Diamond Harvesting Station", Tier.Executive, Kind.Production,2000,20,12, 0, 0).At("Jewellery", 1, 1, "Jewelery Manufactory"),
-        new Entry("Jewelery Manufactory",    Tier.Executive, Kind.Production, 600, 9,  8, 18,  8).At("Jewellery", 2, 0, null),
-        new Entry("Fat Factory",             Tier.Executive, Kind.Production, 100, 0,  6, 12, 14).At("Food", 1, 0, null),
-        new Entry("Aquafarm",                Tier.Executive, Kind.Production, 500, 6,  2,  0,  0).At("Food", 0, 0, "Fat Factory"),
-        new Entry("Chemical Plant",          Tier.Executive, Kind.Production, 400,12, 20, 20, 15).At("Chemicals", 1, 0, null),
-        new Entry("Manganese Excavation Robot", Tier.Executive, Kind.Production,1000,12,6, 0, 0).At("Chemicals", 0, 0, "Chemical Plant"),
-        new Entry("Rare-Earth Borer",        Tier.Executive, Kind.Production,1500,15, 12,  0,  0).At("Chemicals", 0, 1, "Chemical Plant"),
-        new Entry("Healthcare Office",       Tier.Executive, Kind.Civic,     1000,15, 20, 25, 20).At("Civic", 1, 0, null),
-        new Entry("CO2 Reservoir",           Tier.Executive, Kind.Production,5000,30, 20, 25, 25).At("Civic", 2, 0, null),
-        new Entry("Missile Launch Pad",      Tier.Executive, Kind.Monument, 20000,50, 35, 36, 36, 20).At("Monuments", 0, 0, null),
+                  "Incremental upgrade cost from Engineer Apartment. Not the cumulative building value.").At("Civic", 0, 0, null).Economy(64, 0).Grid(3),
+        new Entry("Gold Refinery",           Tier.Executive, Kind.Production, 400, 7, 12,  0,  8).At("Jewellery", 0, 0, "Gold Smeltery").Grid(4),
+        new Entry("Gold Smeltery",           Tier.Executive, Kind.Production, 500, 8,  6, 15,  6).At("Jewellery", 1, 0, "Jewelery Manufactory").Grid(4, 3),
+        new Entry("Diamond Harvesting Station", Tier.Executive, Kind.Production,2000,20,12, 0, 0).At("Jewellery", 1, 1, "Jewelery Manufactory").Grid(4),
+        new Entry("Jewelery Manufactory",    Tier.Executive, Kind.Production, 600, 9,  8, 18,  8).At("Jewellery", 2, 0, null).Grid(4, 3),
+        new Entry("Fat Factory",             Tier.Executive, Kind.Production, 100, 0,  6, 12, 14).At("Food", 1, 0, null).Grid(4, 3),
+        new Entry("Aquafarm",                Tier.Executive, Kind.Production, 500, 6,  2,  0,  0).At("Food", 0, 0, "Fat Factory").Grid(4),
+        new Entry("Chemical Plant",          Tier.Executive, Kind.Production, 400,12, 20, 20, 15).At("Chemicals", 1, 0, null).Grid(5, 4),
+        new Entry("Manganese Excavation Robot", Tier.Executive, Kind.Production,1000,12,6, 0, 0).At("Chemicals", 0, 0, "Chemical Plant").Grid(4),
+        new Entry("Rare-Earth Borer",        Tier.Executive, Kind.Production,1500,15, 12,  0,  0).At("Chemicals", 0, 1, "Chemical Plant").Grid(4),
+        new Entry("Healthcare Office",       Tier.Executive, Kind.Civic,     1000,15, 20, 25, 20).At("Civic", 1, 0, null).Grid(4),
+        new Entry("CO2 Reservoir",           Tier.Executive, Kind.Production,5000,30, 20, 25, 25).At("Civic", 2, 0, null).Grid(6),
+        new Entry("Missile Launch Pad",      Tier.Executive, Kind.Monument, 20000,50, 35, 36, 36, 20).At("Monuments", 0, 0, null).Grid(8),
         new Entry("Corporate HQ Foundation", Tier.Executive, Kind.Monument, 50000,80, 50, 25, 25, 0,
-                  "FOUNDATION ONLY. The monument then consumes further construction materials across three building phases, which are not part of this cost.").At("Monuments", 1, 0, null),
+                  "FOUNDATION ONLY. The monument then consumes further construction materials across three building phases, which are not part of this cost.").At("Monuments", 1, 0, null).Grid(10),
 
         // ---- Fields -------------------------------------------------------------
         // Placement cost per field tile; the count each farm needs is in the note.
-        new Entry("Rice Paddy",              Tier.Worker, Kind.Field,   5, 0, 0, 0, 0, 0, "2 fields required.").At("Fields", 0, 0, null),
-        new Entry("Pigsty",                  Tier.Worker, Kind.Field,  15, 0, 0, 0, 0, 0, "3 fields required.").At("Fields", 0, 1, null),
-        new Entry("Vegetable Cultivation",   Tier.Worker, Kind.Field,  20, 0, 0, 0, 0, 0, "3 fields required.").At("Fields", 0, 2, null),
-        new Entry("Truffle Farm Field",      Tier.Engineer, Kind.Field,  20, 0, 0, 0, 0, 0, "5 fields required.").At("Fields", 0, 0, null),
-        new Entry("Vineyard Field",          Tier.Engineer, Kind.Field,  15, 0, 0, 0, 0, 0, "7 fields required.").At("Fields", 0, 1, null),
-        new Entry("Slaughterhouse",          Tier.Employee, Kind.Field,  10, 0, 0, 0, 0, 0, "6 fields required.").At("Fields", 0, 0, null),
-        new Entry("Sugar Beet Field",        Tier.Engineer, Kind.Field,  50, 0, 0, 0, 0, 0, "7 fields required.").At("Fields", 0, 2, null),
-        new Entry("Diamond Harvesting Field",Tier.Executive, Kind.Field, 200, 0, 0, 0, 0, 0, "8 fields required.").At("Fields", 0, 0, null),
-        new Entry("Algae Farm Field",        Tier.Executive, Kind.Field, 150, 0, 0, 0, 0, 0, "6 fields required.").At("Fields", 0, 1, null),
+        new Entry("Rice Paddy",              Tier.Worker, Kind.Field,   5, 0, 0, 0, 0, 0, "2 fields required.").At("Fields", 0, 0, null).Grid(1),
+        new Entry("Pigsty",                  Tier.Worker, Kind.Field,  15, 0, 0, 0, 0, 0, "3 fields required.").At("Fields", 0, 1, null).Grid(1),
+        new Entry("Vegetable Cultivation",   Tier.Worker, Kind.Field,  20, 0, 0, 0, 0, 0, "3 fields required.").At("Fields", 0, 2, null).Grid(1),
+        new Entry("Truffle Farm Field",      Tier.Engineer, Kind.Field,  20, 0, 0, 0, 0, 0, "5 fields required.").At("Fields", 0, 0, null).Grid(1),
+        new Entry("Vineyard Field",          Tier.Engineer, Kind.Field,  15, 0, 0, 0, 0, 0, "7 fields required.").At("Fields", 0, 1, null).Grid(1),
+        new Entry("Slaughterhouse",          Tier.Employee, Kind.Field,  10, 0, 0, 0, 0, 0, "6 fields required.").At("Fields", 0, 0, null).Grid(1),
+        new Entry("Sugar Beet Field",        Tier.Engineer, Kind.Field,  50, 0, 0, 0, 0, 0, "7 fields required.").At("Fields", 0, 2, null).Grid(1),
+        new Entry("Diamond Harvesting Field",Tier.Executive, Kind.Field, 200, 0, 0, 0, 0, 0, "8 fields required.").At("Fields", 0, 0, null).Grid(1),
+        new Entry("Algae Farm Field",        Tier.Executive, Kind.Field, 150, 0, 0, 0, 0, 0, "6 fields required.").At("Fields", 0, 1, null).Grid(1),
     };
 
     [MenuItem("Moonlight/Buildings/Generate Tycoon Catalogue")]
@@ -791,9 +821,10 @@ public static class TycoonBuildingCatalogGenerator
         }
         else updated++;
 
-        // Assets inside the placeholder folder are ours to size; the earlier UI pass left
-        // several of them at a token 1x1 that means nothing. An asset authored elsewhere
-        // (City Center's 6x8) keeps whatever it was given.
+        // Assets inside the placeholder folder are ours to size. An asset authored elsewhere
+        // (City Center's, which lives under Scripts/Data Assets) keeps whatever it was given -
+        // the catalogue row still states a footprint so the prefab and its stand-in agree with
+        // it, but the authored asset stays the one place that number is decided.
         bool generatorOwnsSize = AssetDatabase.GetAssetPath(data).StartsWith(DataFolder);
 
         var so = new SerializedObject(data);
@@ -802,7 +833,7 @@ public static class TycoonBuildingCatalogGenerator
 
         data.buildingName = entry.Name;
         data.buildingType = BuildingTypeFor(entry.Kind);
-        if (generatorOwnsSize || data.buildingSize == Vector3.zero) data.buildingSize = DefaultSize(entry.Kind);
+        if (generatorOwnsSize || data.buildingSize == Vector3.zero) data.buildingSize = FootprintOf(entry);
 
         string note = string.IsNullOrEmpty(entry.Note) ? string.Empty : " " + entry.Note;
         data.buildingDescription = $"{entry.Tier} tier Tycoon {entry.Kind.ToString().ToLowerInvariant()}. " +
@@ -844,18 +875,29 @@ public static class TycoonBuildingCatalogGenerator
         Building building = Require<Building>(working);
         BuildingProperties properties = Require<BuildingProperties>(working);
         BuildingCost buildingCost = Require<BuildingCost>(working);
-        Require<BuildingPlaceholderModel>(working);
+        BuildingPlaceholderModel placeholder = Require<BuildingPlaceholderModel>(working);
 
         building.buildingData = data;
 
+        // The footprint the BuildingData settled on, so the prefab cannot disagree with the
+        // asset the placement rules read.
+        Vector3 footprint = data.buildingSize;
+
         properties.buildingData = data;
         properties.costData = cost;
-        properties.buildingSize = data.buildingSize;
+        properties.buildingSize = footprint;
         properties.buildingName = entry.Name;
         properties.buildingDescription = data.buildingDescription;
 
         // BuildingCost.costData is the field the affordability path actually reads.
         buildingCost.costData = cost;
+
+        // Stand-in geometry and its collider are baked into the prefab at this size. Awake
+        // rebuilds them from the BuildingData anyway, but re-running the generator on an
+        // existing prefab does not call Awake, so without this an updated footprint would
+        // leave the saved prefab showing - and colliding at - the old one in the editor.
+        SetFallbackFootprint(placeholder, footprint);
+        placeholder.Build();
 
         PrefabUtility.SaveAsPrefabAsset(working, path);
         Object.DestroyImmediate(working);
@@ -867,6 +909,24 @@ public static class TycoonBuildingCatalogGenerator
     {
         T component = go.GetComponent<T>();
         return component != null ? component : go.AddComponent<T>();
+    }
+
+    /// <summary>
+    /// Points the placeholder's own fallback at the real footprint. It is only consulted when
+    /// a building has no size to read, but leaving it at the component's default 2x2 means a
+    /// prefab that loses its BuildingData silently shrinks to a size nothing in the catalogue
+    /// ever asked for.
+    /// </summary>
+    private static void SetFallbackFootprint(BuildingPlaceholderModel placeholder, Vector3 footprint)
+    {
+        if (placeholder == null) return;
+
+        var so = new SerializedObject(placeholder);
+        SerializedProperty fallback = so.FindProperty("fallbackFootprint");
+        if (fallback == null) return;
+
+        fallback.vector2Value = new Vector2(footprint.x, footprint.z);
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static string BuildingTypeFor(Kind kind)
@@ -883,8 +943,18 @@ public static class TycoonBuildingCatalogGenerator
     }
 
     /// <summary>
-    /// Placeholder footprints. The cost tables carry no size data, so these are a
-    /// readable starting point by category rather than anything authoritative.
+    /// The footprint this row asks for, in grid cells. Rows state their own via
+    /// <c>.Grid(width, depth)</c>; the category default only covers a row that forgot to.
+    /// </summary>
+    private static Vector3 FootprintOf(Entry entry)
+    {
+        if (entry.Width > 0 && entry.Depth > 0) return new Vector3(entry.Width, 1, entry.Depth);
+        return DefaultSize(entry.Kind);
+    }
+
+    /// <summary>
+    /// Safety net for a catalogue row with no <c>.Grid(...)</c> on it. Every row has one
+    /// today, so nothing should reach this.
     /// </summary>
     private static Vector3 DefaultSize(Kind kind)
     {

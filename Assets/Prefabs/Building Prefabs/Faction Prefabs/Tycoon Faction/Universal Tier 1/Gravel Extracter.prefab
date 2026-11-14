@@ -164,6 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  owner: {fileID: 0}
   compatibleSeed: {fileID: 0}
   buildingInventory: {fileID: 0}
   islandInventory: {fileID: 0}
@@ -278,7 +279,8 @@ MonoBehaviour:
   buildingProperties: {fileID: -6778097432394761726}
   buildingData: {fileID: 11400000, guid: 70e338e39eeb92a4584b9dda30c49d81, type: 2}
   costData: {fileID: 11400000, guid: 1d8b001ad81d01b4d9a47c13c19eca14, type: 2}
-  buildingSize: {x: 0, y: 0, z: 0}
+  buildingSize: {x: 4, y: 1, z: 4}
+  influenceRadius: 0
   buildingName: Gravel Extracter
   buildingDescription: Extracts gravel for the production of building moduls
   buildingTags:

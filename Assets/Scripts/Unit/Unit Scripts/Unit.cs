@@ -96,6 +96,11 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         // Set Name of the Unit
         this.gameObject.name += " - Name: " + displayName;
 
+        // Register this unit with the selection system so drag selection can find it
+        if (UnitSelections.Instance != null && !UnitSelections.Instance.unitList.Contains(this))
+        {
+            UnitSelections.Instance.unitList.Add(this);
+        }
 
         // Try to fetch inventories if they are attached but not assigned
         if (unitInventory == null) unitInventory = GetComponent<UnitInventory>();
@@ -104,22 +109,16 @@ public class Unit : MonoBehaviour, ISelectable, IUniqueIdentifier
         // Inv Check - Ensure UnitInventory is assigned
         if (unitInventory == null && inventory == null)
         {
-
             Debug.Log($"<color=red><b>MISSING:</b></color> both UnitInventory && Inventory is not assigned on Unit: " + gameObject.name);
             return;
-
         } 
         else 
         { 
             Debug.Log($"<color=green><b>SUCCESS:</b> Unit has atleast one Inventory component!</color>"); 
         }
 
-        UnitSelections.Instance.unitList.Add(this);
-
-        
         // Set Name of the Unit + ID
         // this.gameObject.name += " - ID: " + ID + " - Name: " + displayName;
-
     }
 
     /// <summary>

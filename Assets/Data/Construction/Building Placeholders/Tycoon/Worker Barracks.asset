@@ -16,7 +16,7 @@ MonoBehaviour:
   buildingName: Worker Barracks
   buildingDescription: Worker tier Tycoon civic. Placeholder art and footprint.
   buildingType: Civic
-  buildingSize: {x: 4, y: 1, z: 4}
+  buildingSize: {x: 3, y: 1, z: 3}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

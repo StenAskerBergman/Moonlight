@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 6612044399287104512}
   - component: {fileID: 6612044399287104600}
   - component: {fileID: 6612044399287104601}
+  - component: {fileID: 2968969248675784904}
   m_Layer: 6
   m_Name: IslandPrefab
   m_TagString: Ground
@@ -62,12 +63,13 @@ MonoBehaviour:
   treePrefabs: []
   climateProfile: {fileID: 11400000, guid: 2b9dc1a0e3d45f7488cd5e66bbfce9e4, type: 2}
   edgeMaterial: {fileID: 2100000, guid: 0eba097ae0ca2cf4aa14f7a6bb46df16, type: 2}
-  terrainMaterial: {fileID: 2100000, guid: 8203fa58b2d25bd4dbc00bfa4736b9e6, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: 42ac4b110152ca941b33d246f4414b35, type: 2}
   hillEdgeMaterial: {fileID: 2100000, guid: aadd5a709a48466c887296bb5b1b8110, type: 2}
   oceanEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
   coastEdgeMaterial: {fileID: 2100000, guid: 152ae44750e3c814a891ed4c1e6e3a67, type: 2}
   beachEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
   riverEdgeMaterial: {fileID: 2100000, guid: aadd5a709a48466c887296bb5b1b8110, type: 2}
+  inlandWaterMaterial: {fileID: 0}
   shallowEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
   deepSeaEdgeMaterial: {fileID: 2100000, guid: 30fc3675bf5811644aa90e1c4687b7cd, type: 2}
   plateauEdgeMaterial: {fileID: 2100000, guid: 56b724eded5f12d4f846f7c40b860c3b, type: 2}
@@ -86,7 +88,20 @@ MonoBehaviour:
   plateauThreshold: 0.2
   deepSeaThreshold: 0.2
   abyssThreshold: 0
+  worldSettings: {fileID: 11400000, guid: 8389eec9c7f02014f9ea1cb75381879f, type: 2}
+  generationOverrides:
+    overrideSeed: 0
+    seed: 1337
+    overrideVisualSamples: 0
+    visualSamplesPerCell: 6
+    overrideMountains: 0
+    mountainsEnabled: 1
+    overrideRivers: 0
+    riversEnabled: 1
+    overrideMainlandRelief: 0
+    mainlandRelief: 0.05
   generationSettings:
+    mainlandShapeDataVersion: 1
     seed: 1337
     domainWarp:
       enabled: 1
@@ -161,6 +176,9 @@ MonoBehaviour:
     falloffStart: 0.36
     falloffEnd: 1.05
     coastWarp: 0.16
+    guaranteedMainlandRadius: 0.38
+    targetMainlandCoverage: 0.84
+    mainlandSurveyRadius: 0.62
     abyssUpper: 0
     deepUpper: 0.2
     underwaterPlateauUpper: 0.2
@@ -172,14 +190,15 @@ MonoBehaviour:
     cliffUpper: 0.82
     mountainUpper: 0.88
     coastalMountains:
+      dataVersion: 2
       enabled: 1
       minRidges: 3
       maxRidges: 5
-      minRidgeLength: 22
-      maxRidgeLength: 48
-      minRidgeWidth: 8
-      maxRidgeWidth: 16
-      ridgePeakHeight: 3.2
+      minRidgeLength: 14
+      maxRidgeLength: 28
+      minRidgeWidth: 9
+      maxRidgeWidth: 15
+      ridgePeakHeight: 9
       cliffSharpness: 1.4
       minimumPeakRatio: 0.55
       minimumWidthRatio: 0.55
@@ -195,6 +214,44 @@ MonoBehaviour:
       channelRadius: 1.4
       clearanceRadius: 6
       valleyDepth: 1.2
+      lakeSourceChance: 0.45
+      minLakeRadius: 2.2
+      maxLakeRadius: 4.2
+      lakeDepth: 0.65
+      minimumRiverLength: 18
+    coastalProfile:
+      dataVersion: 0
+      backshoreWidth: 1.8
+      beachWidth: 2.2
+      surfWidth: 2.5
+      shelfWidth: 5
+      deepHandoffWidth: 6
+      continentalSlopeWidth: 16
+      continentalSlopeExponent: 1.8
+      beachCrestFreeboard: 0.4
+      waterlineFreeboard: 0.05
+      surfDepth: 0.45
+      shelfDepth: 3
+      maxBackshoreGradient: 0.35
+      waveAmplitude: 0
+      maxBeachGradient: 0.3
+      widthVariation: 0.55
+      widthVariationScale: 26
+      bayInfluence: 0.75
+      fullBayCurvature: 0.1
+      curvatureStencilRadius: 2.5
+      waterlineSandWidth: 0.9
+      headlandRidgeThreshold: 1.8
+      headlandShelfExtension: 3
+      headlandShelfNarrowing: 0.3
+      minimumBeachWidth: 0.1
+    abyssDepthBelowWater: 0
+    landLadderVersion: 0
+    mainlandFreeboard: 1.25
+    hillFreeboard: 2
+    cliffFreeboard: 3.2
+    mountainFreeboard: 4.5
+    mountainPeakFreeboard: 6.2
     abyssHeight: -5
     deepHeight: -3.5
     naturalPlateauHeight: -2.5
@@ -208,14 +265,15 @@ MonoBehaviour:
     mountainHeight: 3.2
     mountainPeakHeight: 4.2
     authoritativeWaterSurfaceHeight: -0.6
+    mainlandRelief: 0.05
     maxBuildableHeightVariance: 0.2
-    visualSamplesPerCell: 8
+    visualSamplesPerCell: 6
     visualTransitionWidth: 0.035
   debugViewMode: 0
   scale: 0.025
   treeNoiseScale: 0.05
   treeDensity: 0.5
-  size: 60
+  size: 90
   terrainType: 1
   cellCollider: {fileID: 0}
   _showLogs: 0
@@ -252,7 +310,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 7404ab7fff4422745a8b0664ca47a04c, type: 2}
+  - {fileID: 2100000, guid: 42ac4b110152ca941b33d246f4414b35, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -347,6 +405,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83cb0669bfa35984f9a02782777f1a55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  baseCapacityPerGood: 50
+  structureCapacity: 0
+  enhancementCapacity: 0
 --- !u!114 &8836174090640963313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -359,11 +420,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22a8bf083823af64e8309979beb2f9fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Settled: 1
-  PowerSpent: 0
-  PowerOutput: 0
-  CurrentPower: 1
-  TotalPower: 1
+  IslandSettlement: 0
+  settled: 1
+  powerSpent: 0
+  powerOutput: 0
+  currentPower: 1
+  totalPower: 1
 --- !u!114 &6881203944584505237
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -483,3 +545,75 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startingItems: []
+--- !u!114 &2968969248675784904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7038287545543584486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aab40a666a36f242a31959b64711955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deckClearanceAboveWater: 3
+  wallGapAllowance: 0.35
+  lowerTerrainThreshold: 0.2
+  topMaterial: {fileID: 2100000, guid: 4069ea25a621e764fac7116991b86f05, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 4069ea25a621e764fac7116991b86f05, type: 2}
+  generateCollider: 1
+  copingHeight: 0.12
+  copingOverhang: 0.1
+  wallBatter: 0.08
+  wallRecess: 0.28
+  dressedWallDepth: 4.5
+  rockCourseHeight: 2
+  generateButtresses: 1
+  buttressWidth: 0.32
+  buttressProjection: 0
+  buttressFlare: 0.2
+  buttressSpacing: 1
+  atlas:
+    deck:
+      serializedVersion: 2
+      x: 0.792
+      y: 0.731
+      width: 0.201
+      height: 0.116
+    coping:
+      serializedVersion: 2
+      x: 0.006
+      y: 0.936
+      width: 0.746
+      height: 0.058
+    band:
+      serializedVersion: 2
+      x: 0.006
+      y: 0.865
+      width: 0.746
+      height: 0.064
+    wallBay:
+      serializedVersion: 2
+      x: 0.15
+      y: 0.285
+      width: 0.145
+      height: 0.43
+    buttress:
+      serializedVersion: 2
+      x: 0.744
+      y: 0.285
+      width: 0.124
+      height: 0.43
+    rock:
+      serializedVersion: 2
+      x: 0.006
+      y: 0
+      width: 0.746
+      height: 0.277
+  straightDetailPrefab: {fileID: 0}
+  outerCornerDetailPrefab: {fileID: 0}
+  innerCornerDetailPrefab: {fileID: 0}
+  endDetailPrefab: {fileID: 0}
+  landTransitionDetailPrefab: {fileID: 0}
+  drawGizmos: 1

@@ -1,3 +1,6 @@
+﻿// tldr: The one high-resolution terrain field per chunk, sampled ONCE and shared by mesh building, texture
+// splatting, gameplay cell extraction and neighbour queries - so no subsystem re-evaluates noise.
+
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -16,6 +19,33 @@ public sealed class TerrainSampleCache
 
     public float[] Heights { get; }
     public float[] BaseFields { get; }
+
+    /// <summary>
+    /// The low-frequency island field. Heights are built from this rather than from BaseFields,
+    /// and the shoreline distance below is its zero crossing, so both agree by construction.
+    /// </summary>
+    public float[] SmoothFields { get; }
+
+    /// <summary>
+    /// Signed distance to the shoreline in WORLD UNITS, positive inland. Every coastal band -
+    /// backshore, beach, surf, shelf - is a width measured against this, which is what lets a
+    /// beach have an authored width instead of inheriting whatever width the noise gradient
+    /// happens to give it.
+    ///
+    /// Accurate near the shore and degrading with distance, so it is only trusted out to the
+    /// shelf edge; beyond that the field-driven seabed takes back over.
+    /// </summary>
+    public float[] ShoreDistances { get; }
+
+    /// <summary>Ridge elevation at the coast, used to suppress beaches into rocky headlands.</summary>
+    public float[] HeadlandMasks { get; }
+
+    /// <summary>
+    /// Curvature of the shoreline, from the Laplacian of ShoreDistances. Positive in a bay
+    /// (coast concave toward the sea), negative on a headland. Sand accumulates in the former and
+    /// is stripped from the latter, which is what stops the beach being a uniform ring.
+    /// </summary>
+    public float[] ShoreCurvatures { get; }
     public Cell.TerrainType[] TerrainTypes { get; }
     public float[] Slopes { get; }
     public float[] MountainAllowances { get; }
@@ -46,6 +76,10 @@ public sealed class TerrainSampleCache
         int totalCount = Resolution * Resolution;
         Heights = new float[totalCount];
         BaseFields = new float[totalCount];
+        SmoothFields = new float[totalCount];
+        ShoreDistances = new float[totalCount];
+        HeadlandMasks = new float[totalCount];
+        ShoreCurvatures = new float[totalCount];
         TerrainTypes = new Cell.TerrainType[totalCount];
         Slopes = new float[totalCount];
         MountainAllowances = new float[totalCount];
@@ -81,6 +115,14 @@ public sealed class TerrainSampleCache
         x = Mathf.Clamp(x, 0, Resolution - 1);
         z = Mathf.Clamp(z, 0, Resolution - 1);
         return BaseFields[z * Resolution + x];
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    public float GetShoreDistance(int x, int z)
+    {
+        x = Mathf.Clamp(x, 0, Resolution - 1);
+        z = Mathf.Clamp(z, 0, Resolution - 1);
+        return ShoreDistances[z * Resolution + x];
     }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]

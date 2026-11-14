@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Terrain Splat
+  m_Shader: {fileID: 4800000, guid: ccaa7f6c664e90b498279ed6d3f19b55, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Control:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassAlbedo:
+        m_Texture: {fileID: 2800000, guid: ff192f889d87474f885ba8ad7149b35f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassNormal:
+        m_Texture: {fileID: 2800000, guid: ddc17ef6220e4d4fab589bc574ac76a7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RockAlbedo:
+        m_Texture: {fileID: 2800000, guid: 18214e9d6af6248559d501391856f1c7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RockNormal:
+        m_Texture: {fileID: 2800000, guid: e08c295755c0885479ad19f518286ff2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SandAlbedo:
+        m_Texture: {fileID: 2800000, guid: bfd675cc0db1d4656b75dc6d6ba91142, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SandNormal:
+        m_Texture: {fileID: 2800000, guid: bc8d60675c534aa09cb026bdb5b41768, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SeabedAlbedo:
+        m_Texture: {fileID: 2800000, guid: b251f3ad447148df8ecfd62b80693b69, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SeabedNormal:
+        m_Texture: {fileID: 2800000, guid: 3bb8cf7fd7e14d4e919c6caf20553599, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _GrassNormalScale: 1
+    - _GrassSmoothness: 0.15
+    - _GrassTiling: 0.25
+    - _MacroStrength: 0.25
+    - _MacroTiling: 0.02
+    - _RockNormalScale: 1
+    - _RockSmoothness: 0.2
+    - _RockTiling: 0.18
+    - _SandNormalScale: 1
+    - _SandSmoothness: 0.3
+    - _SandTiling: 0.5
+    - _SeabedNormalScale: 1
+    - _SeabedSmoothness: 0.45
+    - _RegionSmoothnessScale: 1.15
+    - _SeabedTiling: 0.3
+    m_Colors:
+    - _GrassTint: {r: 1, g: 1, b: 1, a: 1}
+    - _RockTint: {r: 1, g: 1, b: 1, a: 1}
+    - _SandTint: {r: 1, g: 0.98, b: 0.92, a: 1}
+    - _SeabedTint: {r: 1, g: 1, b: 1, a: 1}
+    - _GrassTintRegion: {r: 0.8, g: 0.71, b: 0.4, a: 1}
+    - _RockTintRegion: {r: 0.92, g: 0.66, b: 0.48, a: 1}
+    - _SandTintRegion: {r: 1, g: 0.86, b: 0.66, a: 1}
+    - _SeabedTintRegion: {r: 0.85, g: 0.85, b: 0.8, a: 1}
+  m_BuildTextureStacks: []

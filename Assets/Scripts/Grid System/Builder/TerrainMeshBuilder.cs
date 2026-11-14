@@ -1,3 +1,6 @@
+﻿// tldr: Turns the sampled height cache into the chunk's renderable terrain Mesh. Geometry only - no shading,
+// no classification.
+
 using UnityEngine;
 using System.Collections.Generic;
 using static Cell;
@@ -160,6 +163,18 @@ public class TerrainMeshBuilder
         mesh.triangles = triangles;
         mesh.uv = uvs;
         mesh.RecalculateNormals();
+        if (terrainSource.IsWorldView)
+        {
+            var normals = mesh.normals;
+            for (int i = 0; i < verticesPerAxis; i++)
+            {
+                normals[i] = terrainSource.WorldNormal(i * step, 0f);
+                normals[quadsPerAxis * verticesPerAxis + i] = terrainSource.WorldNormal(i * step, size);
+                normals[i * verticesPerAxis] = terrainSource.WorldNormal(0f, i * step);
+                normals[i * verticesPerAxis + quadsPerAxis] = terrainSource.WorldNormal(size, i * step);
+            }
+            mesh.normals = normals;
+        }
         mesh.RecalculateBounds();
         return mesh;
     }

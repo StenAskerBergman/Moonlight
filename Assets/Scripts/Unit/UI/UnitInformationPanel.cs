@@ -218,7 +218,8 @@ public class UnitInformationPanel : MonoBehaviour
             currentAbilities.OnAbilitiesChanged += RefreshSocketsAndAbilities;
         }
 
-        if (rootPanel != null) rootPanel.SetActive(true);
+        bool hasInPlaceInventoryUI = UnitSelections.Instance != null && UnitSelections.Instance.GetUnitInventoryUI() != null;
+        if (rootPanel != null) rootPanel.SetActive(!hasInPlaceInventoryUI);
         RefreshAll();
     }
 
@@ -750,7 +751,7 @@ public class UnitInformationPanel : MonoBehaviour
         // 1. Build Harbor
         if (buildHarborButton != null)
         {
-            bool canBuild = buildInteraction != null && buildInteraction.CanBuild();
+            bool canBuild = buildInteraction != null && buildInteraction.CanBuildForDisplay();
             buildHarborButton.gameObject.SetActive(canBuild);
             if (canBuild) hasContextAction = true;
         }
@@ -758,7 +759,7 @@ public class UnitInformationPanel : MonoBehaviour
         // 2. Deliver Cargo
         if (deliverCargoButton != null)
         {
-            bool canDeliver = deliverInteraction != null && deliverInteraction.CanDeliver();
+            bool canDeliver = deliverInteraction != null && deliverInteraction.CanDeliverForDisplay();
             deliverCargoButton.gameObject.SetActive(canDeliver);
             if (canDeliver) hasContextAction = true;
         }

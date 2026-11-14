@@ -21,6 +21,11 @@ public sealed class RoadTileVisual : MonoBehaviour
 
     public void Apply(RoadTopologyResolver.Result result, BridgeAppearance bridge)
     {
+        Apply(result, bridge, default);
+    }
+
+    public void Apply(RoadTopologyResolver.Result result, BridgeAppearance bridge, RoadSurfaceDrape drape)
+    {
         GameObject resolvedPrefab = bridge.IsBridge && bridge.Prefab != null ? bridge.Prefab : result.Prefab;
         float resolvedOffset = bridge.IsBridge ? bridge.DeckHeight : result.VerticalOffset;
         int bridgeSignature = bridge.IsBridge
@@ -62,7 +67,7 @@ public sealed class RoadTileVisual : MonoBehaviour
             {
                 route.transform.localRotation = Quaternion.identity;
                 route.transform.localScale = Vector3.one;
-                proceduralArt.Configure(result, bridge);
+                proceduralArt.Configure(result, bridge, drape);
             }
             else
             {

@@ -1,3 +1,6 @@
+﻿// tldr: One gameplay tile. Holds its world position, terrain semantics, neighbours and buildability, and is
+// the single authority every gameplay system (building, roads, quays, pathing) asks about the ground.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,6 +8,7 @@ using UnityEngine;
 
 public class Cell
 {
+    public event Action<Cell> PlacementChanged;
     public Vector3Int cellPosition { get; private set; }
     public Vector3 position { get; private set; }
     public Building occupyingBuilding { get; private set; }
@@ -54,6 +58,7 @@ public class Cell
             {
                 case TerrainType.Abyssal:
                 case TerrainType.River:
+                case TerrainType.WaterFall:
                 case TerrainType.Lake:
                 case TerrainType.Water:
                 case TerrainType.Stream:
@@ -252,6 +257,7 @@ public class Cell
         {
             this.occupyingBuilding = building;
             this.currentStatus = CellStatus.Full;
+            PlacementChanged?.Invoke(this);
 
         }
         else
@@ -266,6 +272,7 @@ public class Cell
         {
             this.occupyingBuilding = building;
             this.currentStatus = CellStatus.Full;
+            PlacementChanged?.Invoke(this);
             
         }
         else
@@ -278,11 +285,15 @@ public class Cell
     {
         this.occupyingBuilding = null;
         this.currentStatus = CellStatus.Empty;
+        // Occupation notifies, so release must too - otherwise nothing downstream can ever react to
+        // land becoming free again (foliage regrowth on demolished ground being the first case).
+        PlacementChanged?.Invoke(this);
     }
 
     public void ChangeTerrainType(TerrainType newTerrainType)
     {
         currentTerrainType = newTerrainType;
+        PlacementChanged?.Invoke(this);
 
         // Any other logic that needs to happen when the terrain type changes
         // For example, update the visuals or notify other components
@@ -297,6 +308,7 @@ public class Cell
     public void SetRoad(bool value, RoadDefinition definition = null)
     {
         isRoad = value;
+        if (value) PlacementChanged?.Invoke(this);
         roadDefinition = value ? definition : null;
     }
 

@@ -188,7 +188,7 @@ public class InfluenceManager : MonoBehaviour
         return name.Contains("ship") || name.Contains("boat") || name.Contains("vessel") || name.Contains("flagship") || name.Contains("submarine");
     }
 
-    public bool CanPlaceWarehouse(Vector3 worldPosition, GridSystem gridSystem, out Unit foundingBoat)
+    public bool CanPlaceWarehouse(Vector3 worldPosition, GridSystem gridSystem, out Unit foundingBoat, Unit requestingBoat = null)
     {
         // Clean up any null/destroyed references
         activeZones.RemoveAll(z => z == null);
@@ -201,7 +201,14 @@ public class InfluenceManager : MonoBehaviour
             Cell cell = gridSystem.GetCellAtWorldPosition(worldPosition);
             if (cell == null || !QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType)) return false;
 
-            foundingBoat = GetNearestPlayerBoat(worldPosition);
+            if (requestingBoat == null) foundingBoat = GetNearestPlayerBoat(worldPosition);
+            else if (IsBoatUnit(requestingBoat))
+            {
+                Vector3 offset = requestingBoat.transform.position - worldPosition;
+                offset.y = 0f;
+                float range = FoundingRangeOf(requestingBoat, BoatFoundingRange);
+                if (offset.sqrMagnitude <= range * range) foundingBoat = requestingBoat;
+            }
             return foundingBoat != null;
         }
 

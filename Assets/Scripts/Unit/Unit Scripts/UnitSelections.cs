@@ -188,10 +188,7 @@ public class UnitSelections : MonoBehaviour
 
         if (!unitsSelected.Contains(unitToAdd))
         {
-            // Call OnSelect on all drag-selected units (was Character-only,
-            // which left ships/submarines without outline or HUD).
-            (unitToAdd as ISelectable)?.OnSelect();
-
+            DeselectBuildingWhenSelectingBoat(unitToAdd);
 
             // Add any new Units to Current Selection
             unitsSelected.Add(unitToAdd);
@@ -200,6 +197,10 @@ public class UnitSelections : MonoBehaviour
                 unitToAdd.transform.GetChild(0).gameObject.SetActive(true);
             }
             NotifySelectionChanged();
+
+            // Call OnSelect on all drag-selected units (was Character-only,
+            // which left ships/submarines without outline or HUD).
+            (unitToAdd as ISelectable)?.OnSelect();
         }
 
         UserfaceHandler();

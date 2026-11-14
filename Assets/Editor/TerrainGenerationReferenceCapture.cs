@@ -290,7 +290,7 @@ public static class TerrainGenerationReferenceCapture
                 outputDirectory);
 
             string controlTextureFile = null;
-            if (TryBuildControlTextureReference(island, manifest.selectionInverted, out controlTexture))
+            if (TryBuildControlTextureReference(island, out controlTexture))
             {
                 controlTextureFile = $"island-{island.id:D3}_splat-control.png";
                 File.WriteAllBytes(
@@ -342,51 +342,28 @@ public static class TerrainGenerationReferenceCapture
 
     private static bool TryBuildControlTextureReference(
         Island island,
-        bool selectionInverted,
         out Texture2D reference)
     {
         reference = null;
         MapGrid mapGrid = island.GetComponent<MapGrid>() ?? island.GetComponentInChildren<MapGrid>(true);
         if (mapGrid == null) return false;
 
-        int visualSamples = mapGrid.generationSettings != null ? mapGrid.generationSettings.visualSamplesPerCell : 1;
-        TextureBuilder builder = new TextureBuilder(mapGrid.Grid, mapGrid.TerrainSource, visualSamples, mapGrid.climateProfile);
-        reference = builder.BuildDiagnosticSplatMask();
-        if (reference == null) return false;
-
-        int bannerHeight = Mathf.Max(58, reference.height / 12);
-        DrawFilledRectangle(
-            reference,
-            0,
-            reference.height - bannerHeight,
-            reference.width,
-            bannerHeight,
-            new Color32(0, 0, 0, 230));
-        int glyphScale = Mathf.Max(2, reference.width / 250);
-        DrawPixelText(
-            reference,
-            12,
-            reference.height - 12 - 7 * glyphScale,
-            $"ISLAND {island.id:D3} - SPLAT",
-            glyphScale,
-            new Color32(255, 255, 255, 255));
-        DrawInvertedFlag(reference, selectionInverted, reference.width - 196, reference.height - 12 - 7 * glyphScale, glyphScale);
-        int legendY = reference.height - bannerHeight + 8;
-        if (mapGrid.currentGridType == GridType.Type.Plateau)
+        int controlProperty = Shader.PropertyToID("_Control");
+        var properties = new MaterialPropertyBlock();
+        foreach (var renderer in mapGrid.GetComponentsInChildren<MeshRenderer>(true))
         {
-            DrawLegendItem(reference, 12, legendY, "SAND / TOP", new Color32(0, 255, 0, 255), glyphScale);
-            DrawLegendItem(reference, 188, legendY, "ROCK / RIM", new Color32(0, 0, 255, 255), glyphScale);
-            DrawLegendItem(reference, 372, legendY, "ABYSS", new Color32(0, 0, 0, 255), glyphScale, new Color32(255, 255, 255, 255));
+            Material material = renderer.sharedMaterial;
+            if (material == null || material.shader == null
+                || (material.shader.name != "Moonlight/Terrain Splat (Normal Mapped)"
+                    && material.shader.name != "Custom/UnderwaterPlateauMaterial")) continue;
+            renderer.GetPropertyBlock(properties);
+            Texture control = properties.GetTexture(controlProperty);
+            if (control == null) continue;
+            // Copy the bound production data, without banners, classifications or colour conversion.
+            reference = CopyTexture(control, $"Island {island.id:D3} Production Control", true);
+            return true;
         }
-        else
-        {
-            DrawLegendItem(reference, 12, legendY, "MAINLAND", new Color32(255, 0, 0, 255), glyphScale);
-            DrawLegendItem(reference, 154, legendY, "BEACH", new Color32(0, 255, 0, 255), glyphScale);
-            DrawLegendItem(reference, 264, legendY, "MOUNTAIN", new Color32(0, 0, 255, 255), glyphScale);
-            DrawLegendItem(reference, 414, legendY, "WATER", new Color32(0, 0, 0, 255), glyphScale, new Color32(255, 255, 255, 255));
-        }
-        reference.Apply(false, false);
-        return true;
+        return false;
     }
 
     private static bool TryBuildGameplayDebugReference(
@@ -401,7 +378,7 @@ public static class TerrainGenerationReferenceCapture
         Cell[,] grid = mapGrid != null ? mapGrid.Grid : null;
         if (grid == null || gridSystem == null) return false;
 
-        reference = CopyTexture(splatReference, $"Island {island.id:D3} Gameplay Grid Reference");
+        reference = CopyTexture(splatReference, $"Island {island.id:D3} Gameplay Grid Reference", true);
         int cellsX = grid.GetLength(0);
         int cellsZ = grid.GetLength(1);
         float pixelsPerCellX = reference.width / (float)cellsX;
@@ -564,22 +541,24 @@ public static class TerrainGenerationReferenceCapture
         }
     }
 
-    private static Texture2D CopyTexture(Texture source, string textureName)
+    private static Texture2D CopyTexture(Texture source, string textureName, bool linearData = false)
     {
         RenderTexture temporary = RenderTexture.GetTemporary(
             source.width,
             source.height,
             0,
             RenderTextureFormat.ARGB32,
-            RenderTextureReadWrite.Default);
+            linearData ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.Default);
         RenderTexture previous = RenderTexture.active;
+        bool previousSrgbWrite = GL.sRGBWrite;
 
         try
         {
+            if (linearData) GL.sRGBWrite = false;
             Graphics.Blit(source, temporary);
             RenderTexture.active = temporary;
 
-            var copy = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false)
+            var copy = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false, linearData)
             {
                 name = textureName,
                 hideFlags = HideFlags.HideAndDontSave,
@@ -590,6 +569,7 @@ public static class TerrainGenerationReferenceCapture
         }
         finally
         {
+            GL.sRGBWrite = previousSrgbWrite;
             RenderTexture.active = previous;
             RenderTexture.ReleaseTemporary(temporary);
         }
@@ -996,7 +976,7 @@ public static class TerrainGenerationReferenceCapture
             markdown.AppendLine();
             if (!string.IsNullOrEmpty(entry.controlTextureFile))
             {
-                markdown.AppendLine($"Raw splat/control texture: ![Island {entry.islandNumber:D3} splat control](./{entry.controlTextureFile})");
+                markdown.AppendLine($"Bound production control texture (RGBA: grass, sand, rock, seabed; alpha stores seabed weight): ![Island {entry.islandNumber:D3} splat control](./{entry.controlTextureFile})");
                 markdown.AppendLine();
             }
             if (!string.IsNullOrEmpty(entry.gameplayDebugFile))

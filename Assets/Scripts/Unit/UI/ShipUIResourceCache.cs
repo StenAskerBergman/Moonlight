@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -18,6 +18,9 @@ public static class ShipUIResourceCache
     private static Sprite shipMoveIcon;
     private static Sprite cycleIcon;
     private static Sprite fleetIcon;
+    private static Sprite stancePatrol;
+    private static Sprite stanceDefend;
+    private static Sprite stanceAttack;
 
     public static Sprite SlotBackground => ResolveIcon(ref defaultSlotBg, "Assets/Prefabs/UI/Sprites/SlotBackground.png");
     public static Sprite VehicleBadge => ResolveIcon(ref vehicleBadge, "Assets/Imports/Anno2070/Icons/Vehicle-slot-icon.png");
@@ -28,6 +31,9 @@ public static class ShipUIResourceCache
     public static Sprite ShipMoveIcon => ResolveIcon(ref shipMoveIcon, "Assets/Imports/Anno2070/Icons/Ship-move.png");
     public static Sprite CycleIcon => ResolveIcon(ref cycleIcon, "Assets/Imports/Anno2070/Icons/CycleIcon.png", "Assets/Prefabs/UI/Sprites/CycleIcon.png");
     public static Sprite FleetIcon => ResolveIcon(ref fleetIcon, "Assets/Imports/Anno2070/Icons/Ship-multi.png", "Assets/Imports/Anno2070/Icons/Ship-icon.png");
+    public static Sprite StancePatrol => ResolveIcon(ref stancePatrol, "Assets/Imports/Anno2070/Icons/Ship-move.png", "Assets/Imports/Anno2070/Icons/Route-icon.png");
+    public static Sprite StanceDefend => ResolveIcon(ref stanceDefend, "Assets/Imports/Anno2070/Icons/Shield-icon.png");
+    public static Sprite StanceAttack => ResolveIcon(ref stanceAttack, "Assets/Imports/Anno2070/Icons/Attack-power-icon.png");
 
     public static Sprite GetVesselPortrait(string vesselName)
     {

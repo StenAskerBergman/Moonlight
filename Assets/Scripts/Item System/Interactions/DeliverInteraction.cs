@@ -17,6 +17,21 @@ public sealed class DeliverInteraction : MonoBehaviour
 
     private Inventory unitInventory;
     private UnitInventory unitCargo;
+    private float nextDisplayCheck;
+    private bool displayAvailability;
+    private bool hasDisplayAvailability;
+
+    public bool CanDeliverForDisplay()
+    {
+        if (!hasDisplayAvailability || Time.unscaledTime >= nextDisplayCheck)
+        {
+            displayAvailability = CanDeliver();
+            hasDisplayAvailability = true;
+            nextDisplayCheck = Time.unscaledTime + 0.2f;
+        }
+        return displayAvailability;
+    }
+
 
     public delegate void DeliveredHandler(Depot depot, int itemsMoved);
     public event DeliveredHandler OnDelivered;
@@ -30,29 +45,14 @@ public sealed class DeliverInteraction : MonoBehaviour
     /// <summary>Nearest depot within range, or null.</summary>
     public Depot FindTargetDepot()
     {
-        Depot best = null;
-        float bestDistance = float.MaxValue;
-        Vector3 position = transform.position;
-
-        foreach (Depot depot in FindObjectsOfType<Depot>())
-        {
-            if (depot == null) continue;
-
-            float distance = Vector3.Distance(position, depot.transform.position);
-            if (distance > deliveryRange || distance >= bestDistance) continue;
-
-            bestDistance = distance;
-            best = depot;
-        }
-
-        return best;
+        return WarehouseAssignmentRegistry.FindNearestDepot(transform.position, deliveryRange);
     }
 
     public bool CanDeliver()
     {
         if (FindTargetDepot() == null) return false;
 
-        foreach (KeyValuePair<ItemData, int> entry in GetCargoSnapshot())
+        foreach (KeyValuePair<ItemData, int> entry in GetCargoItems())
         {
             if (entry.Key != null && entry.Value > 0) return true;
         }
@@ -113,6 +113,15 @@ public sealed class DeliverInteraction : MonoBehaviour
         OnDelivered?.Invoke(depot, amount);
         return true;
     }
+
+    private Dictionary<ItemData, int> GetCargoItems()
+    {
+        if (unitCargo != null) return unitCargo.GetAllItems();
+        if (unitInventory != null) return unitInventory.GetAllItems();
+        return EmptyCargo;
+    }
+
+    private static readonly Dictionary<ItemData, int> EmptyCargo = new Dictionary<ItemData, int>();
 
     private Dictionary<ItemData, int> GetCargoSnapshot()
     {

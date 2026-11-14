@@ -1,3 +1,6 @@
+﻿// tldr: Builds the VOLUMETRIC rock meshes for a plateau - escarpment strata, spires, perimeter clusters -
+// which the scalar heightfield alone cannot represent.
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;

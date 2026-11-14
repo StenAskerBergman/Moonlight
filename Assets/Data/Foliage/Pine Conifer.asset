@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39de7b73ca0e09645b18fb73064e8fbd, type: 3}
+  m_Name: Pine Conifer
+  m_EditorClassIdentifier: 
+  displayName: Pine Conifer
+  kind: 0
+  prefab: {fileID: 8244108149656189731, guid: 3ada21b249c727d42b5b238fc5553d20, type: 3}
+  stumpPrefab: {fileID: 0}
+  logPrefab: {fileID: 0}
+  scatterWeight: 1
+  terrainAffinity:
+  - terrain: 16
+    density: 0.85
+  - terrain: 12
+    density: 0.012
+  - terrain: 18
+    density: 0.012
+  slopeMax: 0.4
+  shoreDistanceMin: 3
+  scaleMin: 0.8
+  scaleMax: 1.3
+  harvestable: 1
+  woodYield: 3
+  fellSeconds: 6
+  regrowSeconds: 150
+  playerPlantable: 1
+  pickRadius: 0.6

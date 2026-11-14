@@ -20,6 +20,8 @@ public sealed class TycoonCivicSectionUI : MonoBehaviour
     [SerializeField] private RectTransform headerStrip;
     [SerializeField] private TextMeshProUGUI headerTitle;
     [SerializeField] private RectTransform slotsContainer;
+    [SerializeField] private Sprite rowBackgroundSprite;
+    [SerializeField] private Sprite slotBackgroundSprite;
 
     public string SectionTitle => sectionTitle;
 
@@ -33,6 +35,27 @@ public sealed class TycoonCivicSectionUI : MonoBehaviour
     {
         var rect = (RectTransform)transform;
         rect.sizeDelta = new Vector2(480f, 84f);
+
+        // Row backplate with bracket accents [ ]
+        Image rowBg = GetComponent<Image>();
+        if (rowBg == null) rowBg = gameObject.AddComponent<Image>();
+        if (rowBackgroundSprite == null)
+        {
+#if UNITY_EDITOR
+            rowBackgroundSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GUI/Figma/Building Menu/Building bar/House Menu Row.png");
+#endif
+        }
+        if (rowBackgroundSprite != null)
+        {
+            rowBg.sprite = rowBackgroundSprite;
+            rowBg.type = Image.Type.Sliced;
+            rowBg.color = new Color(1f, 1f, 1f, 0.95f);
+        }
+        else
+        {
+            rowBg.color = new Color(0.04f, 0.08f, 0.12f, 0.90f);
+        }
+        rowBg.raycastTarget = false;
 
         // Find or create Header Strip
         Transform headerT = transform.Find("Section Header");
@@ -139,30 +162,63 @@ public sealed class TycoonCivicSectionUI : MonoBehaviour
     {
         if (slotsContainer == null) BuildStructure();
 
+        if (slotBackgroundSprite == null)
+        {
+#if UNITY_EDITOR
+            slotBackgroundSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GUI/Figma/Building Menu/Building bar/Building Button Unlocked.png");
+#endif
+        }
+
         var root = new GameObject($"Slot ({buildingName})", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         var rect = (RectTransform)root.transform;
         rect.SetParent(slotsContainer, false);
-        rect.sizeDelta = new Vector2(52f, 52f);
+        rect.sizeDelta = new Vector2(56f, 56f);
 
         var layout = root.GetComponent<LayoutElement>();
-        layout.preferredWidth = 52f;
-        layout.preferredHeight = 52f;
-        layout.minWidth = 52f;
-        layout.minHeight = 52f;
+        layout.preferredWidth = 56f;
+        layout.preferredHeight = 56f;
+        layout.minWidth = 56f;
+        layout.minHeight = 56f;
 
         Image border = root.GetComponent<Image>();
-        border.color = SlotBorderColor;
+        if (slotBackgroundSprite != null)
+        {
+            border.sprite = slotBackgroundSprite;
+            border.type = Image.Type.Sliced;
+            border.color = Color.white;
+        }
+        else
+        {
+            border.color = SlotBorderColor;
+        }
 
         var innerObj = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         var innerRect = (RectTransform)innerObj.transform;
         innerRect.SetParent(rect, false);
         innerRect.anchorMin = Vector2.zero;
         innerRect.anchorMax = Vector2.one;
-        innerRect.offsetMin = new Vector2(2f, 2f);
-        innerRect.offsetMax = new Vector2(-2f, -2f);
+        innerRect.offsetMin = new Vector2(3f, 3f);
+        innerRect.offsetMax = new Vector2(-3f, -3f);
         Image fill = innerObj.GetComponent<Image>();
-        fill.color = SlotBgColor;
+        fill.color = new Color(0.08f, 0.14f, 0.20f, 0.40f);
         fill.raycastTarget = false;
+
+        // Anno 2070 double chevron indicator in top-right corner
+        var chevronObj = new GameObject("Chevron Indicator", typeof(RectTransform), typeof(TextMeshProUGUI));
+        var chevronRect = (RectTransform)chevronObj.transform;
+        chevronRect.SetParent(rect, false);
+        chevronRect.anchorMin = new Vector2(1f, 1f);
+        chevronRect.anchorMax = new Vector2(1f, 1f);
+        chevronRect.pivot = new Vector2(1f, 1f);
+        chevronRect.anchoredPosition = new Vector2(-4f, -3f);
+        chevronRect.sizeDelta = new Vector2(14f, 14f);
+        var chevronText = chevronObj.GetComponent<TextMeshProUGUI>();
+        chevronText.text = "»";
+        chevronText.fontSize = 11f;
+        chevronText.fontStyle = FontStyles.Bold;
+        chevronText.color = new Color(0.65f, 0.80f, 0.95f, 0.85f);
+        chevronText.alignment = TextAlignmentOptions.TopRight;
+        chevronText.raycastTarget = false;
 
         Button button = root.GetComponent<Button>();
         button.targetGraphic = border;

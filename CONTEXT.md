@@ -39,3 +39,29 @@ _Avoid_: River, ramp
 **Abyssal Seabed**:
 The deep terrain surrounding a plateau after the lower apron has faded out.
 _Avoid_: Empty space, ocean surface
+
+## Inland watercourses
+
+**River Course**:
+A connected drainage landscape from an elevated source through its reaches and drops to an ocean mouth.
+_Avoid_: Water ribbon, centreline stamp
+
+**River Reach**:
+A continuous portion of a river course with a consistent character, such as a gorge, lowland channel or estuary.
+_Avoid_: Independent river
+
+**River Bank**:
+The shallow margin, exposed bench and rising ground beside a channel; the two banks need not have matching shapes.
+_Avoid_: Clearance radius
+
+**Waterfall**:
+A river's crest and geological drop, falling water, receiving plunge pool and downstream outlet.
+_Avoid_: Source label, height step
+
+**Plunge Pool**:
+The contained basin receiving a waterfall, connected to the next river reach through its outlet.
+_Avoid_: Unconnected lake
+
+**Estuary**:
+The open coastal reach where a river joins ocean water and its bed continues into the coastal shelf.
+_Avoid_: Any submerged river cell

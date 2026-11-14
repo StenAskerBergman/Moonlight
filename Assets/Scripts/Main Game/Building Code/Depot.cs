@@ -16,6 +16,10 @@ public class Depot : MonoBehaviour
         }
     }
 
+    private void OnEnable() => WarehouseAssignmentRegistry.RegisterDepot(this);
+
+    private void OnDisable() => WarehouseAssignmentRegistry.UnregisterDepot(this);
+
     private void Start()
     {
         // Without this guard an unassigned inventory asset throws on the first frame,

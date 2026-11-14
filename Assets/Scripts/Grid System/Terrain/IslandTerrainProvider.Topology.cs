@@ -1,3 +1,6 @@
+﻿// tldr: The chunk's underlying scalar island field: noise composition, domain warp, and the radial island mask
+// that decides where land is at all. Everything downstream is a reading of this field.
+
 using UnityEngine;
 using System.Collections.Generic;
 

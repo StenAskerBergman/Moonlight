@@ -66,8 +66,16 @@ public class ClimateProfile : ScriptableObject
     [Range(0f, 1f)] public float plateauSurfaceWetness = 0.36f;
 
     [Header("Foliage Scattering")]
+    [Tooltip("Authoritative foliage table. Each species carries its own densities, slope and shore " +
+             "limits, scale range and forestry values. When empty the legacy treePrefabs array below " +
+             "is used instead, so an unmigrated profile still generates.")]
+    public FoliageSpecies[] foliageSpecies;
+
+    [Tooltip("Legacy. Superseded by Foliage Species; only read when that array is empty.")]
     public GameObject[] treePrefabs;
+    [Tooltip("Legacy fallback density for Forest terrain. Per-species terrainAffinity replaces this.")]
     [Range(0f, 1f)] public float forestDensity = 0.85f;
+    [Tooltip("Legacy fallback density for Land and Plain terrain. Per-species terrainAffinity replaces this.")]
     [Range(0f, 1f)] public float plainsTreeDensity = 0.08f;
     public float treeScaleMin = 0.8f;
     public float treeScaleMax = 1.3f;
@@ -86,15 +94,16 @@ public class ClimateProfile : ScriptableObject
     public Vector2 underwaterFoliageScale = new Vector2(0.7f, 1.35f);
     public Vector2 underwaterWildlifeScale = new Vector2(0.55f, 1.1f);
     [Min(0f)] public float wildlifeHeightAboveSeabed = 1.2f;
-    [Header("Splatmap Generation (Textures)")]
-    [Tooltip("Offset from surfaceFlatlandHeight. Negative pulls grass up the slope.")]
+    [Header("Legacy Splat Settings (Unused)")]
+    // Serialized for asset compatibility. Coastal geometry contracts now determine material boundaries.
+    [Tooltip("Legacy serialized value; not used by current terrain material generation.")]
     public float splatGrassThresholdOffset = -0.05f;
-    [Tooltip("Offset from waterHeight. Negative pushes sand deeper underwater.")]
+    [Tooltip("Legacy serialized value; not used by current terrain material generation.")]
     public float splatSandThresholdOffset = -0.2f;
-    [Tooltip("Frequency of the jagged coastline noise.")]
+    [Tooltip("Legacy serialized value; not used by current terrain material generation.")]
     [Range(0.01f, 1f)] public float splatNoiseFrequency = 0.1f;
-    [Tooltip("Amplitude of the sand boundary noise.")]
+    [Tooltip("Legacy serialized value; not used by current terrain material generation.")]
     [Range(0f, 1f)] public float splatSandNoiseAmplitude = 0.2f;
-    [Tooltip("Amplitude of the grass boundary noise (keep small to avoid puddles).")]
+    [Tooltip("Legacy serialized value; not used by current terrain material generation.")]
     [Range(0f, 1f)] public float splatGrassNoiseRestriction = 0.04f;
 }

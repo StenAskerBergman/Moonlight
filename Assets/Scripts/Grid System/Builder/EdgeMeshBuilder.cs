@@ -1,3 +1,6 @@
+﻿// tldr: Builds the skirt geometry that closes a chunk's open sides so the terrain does not read as a floating
+// sheet from below or at the map's outer border.
+
 using UnityEngine;
 using System.Collections.Generic;
 using static Cell;

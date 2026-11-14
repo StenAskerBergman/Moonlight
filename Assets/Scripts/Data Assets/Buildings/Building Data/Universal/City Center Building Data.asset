@@ -16,7 +16,7 @@ MonoBehaviour:
   buildingName: City Center
   buildingDescription: Worker tier Tycoon civic. Placeholder art and footprint.
   buildingType: Civic
-  buildingSize: {x: 6, y: 0, z: 8}
+  buildingSize: {x: 6, y: 1, z: 8}
   buildingTags:
   - Universal
   - Civilan

@@ -42,14 +42,30 @@ MonoBehaviour:
   plateauRockWetness: 0.48
   plateauSandRippleStrength: 0.18
   plateauSurfaceWetness: 0.36
+  foliageSpecies:
+  - {fileID: 11400000, guid: bebda739cf39f8c42a587a8341b6d495, type: 2}
+  - {fileID: 11400000, guid: f0bbd48be27ab014d863fed64fae9d7e, type: 2}
+  - {fileID: 11400000, guid: 5cf922c1874ea4c4f9c91b05efbab8cd, type: 2}
+  - {fileID: 11400000, guid: 44c1129811115a6469eca7d1b2d8e86d, type: 2}
   treePrefabs:
-  - {fileID: 9133109144522407855, guid: eb06d692b9392d340ba49f6c8fd1b8de, type: 3}
-  - {fileID: 2831983132322889251, guid: 047c34677e63c2a4083c9e2abf5e3e87, type: 3}
-  - {fileID: 5567729816855960017, guid: 65b57ebc5af393c4d9ad05397b4b5b0b, type: 3}
+  - {fileID: 2106207075616367560, guid: 1f43c1656d0c7384fa2dc1ce4793d0c9, type: 3}
+  - {fileID: 7830677934664250766, guid: 14cf67a432142f84c8723e95eb703f27, type: 3}
+  - {fileID: 8244108149656189731, guid: 3ada21b249c727d42b5b238fc5553d20, type: 3}
+  - {fileID: 8450861600635169918, guid: ff070f6cc12f2bc4788437f3feb495bf, type: 3}
   forestDensity: 0.85
   plainsTreeDensity: 0.012
   treeScaleMin: 0.8
   treeScaleMax: 1.3
+  populateUnderwaterPlateaus: 1
+  underwaterFoliagePrefabs: []
+  underwaterWildlifePrefabs: []
+  underwaterFoliageDensity: 0.16
+  lushBillboardPlantRatio: 0.45
+  minimumFoliagePerPlateau: 12
+  wildlifePerPlateau: 5
+  underwaterFoliageScale: {x: 0.7, y: 1.35}
+  underwaterWildlifeScale: {x: 0.55, y: 1.1}
+  wildlifeHeightAboveSeabed: 1.2
   splatGrassThresholdOffset: -0.05
   splatSandThresholdOffset: -0.2
   splatNoiseFrequency: 0.1

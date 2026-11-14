@@ -24,7 +24,18 @@ public sealed class DemolitionManager : MonoBehaviour
     [Tooltip("Tear the building down the moment it is clicked, with no confirm step.")]
     [SerializeField] private bool instantDemolish;
 
+    [Header("Foliage Clearing")]
+    [Tooltip("Let the destroy tool also brush away trees and other foliage by dragging.")]
+    [SerializeField] private bool clearFoliage = true;
+
+    [Tooltip("Set to the 'Ground' layer, matching the foliage tool.")]
+    [SerializeField] private LayerMask groundLayer = 1 << 6;
+
+    [Tooltip("Radius of the foliage brush in world units.")]
+    [SerializeField, Min(0.1f)] private float foliageBrushRadius = 2.5f;
+
     private readonly List<BuildingDemolition> marked = new List<BuildingDemolition>();
+    private readonly List<int> foliageScratch = new List<int>();
     private Camera cachedCamera;
 
     public bool IsActive { get; private set; }
@@ -97,19 +108,52 @@ public sealed class DemolitionManager : MonoBehaviour
             return;
         }
 
-        if (!Input.GetMouseButtonDown(0)) return;
+        // Held rather than pressed, so foliage can be brushed away in a single drag.
+        if (!Input.GetMouseButton(0)) return;
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (cachedCamera == null) cachedCamera = Camera.main;
         if (cachedCamera == null) return;
 
         Ray ray = cachedCamera.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, buildingLayer)) return;
 
-        Building building = hit.collider.GetComponentInParent<Building>();
-        if (building == null) return;
+        // Buildings win the click, and only on the initial press - dragging across one must not
+        // toggle its mark on and off every frame.
+        if (Input.GetMouseButtonDown(0)
+            && Physics.Raycast(ray, out RaycastHit buildingHit, Mathf.Infinity, buildingLayer))
+        {
+            Building building = buildingHit.collider.GetComponentInParent<Building>();
+            if (building != null)
+            {
+                ToggleMark(building);
+                return;
+            }
+        }
 
-        ToggleMark(building);
+        if (!clearFoliage) return;
+        if (Physics.Raycast(ray, out RaycastHit groundHit, Mathf.Infinity, groundLayer))
+            BrushFoliage(groundHit);
+    }
+
+    /// <summary>
+    /// Clears foliage within the brush around a terrain hit.
+    ///
+    /// Unlike buildings this takes effect immediately rather than being marked for confirmation:
+    /// clearing scrub returns nothing, and staging hundreds of trees for a confirm step would make
+    /// "drag away a forest" unusable. Buildings keep the mark-then-confirm flow because demolishing
+    /// one is irreversible and refunds part of its cost.
+    /// </summary>
+    private void BrushFoliage(RaycastHit hit)
+    {
+        IslandFoliagePlacer island = hit.collider.GetComponentInParent<IslandFoliagePlacer>();
+        if (island == null) return;
+
+        Vector3 local = island.transform.InverseTransformPoint(hit.point);
+        if (island.Store.QueryRadius(local, foliageBrushRadius, foliageScratch) == 0) return;
+
+        // QueryRadius fills a list we own, so removing while walking it is safe.
+        for (int i = 0; i < foliageScratch.Count; i++)
+            island.Store.Remove(foliageScratch[i], FoliageRemovalCause.PlayerClear);
     }
 
     public void ToggleMark(Building building)

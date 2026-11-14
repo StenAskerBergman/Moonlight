@@ -34,7 +34,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2348811904917877888}
+  - {fileID: 8401155317371691723}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6751296610336253787
@@ -49,6 +49,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  owner: {fileID: 0}
   compatibleSeed: {fileID: 0}
   buildingInventory: {fileID: 0}
   islandInventory: {fileID: 0}
@@ -70,7 +71,7 @@ MonoBehaviour:
   buildingProperties: {fileID: 0}
   buildingData: {fileID: 11400000, guid: 4698ed57a3c38e743bedd784c06f2e5f, type: 2}
   costData: {fileID: 11400000, guid: c88eaaaa38bd6d54db00a0e372484850, type: 2}
-  buildingSize: {x: 6, y: 1, z: 6}
+  buildingSize: {x: 10, y: 1, z: 10}
   influenceRadius: 0
   buildingName: Corporate HQ Foundation
   buildingDescription: Executive tier Tycoon monument. Placeholder art and footprint.
@@ -117,7 +118,7 @@ MonoBehaviour:
     accentColor: {r: 0.42, g: 0.44, b: 0.48, a: 1}
     height: 1.5
     footprintFill: 0.9
-  fallbackFootprint: {x: 2, y: 2}
+  fallbackFootprint: {x: 10, y: 10}
   alignment: 0
   addCollider: 1
 --- !u!114 &4278126866628954924
@@ -151,7 +152,7 @@ MonoBehaviour:
   currentHealth: 1000
   forcedProductionRate: 100
   useForcedProductionRate: 0
---- !u!1 &1458097852556239094
+--- !u!1 &4289422112414658478
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -159,10 +160,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5844136471848938231}
-  - component: {fileID: 2494539272116006581}
-  - component: {fileID: 6735957056745932363}
-  - component: {fileID: 8430013775285812529}
+  - component: {fileID: 4620274821926538441}
+  - component: {fileID: 2787029685318180063}
+  - component: {fileID: 3993156437081846335}
   m_Layer: 0
   m_Name: Body
   m_TagString: Untagged
@@ -170,57 +170,36 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5844136471848938231
+--- !u!4 &4620274821926538441
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458097852556239094}
+  m_GameObject: {fileID: 4289422112414658478}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.75, z: 0}
-  m_LocalScale: {x: 5.3999996, y: 1.5, z: 5.3999996}
+  m_LocalScale: {x: 9, y: 1.5, z: 9}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2348811904917877888}
+  m_Father: {fileID: 8401155317371691723}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2494539272116006581
+--- !u!33 &2787029685318180063
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458097852556239094}
+  m_GameObject: {fileID: 4289422112414658478}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!65 &6735957056745932363
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458097852556239094}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &8430013775285812529
+--- !u!23 &3993156437081846335
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458097852556239094}
+  m_GameObject: {fileID: 4289422112414658478}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -256,7 +235,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &7946277997369706984
+--- !u!1 &4887990249160033752
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -264,8 +243,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2348811904917877888}
-  - component: {fileID: 8936569513755734782}
+  - component: {fileID: 8401155317371691723}
+  - component: {fileID: 1504299942978760850}
   m_Layer: 0
   m_Name: Model - Generated Placeholder
   m_TagString: Untagged
@@ -273,29 +252,29 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2348811904917877888
+--- !u!4 &8401155317371691723
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7946277997369706984}
+  m_GameObject: {fileID: 4887990249160033752}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5844136471848938231}
+  - {fileID: 4620274821926538441}
   m_Father: {fileID: 4460947254294941056}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &8936569513755734782
+--- !u!65 &1504299942978760850
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7946277997369706984}
+  m_GameObject: {fileID: 4887990249160033752}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -308,5 +287,5 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 6, y: 1.5, z: 6}
+  m_Size: {x: 10, y: 1.5, z: 10}
   m_Center: {x: 0, y: 0.75, z: 0}

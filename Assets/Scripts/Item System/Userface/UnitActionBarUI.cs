@@ -177,12 +177,12 @@ public class UnitActionBarUI : MonoBehaviour
     {
         if (deliverButton != null)
         {
-            deliverButton.gameObject.SetActive(deliverInteraction != null && deliverInteraction.CanDeliver());
+            deliverButton.gameObject.SetActive(deliverInteraction != null && deliverInteraction.CanDeliverForDisplay());
         }
 
         if (buildButton != null)
         {
-            bool canBuild = buildInteraction != null && buildInteraction.CanBuild();
+            bool canBuild = buildInteraction != null && buildInteraction.CanBuildForDisplay();
             buildButton.gameObject.SetActive(canBuild);
         }
 

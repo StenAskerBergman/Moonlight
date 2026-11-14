@@ -1,3 +1,7 @@
+﻿// tldr: The procedural terrain source for one chunk, and the ORCHESTRATOR of the generation passes:
+// Pass 0 topology fields -> Pass 0.5 shoreline distance -> Pass 1 heights -> Pass 2 slope + semantics
+// -> final river pass. The per-pass maths lives in the partial classes beside this file.
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -95,7 +99,7 @@ public sealed partial class IslandTerrainProvider
     private const float OceanDeepThreshold = 0.38f;
 
     public TerrainGenerationSettings Settings => settings;
-    public FeatureReservationMap Reservations => featureReservations;
+    public FeatureReservationMap Reservations => ownedLandform != null ? ownedLandform.featureReservations : featureReservations;
     private readonly TerrainGenerationSettings settings;
     private readonly GridType.Type gridType;
     private readonly int size;
@@ -112,7 +116,7 @@ public sealed partial class IslandTerrainProvider
     private readonly int worldSeed;
     private readonly Vector2 chunkWorldOrigin;
 
-    public IslandTerrainProvider(TerrainGenerationSettings settings, GridType.Type gridType, int size, int chunkSeed, int worldSeed, Vector2 chunkWorldOrigin)
+    public IslandTerrainProvider(TerrainGenerationSettings settings, GridType.Type gridType, int size, int chunkSeed, int worldSeed, Vector2 chunkWorldOrigin, int samplingPadding = 0)
     {
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.gridType = gridType;
@@ -120,6 +124,7 @@ public sealed partial class IslandTerrainProvider
         this.chunkSeed = chunkSeed;
         this.worldSeed = worldSeed;
         this.chunkWorldOrigin = chunkWorldOrigin;
+        this.samplingPadding = samplingPadding;
 
         this.settings.EnforceAuthoritativeHeights();
         layers = BuildRuntimeLayers(this.settings.noiseLayers, worldSeed);
@@ -148,16 +153,24 @@ public sealed partial class IslandTerrainProvider
     }
 
     private TerrainSampleCache sampleCache;
+    private readonly int samplingPadding;
+    private float shorelineMeanCurvature;
 
+    /// <summary>
+    /// THE generation entry point, and the only place terrain is actually built. Runs every pass in order
+    /// and caches the result, so all later callers (mesh, textures, cells, gameplay probes) read one field
+    /// rather than re-evaluating noise. Passing a different sample density rebuilds the cache.
+    /// </summary>
     public TerrainSampleCache GetOrCreateSampleCache(int visualSamplesPerCell, bool trackAttribution = false)
     {
-        if (sampleCache != null && sampleCache.VisualSamplesPerCell == visualSamplesPerCell && sampleCache.GridSize == size && (!trackAttribution || sampleCache.HasAttribution))
+        if (worldField != null) return GetWorldCache(visualSamplesPerCell, trackAttribution);
+        if (sampleCache != null && sampleCache.VisualSamplesPerCell == visualSamplesPerCell && sampleCache.GridSize == size + samplingPadding * 2 && (!trackAttribution || sampleCache.HasAttribution))
         {
             return sampleCache;
         }
 
         TerrainSampleCache cache = new TerrainSampleCache(
-            size,
+            size + samplingPadding * 2,
             visualSamplesPerCell,
             trackAttribution,
             includePlateauData: gridType == GridType.Type.Plateau);
@@ -172,12 +185,12 @@ public sealed partial class IslandTerrainProvider
         {
             System.Threading.Tasks.Parallel.For(0, resolution, z =>
             {
-                float localZ = z * step;
+                float localZ = z * step - samplingPadding;
                 float worldZ = chunkWorldOrigin.y + localZ;
 
                 for (int x = 0; x < resolution; x++)
                 {
-                    float localX = x * step;
+                    float localX = x * step - samplingPadding;
                     float worldX = chunkWorldOrigin.x + localX;
                     int idx = z * resolution + x;
 
@@ -214,12 +227,12 @@ public sealed partial class IslandTerrainProvider
         {
             System.Threading.Tasks.Parallel.For(0, resolution, z =>
             {
-                float localZ = z * step;
+                float localZ = z * step - samplingPadding;
                 float worldZ = chunkWorldOrigin.y + localZ;
 
                 for (int x = 0; x < resolution; x++)
                 {
-                    float localX = x * step;
+                    float localX = x * step - samplingPadding;
                     float worldX = chunkWorldOrigin.x + localX;
                     int idx = z * resolution + x;
 
@@ -252,40 +265,79 @@ public sealed partial class IslandTerrainProvider
             return cache;
         }
 
-        // Pass 1: Multi-threaded generation of continuous base field, feature reservations, and heights
+        // Pass 0: the two island fields, plus the headland mask, for every sample.
+        //
+        // Split out of Pass 1 because the shoreline distance transform below is a WHOLE-GRID
+        // operation - it cannot be evaluated per sample - and heights now depend on it.
         System.Threading.Tasks.Parallel.For(0, resolution, z =>
         {
-            float localZ = z * step;
+            float localZ = z * step - samplingPadding;
             for (int x = 0; x < resolution; x++)
             {
-                float localX = x * step;
+                float localX = x * step - samplingPadding;
+                int idx = z * resolution + x;
+                cache.BaseFields[idx] = CalculateLegacyIslandField(localX, localZ);
+                cache.SmoothFields[idx] = CalculateLegacyIslandField(localX, localZ, true);
+                cache.HeadlandMasks[idx] = EvaluateHeadlandMask(localX, localZ);
+            }
+        });
+
+        // Pass 0.5: signed distance to the shoreline, in world units. Sequential by nature (two
+        // raster sweeps), but it is a handful of milliseconds against the noise evaluation above.
+        ShorelineDistanceField.Build(
+            cache.SmoothFields,
+            cache.ShoreDistances,
+            resolution,
+            step,
+            settings.waterUpper);
+
+        ShorelineDistanceField.BuildCurvature(
+            cache.ShoreDistances,
+            cache.ShoreCurvatures,
+            resolution,
+            step,
+            settings.coastalProfile.curvatureStencilRadius);
+
+        double curvatureSum = 0;
+        int shorelineCount = 0;
+        for (int i = 0; i < cache.ShoreDistances.Length; i++)
+        {
+            if (Mathf.Abs(cache.ShoreDistances[i]) > step) continue;
+            curvatureSum += cache.ShoreCurvatures[i];
+            shorelineCount++;
+        }
+        shorelineMeanCurvature = shorelineCount > 0 ? (float)(curvatureSum / shorelineCount) : 0f;
+
+        // Pass 1: Multi-threaded feature reservations and heights
+        System.Threading.Tasks.Parallel.For(0, resolution, z =>
+        {
+            float localZ = z * step - samplingPadding;
+            for (int x = 0; x < resolution; x++)
+            {
+                float localX = x * step - samplingPadding;
                 int idx = z * resolution + x;
 
-                float baseField = CalculateLegacyIslandField(localX, localZ);
-                float smoothField = CalculateLegacyIslandField(localX, localZ, true);
+                float baseField = cache.BaseFields[idx];
+                float smoothField = cache.SmoothFields[idx];
+                float shoreDistance = cache.ShoreDistances[idx];
                 float mainlandRelief = EvaluateMainlandRelief(localX, localZ);
                 float reservationBaseHeight = CalculateBaseContinuousHeight(baseField, mainlandRelief);
-                float rawBaseHeight;
-                float visualBaseHeight = CalculateBaseContinuousHeight(smoothField, mainlandRelief, out rawBaseHeight);
+
+                CoastalBands bands = ResolveCoastalBands(localX, localZ, cache.HeadlandMasks[idx], cache.ShoreCurvatures[idx]);
+                float fieldSeabed = EvaluateFieldSeabedHeight(smoothField);
+                float rawBaseHeight = EvaluateCoastalHeight(shoreDistance, bands, 0f, fieldSeabed);
+                float visualBaseHeight = EvaluateCoastalHeight(shoreDistance, bands, mainlandRelief, fieldSeabed);
                 float reliefDelta = visualBaseHeight - rawBaseHeight;
 
                 float mountainBoost = 0f;
-                float riverCarve = 0f;
-                bool isInRiverChannel = false;
-                bool isInLake = false;
                 float mountainAllowance = 1f;
                 short dominantRidgeId = -1;
-                short dominantRiverId = -1;
 
                 if (featureReservations != null)
                 {
                     var res = featureReservations.EvaluateAll(localX, localZ, reservationBaseHeight, waterLevel);
                     mountainAllowance = res.MountainAllowance;
-                    riverCarve = res.RiverCarveDepth;
-                    isInRiverChannel = res.IsInRiverChannel;
-                    isInLake = res.IsInLake;
                     dominantRidgeId = res.DominantRidgeId;
-                    dominantRiverId = res.DominantRiverId;
 
                     mountainBoost = CalculateStructuralMountainBoost(smoothField, res);
                     if (mountainBoost <= 0.001f)
@@ -293,22 +345,15 @@ public sealed partial class IslandTerrainProvider
                         dominantRidgeId = -1;
                     }
 
-                    float carveGate = isInLake ? 1f : EvaluateRiverCarveGate(mountainBoost);
-                    riverCarve *= carveGate;
-                    if (riverCarve <= 0.001f)
-                    {
-                        dominantRiverId = -1;
-                    }
                 }
 
-                float height = visualBaseHeight + mountainBoost - riverCarve;
+                float height = visualBaseHeight + mountainBoost;
 
                 cache.Heights[idx] = height;
-                cache.BaseFields[idx] = baseField;
                 cache.MountainAllowances[idx] = mountainAllowance;
                 cache.MountainBoosts[idx] = mountainBoost;
-                cache.RiverCarveDepths[idx] = riverCarve;
-                cache.LakeMasks[idx] = isInLake;
+                cache.RiverCarveDepths[idx] = 0f;
+                cache.LakeMasks[idx] = false;
                 cache.PlateauInfluences[idx] = 0f;
 
                 if (cache.Attribution != null)
@@ -317,7 +362,7 @@ public sealed partial class IslandTerrainProvider
                     cache.Attribution.ReliefDeltas[idx] = reliefDelta;
                     cache.Attribution.PlateauDeltas[idx] = 0f;
                     cache.Attribution.DominantRidgeIds[idx] = dominantRidgeId;
-                    cache.Attribution.DominantRiverIds[idx] = dominantRiverId;
+                    cache.Attribution.DominantRiverIds[idx] = -1;
                 }
             }
         });
@@ -334,7 +379,9 @@ public sealed partial class IslandTerrainProvider
                 float height = cache.Heights[idx];
                 float baseField = cache.BaseFields[idx];
                 float mountainBoost = cache.MountainBoosts[idx];
-                bool isInRiverChannel = cache.RiverCarveDepths[idx] > 0f && (height <= waterLevel + 0.1f);
+                // This is pre-river terrain. FinalizeRiverLandscape supplies elevated water
+                // and bank semantics from its footprint after this coastal classification.
+                bool isInRiverChannel = false;
 
                 // Local slope from cached samples, via a Sobel gradient rather than a bare
                 // one-sample central difference.
@@ -368,49 +415,35 @@ public sealed partial class IslandTerrainProvider
                 // the shoreline even though height and mountainCoastWeight are each smooth on
                 // their own. It also silently zeroed the real slope argument, disabling the
                 // slope > 0.45f cliff check for this (cache/mesh/texture) classification path.
-                float mountainCoastWeight = (featureReservations != null && featureReservations.Sectors != null)
-                    ? featureReservations.Sectors.GetMountainCoastWeight(x * step, z * step)
-                    : 0f;
+                // Classification reads the SAME resolved coastal bands the geometry was built
+                // from, so a Beach cell and beach-shaped ground are the same thing by
+                // construction. This replaced a sector weight that was only a function of angle
+                // about the island centre.
+                CoastalBands bands = ResolveCoastalBands(x * step - samplingPadding, z * step - samplingPadding, cache.HeadlandMasks[idx], cache.ShoreCurvatures[idx]);
 
                 // Base semantic classification using final heightfield and slope
                 Cell.TerrainType type = cache.LakeMasks[idx]
                     ? Cell.TerrainType.Lake
-                    : ClassifySynthesizedIsland(baseField, height, mountainBoost, isInRiverChannel, mountainCoastWeight, slope);
+                    : ClassifySynthesizedIsland(baseField, height, mountainBoost, isInRiverChannel,
+                                                cache.ShoreDistances[idx], bands, slope);
 
                 cache.TerrainTypes[idx] = type;
             }
         });
 
+        // River/coast handoff: solve and apply the connected watercourse only AFTER the
+        // coastal profile and complete mountain terrain. The beach cannot seal this cut.
+        FinalizeRiverLandscape(cache);
         sampleCache = cache;
         return cache;
     }
 
-    // Mountain boost at which a river carve is fully suppressed.
-    private const float RiverCarveMountainGuard = 0.9f;
 
     /// <summary>
-    /// Fades a river carve out as it runs into standing mountain mass.
+    /// Rejects mountains that came out as unusable terrain - too flat to read as a mountain, or too steep to
+    /// stand on or build against. Failures are reported rather than thrown so one bad ridge cannot abort a
+    /// whole chunk.
     /// </summary>
-    /// <remarks>
-    /// Height is composed as base + boost - carve, with the carve subtracted AFTER the boost is
-    /// added, so a river corridor crossing a massif planed a groove straight across it. Measured
-    /// 10,195 samples carrying carve > 0.05 together with boost > 0.5, cutting up to 0.20 deep -
-    /// a continuous line with its own slope and shading riding over the mountain rather than
-    /// running down a valley.
-    ///
-    /// MountainAllowance already suppresses the RIDGE near a river, but nothing stopped the carve
-    /// from cutting whatever boost survived that suppression. This closes the loop: where real
-    /// mountain mass stands, the carve yields to it, so a river routes around a massif instead of
-    /// through it. Smooth stepped, so the gate itself cannot stamp a crease along its own edge -
-    /// the failure mode behind essentially every visible artifact in this pipeline.
-    /// </remarks>
-    private static float EvaluateRiverCarveGate(float mountainBoost)
-    {
-        float t = Mathf.Clamp01(mountainBoost / RiverCarveMountainGuard);
-        float faded = t * t * (3f - 2f * t);
-        return 1f - faded;
-    }
-
     private void ValidateMountainHeightfield(TerrainSampleCache cache)
     {
         if (featureReservations == null || featureReservations.Ridges.Count == 0) return;
@@ -620,6 +653,10 @@ public sealed partial class IslandTerrainProvider
         }
     }
 
+    /// <summary>
+    /// Smooths the samples that validation had to cut away, so a rejected mountain leaves a soft hollow
+    /// rather than a hard-edged crater.
+    /// </summary>
     private static void FeatherErodedHeights(TerrainSampleCache cache, List<int> erodedIndices, int resolution)
     {
         // Heights and MountainBoosts must be feathered together. Blending Heights alone toward
@@ -665,6 +702,10 @@ public sealed partial class IslandTerrainProvider
         open.Enqueue(index);
     }
 
+    /// <summary>
+    /// Collapses the high-resolution continuous field down to ONE sample per gameplay cell. This is the
+    /// boundary where continuous terrain becomes the discrete grid gameplay reasons about.
+    /// </summary>
     public TerrainSample[,] GenerateGameplaySamples()
     {
         TerrainSample[,] samples = new TerrainSample[size, size];
@@ -696,22 +737,29 @@ public sealed partial class IslandTerrainProvider
         return samples;
     }
 
+    /// <summary>
+    /// Seabed height from WORLD-space coordinates rather than chunk-local ones. This is the only part of the
+    /// shared foundation beneath all world landforms. Storage chunks read the composed world field.
+    /// </summary>
     private TerrainSample SampleSharedSeabed(float worldX, float worldZ)
     {
         float source = EvaluateSharedBaseField(worldX, worldZ, worldSeed);
         return Sample(Cell.TerrainType.Abyssal, settings.abyssHeight, source);
     }
 
+    /// <summary>
+    /// Gameplay-facing probe at one point in this chunk: what type of ground is here and how high is it.
+    /// </summary>
     public TerrainSample Sample(float localX, float localZ)
     {
+        if (worldField != null) return SampleFinishedIsland(localX, localZ);
         float worldX = chunkWorldOrigin.x + localX;
         float worldZ = chunkWorldOrigin.y + localZ;
 
         switch (gridType)
         {
             case GridType.Type.Island:
-                TerrainSample baseSample = SampleSynthesizedIsland(localX, localZ);
-                return ApplyCoastClassification(localX, localZ, baseSample);
+                return SampleFinishedIsland(localX, localZ);
 
             case GridType.Type.Plateau:
                 return EvaluateStandalonePlateau(localX, localZ, worldX, worldZ);
@@ -723,13 +771,17 @@ public sealed partial class IslandTerrainProvider
         }
     }
 
+    /// <summary>
+    /// As Sample, but reads the finished visual field - used where what the player SEES must be authoritative
+    /// (placement previews, probes) rather than the coarser gameplay grid.
+    /// </summary>
     public TerrainSample SampleVisual(float localX, float localZ)
     {
+        if (worldField != null) return SampleFinishedIsland(localX, localZ);
         switch (gridType)
         {
             case GridType.Type.Island:
-                // Fast visual path avoids redundant four-neighbor coast resampling.
-                return SampleSynthesizedIsland(localX, localZ);
+                return SampleFinishedIsland(localX, localZ);
 
             case GridType.Type.Plateau:
             case GridType.Type.Ocean:
@@ -821,4 +873,3 @@ public sealed partial class IslandTerrainProvider
     }
 
 }
-

@@ -15,7 +15,8 @@ public class ToolModeManager : MonoBehaviour
         BuildingPlacement,
         RoadPlacement,
         StampCapture,
-        StampPlacement
+        StampPlacement,
+        FoliagePlacement
     }
 
     public static ToolModeManager Instance { get; private set; }

@@ -135,6 +135,36 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             unitInventoryUI = GetComponentInParent<UnitInventoryUI>();
         }
 
+        // Apply Anno 2070 dark glass styling
+        Image slotBg = GetComponent<Image>();
+        if (slotBg != null)
+        {
+            slotBg.sprite = ShipUIResourceCache.SlotBackground;
+            slotBg.type = Image.Type.Sliced;
+            slotBg.color = AbilitySlot 
+                ? new Color(0.04f, 0.12f, 0.20f, 0.95f) 
+                : new Color(0.07f, 0.15f, 0.25f, 0.95f);
+        }
+        if (itemStack != null && itemStack.itemQuantityText != null)
+        {
+            itemStack.itemQuantityText.color = new Color(0.88f, 0.95f, 1f, 1f);
+        }
+        if (AbilitySlot && transform.Find("VehicleBadge") == null)
+        {
+            GameObject badgeGO = new GameObject("VehicleBadge", typeof(RectTransform), typeof(Image));
+            badgeGO.transform.SetParent(transform, false);
+            RectTransform badgeRT = badgeGO.GetComponent<RectTransform>();
+            badgeRT.anchorMin = Vector2.zero;
+            badgeRT.anchorMax = Vector2.zero;
+            badgeRT.pivot = Vector2.zero;
+            badgeRT.anchoredPosition = new Vector2(4f, 4f);
+            badgeRT.sizeDelta = new Vector2(18f, 18f);
+            Image badgeImg = badgeGO.GetComponent<Image>();
+            badgeImg.sprite = ShipUIResourceCache.VehicleBadge;
+            badgeImg.color = new Color(0f, 0.85f, 0.95f, 0.9f);
+            badgeImg.raycastTarget = false;
+        }
+
         // Not Ability? Initialize ItemStack
         if (!AbilitySlot)
         {
@@ -330,7 +360,7 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     // These paint those children directly - this is the only writer for such a slot.
 
     private static readonly Color AbilityFilledTint = Color.white;
-    private static readonly Color AbilityEmptyTint = new Color(0.45f, 0.45f, 0.45f, 1f);
+    private static readonly Color AbilityEmptyTint = new Color(0.35f, 0.55f, 0.70f, 0.85f);
 
     public void ShowAbility(Sprite abilityIcon, string label)
     {
@@ -349,8 +379,10 @@ public class ItemSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         foreach (Image image in GetComponentsInChildren<Image>(true))
         {
             if (image.transform == transform) continue; // the slot's own background
+            if (image.gameObject.name == "VehicleBadge") continue; // preserve vehicle badge
             image.sprite = abilityIcon;
             image.enabled = abilityIcon != null;
+            image.preserveAspect = true;
             image.color = tint;
         }
 

@@ -16,7 +16,7 @@ MonoBehaviour:
   buildingName: Missile Launch Pad
   buildingDescription: Executive tier Tycoon monument. Placeholder art and footprint.
   buildingType: Monument
-  buildingSize: {x: 6, y: 1, z: 6}
+  buildingSize: {x: 8, y: 1, z: 8}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

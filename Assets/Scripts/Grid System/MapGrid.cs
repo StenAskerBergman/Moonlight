@@ -1,3 +1,7 @@
+﻿// tldr: Owns ONE chunk: resolves the settings this chunk generates with, drives terrain generation, and turns
+// the continuous sampled terrain into the authoritative gameplay grid of Cell[,]. It is the seam
+// between the procedural world (continuous, sub-cell) and gameplay (discrete, one cell = one unit).
+
 using UnityEngine;
 using System.Collections.Generic;
 using static Cell;
@@ -27,6 +31,20 @@ public sealed class TerrainGenerationProfile
 public class MapGrid : MonoBehaviour
 {
     private static readonly int TerrainBaseMapProperty = Shader.PropertyToID("_BaseMap");
+    private static readonly int TerrainControlProperty = Shader.PropertyToID("_Control");
+    private static readonly int TerrainRegionMaskProperty = Shader.PropertyToID("_RegionMask");
+    private static readonly int TerrainSurfaceTintProperty = Shader.PropertyToID("_SurfaceTint");
+    private static readonly int TerrainDebugViewProperty = Shader.PropertyToID("_DebugView");
+    private static readonly int TerrainUseSurfaceTintProperty = Shader.PropertyToID("_UseSurfaceTint");
+    private static readonly int[] TerrainTextureProperties =
+    {
+        TerrainBaseMapProperty, TerrainControlProperty, TerrainRegionMaskProperty, TerrainSurfaceTintProperty,
+    };
+    private static readonly int[] TerrainTextureTransformProperties =
+    {
+        Shader.PropertyToID("_BaseMap_ST"), Shader.PropertyToID("_Control_ST"),
+        Shader.PropertyToID("_RegionMask_ST"), Shader.PropertyToID("_SurfaceTint_ST"),
+    };
     private static readonly int MainTextureProperty = Shader.PropertyToID("_MainTex");
     private static readonly int DepositSandColorAProperty = Shader.PropertyToID("_SandColorA");
     private static readonly int DepositSandColorBProperty = Shader.PropertyToID("_SandColorB");
@@ -117,6 +135,17 @@ public class MapGrid : MonoBehaviour
         [Space(10)]
 
         [Header("Semantic Terrain Generation")]
+        [Tooltip("Shared world terrain contract. When assigned, this chunk generates from a private " +
+                 "copy of it and the embedded settings below become a generated-output view rather " +
+                 "than the authored source. Leave empty to keep authoring on this component.")]
+        public TerrainWorldSettings worldSettings;
+
+        [Tooltip("This chunk's deviations from the world contract. Ignored when no World Settings " +
+                 "asset is assigned.")]
+        public IslandGenerationOverrides generationOverrides = new IslandGenerationOverrides();
+
+        [Tooltip("The settings this chunk actually generated with. Authored directly only when no " +
+                 "World Settings asset is assigned; otherwise overwritten every generation.")]
         public TerrainGenerationSettings generationSettings = new TerrainGenerationSettings();
 
         [Header("Diagnostics & Heatmap")]
@@ -332,11 +361,17 @@ public class MapGrid : MonoBehaviour
             chunkName = gameObject.name,
             gridType = currentGridType.ToString(),
             gridSize = size,
-            visualSamplesPerCell = generationSettings != null ? generationSettings.visualSamplesPerCell : 0,
+            visualSamplesPerCell = generationSettings != null ? generationSettings.visualSamplesPerCell : 0, // visualSamplesPerCell = generationSettings?.visualSamplesPerCell ?? 0,
             completed = false,
         };
 
-        generationSettings ??= new TerrainGenerationSettings();
+        if (usesWorldTerrainField && pendingWorldField == null)
+        {
+            var manager = GetComponentInParent<MapManager>();
+            if (manager == null) throw new System.InvalidOperationException("World terrain chunk has no owning map.");
+            pendingWorldField = manager.GetTerrainField();
+        }
+        ResolveGenerationSettings();
         generationSettings.EnforceAuthoritativeHeights();
         generationSettings.ApplyLegacyIslandTuning(
             scale,
@@ -352,13 +387,17 @@ public class MapGrid : MonoBehaviour
         
         GenerationWatchdog.SetPhase(gameObject.name, "Feature Reservations");
         TerrainSource = new IslandTerrainProvider(generationSettings, currentGridType, size, activeGenerationSeed, worldSeed, chunkWorldOrigin);
-        lastReservationsMs = stageSw.ElapsedMilliseconds;
+        if (pendingWorldField != null)
+            TerrainSource.UseWorldField(pendingWorldField, pendingWorldField.SourceForSlot(GetComponent<Island>().id));
+        lastReservationsMs = stageSw.ElapsedMilliseconds
+            + (pendingWorldField != null ? pendingWorldField.Timing(GetComponent<Island>().id).reservations : 0);
         LastGenerationProfile.featureReservationsMs = lastReservationsMs;
 
         stageSw.Restart();
         GenerationWatchdog.SetPhase(gameObject.name, "Terrain Sampling Cache");
         TerrainSample[,] samples = TerrainSource.GenerateGameplaySamples();
-        lastSamplingMs = stageSw.ElapsedMilliseconds;
+        lastSamplingMs = stageSw.ElapsedMilliseconds
+            + (pendingWorldField != null ? pendingWorldField.Timing(GetComponent<Island>().id).sampling : 0);
         LastGenerationProfile.samplingCacheMs = lastSamplingMs;
 
         GenerationWatchdog.SetPhase(gameObject.name, "Gameplay Grid & Metrics");
@@ -400,8 +439,78 @@ public class MapGrid : MonoBehaviour
 
         totalSw.Stop();
         LastGenerationProfile.totalMs = totalSw.ElapsedMilliseconds;
+        if (pendingWorldField != null)
+        {
+            var timing = pendingWorldField.Timing(GetComponent<Island>().id);
+            LastGenerationProfile.totalMs += timing.reservations + timing.sampling;
+        }
         LastGenerationProfile.completed = true;
     }
+
+    /// <summary>
+    /// Values the MAP owns rather than the chunk: the plateau profile and the height the ocean
+    /// actually renders at. Both must be identical across every chunk or borders tear and the
+    /// coastal profile is built against the wrong waterline.
+    ///
+    /// Handed over before generation and applied AFTER the world contract is resolved, because
+    /// resolving replaces the settings object wholesale - assigning these straight onto
+    /// generationSettings from the caller would silently lose them.
+    /// </summary>
+    public void SetWorldContext(StandalonePlateauSettings plateau, float oceanSurfaceHeight)
+    {
+        pendingPlateau = plateau;
+        pendingOceanSurfaceHeight = oceanSurfaceHeight;
+        hasWorldContext = true;
+    }
+
+    /// <summary>
+    /// Produces this chunk's own mutable settings for one generation.
+    ///
+    /// With a world asset assigned the chunk generates from a private copy plus its overrides, so
+    /// the authored contract is never written to. Without one, the embedded settings stay
+    /// authoritative exactly as before - assigning the asset is the migration, and nothing breaks
+    /// until it is.
+    /// </summary>
+    private void ResolveGenerationSettings()
+    {
+        if (worldSettings != null)
+        {
+            generationSettings = worldSettings.CreateResolved();
+            generationOverrides?.Apply(generationSettings);
+        }
+
+        generationSettings = JsonUtility.FromJson<TerrainGenerationSettings>(
+            JsonUtility.ToJson(generationSettings ?? new TerrainGenerationSettings()));
+
+        if (hasWorldContext)
+        {
+            if (pendingPlateau != null) generationSettings.standalonePlateau = JsonUtility.FromJson<StandalonePlateauSettings>(JsonUtility.ToJson(pendingPlateau));
+            generationSettings.SetAuthoritativeWaterSurfaceHeight(pendingOceanSurfaceHeight);
+        }
+    }
+
+    [SerializeField, HideInInspector] private bool usesWorldTerrainField;
+    private WorldTerrainField pendingWorldField;
+    public void SetTerrainField(WorldTerrainField field) { pendingWorldField = field; usesWorldTerrainField = field != null; }
+
+    // Resolve without mutating the prefab, asset, override or migration stamps.
+    public TerrainGenerationSettings CreateLandformSettings(IslandGenerationOverrides overrides,
+        StandalonePlateauSettings plateau, float sea)
+    {
+        var resolved = worldSettings != null ? worldSettings.CreateResolved()
+            : JsonUtility.FromJson<TerrainGenerationSettings>(JsonUtility.ToJson(generationSettings ?? new TerrainGenerationSettings()));
+        (overrides ?? generationOverrides)?.Apply(resolved);
+        resolved.standalonePlateau = JsonUtility.FromJson<StandalonePlateauSettings>(JsonUtility.ToJson(plateau));
+        resolved.SetAuthoritativeWaterSurfaceHeight(sea);
+        resolved.EnforceAuthoritativeHeights();
+        resolved.ApplyLegacyIslandTuning(scale, abyssThreshold, deepSeaThreshold, plateauThreshold,
+            shallowWaterThreshold, waterLevel, mountainThreshold);
+        return resolved;
+    }
+
+    private StandalonePlateauSettings pendingPlateau;
+    private float pendingOceanSurfaceHeight;
+    private bool hasWorldContext;
 
     private int ResolveGenerationSeed()
     {
@@ -683,16 +792,16 @@ public class MapGrid : MonoBehaviour
     private void MarkDepositCells()
     {
         FeatureReservationMap reservations = TerrainSource?.Reservations;
-        new RiverArea().GenerateRiver(grid, reservations, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
+        TerrainSource?.ProjectRivers(grid, new System.Random(unchecked(activeGenerationSeed ^ 0x5F3759DF)));
 
         // 1. Mines: Discrete mountain nodes on mountain/mainland boundary with usable flat ground access
         List<Vector2Int> mineSpots = new List<Vector2Int>();
-        if (reservations != null && reservations.MineAnchors.Count > 0)
+        if (TerrainSource != null)
         {
-            foreach (var anchor in reservations.MineAnchors)
+            foreach (Vector2 anchor in TerrainSource.MinePositions())
             {
-                int ax = Mathf.Clamp(Mathf.RoundToInt(anchor.Position.x), 1, size - 2);
-                int az = Mathf.Clamp(Mathf.RoundToInt(anchor.Position.y), 1, size - 2);
+                int ax = Mathf.RoundToInt(anchor.x), az = Mathf.RoundToInt(anchor.y);
+                if (ax < 1 || az < 1 || ax >= size - 1 || az >= size - 1) continue;
                 for (int dx = -1; dx <= 1 && mineSpots.Count < 3; dx++)
                 {
                     for (int dz = -1; dz <= 1 && mineSpots.Count < 3; dz++)
@@ -985,7 +1094,7 @@ public class MapGrid : MonoBehaviour
     private void BuildMeshesAndTextures()
     {
         bool isOceanChunk = currentGridType == GridType.Type.Ocean || currentGridType == GridType.Type.Empty;
-        int effectiveVisualSamples = isOceanChunk ? 1 : generationSettings.visualSamplesPerCell;
+        int effectiveVisualSamples = isOceanChunk && !(TerrainSource?.IsWorldView ?? false) ? 1 : generationSettings.visualSamplesPerCell;
         bool useContinuousMesh = TerrainSource != null;
         TerrainGenerationProfile profile = LastGenerationProfile;
 
@@ -1017,23 +1126,8 @@ public class MapGrid : MonoBehaviour
         long meshUploadMs = stageSw.ElapsedMilliseconds;
         if (profile != null) profile.meshUploadMs = meshUploadMs;
 
-        // Build and apply Texture
-        stageSw.Restart();
-        GenerationWatchdog.SetPhase(gameObject.name, "Texture Splat Generation");
-        TextureBuilder textureBuilder = useContinuousMesh
-            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile, debugViewMode)
-            : new TextureBuilder(grid, climateProfile, debugViewMode);
-        Texture2D texture = textureBuilder.Build();
-        texture.name = $"Generated Terrain Texture ({debugViewMode})";
-        long textureBuildMs = stageSw.ElapsedMilliseconds;
-        if (profile != null) profile.textureSplatMs = textureBuildMs;
-
-        stageSw.Restart();
-        GenerationWatchdog.SetPhase(gameObject.name, "Texture Upload");
-        TrackGeneratedVisualResource(texture);
-        ApplyTexture(texture);
-        long textureUploadMs = stageSw.ElapsedMilliseconds;
-        if (profile != null) profile.textureUploadMs = textureUploadMs;
+        GenerationWatchdog.SetPhase(gameObject.name, "Terrain Material Generation");
+        var (textureBuildMs, textureUploadMs) = RebuildTerrainTextures(effectiveVisualSamples, profile);
 
         // Foliage Placer (Islands only)
         long foliageMs = 0;
@@ -1044,7 +1138,8 @@ public class MapGrid : MonoBehaviour
             IslandFoliagePlacer foliagePlacer = GetComponent<IslandFoliagePlacer>();
             if (foliagePlacer == null) foliagePlacer = gameObject.AddComponent<IslandFoliagePlacer>();
             foliagePlacer.climateProfile = climateProfile;
-            foliagePlacer.ScatterFoliage(grid, currentGridType == GridType.Type.Plateau, activeGenerationSeed);
+            foliagePlacer.ScatterFoliage(grid, currentGridType == GridType.Type.Plateau, activeGenerationSeed,
+                TerrainSource?.GetOrCreateSampleCache(effectiveVisualSamples));
             foliageMs = stageSw.ElapsedMilliseconds;
         }
         if (profile != null) profile.foliageMs = foliageMs;
@@ -1305,12 +1400,18 @@ public class MapGrid : MonoBehaviour
         meshFilter.sharedMesh = terrainMesh;
 
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>() != null ? gameObject.GetComponent<MeshRenderer>() : gameObject.AddComponent<MeshRenderer>();
-        bool usePlateauSurface = currentGridType == GridType.Type.Plateau && plateauSurfaceMaterial != null;
-        meshRenderer.sharedMaterial = usePlateauSurface ? plateauSurfaceMaterial : terrainMaterial;
-        if (usePlateauSurface)
-        {
-            ConfigurePlateauMaterial(meshRenderer, PlateauMaterialRole.Surface);
-        }
+        ApplyTerrainSurfaceMaterial(meshRenderer);
+    }
+
+    private void ApplyTerrainSurfaceMaterial(MeshRenderer renderer)
+    {
+        if (renderer == null) return;
+        // World chunks can contain a neighbouring island's land. Their slot kind cannot
+        // select a different shader for that same canonical terrain field.
+        bool standalonePlateau = !(TerrainSource?.IsWorldView ?? false)
+            && currentGridType == GridType.Type.Plateau && plateauSurfaceMaterial != null;
+        renderer.sharedMaterial = standalonePlateau ? plateauSurfaceMaterial : terrainMaterial;
+        if (standalonePlateau) ConfigurePlateauMaterial(renderer, PlateauMaterialRole.Surface);
     }
 
     private void ApplyPlateauGeometry(PlateauGeometryResult geometry)
@@ -1356,10 +1457,26 @@ public class MapGrid : MonoBehaviour
         GameObject water = new GameObject(GeneratedInlandWaterRootName);
         water.layer = gameObject.layer;
         water.transform.SetParent(transform, false);
+        Vector2 offset = TerrainSource != null ? TerrainSource.InlandWaterOffset : Vector2.zero;
+        water.transform.localPosition = new Vector3(offset.x, 0f, offset.y);
         MeshFilter filter = water.AddComponent<MeshFilter>();
         filter.sharedMesh = waterMesh;
         MeshRenderer renderer = water.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = inlandWaterMaterial != null ? inlandWaterMaterial : shallowEdgeMaterial;
+        // The fallback understands RiverPlan's distance UVs and impact/foam/ocean-blend
+        // vertex channels. It does not borrow an ocean shader with a different height model.
+        if (inlandWaterMaterial != null && inlandWaterMaterial.shader != null
+            && inlandWaterMaterial.shader.name == "Moonlight/Inland River") renderer.sharedMaterial = inlandWaterMaterial;
+        else
+        {
+            Shader shader = Shader.Find("Moonlight/Inland River");
+            if (shader != null)
+            {
+                Material material = new Material(shader) { name = "Generated River Water" };
+                TrackGeneratedVisualResource(material);
+                renderer.sharedMaterial = material;
+            }
+            else renderer.sharedMaterial = shallowEdgeMaterial;
+        }
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
     }
@@ -1720,36 +1837,141 @@ public class MapGrid : MonoBehaviour
         renderer.SetPropertyBlock(properties);
     }
 
-    private void ApplyTexture(Texture2D texture)
+    /// <summary>True when the assigned terrain material renders through the splat shader.</summary>
+    private bool UsesSplatShader()
     {
         MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
-        if (meshRenderer != null)
-        {
-            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
-            meshRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetTexture(TerrainBaseMapProperty, texture);
-            meshRenderer.SetPropertyBlock(propertyBlock);
-        }
+        Material material = meshRenderer != null ? meshRenderer.sharedMaterial : terrainMaterial;
+        return material != null
+            && material.shader != null
+            && material.shader.name == "Moonlight/Terrain Splat (Normal Mapped)";
     }
 
-    /// <summary>
-    /// Rebuilds and applies the terrain texture splat without regenerating or reuploading the 3D mesh.
-    /// Useful for instant inspector-driven diagnostic / heatmap inspection.
-    /// </summary>
+    private bool UsesPlateauSurfaceShader()
+    {
+        Material material = GetComponent<MeshRenderer>()?.sharedMaterial;
+        return material != null && material.shader != null
+            && material.shader.name == "Custom/UnderwaterPlateauMaterial";
+    }
+
+    // Generation and refresh share one emission barrier. Colour maps are never weight maps.
+    private (long buildMilliseconds, long uploadMilliseconds) RebuildTerrainTextures(int samples, TerrainGenerationProfile profile = null)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        TextureBuilder builder = TerrainSource != null
+            ? new TextureBuilder(grid, TerrainSource, samples, climateProfile, debugViewMode)
+            : new TextureBuilder(grid, climateProfile, debugViewMode);
+        bool splat = UsesSplatShader();
+        bool plateau = UsesPlateauSurfaceShader();
+        bool diagnostic = debugViewMode != TerrainDebugViewMode.Normal;
+        Texture2D control = splat || plateau ? builder.BuildTerrainControlMap() : null;
+        Texture2D colour = !splat || diagnostic ? builder.Build() : null;
+        Texture2D tint = splat ? builder.BuildSurfaceTintMap() : null;
+        Texture2D region = splat ? builder.BuildRegionMask() : null;
+        if (control != null) control.name = "Generated Terrain Control Map";
+        if (colour != null) colour.name = $"Generated Terrain Texture ({debugViewMode})";
+        if (tint != null) tint.name = "Generated Terrain Surface Tint";
+        if (region != null) region.name = "Generated Terrain Region Mask";
+        long buildMilliseconds = stopwatch.ElapsedMilliseconds;
+        if (profile != null) profile.textureSplatMs = buildMilliseconds;
+
+        stopwatch.Restart();
+        ApplyTerrainTextures(colour, control, region, tint, diagnostic);
+        long uploadMilliseconds = stopwatch.ElapsedMilliseconds;
+        if (profile != null) profile.textureUploadMs = uploadMilliseconds;
+        return (buildMilliseconds, uploadMilliseconds);
+    }
+
+    private void ApplyTerrainTextures(Texture2D colour, Texture2D control, Texture2D region,
+        Texture2D tint, bool diagnostic)
+    {
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        Texture2D[] textures = { colour, control, region, tint };
+        if (renderer == null)
+        {
+            foreach (Texture2D texture in textures) ReleaseGeneratedTexture(texture);
+            return;
+        }
+
+        var block = new MaterialPropertyBlock();
+        renderer.GetPropertyBlock(block);
+        var previous = new HashSet<Texture>();
+        for (int i = 0; i < textures.Length; i++)
+        {
+            Texture oldTexture = block.GetTexture(TerrainTextureProperties[i]);
+            if (oldTexture != null) previous.Add(oldTexture);
+            Texture2D texture = textures[i];
+            block.SetTexture(TerrainTextureProperties[i], texture != null ? texture
+                : i == 2 ? Texture2D.blackTexture : Texture2D.whiteTexture);
+            block.SetVector(TerrainTextureTransformProperties[i], TerrainTextureTransform(texture));
+            TrackGeneratedVisualResource(texture);
+        }
+        block.SetFloat(TerrainDebugViewProperty, diagnostic ? 1f : 0f);
+        block.SetFloat(TerrainUseSurfaceTintProperty, tint != null ? 1f : 0f);
+        renderer.SetPropertyBlock(block);
+
+        // Freeze generated maps only after every consumer has received the replacement.
+        foreach (Texture2D texture in textures)
+            if (texture != null && texture.isReadable) texture.Apply(false, true);
+        foreach (Texture oldTexture in previous)
+            if (System.Array.IndexOf(textures, oldTexture) < 0) ReleaseGeneratedTexture(oldTexture);
+    }
+
+    private Vector4 TerrainTextureTransform(Texture2D texture)
+    {
+        if (texture == null || TerrainSource == null) return new Vector4(1f, 1f, 0f, 0f);
+        // Continuous maps contain N+1 vertex samples; map the mesh endpoints onto texel centres.
+        return new Vector4((texture.width - 1f) / texture.width, (texture.height - 1f) / texture.height,
+            0.5f / texture.width, 0.5f / texture.height);
+    }
+
+    private void ReleaseGeneratedTexture(Texture texture)
+    {
+        if (texture == null || !texture.name.StartsWith("Generated Terrain")
+            || !IsDestroyableGeneratedResource(texture)) return;
+        generatedVisualResources?.Remove(texture);
+        if (Application.isPlaying) Destroy(texture);
+        else DestroyImmediate(texture);
+    }
+
+    /// <summary>Refresh material maps from the frozen terrain field without changing geometry.</summary>
     public void UpdateTerrainTexture()
     {
         if (grid == null) return;
-        bool isOceanChunk = currentGridType == GridType.Type.Ocean || currentGridType == GridType.Type.Empty;
-        int effectiveVisualSamples = isOceanChunk ? 1 : generationSettings.visualSamplesPerCell;
-        bool useContinuousMesh = TerrainSource != null;
+        if (TerrainSource != null)
+        {
+            var authored = worldSettings != null ? worldSettings.CreateResolved()
+                : JsonUtility.FromJson<TerrainGenerationSettings>(JsonUtility.ToJson(generationSettings));
+            generationOverrides?.Apply(authored);
+            TerrainSource.RefreshRegionSettings(authored.region);
+        }
+        RefreshTerrainMaterialMaps();
+        // One landform may span several render chunks. Rebind every view of the same frozen field.
+        MapManager manager = GetComponentInParent<MapManager>();
+        if (pendingWorldField != null && manager != null)
+        {
+            foreach (MapGrid peer in manager.GetComponentsInChildren<MapGrid>(true))
+                if (peer != this && peer.grid != null && peer.pendingWorldField == pendingWorldField)
+                    peer.RefreshTerrainMaterialMaps();
+        }
+    }
 
-        TextureBuilder textureBuilder = useContinuousMesh
-            ? new TextureBuilder(grid, TerrainSource, effectiveVisualSamples, climateProfile, debugViewMode)
-            : new TextureBuilder(grid, climateProfile, debugViewMode);
-        Texture2D texture = textureBuilder.Build();
-        texture.name = $"Generated Terrain Texture ({debugViewMode})";
-        TrackGeneratedVisualResource(texture);
-        ApplyTexture(texture);
+    private void RefreshTerrainMaterialMaps()
+    {
+        ApplyTerrainSurfaceMaterial(GetComponent<MeshRenderer>());
+        bool ocean = currentGridType == GridType.Type.Ocean || currentGridType == GridType.Type.Empty;
+        int samples = ocean && !(TerrainSource?.IsWorldView ?? false) ? 1
+            : TerrainSource?.BuiltCache?.VisualSamplesPerCell ?? generationSettings.visualSamplesPerCell;
+        RebuildTerrainTextures(samples);
+        if (UsesPlateauSurfaceShader())
+            ConfigurePlateauMaterial(GetComponent<MeshRenderer>(), PlateauMaterialRole.Surface);
+        Transform geometry = transform.Find(GeneratedPlateauGeometryRootName);
+        if (geometry != null)
+        {
+            foreach (MeshRenderer renderer in geometry.GetComponentsInChildren<MeshRenderer>(true))
+                ConfigurePlateauMaterial(renderer, renderer.gameObject.name == "Rock Formations"
+                    ? PlateauMaterialRole.Formation : PlateauMaterialRole.Escarpment);
+        }
     }
 
     public void ReleaseGeneratedVisualResources()
@@ -1773,9 +1995,10 @@ public class MapGrid : MonoBehaviour
             {
                 MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
                 terrainRenderer.GetPropertyBlock(propertyBlock);
-                Texture propertyTexture = propertyBlock.GetTexture(TerrainBaseMapProperty);
-                if (propertyTexture != null)
+                foreach (int property in TerrainTextureProperties)
                 {
+                    Texture propertyTexture = propertyBlock.GetTexture(property);
+                    if (propertyTexture == null || !propertyTexture.name.StartsWith("Generated Terrain")) continue;
                     hasGeneratedPropertyTexture = true;
                     ownedResources.Add(propertyTexture);
                 }
@@ -1785,6 +2008,7 @@ public class MapGrid : MonoBehaviour
                 Material currentMaterial = terrainRenderer.sharedMaterial;
                 if (currentMaterial != null
                     && currentMaterial != terrainMaterial
+                    && !IsConfiguredEdgeMaterial(currentMaterial)
                     && IsDestroyableGeneratedResource(currentMaterial))
                 {
                     hasLegacyMaterialInstance = true;

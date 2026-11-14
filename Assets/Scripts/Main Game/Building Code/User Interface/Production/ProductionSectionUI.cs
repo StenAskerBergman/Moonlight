@@ -41,6 +41,11 @@ public sealed class ProductionSectionUI : MonoBehaviour
     [SerializeField] private Color selectorLockedBorder = new Color(0.16f, 0.18f, 0.20f, 0.40f);
     [SerializeField] private Color connectorColor = new Color(0.55f, 0.70f, 0.78f, 0.85f);
 
+    [Header("Sprites")]
+    [SerializeField] private Sprite buttonUnlockedSprite;
+    [SerializeField] private Sprite buttonLockedSprite;
+    [SerializeField] private Sprite rowBackgroundSprite;
+
     [Header("Events")]
     public UnityEvent ExpandedLineChanged = new UnityEvent();
 
@@ -298,12 +303,31 @@ public sealed class ProductionSectionUI : MonoBehaviour
         connectorLayer = CreateStretchRect("Connectors", chainCanvas);
         nodeLayer = CreateStretchRect("Nodes", chainCanvas);
 
+#if UNITY_EDITOR
+        if (rowBackgroundSprite == null)
+            rowBackgroundSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GUI/Figma/Building Menu/Building bar/House Menu Row.png");
+        if (buttonUnlockedSprite == null)
+            buttonUnlockedSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GUI/Figma/Building Menu/Building bar/Building Button Unlocked.png");
+        if (buttonLockedSprite == null)
+            buttonLockedSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GUI/Figma/Building Menu/Building bar/Building Button Locked.png");
+#endif
+
         // 3. Production Line Selectors
         selectorStrip = CreateRect("Production Line Selectors", transform);
         selectorStrip.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, selectorHeight);
         var stripLayoutElement = selectorStrip.gameObject.AddComponent<LayoutElement>();
         stripLayoutElement.preferredHeight = selectorHeight;
         stripLayoutElement.minHeight = selectorHeight;
+
+        if (rowBackgroundSprite != null)
+        {
+            var stripImg = selectorStrip.gameObject.AddComponent<Image>();
+            stripImg.sprite = rowBackgroundSprite;
+            stripImg.type = Image.Type.Sliced;
+            stripImg.color = new Color(1f, 1f, 1f, 0.95f);
+            stripImg.raycastTarget = false;
+        }
+
         var stripLayout = selectorStrip.gameObject.AddComponent<HorizontalLayoutGroup>();
         stripLayout.spacing = 6f;
         stripLayout.padding = new RectOffset(6, 6, 2, 2);
@@ -420,26 +444,36 @@ public sealed class ProductionSectionUI : MonoBehaviour
         var root = new GameObject($"Line ({line.DisplayName})", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
         var rect = (RectTransform)root.transform;
         rect.SetParent(selectorStrip, false);
-        rect.sizeDelta = new Vector2(52f, 52f);
+        rect.sizeDelta = new Vector2(56f, 56f);
 
         var layout = root.GetComponent<LayoutElement>();
-        layout.preferredWidth = 52f;
-        layout.preferredHeight = 52f;
-        layout.minWidth = 52f;
-        layout.minHeight = 52f;
+        layout.preferredWidth = 56f;
+        layout.preferredHeight = 56f;
+        layout.minWidth = 56f;
+        layout.minHeight = 56f;
 
+        bool unlocked = IsUnlocked(line.UnlockCondition);
         Image border = root.GetComponent<Image>();
-        border.color = selectorNormalBorder;
+        if (buttonUnlockedSprite != null)
+        {
+            border.sprite = unlocked ? buttonUnlockedSprite : buttonLockedSprite;
+            border.type = Image.Type.Sliced;
+            border.color = Color.white;
+        }
+        else
+        {
+            border.color = selectorNormalBorder;
+        }
 
         // Inner Fill
         var innerObj = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         var innerRect = (RectTransform)innerObj.transform;
         innerRect.SetParent(rect, false);
         SetAnchors(innerRect, Vector2.zero, Vector2.one);
-        innerRect.offsetMin = new Vector2(2f, 2f);
-        innerRect.offsetMax = new Vector2(-2f, -2f);
+        innerRect.offsetMin = new Vector2(3f, 3f);
+        innerRect.offsetMax = new Vector2(-3f, -3f);
         Image fill = innerObj.GetComponent<Image>();
-        fill.color = selectorNormalBg;
+        fill.color = unlocked ? new Color(0.08f, 0.14f, 0.20f, 0.40f) : selectorLockedBg;
         fill.raycastTarget = false;
 
         // Button
@@ -499,17 +533,26 @@ public sealed class ProductionSectionUI : MonoBehaviour
 
         bool unlocked = IsUnlocked(node.UnlockCondition);
         Image border = root.GetComponent<Image>();
-        border.color = unlocked ? nodeNormalBorder : nodeLockedBorder;
+        if (buttonUnlockedSprite != null)
+        {
+            border.sprite = unlocked ? buttonUnlockedSprite : buttonLockedSprite;
+            border.type = Image.Type.Sliced;
+            border.color = Color.white;
+        }
+        else
+        {
+            border.color = unlocked ? nodeNormalBorder : nodeLockedBorder;
+        }
 
         // Inner Fill
         var innerObj = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         var innerRect = (RectTransform)innerObj.transform;
         innerRect.SetParent(rect, false);
         SetAnchors(innerRect, Vector2.zero, Vector2.one);
-        innerRect.offsetMin = new Vector2(1.5f, 1.5f);
-        innerRect.offsetMax = new Vector2(-1.5f, -1.5f);
+        innerRect.offsetMin = new Vector2(3f, 3f);
+        innerRect.offsetMax = new Vector2(-3f, -3f);
         Image fill = innerObj.GetComponent<Image>();
-        fill.color = unlocked ? nodeNormalBg : nodeLockedBg;
+        fill.color = unlocked ? new Color(0.08f, 0.14f, 0.20f, 0.40f) : nodeLockedBg;
         fill.raycastTarget = false;
 
         Button button = root.GetComponent<Button>();
@@ -611,7 +654,15 @@ public sealed class ProductionSectionUI : MonoBehaviour
 
             if (!unlocked)
             {
-                selector.BorderImage.color = selectorLockedBorder;
+                if (buttonLockedSprite != null)
+                {
+                    selector.BorderImage.sprite = buttonLockedSprite;
+                    selector.BorderImage.color = Color.white;
+                }
+                else
+                {
+                    selector.BorderImage.color = selectorLockedBorder;
+                }
                 selector.FillImage.color = selectorLockedBg;
                 if (selector.IconImage != null)
                 {
@@ -621,8 +672,16 @@ public sealed class ProductionSectionUI : MonoBehaviour
             }
             else if (isSelected)
             {
-                selector.BorderImage.color = selectorSelectedBorder;
-                selector.FillImage.color = selectorSelectedBg;
+                if (buttonUnlockedSprite != null)
+                {
+                    selector.BorderImage.sprite = buttonUnlockedSprite;
+                    selector.BorderImage.color = new Color(0.40f, 0.85f, 1.00f, 1.0f);
+                }
+                else
+                {
+                    selector.BorderImage.color = selectorSelectedBorder;
+                }
+                selector.FillImage.color = new Color(0.12f, 0.25f, 0.38f, 0.70f);
                 if (selector.IconImage != null)
                 {
                     selector.IconImage.color = Color.white;
@@ -631,8 +690,16 @@ public sealed class ProductionSectionUI : MonoBehaviour
             }
             else
             {
-                selector.BorderImage.color = selectorNormalBorder;
-                selector.FillImage.color = selectorNormalBg;
+                if (buttonUnlockedSprite != null)
+                {
+                    selector.BorderImage.sprite = buttonUnlockedSprite;
+                    selector.BorderImage.color = Color.white;
+                }
+                else
+                {
+                    selector.BorderImage.color = selectorNormalBorder;
+                }
+                selector.FillImage.color = new Color(0.08f, 0.14f, 0.20f, 0.40f);
                 if (selector.IconImage != null)
                 {
                     selector.IconImage.color = Color.white;

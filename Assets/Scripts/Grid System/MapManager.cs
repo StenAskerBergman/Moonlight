@@ -1,3 +1,8 @@
+﻿// tldr: Owns the MAP: picks the pattern, lays out the chunk lattice, spawns one chunk prefab per occupied
+// slot, hands each chunk the world-level context (ocean datum + plateau profile), and validates that
+// the finished chunks tile without overlapping. It does NOT generate terrain - it only decides where
+// chunks go and what world contract they generate against.
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -71,6 +76,13 @@ public class MapManager : MonoBehaviour
         public GridType.Type terrainType = GridType.Type.Island;
         [Tooltip("Optional prefab for matching slots. Leave empty to use the pattern's chunk prefab.")]
         public GameObject prefabOverride;
+
+        [Tooltip("Give matching slots their own deviations from the shared world terrain contract. " +
+                 "Authored here rather than on a spawned chunk because chunks are destroyed and " +
+                 "rebuilt from the prefab on every regeneration - an override set on a live island " +
+                 "would not survive one.")]
+        public bool applyGenerationOverrides;
+        public IslandGenerationOverrides generationOverrides = new IslandGenerationOverrides();
 
         public bool Matches(int slotId, int row, int column, int gridSize)
         {
@@ -191,13 +203,17 @@ public class MapManager : MonoBehaviour
             int row,
             int column,
             out GridType.Type terrainType,
-            out GameObject chunkPrefab)
+            out GameObject chunkPrefab,
+            out IslandGenerationOverrides generationOverrides)
         {
+            generationOverrides = null;
+
             SpawnRule rule = FindMatchingRule(slotId, row, column, gridSize);
             if (rule != null)
             {
                 terrainType = rule.terrainType;
                 chunkPrefab = rule.prefabOverride != null ? rule.prefabOverride : defaultChunkPrefab;
+                if (rule.applyGenerationOverrides) generationOverrides = rule.generationOverrides;
                 return terrainType != GridType.Type.Empty;
             }
 
@@ -404,6 +420,7 @@ public class MapManager : MonoBehaviour
     /// </summary>
     [HideInInspector] public int LastGenerationFailedChunks = 0;
     private int failedChunkCount;
+    private int chunksStartedThisRun;
     [Header("Generation Watchdog Guard")]
     [Tooltip("Maximum allowed generation time in seconds before auto-breaking")]
     [SerializeField] private float generationTimeoutSeconds = 15f;
@@ -740,6 +757,8 @@ public class MapManager : MonoBehaviour
         LastGenerationTimeMs = -1;
         LastGenerationBreakStatus = null;
         failedChunkCount = 0;
+        chunksStartedThisRun = 0;
+        ClearGenerationProgress();
         LastGenerationFailedChunks = 0;
 
         ValidateAndMigratePatternData();
@@ -790,6 +809,15 @@ public class MapManager : MonoBehaviour
         gameManager = FindObjectOfType<GameManager>();
         generatedMapRoot = new GameObject(GeneratedMapRootName).transform;
         generatedMapRoot.SetParent(transform, false);
+
+        // Build complete world-positioned landforms before any chunk reads their fields.
+        try { terrainField = BuildWorldTerrainField(activePattern); }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception, this);
+            ClearGenerationProgress();
+            return;
+        }
 
         // Creates Island Game Object
         // > Start 
@@ -986,6 +1014,7 @@ public class MapManager : MonoBehaviour
         }
 
         ValidateGeneratedChunkSeparation();
+        ReportTerrainMeasurements();
 
         LastGenerationFailedChunks = failedChunkCount;
         if (failedChunkCount > 0)
@@ -999,6 +1028,7 @@ public class MapManager : MonoBehaviour
         }
 
         OnMapGenerated?.Invoke();
+        ClearGenerationProgress();
         LastGenerationTimeMs = generationStopwatch.ElapsedMilliseconds;
     }
 
@@ -1047,6 +1077,7 @@ public class MapManager : MonoBehaviour
         MapGrid[] chunks = generatedMapRoot.GetComponentsInChildren<MapGrid>(true);
         float width = ChunkWorldSize;
         int overlaps = 0;
+        float observedPitch = float.MaxValue;
 
         for (int a = 0; a < chunks.Length; a++)
         {
@@ -1062,6 +1093,11 @@ public class MapManager : MonoBehaviour
                 if (overlapX <= 0f || overlapZ <= 0f) continue;
 
                 overlaps++;
+
+                // The pitch the selection actually produced, so the summary below can name the
+                // slotSpacing that would make chunks tile instead of only saying they do not.
+                float pitch = Mathf.Max(Mathf.Abs(pa.x - pb.x), Mathf.Abs(pa.z - pb.z));
+                if (pitch > 0.01f && pitch < observedPitch) observedPitch = pitch;
                 Debug.LogError(
                     $"MapManager: generated chunks '{chunks[a].name}' and '{chunks[b].name}' OVERLAP by " +
                     $"{overlapX:F1} x {overlapZ:F1} world units. chunkWorldSize={width}, " +
@@ -1073,7 +1109,22 @@ public class MapManager : MonoBehaviour
 
         if (overlaps > 0)
         {
-            Debug.LogError($"MapManager: {overlaps} overlapping chunk pair(s) - the map's spatial contract is violated.", this);
+            // ChunkWorldSize follows the island prefab's MapGrid.size automatically, but
+            // slotSpacing is authored on the PatternData and does not. Changing island size
+            // therefore breaks the tiling contract silently from the pattern's point of view,
+            // which is exactly how a 60 -> 90 resize left every chunk overlapping its
+            // neighbour by 30 units. Naming the required value turns this into a one-field fix.
+            string remedy = string.Empty;
+            if (observedPitch < float.MaxValue && LatticeSlotSpacing > 0.0001f)
+            {
+                int stride = Mathf.Max(1, Mathf.RoundToInt(observedPitch / LatticeSlotSpacing));
+                remedy = $" Occupied slots are {observedPitch:F1} apart (stride {stride}), so set the " +
+                    $"pattern's slotSpacing to {width / stride:F1} to make chunks of width {width} tile exactly.";
+            }
+
+            Debug.LogError(
+                $"MapManager: {overlaps} overlapping chunk pair(s) - the map's spatial contract is violated." + remedy,
+                this);
         }
     }
 
@@ -1085,6 +1136,7 @@ public class MapManager : MonoBehaviour
 
     public void ClearMap()
     {
+        terrainField = null;
         ResolveGeneratedMapRoot();
         if (generatedMapRoot != null)
         {
@@ -1152,6 +1204,162 @@ public class MapManager : MonoBehaviour
     public List<Vector3> oceanGizmoPositions = new List<Vector3>();
 
     // IMPORTANT: USES SPAWN PATTERNS 
+    /// <summary>
+    /// A whole-map regeneration is ONE synchronous call on the main thread: every chunk is
+    /// built inline, so the editor pumps no Windows messages from the first chunk to the last.
+    /// Windows treats an application that has not serviced its message queue for long enough as
+    /// hung and terminates it - observed here as Application Hang / AppHangB1 with no exception,
+    /// no managed stack and no crash dump, which reads like a generation bug and is not one.
+    /// A 16-chunk map crossed that threshold once islands grew to 90 cells.
+    ///
+    /// Showing the progress bar per chunk services the message queue, so the process stays
+    /// alive for the whole run, and it names the chunk being built - which is also the only
+    /// in-editor signal of where a long generation actually is.
+    /// </summary>
+    private void ReportGenerationProgress(string chunkName)
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            float total = Mathf.Max(1, RunGridSize * RunGridSize);
+            UnityEditor.EditorUtility.DisplayProgressBar(
+                "Generating map",
+                $"Chunk {chunksStartedThisRun + 1}: {chunkName}",
+                Mathf.Clamp01(chunksStartedThisRun / total));
+        }
+#endif
+        chunksStartedThisRun++;
+    }
+
+    private void ClearGenerationProgress()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying) return;
+        UnityEditor.EditorUtility.ClearProgressBar();
+#endif
+    }
+
+    [ContextMenu("Report terrain seams and histograms")]
+    public void ReportTerrainMeasurements()
+    {
+        var grids = GetComponentsInChildren<MapGrid>();
+        for (int a = 0; a < grids.Length; a++)
+        {
+            var left = grids[a];
+            if (left.TerrainSource == null) continue;
+            var ca = left.TerrainSource.GetOrCreateSampleCache(left.generationSettings.visualSamplesPerCell);
+            var histogram = new Dictionary<Cell.TerrainType, int>();
+            double totalHeight = 0;
+            int density = ca.VisualSamplesPerCell;
+            for (int z = 0; z < left.size; z++) for (int x = 0; x < left.size; x++)
+            {
+                int i = ca.GetIndex(x * density + density / 2, z * density + density / 2);
+                var type = ca.TerrainTypes[i];
+                histogram.TryGetValue(type, out int amount); histogram[type] = amount + 1;
+                totalHeight += ca.Heights[i];
+            }
+            Debug.Log($"[Terrain cells {left.name}] summed heights={totalHeight:F6}; "
+                + string.Join(", ", histogram.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}")));
+            for (int b = a + 1; b < grids.Length; b++)
+            {
+                var right = grids[b];
+                if (right.TerrainSource == null || left.size != right.size) continue;
+                Vector3 delta = right.transform.position - left.transform.position;
+                bool alongX = Mathf.Abs(Mathf.Abs(delta.x) - left.size) < 0.001f && Mathf.Abs(delta.z) < 0.001f;
+                bool alongZ = Mathf.Abs(Mathf.Abs(delta.z) - left.size) < 0.001f && Mathf.Abs(delta.x) < 0.001f;
+                if (!alongX && !alongZ) continue;
+                var cb = right.TerrainSource.GetOrCreateSampleCache(right.generationSettings.visualSamplesPerCell);
+                int r = ca.Resolution;
+                double sum = 0; float maximum = 0;
+                for (int t = 0; t < r; t++)
+                {
+                    int ia = alongX ? ca.GetIndex(delta.x > 0 ? r - 1 : 0, t) : ca.GetIndex(t, delta.z > 0 ? r - 1 : 0);
+                    int ib = alongX ? cb.GetIndex(delta.x > 0 ? 0 : r - 1, t) : cb.GetIndex(t, delta.z > 0 ? 0 : r - 1);
+                    float difference = Mathf.Abs(ca.Heights[ia] - cb.Heights[ib]);
+                    sum += difference; maximum = Mathf.Max(maximum, difference);
+                }
+                string message = $"[Terrain seam {left.name} -> {right.name}] mean={sum / r:F6}, max={maximum:F6}, samples={r}";
+                if (maximum > 0.001f) Debug.LogError(message); else Debug.Log(message);
+            }
+        }
+    }
+
+    private WorldTerrainField terrainField;
+    public WorldTerrainField GetTerrainField()
+    {
+        if (terrainField == null)
+        {
+            try { terrainField = BuildWorldTerrainField(SelectedPatternData); }
+            finally { ClearGenerationProgress(); }
+        }
+        return terrainField;
+    }
+
+
+    private WorldTerrainField BuildWorldTerrainField(PatternData pattern)
+    {
+        var result = new WorldTerrainField();
+        int count = pattern.spawnPattern == SpawnPattern.Singular ? 1 : RunGridSize;
+        float offset = count == 1 ? ChunkWorldSize * 0.5f : LatticeCenteringOffset;
+        float sea = ResolveOceanSurfaceHeight(pattern);
+        int dominantSlot = -1;
+        float closestToCentre = float.PositiveInfinity;
+        for (int row = 0; row < count; row++) for (int column = 0; column < count; column++)
+        {
+            int slot = count == 1 ? 1 : row * count + column + 1;
+            if (!pattern.TryResolveSlot(slot, row, column, out var kind, out _, out _) || kind != GridType.Type.Island) continue;
+            Vector2 centre = new Vector2(row * LatticeSlotSpacing - offset + ChunkWorldSize * 0.5f,
+                column * LatticeSlotSpacing - offset + ChunkWorldSize * 0.5f);
+            if (centre.sqrMagnitude >= closestToCentre) continue;
+            closestToCentre = centre.sqrMagnitude; dominantSlot = slot;
+        }
+        for (int row = 0; row < count; row++)
+        for (int column = 0; column < count; column++)
+        {
+            int slot = count == 1 ? 1 : row * count + column + 1;
+            if (!pattern.TryResolveSlot(slot, row, column, out var kind, out var prefab, out var overrides)) continue;
+            var template = prefab != null ? prefab.GetComponent<MapGrid>() : null;
+            if (template == null) throw new InvalidOperationException($"Slot {slot} has no MapGrid prefab.");
+            var authored = template.worldSettings != null ? template.worldSettings.Template : template.generationSettings;
+            var settings = template.CreateLandformSettings(overrides, pattern.plateauSettings, sea);
+            int seed = unchecked(settings.seed * 397 ^ slot);
+            Vector2 origin = new Vector2(row * LatticeSlotSpacing - offset, column * LatticeSlotSpacing - offset);
+            int shapeSize = template.size;
+            int padding = 0;
+            if (kind == GridType.Type.Island)
+            {
+                var random = new System.Random(seed);
+                if (count > 1)
+                {
+                    // Landform extents and positions belong to the world, independently of tile storage.
+                    float extent = slot != dominantSlot ? Mathf.Lerp(settings.secondaryLandformScale.x, settings.secondaryLandformScale.y, (float)random.NextDouble()) : settings.dominantLandformScale;
+                    shapeSize = Mathf.RoundToInt(template.size * extent);
+                    origin += Vector2.one * ((template.size - shapeSize) * 0.5f);
+                    origin += new Vector2(Mathf.Round((float)(random.NextDouble() - 0.5) * template.size * Mathf.Clamp(settings.landformPositionJitter, 0f, 0.5f) * 2f),
+                        Mathf.Round((float)(random.NextDouble() - 0.5) * template.size * Mathf.Clamp(settings.landformPositionJitter, 0f, 0.5f) * 2f));
+                    // Preserve one common sample lattice even for odd landform sizes.
+                    origin.x = Mathf.Round(origin.x + offset) - offset;
+                    origin.y = Mathf.Round(origin.y + offset) - offset;
+                    float maximumOrigin = (count - 1) * LatticeSlotSpacing - offset + ChunkWorldSize - shapeSize;
+                    origin.x = Mathf.Clamp(origin.x, -offset, maximumOrigin);
+                    origin.y = Mathf.Clamp(origin.y, -offset, maximumOrigin);
+                }
+                var coast = settings.coastalProfile;
+                padding = Mathf.CeilToInt(coast.surfWidth + coast.shelfWidth + coast.continentalSlopeWidth
+                    + coast.deepHandoffWidth + coast.curvatureStencilRadius + 2f);
+            }
+            ReportGenerationProgress($"World landform {slot}");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var source = new IslandTerrainProvider(settings, kind, shapeSize, seed, settings.seed, origin, padding);
+            result.Add(slot, source, watch.ElapsedMilliseconds);
+            Debug.Log($"[World terrain slot {slot}] landform {shapeSize}, margin {padding}, "
+                + $"origin {origin}, generation {watch.ElapsedMilliseconds} ms; "
+                + $"beach variation authored/resolved {authored?.coastalProfile.widthVariation}/{settings.coastalProfile.widthVariation}, "
+                + $"ridge threshold authored/resolved {authored?.coastalProfile.headlandRidgeThreshold}/{settings.coastalProfile.headlandRidgeThreshold}");
+        }
+        return result;
+    }
+
     public void AddIsland(IslandData data, int row = 0, int column = 0)
     {
         PatternData activePattern = SelectedPatternData;
@@ -1166,7 +1374,8 @@ public class MapManager : MonoBehaviour
                 row,
                 column,
                 out GridType.Type resolvedTerrain,
-                out GameObject prefabToUse))
+                out GameObject prefabToUse,
+                out IslandGenerationOverrides slotOverrides))
         {
             return;
         }
@@ -1232,13 +1441,19 @@ public class MapManager : MonoBehaviour
             }
 
             mapGrid.currentGridType = resolvedTerrain;
-            mapGrid.generationSettings ??= new TerrainGenerationSettings();
 
-            // PatternData owns the visible ocean surface and plateau profile. Apply
-            // both to every chunk so island borders and plateau surrounds derive the
-            // same abyss datum and remain seamless after a domain reload.
-            mapGrid.generationSettings.standalonePlateau = activePattern.plateauSettings.Clone();
-            mapGrid.generationSettings.SetAuthoritativeWaterSurfaceHeight(activePattern.waterHeight);
+            // PatternData owns the visible ocean surface and plateau profile. Hand both to every
+            // chunk so island borders and plateau surrounds derive the same abyss datum and remain
+            // seamless after a domain reload.
+            //
+            // Handed over rather than assigned onto generationSettings directly: a chunk with a
+            // world settings asset REPLACES its settings object when it resolves the shared
+            // contract at generation time, so anything written here beforehand would be discarded.
+            if (slotOverrides != null) mapGrid.generationOverrides = slotOverrides;
+
+            mapGrid.SetWorldContext(
+                activePattern.plateauSettings.Clone(),
+                ResolveOceanSurfaceHeight(activePattern));
 
             // One chunk must never take the whole map down with it. Generation used to
             // run unguarded, so a single throwing chunk aborted the spawn loop midway:
@@ -1246,8 +1461,10 @@ public class MapManager : MonoBehaviour
             // never ran, and OnMapGenerated never fired - the world came up partially
             // built with nothing saying so. Failing one chunk loudly and continuing keeps
             // the rest of the map, and the error names the slot that has to be looked at.
+            ReportGenerationProgress(islandGO.name);
             try
             {
+                mapGrid.SetTerrainField(terrainField);
                 mapGrid.InitializeTerrain();
             }
             catch (System.Exception exception)
@@ -1271,6 +1488,57 @@ public class MapManager : MonoBehaviour
                 oceanGizmoPositions.Add(island.bounds.center + Vector3.up * 5); // Raise the Gizmo above the terrain for visibility
                 // Debug.Log($"Ocean placed at {island.bounds.center} with ID {island.id}");
             }
+    }
+
+    /// <summary>
+    /// The height the ocean actually RENDERS at, which is what the coastal profile must be built
+    /// against. The pattern's waterHeight is a transform Y, and the scene's water is a scaled cube
+    /// whose surface is half its height above that - "Ocean Cube - Water Cube" at y = -4 with
+    /// scale.y = 1 puts its surface at -3.5, half a unit from what the pattern claims. Terrain
+    /// generated against the wrong figure puts the beach at the wrong height relative to the sea,
+    /// which no amount of beach tuning can correct.
+    ///
+    /// Reading the renderer's world bounds handles a plane, a cube, or anything else, and falls
+    /// back to the authored value when the object has no renderer.
+    /// </summary>
+    private float ResolveOceanSurfaceHeight(PatternData activePattern)
+    {
+        if (waterObject == null) return activePattern.waterHeight;
+
+        Renderer waterRenderer = waterObject.GetComponent<Renderer>();
+        if (waterRenderer == null) return activePattern.waterHeight;
+
+        // The datum has to come from water the player can actually SEE. A reference left on a
+        // hidden object still reports perfectly good bounds, so a wrong sea level propagates into
+        // every coastal band, beach height and land freeboard without a single warning - the
+        // islands just come up submerged and every beach control looks broken instead.
+        //
+        // This has already cost a full debugging pass twice: once when the reference pointed at an
+        // inactive 'Ocean Plane' 2.5 units below the visible ocean cube, and again when an editor
+        // crash discarded the corrected reference and generation silently reverted to it. Scene
+        // references do not survive a crash; this check does.
+        if (!waterObject.activeInHierarchy || !waterRenderer.enabled)
+        {
+            Debug.LogError(
+                $"MapManager: Water Object is '{waterObject.name}', which is not being rendered " +
+                $"(activeInHierarchy {waterObject.activeInHierarchy}, renderer enabled {waterRenderer.enabled}). " +
+                $"Its surface reads {waterRenderer.bounds.max.y:F2}, but nothing draws it, so terrain would be " +
+                $"built against a waterline the player never sees. Falling back to the pattern's waterHeight " +
+                $"{activePattern.waterHeight:F2}. Assign the ocean object that is actually visible in the scene.",
+                this);
+            return activePattern.waterHeight;
+        }
+
+        float surface = waterRenderer.bounds.max.y;
+        if (!Mathf.Approximately(surface, activePattern.waterHeight))
+        {
+            Debug.Log(
+                $"MapManager: ocean surface resolved to {surface:F2} from '{waterObject.name}' " +
+                $"(transform Y {waterObject.transform.position.y:F2}); the pattern's waterHeight is " +
+                $"{activePattern.waterHeight:F2}. Terrain is built against {surface:F2}.", this);
+        }
+
+        return surface;
     }
 
     // At the class level

@@ -14,7 +14,8 @@ public sealed class PlayerOwnershipVisual : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float accentTintStrength = 1f;
 
     private Owner owner;
-    private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
+    private MaterialPropertyBlock properties;
+    private MaterialPropertyBlock Properties => properties ??= new MaterialPropertyBlock();
 
     public static PlayerOwnershipVisual Ensure(GameObject target, Owner owner = null)
     {
@@ -35,6 +36,7 @@ public sealed class PlayerOwnershipVisual : MonoBehaviour
     public void Refresh()
     {
         Color teamColor = PlayerColors.For(owner);
+        MaterialPropertyBlock block = Properties;
 
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
         {
@@ -46,10 +48,10 @@ public sealed class PlayerOwnershipVisual : MonoBehaviour
             Color tint = Color.Lerp(source, teamColor, strength);
             tint.a = source.a;
 
-            renderer.GetPropertyBlock(properties);
-            properties.SetColor("_BaseColor", tint);
-            properties.SetColor("_Color", tint);
-            renderer.SetPropertyBlock(properties);
+            renderer.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", tint);
+            block.SetColor("_Color", tint);
+            renderer.SetPropertyBlock(block);
         }
 
         foreach (SpriteRenderer sprite in GetComponentsInChildren<SpriteRenderer>(true))

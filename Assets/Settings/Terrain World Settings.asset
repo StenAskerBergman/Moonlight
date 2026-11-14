@@ -1,0 +1,186 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 080f854ac4a3b704f8a106f948f2ca9b, type: 3}
+  m_Name: Terrain World Settings
+  m_EditorClassIdentifier: 
+  template:
+    mainlandShapeDataVersion: 1
+    landformPositionJitter: 0.475
+    dominantLandformScale: 1.65
+    secondaryLandformScale: {x: 0.9, y: 1.25}
+    seed: 1337
+    domainWarp:
+      enabled: 1
+      scale: 36
+      amplitude: 22
+      octaves: 3
+      persistence: 0.5
+      lacunarity: 2
+    standalonePlateau:
+      dataVersion: 0
+      shapeMode: 0
+      tabletopRadius: 0.56
+      elongation: 1.32
+      curvature: 0.18
+      silhouetteLobing: 0.12
+      silhouetteNoise: 0.07
+      tabletopRelief: 0.06
+      edgeSquareness: 2.65
+      boundaryNotchCount: 2
+      boundaryNotchDepth: 0.075
+      rockyRimWidth: 3
+      upperEscarpmentWidth: 1.8
+      lowerApronWidth: 5.5
+      cliffDropDepth: 8
+      lowerApronDrop: 2
+      rimOutcropHeight: 1.35
+      occasionalSpireHeight: 4.8
+      perimeterSpireCount: 3
+      spireBaseWidth: 2.6
+      rimErosionHeight: 0.45
+      cliffFractureStrength: 1.1
+      profileAsymmetry: 0.32
+      perimeterClusterCount: 5
+      perimeterClusterHeight: 3.8
+      perimeterClusterWidth: 5.8
+      perimeterClusterDepth: 3.4
+      generateVolumetricRockGeometry: 1
+      escarpmentContourSegments: 112
+      escarpmentStrata: 6
+      rocksPerCluster: 5
+      sandOpeningCount: 0
+      sandOpeningTopWidth: 4.5
+      sandOpeningWidthMultiplier: 2
+      sandDescentLengthMultiplier: 1.55
+      tabletopDepthBelowWater: 6
+      minimumFormationClearance: 2.5
+    noiseLayers:
+    - name: Island mass
+      enabled: 1
+      scale: 52
+      octaves: 3
+      persistence: 0.52
+      lacunarity: 2
+      weight: 0.72
+      offset: {x: 0, y: 0}
+      mode: 0
+    - name: Regional variation
+      enabled: 1
+      scale: 19
+      octaves: 2
+      persistence: 0.45
+      lacunarity: 2.2
+      weight: 0.28
+      offset: {x: 0, y: 0}
+      mode: 1
+    legacyIslandScale: 0.025
+    legacyMountainThreshold: 0.8
+    legacyMountainPeakThreshold: 1.1
+    noiseContribution: 0.55
+    islandMaskContribution: 0.55
+    fieldBias: 0.1
+    falloffStart: 0.36
+    falloffEnd: 1.05
+    coastWarp: 0.16
+    guaranteedMainlandRadius: 0.38
+    targetMainlandCoverage: 0.84
+    mainlandSurveyRadius: 0.62
+    abyssUpper: 0
+    deepUpper: 0.2
+    underwaterPlateauUpper: 0.2
+    shallowUpper: 0.3
+    waterUpper: 0.4
+    beachUpper: 0.415
+    surfaceFlatlandUpper: 0.7
+    hillUpper: 0.76
+    cliffUpper: 0.82
+    mountainUpper: 0.88
+    coastalMountains:
+      dataVersion: 2
+      enabled: 1
+      minRidges: 3
+      maxRidges: 5
+      minRidgeLength: 14
+      maxRidgeLength: 28
+      minRidgeWidth: 9
+      maxRidgeWidth: 15
+      ridgePeakHeight: 9
+      cliffSharpness: 1.4
+      minimumPeakRatio: 0.55
+      minimumWidthRatio: 0.55
+      minimumUsefulSlope: 0.08
+      maximumSlope: 1.25
+      minimumSurvivingMassRatio: 0.45
+      minimumConnectedMassRatio: 0.9
+      minimumMountainSamples: 24
+    riverCorridors:
+      enabled: 1
+      minRivers: 1
+      maxRivers: 2
+      channelRadius: 1.4
+      clearanceRadius: 6
+      valleyDepth: 1.2
+      lakeSourceChance: 0.45
+      minLakeRadius: 2.2
+      maxLakeRadius: 4.2
+      lakeDepth: 0.65
+      minimumRiverLength: 18
+    coastalProfile:
+      dataVersion: 0
+      backshoreWidth: 1.8
+      beachWidth: 2.2
+      surfWidth: 2.5
+      shelfWidth: 5
+      deepHandoffWidth: 6
+      continentalSlopeWidth: 16
+      continentalSlopeExponent: 1.8
+      beachCrestFreeboard: 0.4
+      waterlineFreeboard: 0.05
+      surfDepth: 0.45
+      shelfDepth: 3
+      maxBackshoreGradient: 0.35
+      waveAmplitude: 0
+      maxBeachGradient: 0.3
+      widthVariation: 0.55
+      widthVariationScale: 26
+      bayInfluence: 0.75
+      fullBayCurvature: 0.1
+      curvatureStencilRadius: 2.5
+      waterlineSandWidth: 0.9
+      headlandRidgeThreshold: 1.8
+      headlandShelfExtension: 3
+      headlandShelfNarrowing: 0.3
+      minimumBeachWidth: 0.1
+    abyssDepthBelowWater: 0
+    landLadderVersion: 0
+    mainlandFreeboard: 1.25
+    hillFreeboard: 2
+    cliffFreeboard: 3.2
+    mountainFreeboard: 4.5
+    mountainPeakFreeboard: 6.2
+    abyssHeight: -5
+    deepHeight: -3.5
+    naturalPlateauHeight: -2.5
+    underwaterPlateauHeight: -1.8
+    shallowHeight: -1.5
+    waterHeight: -0.6
+    beachHeight: 0.25
+    surfaceFlatlandHeight: 0.85
+    hillHeight: 1.6
+    cliffHeight: 2.4
+    mountainHeight: 3.2
+    mountainPeakHeight: 4.2
+    authoritativeWaterSurfaceHeight: -0.6
+    mainlandRelief: 0.05
+    maxBuildableHeightVariance: 0.2
+    visualSamplesPerCell: 6
+    visualTransitionWidth: 0.035

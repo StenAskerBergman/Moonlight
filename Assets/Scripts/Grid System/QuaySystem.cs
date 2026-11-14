@@ -38,13 +38,73 @@ public sealed class QuaySystem : MonoBehaviour
         public bool IsOccupied => Manual || AutomaticOwners.Count > 0;
     }
 
+    /// <summary>
+    /// Where each piece of the quay lives in the shared atlas, in UV space (0-1, origin
+    /// bottom-left). Defaults are read off the Anno reference sheet and are meant to be
+    /// nudged in the Inspector against the real texture - the geometry does not care what
+    /// the numbers are, it just maps each surface to the rect it is given.
+    /// </summary>
+    [System.Serializable]
+    public sealed class AtlasLayout
+    {
+        [Tooltip("Deck plating - the grey slab with the worn gold border.")]
+        public Rect deck = new Rect(0.792f, 0.731f, 0.201f, 0.116f);
+
+        [Tooltip("Capping course along the very top of the wall.")]
+        public Rect coping = new Rect(0.006f, 0.936f, 0.746f, 0.058f);
+
+        [Tooltip("Banded block course, used under the coping.")]
+        public Rect band = new Rect(0.006f, 0.865f, 0.746f, 0.064f);
+
+        [Tooltip("One bay of the main wall - the panel between two buttresses.")]
+        public Rect wallBay = new Rect(0.150f, 0.285f, 0.145f, 0.430f);
+
+        [Tooltip("A single free-standing buttress column, flared at the foot.")]
+        public Rect buttress = new Rect(0.744f, 0.285f, 0.124f, 0.430f);
+
+        [Tooltip("Rock face the structure is founded on.")]
+        public Rect rock = new Rect(0.006f, 0.000f, 0.746f, 0.277f);
+    }
+
     [Header("Structure")]
-    [SerializeField, Min(0f)] private float deckClearanceAboveWater = 0.15f;
+    [Tooltip("Freeboard: how far the deck stands above the visible waterline. The " +
+             "reference structure is a platform you look UP at from a boat, not a raft.")]
+    [SerializeField, Min(0f)] private float deckClearanceAboveWater = 1.9f;
     [SerializeField, Min(0f)] private float wallGapAllowance = 0.35f;
     [SerializeField, Min(0f)] private float lowerTerrainThreshold = 0.2f;
     [SerializeField] private Material topMaterial;
     [SerializeField] private Material wallMaterial;
     [SerializeField] private bool generateCollider = true;
+
+    [Header("Wall profile")]
+    [Tooltip("Thickness of the capping course that finishes the top of the wall.")]
+    [SerializeField, Min(0f)] private float copingHeight = 0.12f;
+    [Tooltip("How far the capping course oversails the wall face beneath it.")]
+    [SerializeField, Min(0f)] private float copingOverhang = 0.05f;
+    [Tooltip("How far the wall leans out per unit of depth. 0 is a vertical slab; the " +
+             "reference structure widens noticeably towards the seabed.")]
+    [SerializeField, Range(0f, 0.5f)] private float wallBatter = 0.08f;
+    [Tooltip("How far the wall bays sit BEHIND the rib line. This is what makes the ribs " +
+             "read as structure and the bays as recessed panels, rather than a flat face " +
+             "with strips glued on. It also keeps the quay inside its own grid cells.")]
+    [SerializeField, Min(0f)] private float wallRecess = 0.22f;
+
+    [Tooltip("Depth of dressed wall below the coping before the rock footing takes over.")]
+    [SerializeField, Min(0.1f)] private float dressedWallDepth = 2.5f;
+    [Tooltip("Height of one rock course. The footing repeats it down to the seabed rather " +
+             "than stretching one copy over the whole drop.")]
+    [SerializeField, Min(0.25f)] private float rockCourseHeight = 2f;
+
+    [Header("Buttresses")]
+    [SerializeField] private bool generateButtresses = true;
+    [SerializeField, Min(0.05f)] private float buttressWidth = 0.30f;
+    [SerializeField, Min(0.02f)] private float buttressProjection = 0.14f;
+    [Tooltip("Extra projection at the foot, which is what gives the splayed silhouette.")]
+    [SerializeField, Min(0f)] private float buttressFlare = 0.16f;
+    [Tooltip("Cells between buttresses along a straight run. Corners always get one.")]
+    [SerializeField, Min(1)] private int buttressSpacing = 2;
+
+    [SerializeField] private AtlasLayout atlas = new AtlasLayout();
 
     [Header("Perimeter detail prefabs")]
     [SerializeField] private GameObject straightDetailPrefab;
@@ -77,14 +137,53 @@ public sealed class QuaySystem : MonoBehaviour
             TerrainGenerationSettings settings = mapGrid != null ? mapGrid.generationSettings : null;
             if (settings == null) return deckClearanceAboveWater;
 
-            // Beach is the project's authored land/water transition. Matching it keeps
-            // the deck cleanly joined to shore while remaining above the visible water.
-            return Mathf.Max(settings.AuthoritativeWaterSurfaceHeight + deckClearanceAboveWater,
-                             settings.beachHeight);
+            // Freeboard is measured from the water the player can actually see. The
+            // generation setting and the rendered ocean disagree in this project - the
+            // setting says -3 while Ocean Cube sits at -0.5 - and building on the setting
+            // put the deck barely a finger above the waterline with the whole structure
+            // submerged.
+            float waterSurface = ResolveVisibleWaterSurface(settings.AuthoritativeWaterSurfaceHeight);
+
+            // Never below the shoreline, so a quay meeting the beach still meets it cleanly.
+            return Mathf.Max(waterSurface + deckClearanceAboveWater, settings.beachHeight);
         }
     }
 
     public float TopElevationWorld => transform.TransformPoint(new Vector3(0f, TopElevationLocal, 0f)).y;
+
+    private bool waterSurfaceResolved;
+    private float cachedWaterSurfaceLocal;
+
+    /// <summary>
+    /// The top of the ocean the player is looking at, in this island's local space.
+    ///
+    /// Resolved from the scene's Water-layer geometry rather than from generation
+    /// settings, because the two do not agree here. Falls back to the supplied setting
+    /// when there is no ocean in the scene - an editor-only island, say.
+    /// </summary>
+    private float ResolveVisibleWaterSurface(float fallback)
+    {
+        if (waterSurfaceResolved) return cachedWaterSurfaceLocal;
+
+        int waterLayer = LayerMask.NameToLayer("Water");
+        float highest = float.NegativeInfinity;
+
+        if (waterLayer >= 0)
+        {
+            foreach (Renderer renderer in FindObjectsOfType<Renderer>())
+            {
+                if (renderer.gameObject.layer != waterLayer) continue;
+                highest = Mathf.Max(highest, renderer.bounds.max.y);
+            }
+        }
+
+        cachedWaterSurfaceLocal = float.IsNegativeInfinity(highest)
+            ? fallback
+            : transform.InverseTransformPoint(new Vector3(0f, highest, 0f)).y;
+
+        waterSurfaceResolved = true;
+        return cachedWaterSurfaceLocal;
+    }
 
     public static QuaySystem GetOrCreate(GridSystem grid)
     {
@@ -241,8 +340,11 @@ public sealed class QuaySystem : MonoBehaviour
 
     private void Awake()
     {
+        // Deliberately does NOT build the render objects. Every island carries a
+        // QuaySystem so its atlas and wall profile can be authored on the prefab, and most
+        // of them never grow a quay - Rebuild creates the objects when there is finally
+        // something to draw.
         ResolveDependencies();
-        EnsureRenderObjects();
     }
 
     private void LateUpdate()
@@ -362,6 +464,20 @@ public sealed class QuaySystem : MonoBehaviour
             }
         }
 
+        // Buttresses come after the walls so they can be decided from the finished
+        // perimeter - a corner is only known once every edge has been classified.
+        if (generateButtresses)
+        {
+            for (int i = 0; i < perimeter.Count; i++)
+            {
+                PerimeterSegment segment = perimeter[i];
+                if (segment.Shape == PerimeterShape.LandTransition) continue;
+                if (!WantsButtress(segment)) continue;
+
+                AddButtress(segment, vertices, uvs, wallTriangles);
+            }
+        }
+
         if (structureMesh != null) DestroyGeneratedObject(structureMesh);
         structureMesh = new Mesh { name = $"{name} Quay Structure" };
         if (vertices.Count > 65535) structureMesh.indexFormat = IndexFormat.UInt32;
@@ -399,48 +515,265 @@ public sealed class QuaySystem : MonoBehaviour
         float x1 = x0 + cellSize;
         float z1 = z0 + cellSize;
         float y = TopElevationLocal;
-        int start = vertices.Count;
-        vertices.Add(new Vector3(x0, y, z0));
-        vertices.Add(new Vector3(x0, y, z1));
-        vertices.Add(new Vector3(x1, y, z1));
-        vertices.Add(new Vector3(x1, y, z0));
-        uvs.Add(new Vector2(0f, 0f));
-        uvs.Add(new Vector2(0f, 1f));
-        uvs.Add(new Vector2(1f, 1f));
-        uvs.Add(new Vector2(1f, 0f));
-        triangles.Add(start); triangles.Add(start + 1); triangles.Add(start + 2);
-        triangles.Add(start); triangles.Add(start + 2); triangles.Add(start + 3);
+
+        // One plate per cell, so the deck reads as laid slabs rather than one stretched image.
+        AddQuad(vertices, uvs, triangles,
+            new Vector3(x0, y, z0), new Vector3(x0, y, z1),
+            new Vector3(x1, y, z1), new Vector3(x1, y, z0),
+            atlas.deck);
     }
 
+    /// <summary>
+    /// One bay of retaining wall, built as the reference structure is: a capping course
+    /// that oversails the face, a battered run of dressed wall below it, then a rock
+    /// footing carried down to the seabed. A single flat quad read as a plain slab.
+    /// </summary>
     private void AddWall(Vector2Int coordinate, EdgeDirection direction, float bottom,
                          List<Vector3> vertices, List<Vector2> uvs, List<int> triangles)
+    {
+        float top = TopElevationLocal;
+        Vector3 edgeA, edgeB;
+        GetEdge(coordinate, direction, top, out edgeA, out edgeB);
+        Vector3 outward = OutwardVector(direction);
+
+        // The ribs stand on the cell boundaries at either end of this edge, so the bay is
+        // only the span between them. Drawing it full width put a full-width panel behind
+        // every rib, and the eye read one continuous wall with strips laid on it instead
+        // of piers with panels recessed between them.
+        Vector3 alongEdge = (edgeB - edgeA).normalized;
+        float inset = generateButtresses ? buttressWidth * 0.5f : 0f;
+        Vector3 a = edgeA + alongEdge * inset;
+        Vector3 b = edgeB - alongEdge * inset;
+
+        // --- capping course -------------------------------------------------------
+        float copingBase = top - copingHeight;
+
+        // The cap runs the full edge - it is a continuous course over ribs and bays alike.
+        Vector3 capLipA = edgeA + outward * copingOverhang;
+        Vector3 capLipB = edgeB + outward * copingOverhang;
+
+        // Its top surface, filling the sliver between the deck edge and the oversail.
+        AddQuad(vertices, uvs, triangles,
+            new Vector3(edgeA.x, top, edgeA.z), new Vector3(capLipA.x, top, capLipA.z),
+            new Vector3(capLipB.x, top, capLipB.z), new Vector3(edgeB.x, top, edgeB.z),
+            atlas.coping);
+
+        // Its outward face.
+        AddQuad(vertices, uvs, triangles,
+            new Vector3(capLipA.x, top, capLipA.z), new Vector3(capLipB.x, top, capLipB.z),
+            new Vector3(capLipB.x, copingBase, capLipB.z), new Vector3(capLipA.x, copingBase, capLipA.z),
+            atlas.coping);
+
+        // --- dressed wall, leaning outward as it descends -------------------------
+        float dressedBase = Mathf.Max(bottom, copingBase - dressedWallDepth);
+        float dressedDrop = copingBase - dressedBase;
+        Vector3 dressedOut = outward * (dressedDrop * wallBatter);
+
+        Vector3 wallBottomA = new Vector3(a.x + dressedOut.x, dressedBase, a.z + dressedOut.z);
+        Vector3 wallBottomB = new Vector3(b.x + dressedOut.x, dressedBase, b.z + dressedOut.z);
+
+        AddQuad(vertices, uvs, triangles,
+            new Vector3(a.x, copingBase, a.z), new Vector3(b.x, copingBase, b.z),
+            wallBottomB, wallBottomA,
+            atlas.wallBay);
+
+        // --- rock footing, repeated by course rather than stretched ---------------
+        if (dressedBase - bottom > 0.01f)
+        {
+            int courses = Mathf.Max(1, Mathf.CeilToInt((dressedBase - bottom) / rockCourseHeight));
+            float step = (dressedBase - bottom) / courses;
+
+            Vector3 courseTopA = wallBottomA;
+            Vector3 courseTopB = wallBottomB;
+
+            for (int i = 0; i < courses; i++)
+            {
+                float courseBottomY = dressedBase - step * (i + 1);
+                Vector3 courseOut = outward * (step * wallBatter);
+
+                Vector3 courseBottomA = new Vector3(courseTopA.x + courseOut.x, courseBottomY, courseTopA.z + courseOut.z);
+                Vector3 courseBottomB = new Vector3(courseTopB.x + courseOut.x, courseBottomY, courseTopB.z + courseOut.z);
+
+                AddQuad(vertices, uvs, triangles,
+                    courseTopA, courseTopB, courseBottomB, courseBottomA,
+                    atlas.rock);
+
+                courseTopA = courseBottomA;
+                courseTopB = courseBottomB;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether this stretch of perimeter carries a buttress. Corners and run ends always
+    /// do - they are what reads as structure from a distance - and straight runs take one
+    /// every <see cref="buttressSpacing"/> cells so the spacing stays even along a wall.
+    /// </summary>
+    private bool WantsButtress(PerimeterSegment segment)
+    {
+        if (segment.Shape == PerimeterShape.OuterCorner || segment.Shape == PerimeterShape.End) return true;
+        if (segment.Shape != PerimeterShape.Straight) return false;
+
+        // Stepping along the run's own axis keeps the rhythm continuous around the
+        // structure instead of restarting on every side.
+        int along = (segment.Direction == EdgeDirection.North || segment.Direction == EdgeDirection.South)
+            ? segment.Cell.x
+            : segment.Cell.y;
+
+        return Mathf.Abs(along) % Mathf.Max(1, buttressSpacing) == 0;
+    }
+
+    /// <summary>
+    /// A pier standing proud of the wall, carried the whole way from the capping course
+    /// down to the seabed - dressed stone across the structure's face, then continuing as
+    /// a rock pier through the footing, which is how the reference reads.
+    ///
+    /// It follows the wall's own batter, so the column stays welded to the face instead of
+    /// drifting away from it as both lean out. Three faces per section; the inward one is
+    /// omitted because the wall is always behind it.
+    /// </summary>
+    private void AddButtress(PerimeterSegment segment, List<Vector3> vertices, List<Vector2> uvs, List<int> triangles)
+    {
+        float top = TopElevationLocal;
+        Vector3 a, b;
+        GetEdge(segment.Cell, segment.Direction, top, out a, out b);
+
+        Vector3 outward = OutwardVector(segment.Direction);
+        Vector3 along = (b - a).normalized;
+
+        // On the boundary at the start of this edge rather than mid-bay. Neighbouring
+        // segments share that boundary and each only claims its own start, so a run gets
+        // one rib per cell line with a recessed panel between each pair.
+        Vector3 centre = a;
+        float half = buttressWidth * 0.5f;
+
+        float copingBase = top - copingHeight;
+        float dressedBase = Mathf.Max(segment.BottomElevation, copingBase - dressedWallDepth);
+        if (top - dressedBase <= 0.01f) return;
+
+        // Dressed head: the part above the footing, and the only part usually in view.
+        AddColumnSection(vertices, uvs, triangles, centre, along, outward, half,
+                         top, dressedBase, atlas.buttress);
+
+        // Cap, sitting on the head.
+        Vector3 capBack = outward * WallFaceOffset(top);
+        Vector3 capFront = outward * ButtressFaceOffset(top);
+        AddQuad(vertices, uvs, triangles,
+            centre + along * half + capBack, centre - along * half + capBack,
+            centre - along * half + capFront, centre + along * half + capFront,
+            atlas.coping);
+
+        // Rock pier, repeated by course so a deep drop is not one smeared copy.
+        float footing = dressedBase - segment.BottomElevation;
+        if (footing <= 0.01f) return;
+
+        int courses = Mathf.Max(1, Mathf.CeilToInt(footing / rockCourseHeight));
+        float step = footing / courses;
+        for (int i = 0; i < courses; i++)
+        {
+            AddColumnSection(vertices, uvs, triangles, centre, along, outward, half,
+                             dressedBase - step * i, dressedBase - step * (i + 1), atlas.rock);
+        }
+    }
+
+    /// <summary>
+    /// One vertical slice of a buttress between two heights: outward face plus both flanks.
+    /// </summary>
+    private void AddColumnSection(List<Vector3> vertices, List<Vector2> uvs, List<int> triangles,
+                                  Vector3 centre, Vector3 along, Vector3 outward, float half,
+                                  float topY, float bottomY, Rect uvRect)
+    {
+        Vector3 sideL = along * -half;
+        Vector3 sideR = along * half;
+
+        Vector3 topBack = outward * WallFaceOffset(topY);
+        Vector3 topFront = outward * ButtressFaceOffset(topY);
+        Vector3 bottomBack = outward * WallFaceOffset(bottomY);
+        Vector3 bottomFront = outward * ButtressFaceOffset(bottomY);
+
+        Vector3 headL = new Vector3(centre.x, topY, centre.z) + sideL + topFront;
+        Vector3 headR = new Vector3(centre.x, topY, centre.z) + sideR + topFront;
+        Vector3 footL = new Vector3(centre.x, bottomY, centre.z) + sideL + bottomFront;
+        Vector3 footR = new Vector3(centre.x, bottomY, centre.z) + sideR + bottomFront;
+
+        Vector3 backL = new Vector3(centre.x, topY, centre.z) + sideL + topBack;
+        Vector3 backR = new Vector3(centre.x, topY, centre.z) + sideR + topBack;
+        Vector3 backFootL = new Vector3(centre.x, bottomY, centre.z) + sideL + bottomBack;
+        Vector3 backFootR = new Vector3(centre.x, bottomY, centre.z) + sideR + bottomBack;
+
+        AddQuad(vertices, uvs, triangles, headR, headL, footL, footR, uvRect);          // outward
+        AddQuad(vertices, uvs, triangles, headL, backL, backFootL, footL, uvRect);      // left flank
+        AddQuad(vertices, uvs, triangles, backR, headR, footR, backFootR, uvRect);      // right flank
+    }
+
+    /// <summary>
+    /// How far the wall face has leaned out by this height. The buttress rides on this so
+    /// the two lean together.
+    /// </summary>
+    private float WallFaceOffset(float y)
+    {
+        float below = Mathf.Max(0f, (TopElevationLocal - copingHeight) - y);
+        return below * wallBatter - wallRecess;
+    }
+
+    /// <summary>
+    /// Where the front of a buttress sits at this height: clear of the wall by its
+    /// projection, plus a flare that reaches full width at the base of the dressed wall
+    /// and holds there. Tying the flare to the dressed depth rather than to total drop
+    /// keeps a column in deep water from splaying into a spike.
+    /// </summary>
+    private float ButtressFaceOffset(float y)
+    {
+        float below = Mathf.Max(0f, (TopElevationLocal - copingHeight) - y);
+        float flare = dressedWallDepth > 0.01f
+            ? buttressFlare * Mathf.Clamp01(below / dressedWallDepth)
+            : buttressFlare;
+
+        // Measured from the cell boundary, not from the recessed wall - a rib at zero
+        // projection sits flush with its cell, so the structure never oversails the grid.
+        return below * wallBatter + buttressProjection + flare;
+    }
+
+    /// <summary>The top edge of one cell side, wound so its outward face is front-facing.</summary>
+    private void GetEdge(Vector2Int coordinate, EdgeDirection direction, float y, out Vector3 a, out Vector3 b)
     {
         float cellSize = gridSystem != null ? gridSystem.cellSize : 1f;
         float x0 = coordinate.x * cellSize;
         float z0 = coordinate.y * cellSize;
         float x1 = x0 + cellSize;
         float z1 = z0 + cellSize;
-        float top = TopElevationLocal;
-        Vector3 a;
-        Vector3 b;
+
         switch (direction)
         {
-            case EdgeDirection.North: a = new Vector3(x1, top, z1); b = new Vector3(x0, top, z1); break;
-            case EdgeDirection.East:  a = new Vector3(x1, top, z0); b = new Vector3(x1, top, z1); break;
-            case EdgeDirection.South: a = new Vector3(x0, top, z0); b = new Vector3(x1, top, z0); break;
-            default:                  a = new Vector3(x0, top, z1); b = new Vector3(x0, top, z0); break;
+            case EdgeDirection.North: a = new Vector3(x1, y, z1); b = new Vector3(x0, y, z1); break;
+            case EdgeDirection.East:  a = new Vector3(x1, y, z0); b = new Vector3(x1, y, z1); break;
+            case EdgeDirection.South: a = new Vector3(x0, y, z0); b = new Vector3(x1, y, z0); break;
+            default:                  a = new Vector3(x0, y, z1); b = new Vector3(x0, y, z0); break;
         }
+    }
 
+    private static Vector3 OutwardVector(EdgeDirection direction)
+    {
+        Vector2Int outward = DirectionVector(direction);
+        return new Vector3(outward.x, 0f, outward.y);
+    }
+
+    /// <summary>
+    /// Adds one quad wound v0-v1-v2-v3, with the given atlas rect stretched across it.
+    /// Every surface in the structure goes through here, so the atlas is the only thing
+    /// that decides what a face looks like.
+    /// </summary>
+    private static void AddQuad(List<Vector3> vertices, List<Vector2> uvs, List<int> triangles,
+                                Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3, Rect uvRect)
+    {
         int start = vertices.Count;
-        vertices.Add(a);
-        vertices.Add(b);
-        vertices.Add(new Vector3(b.x, bottom, b.z));
-        vertices.Add(new Vector3(a.x, bottom, a.z));
-        float depth = Mathf.Max(0.01f, top - bottom);
-        uvs.Add(new Vector2(0f, depth));
-        uvs.Add(new Vector2(1f, depth));
-        uvs.Add(new Vector2(1f, 0f));
-        uvs.Add(new Vector2(0f, 0f));
+        vertices.Add(v0); vertices.Add(v1); vertices.Add(v2); vertices.Add(v3);
+
+        uvs.Add(new Vector2(uvRect.xMin, uvRect.yMax));
+        uvs.Add(new Vector2(uvRect.xMax, uvRect.yMax));
+        uvs.Add(new Vector2(uvRect.xMax, uvRect.yMin));
+        uvs.Add(new Vector2(uvRect.xMin, uvRect.yMin));
+
         triangles.Add(start); triangles.Add(start + 1); triangles.Add(start + 2);
         triangles.Add(start); triangles.Add(start + 2); triangles.Add(start + 3);
     }

@@ -386,6 +386,18 @@ public class GridSystem : MonoBehaviour
     }
 
     /// <summary>
+    /// A sampler over this island's terrain heightfield, for anything that has to sit
+    /// flush on the ground rather than at a cell's single quantised height. Resolve one
+    /// per mesh build and reuse it - creating it costs a heightfield lookup.
+    /// <paramref name="fallbackHeight"/> is returned by every sample when this island has
+    /// no sampled field, which keeps callers flat instead of collapsing them to zero.
+    /// </summary>
+    public TerrainHeightSampler CreateHeightSampler(float fallbackHeight)
+    {
+        return new TerrainHeightSampler(ResolveTerrainHeightField(), fallbackHeight);
+    }
+
+    /// <summary>
     /// The terrain heightfield this island's mesh was generated from, or null when the
     /// island was not built through IslandTerrainProvider. Already cached by the provider,
     /// so this is a lookup rather than a regeneration.

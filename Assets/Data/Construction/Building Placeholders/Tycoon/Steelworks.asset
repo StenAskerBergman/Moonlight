@@ -16,7 +16,7 @@ MonoBehaviour:
   buildingName: Steelworks
   buildingDescription: Engineer tier Tycoon production. Placeholder art and footprint.
   buildingType: Production
-  buildingSize: {x: 3, y: 1, z: 3}
+  buildingSize: {x: 5, y: 1, z: 4}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

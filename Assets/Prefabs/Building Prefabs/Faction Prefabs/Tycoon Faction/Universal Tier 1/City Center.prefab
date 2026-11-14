@@ -128,6 +128,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac6624dfc59d6234c885171aa586d475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  owner: {fileID: 0}
   compatibleSeed: {fileID: 0}
   buildingInventory: {fileID: -5358358584518430087}
   islandInventory: {fileID: 0}
@@ -220,7 +221,8 @@ MonoBehaviour:
   buildingProperties: {fileID: 0}
   buildingData: {fileID: 11400000, guid: a84cf9061fc8a1041a13d2f424ab3326, type: 2}
   costData: {fileID: 11400000, guid: b8447c10b0d367740bc151d685e73cfe, type: 2}
-  buildingSize: {x: 0, y: 0, z: 0}
+  buildingSize: {x: 6, y: 1, z: 8}
+  influenceRadius: 0
   buildingName: 
   buildingDescription: 
   buildingTags: []

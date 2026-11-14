@@ -18,7 +18,7 @@ MonoBehaviour:
     FOUNDATION ONLY. The monument then consumes further construction materials across
     three building phases, which are not part of this cost.
   buildingType: Monument
-  buildingSize: {x: 6, y: 1, z: 6}
+  buildingSize: {x: 10, y: 1, z: 10}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

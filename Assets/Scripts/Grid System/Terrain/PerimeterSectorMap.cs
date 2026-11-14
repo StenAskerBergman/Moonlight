@@ -1,3 +1,6 @@
+﻿// tldr: Divides the chunk's coastline into angular sectors so coastal features can be distributed around the
+// island instead of clustering wherever the noise happened to be favourable.
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;

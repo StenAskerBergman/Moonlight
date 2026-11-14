@@ -26,6 +26,15 @@ public sealed class RoadTileArt : MonoBehaviour
 
     public void Configure(RoadTopologyResolver.Result topology, BridgeAppearance bridge)
     {
+        Configure(topology, bridge, default);
+    }
+
+    public void Configure(RoadTopologyResolver.Result topology, BridgeAppearance bridge, RoadSurfaceDrape drape)
+    {
+        // A bridge deck spans water at its own height and has to stay straight, so it
+        // is never draped onto the ground it is crossing.
+        RoadSurfaceDrape surfaceDrape = bridge.IsBridge ? default : drape;
+
         int mask = bridge.IsBridge && topology.BridgeAxisMask != 0
             ? topology.BridgeAxisMask
             : topology.ConnectionMask;
@@ -35,7 +44,7 @@ public sealed class RoadTileArt : MonoBehaviour
         float roadWidth = highway ? 0.78f : 0.62f;
         float halfWidth = roadWidth * 0.5f;
         float surfaceTop = bridge.IsBridge ? 0.045f : 0.035f;
-        MeshBuilder mesh = new MeshBuilder(8);
+        MeshBuilder mesh = new MeshBuilder(8, surfaceDrape);
 
         AddEmbeddedBase(mesh, mask, roadWidth, bridge.IsBridge);
         AddRoadSurface(mesh, mask, roadWidth, surfaceTop);
@@ -73,7 +82,10 @@ public sealed class RoadTileArt : MonoBehaviour
     private static void AddEmbeddedBase(MeshBuilder mesh, int mask, float width, bool bridge)
     {
         float extra = bridge ? 0.035f : 0.055f;
-        float thickness = bridge ? 0.075f : 0.055f;
+        // On the ground the base doubles as a skirt: it has to reach deep enough to stay
+        // buried where the draped surface under-samples a bump, or daylight shows through
+        // along the verge.
+        float thickness = bridge ? 0.075f : 0.14f;
         AddRouteModules(mesh, mask, width + extra * 2f, -thickness * 0.5f, thickness, bridge ? Concrete : Earth);
     }
 
@@ -534,9 +546,18 @@ public sealed class RoadTileArt : MonoBehaviour
         private readonly List<Vector3> normals = new List<Vector3>();
         private readonly List<Vector2> uvs = new List<Vector2>();
         private readonly List<int>[] triangles;
+        private readonly RoadSurfaceDrape drape;
 
-        public MeshBuilder(int materialCount)
+        // Faces are split along their horizontal extent so a draped surface can follow
+        // the ground between its corners instead of cutting a straight chord through it.
+        // Terrain carries 8 samples per cell by default; 4 segments per unit tracks that
+        // closely enough without multiplying the tile's triangle count by 64.
+        private const float SegmentsPerUnit = 4f;
+        private const int MaxSegments = 8;
+
+        public MeshBuilder(int materialCount, RoadSurfaceDrape drape)
         {
+            this.drape = drape;
             triangles = new List<int>[materialCount];
             for (int i = 0; i < materialCount; i++) triangles[i] = new List<int>();
         }
@@ -557,19 +578,67 @@ public sealed class RoadTileArt : MonoBehaviour
 
         private void AddFace(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal, int material)
         {
+            if (!drape.IsActive)
+            {
+                AddQuad(a, b, c, d, normal, material);
+                return;
+            }
+
+            // Every face here is a rectangle, so a->b and a->d span it.
+            Vector3 edgeU = b - a;
+            Vector3 edgeV = d - a;
+            int segmentsU = SegmentCount(edgeU);
+            int segmentsV = SegmentCount(edgeV);
+
+            for (int i = 0; i < segmentsU; i++)
+            {
+                float u0 = (float)i / segmentsU;
+                float u1 = (float)(i + 1) / segmentsU;
+
+                for (int j = 0; j < segmentsV; j++)
+                {
+                    float v0 = (float)j / segmentsV;
+                    float v1 = (float)(j + 1) / segmentsV;
+
+                    AddQuad(
+                        a + edgeU * u0 + edgeV * v0,
+                        a + edgeU * u1 + edgeV * v0,
+                        a + edgeU * u1 + edgeV * v1,
+                        a + edgeU * u0 + edgeV * v1,
+                        normal, material);
+                }
+            }
+        }
+
+        private void AddQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal, int material)
+        {
             int start = vertices.Count;
-            vertices.Add(a); vertices.Add(b); vertices.Add(c); vertices.Add(d);
-            normals.Add(normal); normals.Add(normal); normals.Add(normal); normals.Add(normal);
-            uvs.Add(new Vector2(a.x, a.z) * 3f);
-            uvs.Add(new Vector2(b.x, b.z) * 3f);
-            uvs.Add(new Vector2(c.x, c.z) * 3f);
-            uvs.Add(new Vector2(d.x, d.z) * 3f);
+            AddVertex(a, normal);
+            AddVertex(b, normal);
+            AddVertex(c, normal);
+            AddVertex(d, normal);
             triangles[material].Add(start);
             triangles[material].Add(start + 1);
             triangles[material].Add(start + 2);
             triangles[material].Add(start);
             triangles[material].Add(start + 2);
             triangles[material].Add(start + 3);
+        }
+
+        private void AddVertex(Vector3 position, Vector3 normal)
+        {
+            // UVs come off the flat position, so the surface pattern does not stretch
+            // as the road tilts down a slope.
+            uvs.Add(new Vector2(position.x, position.z) * 3f);
+            position.y += drape.OffsetAt(position.x, position.z);
+            vertices.Add(position);
+            normals.Add(normal);
+        }
+
+        private static int SegmentCount(Vector3 edge)
+        {
+            float horizontal = Mathf.Sqrt(edge.x * edge.x + edge.z * edge.z);
+            return Mathf.Clamp(Mathf.CeilToInt(horizontal * SegmentsPerUnit), 1, MaxSegments);
         }
 
         public Mesh Create(string meshName)
@@ -580,6 +649,11 @@ public sealed class RoadTileArt : MonoBehaviour
             mesh.SetUVs(0, uvs);
             mesh.subMeshCount = triangles.Length;
             for (int i = 0; i < triangles.Length; i++) mesh.SetTriangles(triangles[i], i, false);
+
+            // Draping tilts faces off the axis-aligned normals they were authored with.
+            // No vertex is shared between faces, so this stays flat-shaded per face.
+            if (drape.IsActive) mesh.RecalculateNormals();
+
             mesh.RecalculateBounds();
             return mesh;
         }

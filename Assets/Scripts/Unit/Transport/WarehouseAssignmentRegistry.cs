@@ -10,6 +10,32 @@ public static class WarehouseAssignmentRegistry
     private static readonly List<WarehouseLogisticsScheduler> warehouses = new List<WarehouseLogisticsScheduler>();
     private static readonly Dictionary<Building, WarehouseLogisticsScheduler> assignments = new Dictionary<Building, WarehouseLogisticsScheduler>();
     private static readonly HashSet<Building> activePickups = new HashSet<Building>();
+    private static readonly List<Depot> depots = new List<Depot>();
+
+    public static void RegisterDepot(Depot depot)
+    {
+        if (depot != null && !depots.Contains(depot)) depots.Add(depot);
+    }
+
+    public static void UnregisterDepot(Depot depot) => depots.Remove(depot);
+
+    // Depot lifecycle maintains this lookup; delivery never enumerates the scene.
+    public static Depot FindNearestDepot(Vector3 position, float range)
+    {
+        Depot best = null;
+        float bestDistance = float.PositiveInfinity;
+        float rangeSquared = range * range;
+        foreach (Depot depot in depots)
+        {
+            if (depot == null || !depot.gameObject.activeInHierarchy) continue;
+            float distance = (position - depot.transform.position).sqrMagnitude;
+            if (distance > rangeSquared || distance >= bestDistance) continue;
+            bestDistance = distance;
+            best = depot;
+        }
+        return best;
+    }
+
 
     public static void Register(WarehouseLogisticsScheduler warehouse)
     {

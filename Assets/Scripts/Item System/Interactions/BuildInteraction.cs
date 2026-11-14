@@ -6,6 +6,23 @@ public class BuildInteraction : MonoBehaviour, IBuildable
 {
     public Inventory unitInventory;
     private UnitInventory unitCargoInventory;
+    private Unit foundingUnit;
+    private float nextDisplayCheck;
+    private bool displayAvailability;
+    private bool hasDisplayAvailability;
+
+    // Shared by both UI panels. Execution still calls the uncached placement checks.
+    public bool CanBuildForDisplay()
+    {
+        if (!hasDisplayAvailability || Time.unscaledTime >= nextDisplayCheck)
+        {
+            displayAvailability = CanBuild();
+            hasDisplayAvailability = true;
+            nextDisplayCheck = Time.unscaledTime + 0.2f;
+        }
+        return displayAvailability;
+    }
+
 
     [Tooltip("Maximum reach/influence distance from the boat to a candidate harbor cell. Defaults to InfluenceManager.BoatFoundingRange (30).")]
     [SerializeField] private float buildRange = InfluenceManager.BoatFoundingRange;
@@ -47,6 +64,7 @@ public class BuildInteraction : MonoBehaviour, IBuildable
     {
         unitInventory = GetComponent<Inventory>();
         unitCargoInventory = GetComponent<UnitInventory>();
+        foundingUnit = GetComponent<Unit>();
     }
 
     public void Build(ItemData item)
@@ -171,24 +189,39 @@ public class BuildInteraction : MonoBehaviour, IBuildable
                 ? island.islandObject.GetComponent<InfluenceManager>()
                 : island.GetComponent<InfluenceManager>();
 
-            for (int x = 0; x < gs.gridSize; x++)
+            int minX = 0, minZ = 0, maxX = gs.gridSize - 1, maxZ = gs.gridSize - 1;
+            Matrix4x4 inverse = gs.transform.worldToLocalMatrix;
+            // Horizontal grids, including yaw rotation and non-uniform scale, can be
+            // bounded exactly in local XZ. Tilted grids retain the exhaustive fallback.
+            if (Mathf.Abs(inverse.m01) < 0.000001f && Mathf.Abs(inverse.m21) < 0.000001f)
             {
-                for (int z = 0; z < gs.gridSize; z++)
+                Vector3 local = inverse.MultiplyPoint3x4(boatFlat);
+                float radiusX = maxRange * Mathf.Sqrt(inverse.m00 * inverse.m00 + inverse.m02 * inverse.m02);
+                float radiusZ = maxRange * Mathf.Sqrt(inverse.m20 * inverse.m20 + inverse.m22 * inverse.m22);
+                minX = Mathf.Max(0, Mathf.FloorToInt(local.x - radiusX) - 1);
+                maxX = Mathf.Min(gs.gridSize - 1, Mathf.FloorToInt(local.x + radiusX) + 1);
+                minZ = Mathf.Max(0, Mathf.FloorToInt(local.z - radiusZ) - 1);
+                maxZ = Mathf.Min(gs.gridSize - 1, Mathf.FloorToInt(local.z + radiusZ) + 1);
+            }
+            float rangeSquared = maxRange * maxRange;
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int z = minZ; z <= maxZ; z++)
                 {
                     Cell cell = gs.GetCell(x, z);
                     if (cell == null || cell.isBlocked || cell.isOccupied) continue;
 
                     Vector3 cellWorldPos = gs.transform.TransformPoint(cell.localCenter);
                     Vector3 cellFlat = new Vector3(cellWorldPos.x, 0f, cellWorldPos.z);
-                    float dist = Vector3.Distance(boatFlat, cellFlat);
+                    float dist = (boatFlat - cellFlat).sqrMagnitude;
 
-                    if (dist > maxRange) continue;
+                    if (dist > rangeSquared || dist >= minDistance) continue;
 
                     // Verify whether this candidate cell satisfies harbor placement rules
                     bool canPlaceHere = false;
                     if (influenceManager != null)
                     {
-                        canPlaceHere = influenceManager.CanPlaceWarehouse(cellWorldPos, gs);
+                        canPlaceHere = influenceManager.CanPlaceWarehouse(cellWorldPos, gs, out _, foundingUnit);
                     }
                     else
                     {

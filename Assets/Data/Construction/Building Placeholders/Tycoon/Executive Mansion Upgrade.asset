@@ -18,7 +18,7 @@ MonoBehaviour:
     Incremental upgrade cost from Engineer Apartment. Not the cumulative building
     value.
   buildingType: Civic
-  buildingSize: {x: 4, y: 1, z: 4}
+  buildingSize: {x: 3, y: 1, z: 3}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

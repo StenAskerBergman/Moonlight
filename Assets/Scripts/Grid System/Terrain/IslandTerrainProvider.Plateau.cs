@@ -1,3 +1,6 @@
+﻿// tldr: The standalone underwater plateau chunk type: its tabletop footprint, escarpment profile and rim
+// formations. A separate landform from islands, sharing only the world seabed datum.
+
 using UnityEngine;
 
 public sealed partial class IslandTerrainProvider

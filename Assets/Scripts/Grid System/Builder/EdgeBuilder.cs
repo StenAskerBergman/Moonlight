@@ -1,3 +1,5 @@
+﻿// tldr: Shared constants/helpers for the edge and skirt builders.
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

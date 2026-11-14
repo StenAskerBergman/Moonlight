@@ -16,7 +16,7 @@ MonoBehaviour:
   buildingName: Nuclear Power Plant
   buildingDescription: Engineer tier Tycoon power. Placeholder art and footprint.
   buildingType: Power
-  buildingSize: {x: 4, y: 1, z: 4}
+  buildingSize: {x: 6, y: 1, z: 6}
   buildingTags: []
   influenceRadius: 0
   requiresQuayFoundation: 0

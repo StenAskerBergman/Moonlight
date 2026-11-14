@@ -1,3 +1,6 @@
+﻿// tldr: Decides what the ground LOOKS like: converts height, slope, shore distance and coastal bands into the
+// RGBA control texture (grass / sand / rock / seabed weights) the terrain shader blends.
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,51 +16,84 @@ public enum TerrainDebugViewMode
     PlateauDeltaOnly,     // Underwater plateau shifts
     SlopeField,           // Steepness gradient
     SemanticClassification,// Discrete terrain types
-    PlateauZones          // Tabletop / rim / escarpment / sand opening / abyss
+    PlateauZones,         // Tabletop / rim / escarpment / sand opening / abyss
+    MaterialWeights,      // Production weights: grass red, sand green, rock blue, seabed black
+    SurfaceColour         // Production climate colour before tiled detail and lighting
 }
 
 public class TextureBuilder
 {
-    // Shoreline sand band, in world height. Sand fades out by SandLower + SandBand.
-    // Kept deliberately narrow: a wide band produced a broad flat beige apron that read as a
-    // "plate rim" around every island. Keep roughly in step with the Beach height cut in
-    // IslandTerrainProvider.ClassifySynthesizedIsland so texture and gameplay cells agree.
-    private const float SandLower = 0.02f;
-    private const float SandBand = 0.14f;
+    // Sand now follows the SHORELINE DISTANCE BANDS, not an absolute height window.
+    //
+    // It used to be `height in [0.02, 0.16]`, which had to be kept narrow because it was slicing a
+    // ramp whose ground width the noise gradient chose - a wider window produced the beige "plate
+    // rim" apron. Reading the same bands the geometry and the Beach classification use means the
+    // painted sand is exactly as wide as the sand actually is, and it can be authored.
+    //
+    // Fraction of the backshore over which sand hands over to grass.
+    private const float BackshoreSandFade = 0.65f;
 
-    // Depth over which the submerged shelf fades from sand to silt. See the seabed branch.
+    // Depth over which submerged ground is replaced by marine silt.
     private const float SeabedSiltDepth = 1.1f;
 
-    // Height by which the coastal rock assist has fully faded out. See the land branch.
+    // Height above the ocean surface at which coastal rock assistance fades out.
     private const float CoastalRockAssistHeight = 0.75f;
 
     private readonly Cell[,] grid;
     private readonly IslandTerrainProvider terrainSource;
     private readonly int visualSamplesPerCell;
-    private readonly ClimateProfile climate;
     private readonly TerrainDebugViewMode debugViewMode;
 
     public TextureBuilder(Cell[,] grid, ClimateProfile climate = null, TerrainDebugViewMode debugViewMode = TerrainDebugViewMode.Normal)
-    {
-        this.grid = grid;
-        this.visualSamplesPerCell = 1;
-        this.climate = climate != null ? climate : ScriptableObject.CreateInstance<ClimateProfile>();
-        this.debugViewMode = debugViewMode;
-    }
+        : this(grid, null, 1, climate, debugViewMode) { }
 
-    public TextureBuilder(
-        Cell[,] grid,
-        IslandTerrainProvider terrainSource,
-        int visualSamplesPerCell,
-        ClimateProfile climate = null,
-        TerrainDebugViewMode debugViewMode = TerrainDebugViewMode.Normal)
+    public TextureBuilder(Cell[,] grid, IslandTerrainProvider terrainSource, int visualSamplesPerCell,
+        ClimateProfile climate = null, TerrainDebugViewMode debugViewMode = TerrainDebugViewMode.Normal)
     {
         this.grid = grid;
         this.terrainSource = terrainSource;
         this.visualSamplesPerCell = Mathf.Max(1, visualSamplesPerCell);
-        this.climate = climate != null ? climate : ScriptableObject.CreateInstance<ClimateProfile>();
         this.debugViewMode = debugViewMode;
+        // Snapshot appearance on the calling thread before parallel pixel emission.
+        if (climate != null)
+        {
+            ForestColor1 = climate.forestColor1;
+            ForestColor2 = climate.forestColor2;
+            GrassColor1 = climate.grassColor1;
+            GrassColor2 = climate.grassColor2;
+            PlateauCoarseSandColor = climate.plateauCoarseSandColor;
+            PlateauFineSandColor = climate.plateauFineSandColor;
+            PlateauGravelColor = climate.plateauGravelColor;
+            PlateauMaterialVariation = climate.plateauMaterialVariation;
+            PlateauMudColor = climate.plateauMudColor;
+            PlateauReefColor = climate.plateauReefColor;
+            PlateauShellSedimentColor = climate.plateauShellSedimentColor;
+            PlateauSiltColor = climate.plateauSiltColor;
+            RockColor1 = climate.rockColor1;
+            RockColor2 = climate.rockColor2;
+            SandColor1 = climate.sandColor1;
+            SandColor2 = climate.sandColor2;
+            SnowColor = climate.snowColor;
+        }
     }
+
+    private readonly Color ForestColor1 = new Color(0.2f, 0.35f, 0.15f);
+    private readonly Color ForestColor2 = new Color(0.25f, 0.4f, 0.18f);
+    private readonly Color GrassColor1 = new Color(0.3f, 0.45f, 0.15f);
+    private readonly Color GrassColor2 = new Color(0.35f, 0.5f, 0.18f);
+    private readonly Color PlateauCoarseSandColor = new Color(0.46f, 0.43f, 0.34f, 1f);
+    private readonly Color PlateauFineSandColor = new Color(0.62f, 0.59f, 0.47f, 1f);
+    private readonly Color PlateauGravelColor = new Color(0.34f, 0.38f, 0.37f, 1f);
+    private readonly float PlateauMaterialVariation = 0.78f;
+    private readonly Color PlateauMudColor = new Color(0.20f, 0.23f, 0.20f, 1f);
+    private readonly Color PlateauReefColor = new Color(0.13f, 0.28f, 0.22f, 1f);
+    private readonly Color PlateauShellSedimentColor = new Color(0.76f, 0.73f, 0.61f, 1f);
+    private readonly Color PlateauSiltColor = new Color(0.11f, 0.15f, 0.17f, 1f);
+    private readonly Color RockColor1 = new Color(0.45f, 0.45f, 0.45f);
+    private readonly Color RockColor2 = new Color(0.35f, 0.35f, 0.35f);
+    private readonly Color SandColor1 = new Color(0.75f, 0.75f, 0.7f);
+    private readonly Color SandColor2 = new Color(0.7f, 0.7f, 0.65f);
+    private readonly Color SnowColor = new Color(0.95f, 0.95f, 0.98f);
 
     private float FractalNoise(float x, float y, float scale)
     {
@@ -77,218 +113,154 @@ public class TextureBuilder
 
     public Texture2D Build()
     {
-        if (debugViewMode != TerrainDebugViewMode.Normal)
+        if (debugViewMode == TerrainDebugViewMode.Normal || debugViewMode == TerrainDebugViewMode.SurfaceColour)
+            return BuildMaterialMap(false);
+        if (debugViewMode == TerrainDebugViewMode.MaterialWeights)
         {
-            return BuildDiagnosticTexture();
+            Texture2D texture = BuildTerrainControlMap();
+            // Diagnostic display is opaque; seabed is black because its weight occupies alpha.
+            Color[] pixels = texture.GetPixels();
+            for (int i = 0; i < pixels.Length; i++) pixels[i].a = 1f;
+            texture.SetPixels(pixels);
+            texture.Apply(true, false);
+            return texture;
         }
+        return BuildDiagnosticTexture();
+    }
 
-        int gridSize = grid.GetLength(0);
-        bool useFractionalSampling = terrainSource != null && visualSamplesPerCell > 1;
-        int textureSize = useFractionalSampling ? gridSize * visualSamplesPerCell : gridSize;
-        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, true);
+    // Control and colour emission share one material decision. Geometry remains authoritative.
+    public Texture2D BuildSurfaceTintMap()
+    {
+        return BuildMaterialMap(false, true);
+    }
 
-        Color[] colorMap = new Color[textureSize * textureSize];
+    private Texture2D BuildMaterialMap(bool control, bool surfaceMetadata = false)
+    {
+        TerrainSampleCache cache = terrainSource != null
+            ? terrainSource.GetOrCreateSampleCache(visualSamplesPerCell) : null;
+        int resolution = cache != null ? cache.Resolution : grid.GetLength(0);
+        Texture2D texture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, true, control);
         texture.filterMode = FilterMode.Bilinear;
         texture.wrapMode = TextureWrapMode.Clamp;
-
-        if (useFractionalSampling)
+        Color[] pixels = new Color[resolution * resolution];
+        System.Threading.Tasks.Parallel.For(0, resolution, y =>
         {
-            TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell, false);
-            TerrainGenerationSettings settings = terrainSource.Settings;
-
-            System.Threading.Tasks.Parallel.For(0, textureSize, y =>
+            for (int x = 0; x < resolution; x++)
             {
-                int rowOffset = y * textureSize;
-                for (int x = 0; x < textureSize; x++)
-                {
-                    int idx = cache.GetIndex(x, y);
-                    float height = cache.Heights[idx];
-                    float slope = cache.Slopes[idx];
-                    float mountainBoost = cache.MountainBoosts != null ? cache.MountainBoosts[idx] : 0f;
-                    Cell.TerrainType terrainType = cache.TerrainTypes[idx];
-                    PlateauSampleData plateauData = cache.PlateauData != null
-                        ? cache.PlateauData[idx]
-                        : default;
+                int idx = cache != null ? cache.GetIndex(x, y) : 0;
+                Vector2 point = new Vector2(x, y) * (cache != null ? cache.Step : 1f);
+                if (terrainSource != null) point -= Vector2.one * terrainSource.SampleCachePadding;
+                Color weights = cache != null ? EvaluateMaterialWeights(cache, idx, point)
+                    : EvaluateFallbackWeights(grid[x, y].currentTerrainType);
+                Color pixel = control ? weights : EvaluateSurfaceTint(cache, idx, point, weights,
+                    cache != null ? cache.TerrainTypes[idx] : grid[x, y].currentTerrainType);
+                if (!control && !surfaceMetadata) pixel.a = 1f;
+                pixels[y * resolution + x] = pixel;
+            }
+        });
+        texture.SetPixels(pixels);
+        texture.Apply(true, false);
+        return texture;
+    }
 
-                    // Fine micro-detail noise for natural organic shading
-                    float microNoise = FractalNoise(x * 2.5f, y * 2.5f, 0.08f);
-                    float macroNoise = FractalNoise(x, y, 0.02f);
+    private static Color EvaluateFallbackWeights(Cell.TerrainType type)
+    {
+        switch (type)
+        {
+            case Cell.TerrainType.Beach: case Cell.TerrainType.Shore: case Cell.TerrainType.Coast:
+            case Cell.TerrainType.River: case Cell.TerrainType.Lake: return new Color(0f, 1f, 0f, 0f);
+            case Cell.TerrainType.Mountain: case Cell.TerrainType.MountainPeak:
+            case Cell.TerrainType.Cliff: case Cell.TerrainType.Rocky: return new Color(0f, 0f, 1f, 0f);
+            case Cell.TerrainType.Abyssal: case Cell.TerrainType.Deep: case Cell.TerrainType.Shallow:
+            case Cell.TerrainType.Water: case Cell.TerrainType.Sea: case Cell.TerrainType.Ocean:
+                return new Color(0f, 0f, 0f, 1f);
+            default: return new Color(1f, 0f, 0f, 0f);
+        }
+    }
 
-                    // Material colors from ClimateProfile
-                    Color grass = Color.Lerp(climate.grassColor1, climate.grassColor2, microNoise);
-                    Color sand = Color.Lerp(climate.sandColor1, climate.sandColor2, microNoise);
-                    Color rock = Color.Lerp(climate.rockColor1, climate.rockColor2, macroNoise * 0.7f + microNoise * 0.3f);
-                    Color snow = climate.snowColor;
-                    Color shallowSea = climate.shallowWaterColor;
-                    Color deepSea = climate.deepWaterColor;
-                    Color riverWater = climate.riverColor;
-
-                    Color finalColor;
-
-                    if (plateauData.IsDefined)
-                    {
-                        finalColor = EvaluatePlateauSurfaceColor(
-                            plateauData,
-                            sand,
-                            rock,
-                            microNoise,
-                            macroNoise);
-                    }
-                    else if ((terrainType == Cell.TerrainType.River || terrainType == Cell.TerrainType.Lake) && height <= 0.15f)
-                    {
-                        finalColor = Color.Lerp(sand, rock, 0.35f); // Riverbed sand/gravel
-                    }
-                    else
-                    {
-                        // Surface treatment, evaluated for EVERY height - above and below water alike.
-                        //
-                        // This used to be split into an `else if (height < 0)` seabed branch and an
-                        // `else` land branch, each computing its own rock weighting. The two did not
-                        // agree at their shared boundary: measured across 0.01 units of height at a
-                        // coastal mountain flank, the rock fraction stepped 1.000 (land) -> 0.600
-                        // (seabed) instantly, because the seabed branch capped rock at
-                        // mountainFactor * 0.6 while the land branch could reach a full 1.0.
-                        //
-                        // That 40% colour step followed the h=0 contour across the 960x960 texel
-                        // grid, and a hard edge crossing a pixel grid at a shallow angle stair-steps
-                        // by one texel - the serrated band along the foot of coastal mountains. It
-                        // survived every heightfield fix because the geometry was never at fault:
-                        // height, boost and rockWeight contours all traced with zero direction
-                        // reversals, and replacing the texture with a flat colour removed the teeth
-                        // entirely on identical geometry.
-                        //
-                        // Now there is a single surface colour with no branch in it, and depth only
-                        // fades that surface toward marine silt. depthT is 0 at h=0, so the result is
-                        // continuous across the waterline by construction rather than by tuning.
-                        //
-                        // Rock weight is resolved BEFORE the ground layer, because the ground layer
-                        // needs to know about it (see below).
-                        //
-                        // 1. Mountain Rock / Cliff blending based on mountain boost, slope, and elevation
-                        // On mountain coasts, rock plunges directly into the water without an artificial sand apron.
-                        //
-                        // Deliberately NOT flooring rockWeight off terrainType (tried: Mathf.Max(rockWeight,
-                        // 0.85f) whenever terrainType is Mountain/MountainPeak/Cliff). terrainType is a
-                        // per-vertex discrete classification - a neighbor just outside that classification
-                        // can have a genuinely low continuous mountainFactor/slopeFactor, so a hard floor
-                        // on one side and none on the other creates a huge rockWeight jump right at the
-                        // classification boundary: hard-edged dark rock blobs sitting on flat sand. Trusting
-                        // the continuous fields alone keeps rockWeight smooth everywhere; they're already
-                        // tuned to track the same thresholds ClassifySynthesizedIsland uses for Cliff.
-                        // A ridge's outer apron decays to zero boost, so wherever a coastline happens
-                        // to fall inside that apron the boost sits under the 0.43 needed for full
-                        // rock and the last stretch down to the water renders as sand - a beige band
-                        // wedged between the mountain and the sea. Measured at 25% of shore points
-                        // that have mountain mass within ~1 world unit.
-                        //
-                        // So the boost needed to read as rock is relaxed as terrain approaches the
-                        // waterline: a shore lying beneath a mountain is a rocky shore. This is
-                        // continuous in BOTH height and boost, and it scales what is already a
-                        // mountain-only signal - terrain with no boost (an ordinary beach) is
-                        // untouched no matter how close to the water it is.
-                        float coastalRockAssist = 1f - Mathf.Clamp01(height / CoastalRockAssistHeight);
-                        coastalRockAssist = coastalRockAssist * coastalRockAssist * (3f - 2f * coastalRockAssist);
-                        // Away from the shoreline, low ridge boost is a grassy
-                        // foothill rather than rock. The coast assist still lets a
-                        // true mountain face meet the sea without a sand collar.
-                        float boostFloor = Mathf.Lerp(0.22f, 0.025f, coastalRockAssist);
-                        float boostRange = Mathf.Lerp(0.50f, 0.16f, coastalRockAssist);
-
-                        float mountainFactor = Mathf.Clamp01((mountainBoost - boostFloor) / boostRange);
-                        float slopeFactor = Mathf.Clamp01((slope - 0.35f) / 0.25f);
-                        float heightFactor = Mathf.Clamp01((height - 1.6f) / 1.2f);
-
-                        float rockWeight = Mathf.Max(mountainFactor, slopeFactor, heightFactor);
-                        rockWeight = rockWeight * rockWeight * (3f - 2f * rockWeight);
-
-                        // 2. Shoreline Beach vs Inland Grass Plain.
-                        //
-                        // Sand is keyed on absolute height, so a mountain flank descending to the
-                        // waterline passes straight through the sand band. Because sand is the base
-                        // layer that rock is blended OVER, a partial rockWeight there (~0.6-0.7 on a
-                        // steep flank) mixed 30-40% sand into the rock and painted a beige collar
-                        // right across the foot of the massif, cutting the mountain texture off.
-                        //
-                        // Suppressing sand by rockWeight fixes that: where the surface reads as rock,
-                        // the layer underneath it is grass rather than sand, so any partial rock blend
-                        // resolves toward rock-on-grass instead of rock-on-beach. It stays fully
-                        // continuous - no threshold on terrainType - so it cannot produce the hard
-                        // rock/sand borders an earlier discrete floor did.
-                        float beachToGrass = Mathf.Clamp01((height - SandLower) / SandBand);
-                        beachToGrass = beachToGrass * beachToGrass * (3f - 2f * beachToGrass);
-                        beachToGrass = Mathf.Max(beachToGrass, rockWeight);
-                        Color groundColor = Color.Lerp(sand, grass, beachToGrass);
-
-                        Color surfaceColor = Color.Lerp(groundColor, rock, rockWeight);
-
-                        // 3. High altitude snow peak
-                        if (height >= 3.8f)
-                        {
-                            float snowWeight = Mathf.Clamp01((height - 3.8f) / 0.8f);
-                            surfaceColor = Color.Lerp(surfaceColor, snow, snowWeight);
-                        }
-
-                        // 4. Submerged: fade the SAME surface toward deep marine silt with depth.
-                        //
-                        // SeabedSiltDepth controls how wide the beach LOOKS. The dry sand strip above
-                        // the waterline is only a fraction of a world unit, but the shallow shelf is
-                        // visible straight through the water, so a slow ramp (this was 4.0) kept the
-                        // shelf bright sand far out to sea and read as one continuous apron - the
-                        // "plate rim" every island appeared to sit on.
-                        //
-                        // Because this fades the surface colour rather than replacing it, a mountain
-                        // flank keeps its rock as it enters the water and simply darkens with depth,
-                        // and there is no value to disagree about at h=0.
-                        if (height < 0f)
-                        {
-                            float depthT = Mathf.Clamp01((-height) / SeabedSiltDepth);
-                            Color deepSeabedSilt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
-                            surfaceColor = Color.Lerp(surfaceColor, deepSeabedSilt, depthT);
-                        }
-
-                        finalColor = surfaceColor;
-                    }
-
-                    colorMap[rowOffset + x] = finalColor;
-                }
-            });
+    private Color EvaluateMaterialWeights(TerrainSampleCache cache, int idx, Vector2 point)
+    {
+        TerrainGenerationSettings settings = terrainSource.SurfaceSettingsAt(point);
+        float relativeHeight = cache.Heights[idx] - settings.waterHeight;
+        PlateauSampleData plateau = cache.PlateauData != null ? cache.PlateauData[idx] : default;
+        Color weights;
+        if (plateau.IsDefined)
+        {
+            float sediment = Mathf.Max(plateau.SiltWeight, plateau.AbyssFade);
+            float rock = plateau.RockWeight * (1f - sediment);
+            float sand = plateau.SandWeight * (1f - sediment);
+            float total = Mathf.Max(0.0001f, rock + sand + sediment);
+            weights = new Color(0f, sand / total, rock / total, sediment / total);
+            if (rock + sand + sediment < 0.0001f) weights.a = 1f;
         }
         else
         {
-            for (int y = 0; y < textureSize; y++)
-            {
-                int rowOffset = y * textureSize;
-                for (int x = 0; x < textureSize; x++)
-                {
-                    Cell.TerrainType tType = grid[x, y].currentTerrainType;
-                    Color finalColor;
-                    if (tType == Cell.TerrainType.Land || tType == Cell.TerrainType.Plain)
-                        finalColor = climate.grassColor1;
-                    else if (tType == Cell.TerrainType.Forest)
-                        finalColor = climate.forestColor1;
-                    else if (tType == Cell.TerrainType.Beach || tType == Cell.TerrainType.Shore || tType == Cell.TerrainType.Coast)
-                        finalColor = climate.sandColor1;
-                    else if (tType == Cell.TerrainType.Mountain || tType == Cell.TerrainType.Cliff)
-                        finalColor = climate.rockColor1;
-                    else if (tType == Cell.TerrainType.MountainPeak)
-                        finalColor = climate.snowColor;
-                    else if (tType == Cell.TerrainType.River || tType == Cell.TerrainType.Lake)
-                        finalColor = Color.Lerp(climate.sandColor1, climate.rockColor1, 0.3f);
-                    else
-                        finalColor = Color.Lerp(climate.sandColor1 * 0.75f, climate.rockColor2 * 0.6f, 0.5f); // Natural dark seabed
-
-                    colorMap[rowOffset + x] = finalColor;
-                }
-            }
+            IslandTerrainProvider.CoastalBands bands = terrainSource.ResolveCoastalBands(
+                point.x, point.y, cache.HeadlandMasks[idx], cache.ShoreCurvatures[idx]);
+            float assist = Smooth01(1f - relativeHeight / CoastalRockAssistHeight);
+            float boost = cache.MountainBoosts != null ? cache.MountainBoosts[idx] : 0f;
+            float rock = Smooth01(Mathf.Max(
+                (boost - Mathf.Lerp(0.22f, 0.025f, assist)) / Mathf.Lerp(0.50f, 0.16f, assist),
+                (cache.Slopes[idx] - 0.35f) / 0.25f,
+                (relativeHeight - 1.6f) / 1.2f));
+            float fadeEnd = Mathf.Lerp(bands.BeachOuter, bands.BackshoreOuter, BackshoreSandFade);
+            float grass = fadeEnd > 0.0001f
+                ? Smooth01((cache.ShoreDistances[idx] - bands.BeachOuter) / Mathf.Max(0.01f, fadeEnd - bands.BeachOuter)) : 1f;
+            float wash = Smooth01(cache.ShoreDistances[idx] / Mathf.Max(0.01f, settings.coastalProfile.waterlineSandWidth));
+            grass = Mathf.Lerp(Mathf.Min(grass, wash), 1f, bands.HeadlandMask);
+            grass = Mathf.Max(grass, rock);
+            float depth = Smooth01(-relativeHeight / SeabedSiltDepth);
+            float ground = 1f - rock;
+            // Replacement, not additive weights: deep flat seabed reaches 100% silt.
+            weights = new Color(grass * ground * (1f - depth),
+                (1f - grass) * ground * (1f - depth), rock, ground * depth);
         }
+        if (terrainSource.TrySampleRiver(point, out RiverSurfaceSample river))
+        {
+            float rock = Mathf.Clamp01(river.RockWeight);
+            float gravel = Mathf.Clamp01(river.GravelWeight) * (1f - rock);
+            Color riverWeights = new Color(1f - rock - gravel, gravel, rock, 0f);
+            weights = Color.Lerp(weights, riverWeights, Mathf.Clamp01(river.Influence));
+        }
+        return weights;
+    }
 
-        texture.SetPixels(colorMap);
-        texture.Apply(true);
-        return texture;
+    private Color EvaluateSurfaceTint(TerrainSampleCache cache, int idx, Vector2 point, Color weights, Cell.TerrainType type)
+    {
+        Vector2 world = terrainSource != null ? terrainSource.WorldOrigin + point : point;
+        TerrainGenerationSettings surfaceSettings = terrainSource != null ? terrainSource.SurfaceSettingsAt(point) : null;
+        int seed = surfaceSettings != null ? surfaceSettings.seed : 0;
+        world += new Vector2((seed & 65535) * 0.0137f, ((seed >> 16) & 65535) * 0.0173f);
+        float micro = FractalNoise(world.x * 2.5f, world.y * 2.5f, 0.08f);
+        float macro = FractalNoise(world.x, world.y, 0.02f);
+        Color grass = Color.Lerp(GrassColor1, GrassColor2, micro);
+        if (type == Cell.TerrainType.Forest) grass = Color.Lerp(ForestColor1, ForestColor2, micro);
+        Color sand = Color.Lerp(SandColor1, SandColor2, micro);
+        Color rock = Color.Lerp(RockColor1, RockColor2, macro * 0.7f + micro * 0.3f);
+        Color silt = Color.Lerp(sand * 0.72f, rock * 0.65f, 0.45f);
+        Color surface = grass * weights.r + sand * weights.g + rock * weights.b + silt * weights.a;
+        PlateauSampleData plateau = cache != null && cache.PlateauData != null ? cache.PlateauData[idx] : default;
+        if (plateau.IsDefined) surface = EvaluatePlateauSurfaceColor(plateau, weights, sand, rock, micro, macro);
+        float snow = 0f;
+        if (cache != null && !plateau.IsDefined)
+        {
+            snow = Smooth01((cache.Heights[idx] - (surfaceSettings.mountainPeakHeight - 0.4f)) / 0.8f);
+            surface = Color.Lerp(surface, SnowColor, snow);
+        }
+        else if (type == Cell.TerrainType.MountainPeak && !plateau.IsDefined)
+        {
+            surface = SnowColor;
+            snow = 1f;
+        }
+        surface = ApplyRiverSurfaceColor(surface, point);
+        // Alpha carries snow coverage only in the surface tint map; baked colour emission restores opacity.
+        surface.a = snow;
+        return surface;
     }
 
     private Color EvaluatePlateauSurfaceColor(
         PlateauSampleData plateau,
+        Color weights,
         Color sand,
         Color rock,
         float microNoise,
@@ -299,33 +271,33 @@ public class TextureBuilder
         // the entire buildable sand surface into the water channel and erase the
         // rocky escarpment. These authored weights are produced with the geometry and
         // are therefore the only stable material interface for this landform.
-        float variation = Mathf.Clamp01(climate.plateauMaterialVariation);
-        float sandWeight = plateau.SandWeight * (1f - plateau.AbyssFade);
-        float rockWeight = plateau.RockWeight * (1f - plateau.AbyssFade * 0.45f);
+        float variation = Mathf.Clamp01(PlateauMaterialVariation);
+        float sandWeight = weights.g;
+        float rockWeight = weights.b;
         float materialWeight = Mathf.Max(0.0001f, sandWeight + rockWeight);
         float normalizedRock = rockWeight / materialWeight;
 
         Color fineSand = Color.Lerp(
             sand,
-            ResolveUnderwaterColor(climate.plateauFineSandColor, sand * 0.86f),
+            ResolveUnderwaterColor(PlateauFineSandColor, sand * 0.86f),
             0.82f);
         Color coarseSand = ResolveUnderwaterColor(
-            climate.plateauCoarseSandColor,
+            PlateauCoarseSandColor,
             Color.Lerp(sand, rock, 0.22f));
         Color shellSediment = ResolveUnderwaterColor(
-            climate.plateauShellSedimentColor,
+            PlateauShellSedimentColor,
             sand * 1.08f);
         Color gravel = ResolveUnderwaterColor(
-            climate.plateauGravelColor,
+            PlateauGravelColor,
             Color.Lerp(sand, rock, 0.58f));
         Color mud = ResolveUnderwaterColor(
-            climate.plateauMudColor,
+            PlateauMudColor,
             Color.Lerp(sand * 0.42f, rock * 0.48f, 0.38f));
         Color silt = ResolveUnderwaterColor(
-            climate.plateauSiltColor,
+            PlateauSiltColor,
             Color.Lerp(sand * 0.30f, rock * 0.36f, 0.72f));
         Color reef = ResolveUnderwaterColor(
-            climate.plateauReefColor,
+            PlateauReefColor,
             new Color(0.16f, 0.27f, 0.22f, 1f));
 
         float coarseMask = sandWeight
@@ -429,6 +401,7 @@ public class TextureBuilder
             case Cell.TerrainType.Mountain: return new Color(0.45f, 0.45f, 0.45f);
             case Cell.TerrainType.MountainPeak: return new Color(0.95f, 0.95f, 1.0f);
             case Cell.TerrainType.River: return new Color(0.0f, 0.85f, 0.95f);
+            case Cell.TerrainType.WaterFall: return new Color(0.82f, 0.95f, 1f);
             case Cell.TerrainType.Lake: return new Color(0.0f, 0.55f, 0.90f);
             default: return Color.gray;
         }
@@ -446,6 +419,24 @@ public class TextureBuilder
             case PlateauZone.AbyssFade: return new Color(0.04f, 0.08f, 0.13f);
             default: return Color.black;
         }
+    }
+
+    private Color ApplyRiverSurfaceColor(Color underlying, Vector2 point)
+    {
+        if (terrainSource == null || !terrainSource.TrySampleRiver(point, out RiverSurfaceSample river)) return underlying;
+        Color gravel = Color.Lerp(SandColor1, RockColor1, 0.55f);
+        Color bank = Color.Lerp(GrassColor1, gravel, Mathf.Clamp01(river.GravelWeight));
+        Color surface = Color.Lerp(bank, RockColor1, Mathf.Clamp01(river.RockWeight));
+        if (river.IsWater) surface *= 0.78f;
+        return Color.Lerp(underlying, surface, river.Influence);
+    }
+
+    private Color ApplyRiverControl(Color underlying, Vector2 point)
+    {
+        if (terrainSource == null || !terrainSource.TrySampleRiver(point, out RiverSurfaceSample river)) return underlying;
+        float rock = Mathf.Clamp01(river.RockWeight);
+        float gravel = Mathf.Clamp01(river.GravelWeight) * (1f - rock);
+        return Color.Lerp(underlying, new Color(1f - rock - gravel, gravel, rock, 1f), river.Influence);
     }
 
     private Color EvaluateDiagnosticPixel(TerrainSampleCache cache, int idx)
@@ -494,9 +485,9 @@ public class TextureBuilder
                         : Color.Lerp(new Color(0.2f, 0.35f, 0.35f), new Color(0.1f, 0.3f, 0.9f), Mathf.Clamp01(-reliefDelta / 0.15f));
                 }
                 // 5. Base Island / Seabed Landform
-                if (height < 0f)
+                if (height < terrainSource.Settings.waterHeight)
                 {
-                    return Color.Lerp(new Color(0.08f, 0.12f, 0.18f), new Color(0.15f, 0.25f, 0.35f), Mathf.Clamp01((height + 4.5f) / 4.5f));
+                    return Color.Lerp(new Color(0.08f, 0.12f, 0.18f), new Color(0.15f, 0.25f, 0.35f), Mathf.Clamp01((height - terrainSource.Settings.waterHeight + 4.5f) / 4.5f));
                 }
                 return new Color(0.25f, 0.38f, 0.28f); // Base island mainland (slate olive)
             }
@@ -569,8 +560,10 @@ public class TextureBuilder
     public Texture2D BuildDiagnosticTexture()
     {
         int gridSize = grid.GetLength(0);
-        bool useFractionalSampling = terrainSource != null && visualSamplesPerCell > 1;
-        int textureSize = useFractionalSampling ? gridSize * visualSamplesPerCell : gridSize;
+        bool useFractionalSampling = terrainSource != null;
+        TerrainSampleCache cache = useFractionalSampling
+            ? terrainSource.GetOrCreateSampleCache(visualSamplesPerCell, trackAttribution: true) : null;
+        int textureSize = cache != null ? cache.Resolution : gridSize;
         Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, true);
 
         Color[] colorMap = new Color[textureSize * textureSize];
@@ -579,7 +572,6 @@ public class TextureBuilder
 
         if (useFractionalSampling)
         {
-            TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell, trackAttribution: true);
 
             System.Threading.Tasks.Parallel.For(0, textureSize, y =>
             {
@@ -605,16 +597,81 @@ public class TextureBuilder
         }
 
         texture.SetPixels(colorMap);
-        texture.Apply(true);
+        texture.Apply(true, false);
+        return texture;
+    }
+
+    /// <summary>
+    /// The production control map for Moonlight/Terrain Splat: R grass, G sand, B rock, A seabed,
+    /// as CONTINUOUS weights rather than the discrete labels BuildDiagnosticSplatMask produces.
+    ///
+    /// This carries only WHICH material, never how it looks - the shader gets its detail from
+    /// tiled albedo and normal maps sampled at their own frequency. That is the point of the split:
+    /// a baked map at 6 texels per world unit cannot hold pebbles, but it can perfectly well say
+    /// "sand here", and the tiled material supplies the pebbles.
+    ///
+    /// Weights come from the same resolved coastal bands the geometry was built from, so material
+    /// and shape cannot disagree.
+    /// </summary>
+    public Texture2D BuildTerrainControlMap()
+    {
+        return BuildMaterialMap(true);
+    }
+
+    /// <summary>
+    /// The region mask for Moonlight/Terrain Splat: R is how strongly the alternate region reaches
+    /// each texel. The shader tints its four layers toward the alternate colours by this.
+    ///
+    /// A separate single-channel texture rather than a fifth control channel, because the control
+    /// map's four channels are material WEIGHTS that the shader normalises to sum to one - there is
+    /// no room in them for a quantity that is not a weight. Keeping it separate also means the
+    /// region can be re-authored through UpdateTerrainTexture without rebuilding the mesh.
+    ///
+    /// Returns null when the island has no region authored, so the shader keeps sampling "black"
+    /// and the terrain renders exactly as it did before.
+    /// </summary>
+    public Texture2D BuildRegionMask()
+    {
+        if (terrainSource == null || visualSamplesPerCell < 1) return null;
+
+        // Resolves the boundary on THIS thread, before the parallel loop below reads it.
+        terrainSource.PrepareRegionField();
+        if (!terrainSource.HasRegion) return null;
+
+        int gridSize = grid.GetLength(0);
+        TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell);
+        int textureSize = cache.Resolution;
+
+        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.R8, true, true);
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
+        Color[] pixels = new Color[textureSize * textureSize];
+
+        System.Threading.Tasks.Parallel.For(0, textureSize, y =>
+        {
+            int rowOffset = y * textureSize;
+            for (int x = 0; x < textureSize; x++)
+            {
+                float weight = terrainSource.ResolveRegionWeight(
+                    x * cache.Step - terrainSource.SampleCachePadding,
+                    y * cache.Step - terrainSource.SampleCachePadding);
+                pixels[rowOffset + x] = new Color(weight, 0f, 0f, 1f);
+            }
+        });
+
+        texture.SetPixels(pixels);
+        texture.Apply(true, false);
         return texture;
     }
 
     public Texture2D BuildDiagnosticSplatMask()
     {
         int gridSize = grid.GetLength(0);
-        bool useFractionalSampling = terrainSource != null && visualSamplesPerCell > 1;
-        int textureSize = useFractionalSampling ? gridSize * visualSamplesPerCell : gridSize;
-        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false);
+        bool useFractionalSampling = terrainSource != null;
+        TerrainSampleCache cache = useFractionalSampling
+            ? terrainSource.GetOrCreateSampleCache(visualSamplesPerCell) : null;
+        int textureSize = cache != null ? cache.Resolution : gridSize;
+        Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false, true);
 
         Color[] colorMap = new Color[textureSize * textureSize];
         texture.filterMode = FilterMode.Point;
@@ -622,7 +679,7 @@ public class TextureBuilder
 
         if (useFractionalSampling)
         {
-            TerrainSampleCache cache = terrainSource.GetOrCreateSampleCache(visualSamplesPerCell);
+            TerrainGenerationSettings splatSettings = terrainSource.Settings;
 
             System.Threading.Tasks.Parallel.For(0, textureSize, y =>
             {
@@ -644,23 +701,40 @@ public class TextureBuilder
                         float rock = plateauData.RockWeight * (1f - plateauData.AbyssFade);
                         finalColor = new Color(0f, sand, rock, 1f);
                     }
-                    else if (height < -0.10f || ((terrainType == Cell.TerrainType.River || terrainType == Cell.TerrainType.Lake) && height <= 0.05f))
+                    // Read the TERRAIN TYPE the generator produced, with height only as a
+                    // water-relative tiebreak.
+                    //
+                    // These branches used absolute literals (< -0.10 water, >= 2.0 mountain,
+                    // < 0.45 beach) from when sea level was assumed to be zero. Against a -3 ocean
+                    // surface the mainland sits at -1.75 and the beach crest at -2.60, so every dry
+                    // sample fell into the first branch and the whole island rendered as black
+                    // water - which made this diagnostic actively misleading rather than merely
+                    // stale, since it reported no mainland and no beach where the grid had 566 and
+                    // 190 cells of each.
+                    else if (terrainType == Cell.TerrainType.Abyssal
+                        || terrainType == Cell.TerrainType.Deep
+                        || terrainType == Cell.TerrainType.Shallow
+                        || terrainType == Cell.TerrainType.Water
+                        || terrainType == Cell.TerrainType.Sea
+                        || terrainType == Cell.TerrainType.Ocean
+                        || height < splatSettings.waterHeight - 0.10f)
                     {
                         finalColor = new Color(0f, 0f, 0f, 1f); // Water / Submerged (Black)
                     }
                     else if (terrainType == Cell.TerrainType.Mountain
                         || terrainType == Cell.TerrainType.MountainPeak
                         || terrainType == Cell.TerrainType.Cliff
-                        || height >= 2.0f
-                        || (height >= 0.15f && slope > 0.45f))
+                        || terrainType == Cell.TerrainType.Rocky
+                        || height >= splatSettings.cliffHeight
+                        || (height >= splatSettings.waterHeight + 0.15f && slope > 0.45f))
                     {
                         finalColor = new Color(0f, 0f, 1f, 1f); // Mountain / Rock (Blue)
                     }
                     else if (terrainType == Cell.TerrainType.Beach
                         || terrainType == Cell.TerrainType.Shore
+                        || terrainType == Cell.TerrainType.Coast
                         || terrainType == Cell.TerrainType.River
-                        || terrainType == Cell.TerrainType.Lake
-                        || height < 0.45f)
+                        || terrainType == Cell.TerrainType.Lake)
                     {
                         finalColor = new Color(0f, 1f, 0f, 1f); // Beach / Sand (Green)
                     }
@@ -669,7 +743,7 @@ public class TextureBuilder
                         finalColor = new Color(1f, 0f, 0f, 1f); // Mainland / Plain (Red)
                     }
 
-                    colorMap[rowOffset + x] = finalColor;
+                    colorMap[rowOffset + x] = ApplyRiverControl(finalColor, new Vector2(x * cache.Step, y * cache.Step) - Vector2.one * terrainSource.SampleCachePadding);
                 }
             });
         }
