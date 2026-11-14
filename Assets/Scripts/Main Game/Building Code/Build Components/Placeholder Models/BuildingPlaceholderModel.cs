@@ -31,7 +31,12 @@ public class BuildingPlaceholderModel : MonoBehaviour
     [Tooltip("Add a box collider sized to the footprint. Turn off if the prefab has its own.")]
     [SerializeField] private bool addCollider = true;
 
+    [Tooltip("Float the building's name and role over it in play mode. Blueprints switch this off.")]
+    [SerializeField] private bool showLabel = true;
+
     private GameObject _placeholderInstance;
+    private bool _builtWithCollider;
+    private bool _builtWithLabel;
 
     /// <summary>The generated placeholder, or null while none is built.</summary>
     public GameObject PlaceholderInstance => _placeholderInstance;
@@ -48,28 +53,34 @@ public class BuildingPlaceholderModel : MonoBehaviour
     /// <param name="withCollider">
     /// Pass false for blueprints - a collider on the preview would intercept the placement raycast.
     /// </param>
-    public static BuildingPlaceholderModel Ensure(GameObject buildingInstance, bool withCollider = true)
+    /// <param name="withLabel">
+    /// Pass false for blueprints - the preview re-tints every MeshRenderer valid/invalid, which
+    /// would turn the label text into a solid block.
+    /// </param>
+    public static BuildingPlaceholderModel Ensure(GameObject buildingInstance, bool withCollider = true,
+                                                  bool withLabel = true)
     {
         if (buildingInstance == null) return null;
 
         BuildingPlaceholderModel placeholder = buildingInstance.GetComponent<BuildingPlaceholderModel>();
-        if (placeholder != null)
+        if (placeholder == null)
         {
-            placeholder.addCollider = placeholder.addCollider && withCollider;
+            if (!PlaceholderModelFactory.NeedsPlaceholder(buildingInstance)) return null;
 
-            // Awake has already run for a prefab-authored component; only build if it has not.
-            if (placeholder._placeholderInstance == null) placeholder.Build();
-            return placeholder;
+            // AddComponent runs Awake immediately, which already builds with the defaults.
+            placeholder = buildingInstance.AddComponent<BuildingPlaceholderModel>();
         }
 
-        if (!PlaceholderModelFactory.NeedsPlaceholder(buildingInstance)) return null;
+        // A prefab-authored component keeps its own "off" choices; the caller can only narrow them.
+        placeholder.addCollider = placeholder.addCollider && withCollider;
+        placeholder.showLabel = placeholder.showLabel && withLabel;
 
-        // AddComponent runs Awake immediately, which already builds - rebuild only if the
-        // collider preference differs from what Awake used.
-        placeholder = buildingInstance.AddComponent<BuildingPlaceholderModel>();
-        if (placeholder._placeholderInstance == null || !withCollider)
+        // Awake has usually built already. Rebuild only when it has not, or when it was built
+        // with parts this caller does not want (a collider or label on a blueprint).
+        if (placeholder._placeholderInstance == null
+            || placeholder._builtWithCollider != placeholder.addCollider
+            || placeholder._builtWithLabel != placeholder.WantsLabel())
         {
-            placeholder.addCollider = withCollider;
             placeholder.Build();
         }
         return placeholder;
@@ -88,16 +99,37 @@ public class BuildingPlaceholderModel : MonoBehaviour
         PlaceholderModelLibrary activeLibrary = library != null ? library : PlaceholderModelLibrary.RuntimeDefault;
         BuildingData data = ResolveBuildingData();
 
+        string displayName = ResolveDisplayName(data);
         PlaceholderModelProfile profile = overrideProfile
             ? profileOverride
-            : activeLibrary.Resolve(data, gameObject.name);
+            : activeLibrary.Resolve(data, displayName);
+
+        bool withLabel = WantsLabel() && activeLibrary.showLabels && profile.showLabel;
 
         _placeholderInstance = PlaceholderModelFactory.Build(
             transform,
             profile,
             ResolveFootprint(data),
             alignment,
-            addCollider);
+            addCollider,
+            withLabel ? displayName : null);
+
+        _builtWithCollider = addCollider;
+        _builtWithLabel = WantsLabel();
+    }
+
+    /// <summary>Labels exist only in play mode, so edit-time builds never count as missing one.</summary>
+    private bool WantsLabel() => showLabel && Application.isPlaying;
+
+    /// <summary>The player-facing name: the data asset's, else the object name without "(Clone)".</summary>
+    private string ResolveDisplayName(BuildingData data)
+    {
+        if (data != null && !string.IsNullOrWhiteSpace(data.buildingName)) return data.buildingName;
+
+        BuildingProperties properties = GetComponent<BuildingProperties>();
+        if (properties != null && !string.IsNullOrWhiteSpace(properties.buildingName)) return properties.buildingName;
+
+        return gameObject.name.Replace("(Clone)", string.Empty).Trim();
     }
 
     /// <summary>Removes the stand-in, e.g. once real art is swapped in at runtime.</summary>
@@ -106,6 +138,8 @@ public class BuildingPlaceholderModel : MonoBehaviour
     {
         PlaceholderModelFactory.Clear(transform);
         _placeholderInstance = null;
+        _builtWithCollider = false;
+        _builtWithLabel = false;
     }
 
     private BuildingData ResolveBuildingData()

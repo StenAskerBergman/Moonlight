@@ -75,7 +75,8 @@ public class BuildingPreview : MonoBehaviour
             // Blueprints for buildings without art would otherwise be invisible, leaving nothing
             // for SetPreviewMaterial to tint green/red. Built after buildingData is resolved so
             // the stand-in matches the real footprint.
-            BuildingPlaceholderModel.Ensure(gameObject, withCollider: false);
+            // No label: SetPreviewMaterial re-tints every MeshRenderer, text included.
+            BuildingPlaceholderModel.Ensure(gameObject, withCollider: false, withLabel: false);
 
             buildingRequirements = FindObjectOfType<BuildingRequirements>();
             if (buildingRequirements != null)

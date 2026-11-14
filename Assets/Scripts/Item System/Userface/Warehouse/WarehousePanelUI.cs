@@ -45,12 +45,24 @@ public sealed class WarehousePanelUI : MonoBehaviour
     private WarehousePanelTab activeTab;
     private IslandPopulation boundPopulation;
 
+    /// <summary>
+    /// A copy with no panelRoot has nothing to show. Match carries one on the legacy
+    /// "HUD (Port Authority Menu)" object; it must never stand in for the real panel.
+    /// </summary>
+    private bool IsWired => panelRoot != null;
+
+    private const string PanelPrefabPath = "Assets/Prefabs/UI/Warehouse Panel.prefab";
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
-            return;
+            // An unwired copy removes only itself: its GameObject is legacy UI, not ours.
+            if (!IsWired) { Destroy(this); return; }
+            if (Instance.IsWired) { Destroy(gameObject); return; }
+
+            // The existing instance is an unwired copy; this working panel takes over.
+            Destroy(Instance);
         }
         Instance = this;
 
@@ -68,6 +80,8 @@ public sealed class WarehousePanelUI : MonoBehaviour
 
     private void OnEnable()
     {
+        if (Instance != this) return; // a duplicate on its way out
+
         if (BuildingSelections.Instance != null)
         {
             BuildingSelections.Instance.selectionChanged.AddListener(OnSelectionChanged);
@@ -88,6 +102,45 @@ public sealed class WarehousePanelUI : MonoBehaviour
     {
         if (Instance == this) Instance = null;
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Editor safety net. Match does not contain the wired Warehouse Panel prefab - only an
+    /// unwired WarehousePanelUI under an inactive legacy menu - so selecting a harbor opened
+    /// nothing. When a gameplay scene loads without a working panel, spawn the prefab under
+    /// the HUD canvas for this play session and say so. Builds get no such help: put the
+    /// prefab in the scene to fix it for good.
+    /// </summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void EnsureWiredPanelInEditor()
+    {
+        if (Instance != null && Instance.IsWired) return;
+        if (BuildingSelections.Instance == null) return; // not a scene with building selection
+
+        WarehousePanelUI prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<WarehousePanelUI>(PanelPrefabPath);
+        Canvas canvas = FindHudCanvas();
+        if (prefab == null || canvas == null) return;
+
+        Instantiate(prefab, canvas.transform, false);
+        Debug.LogWarning(
+            $"WarehousePanelUI: this scene has no wired Warehouse Panel, so '{PanelPrefabPath}' was spawned " +
+            $"under '{canvas.name}' for this play session. Drag that prefab under the HUD canvas in the scene " +
+            "to make it permanent (and to have it in builds).");
+    }
+
+    private static Canvas FindHudCanvas()
+    {
+        GameObject builderPanel = UnitSelections.Instance != null ? UnitSelections.Instance.builderUIPanel : null;
+        Canvas fromHud = builderPanel != null ? builderPanel.GetComponentInParent<Canvas>(true) : null;
+        if (fromHud != null) return fromHud.rootCanvas;
+
+        foreach (Canvas canvas in FindObjectsOfType<Canvas>())
+        {
+            if (canvas.isRootCanvas && canvas.renderMode != RenderMode.WorldSpace) return canvas;
+        }
+        return null;
+    }
+#endif
 
     private void OnSelectionChanged(Building building)
     {

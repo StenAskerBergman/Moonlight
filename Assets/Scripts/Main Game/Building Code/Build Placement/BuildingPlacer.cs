@@ -85,48 +85,6 @@ public class BuildingPlacer : MonoBehaviour
         return value % 2 == 0;
     }
 
-    // A
-    private BaseStorageManager FetchBaseStorageManager()
-    {
-
-        if(currentIsland == null)
-        {
-            Debug.Log("No current island found.");
-            return null;
-        }
-
-        // Assuming you can retrieve the appropriate BaseStorageManager for the current island:
-        BaseStorageManager currentIslandStorageManager = currentIsland.GetBaseStorageManager();
-
-        // Null Check
-        if (currentIslandStorageManager == null)
-        {
-            Debug.Log("Failed to retrieve BaseStorageManager for current island.");
-            return null;
-        }
-
-        return currentIslandStorageManager;
-    }
-    // B 
-    private BaseStorageManager FetchBaseStorageManager(string baseID)
-    {
-        if (currentIsland == null)
-        {
-            Debug.Log("No current island found.");
-            return null;
-        }
-
-        BaseStorageManager baseStorageManager = currentIsland.GetBaseStorageManagerForID(baseID);
-
-        if (baseStorageManager == null)
-        {
-            Debug.Log("Failed to retrieve BaseStorageManager for baseID: " + baseID);
-            return null;
-        }
-
-        return baseStorageManager;
-    }
-
     // Logic for placing the building
     public void PlaceBuilding(BuildingPreview buildingPreview, Transform islandTransform)
     {
@@ -137,25 +95,17 @@ public class BuildingPlacer : MonoBehaviour
             return;
         }
 
-        // Fetch Storage Manager  A
-        BaseStorageManager currentBaseStorageManager = FetchBaseStorageManager();
-        if (currentBaseStorageManager == null)
-        {
-            Debug.Log("Attempt A: No BaseStorageManager found.");
-            // Fetch Storage Manager B
-            if (islandTransform.GetComponent<Island>() != null)
-            {
-                currentBaseStorageManager = FetchBaseStorageManager(islandTransform.GetComponent<Island>().ID);
-            }
-            if (currentBaseStorageManager == null)
-            {
-                currentBaseStorageManager = islandTransform.GetComponent<BaseStorageManager>();
-                if (currentBaseStorageManager == null)
-                {
-                    currentBaseStorageManager = islandTransform.gameObject.AddComponent<BaseStorageManager>();
-                }
-            }
-        }
+        // The goods of the island this building stands on. The island's Inventory is the
+        // one stockpile the warehouse panel shows and logistics delivers into, so founding
+        // cargo lands there and construction pays from there.
+        //
+        // This used to resolve a BaseStorageManager - first on whatever island the camera had
+        // last "entered", then by bolting a brand-new one onto the island. Generated islands
+        // carry no BaseStorageManager, so every founding created a second, invisible store
+        // with a 50-unit cap across all goods. The founding cargo went in there (one stack
+        // fit, the rest stayed aboard) and the real stockpile stayed empty.
+        Island placedIsland = islandTransform.GetComponent<Island>() ?? islandTransform.GetComponentInParent<Island>();
+        Inventory islandGoods = placedIsland != null ? placedIsland.GetComponent<Inventory>() : null;
 
         // Get Building Cost from the preview prefab before instantiating
         BuildingCost buildingCostPrefab = buildingPreview != null && buildingPreview.buildingPrefab != null 
@@ -170,7 +120,16 @@ public class BuildingPlacer : MonoBehaviour
         if (isUnsettledIsland)
         {
             foundingBoat = InfluenceManager.GetNearestPlayerBoat(buildingPreview.transform.position);
-            if (foundingBoat != null)
+
+            // No vessel, no founding. Without this the harbor was built for free and the
+            // island settled with nothing unloaded into it.
+            if (foundingBoat == null)
+            {
+                Debug.LogWarning("Founding refused: no player vessel within founding range of the harbor site.");
+                buildingChecker.CancelBuilding();
+                return;
+            }
+
             {
                 UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
                 Dictionary<ItemData, int> costItems;
@@ -194,9 +153,11 @@ public class BuildingPlacer : MonoBehaviour
         }
         else
         {
-            if (buildingCostPrefab != null && currentBaseStorageManager != null && !currentBaseStorageManager.CanAffordBuilding(buildingCostPrefab))
+            if (buildingCostPrefab != null && !buildingCostPrefab.CanBePaidFrom(islandGoods))
             {
-                Debug.Log("Not Enough Resources in Island Storage!");
+                Debug.Log(islandGoods == null
+                    ? "Island has no Inventory to pay construction from!"
+                    : "Not Enough Resources in Island Storage!");
                 buildingChecker.CancelBuilding();
                 return;
             }
@@ -246,13 +207,13 @@ public class BuildingPlacer : MonoBehaviour
             Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
             if (boatSettlement != null)
             {
-                boatSettlement.CompleteSettlement(currentBaseStorageManager);
+                boatSettlement.CompleteSettlement(islandGoods);
             }
             // ----------------------------
         }
-        else if (buildingCost != null && currentBaseStorageManager != null)
+        else if (buildingCost != null && !buildingCost.TryPayFrom(islandGoods))
         {
-            DeductCosts(buildingCost, currentBaseStorageManager); 
+            Debug.LogError("Failed to deduct costs for building.");
         }
         // Resolved here rather than read from the placer's own gridSystem field, which
         // nothing assigns during this flow. It was null, so MarkGridCells threw and took
@@ -318,6 +279,36 @@ public class BuildingPlacer : MonoBehaviour
         InitializePlacedBuilding(buildingInstance);
 
         buildingChecker.CancelBuilding();
+
+        // Founding hands the player their new settlement: the construction window opens so
+        // they can start spending the cargo that was just unloaded.
+        if (isUnsettledIsland)
+        {
+            StartCoroutine(OpenConstructionWindowAfterFounding());
+        }
+    }
+
+    /// <summary>
+    /// Opens the construction window ("HUD (Bot Building Window)", wired to
+    /// UnitSelections.builderUIPanel). Before this, the only way in was the action bar's
+    /// Build button, and nothing opened it after founding.
+    ///
+    /// Waits out the frame of the placement click, so that same click cannot reach the UI
+    /// as a click on empty ground and close the window straight away.
+    /// </summary>
+    private System.Collections.IEnumerator OpenConstructionWindowAfterFounding()
+    {
+        yield return null;
+        yield return null;
+
+        GameObject window = UnitSelections.Instance != null ? UnitSelections.Instance.builderUIPanel : null;
+        if (window == null)
+        {
+            Debug.LogWarning("Founding: no construction window to open - UnitSelections.builderUIPanel is not assigned.");
+            yield break;
+        }
+
+        window.SetActive(true);
     }
 
     private static bool IsUnderwaterPlacement(
@@ -472,16 +463,6 @@ public class BuildingPlacer : MonoBehaviour
                   $"{price} needed, {bank.Balance} available.");
         return false;
     }
-
-    private void DeductCosts(BuildingCost buildingCost, BaseStorageManager currentBaseStorageManager)
-    {
-        // Use the local BaseStorageManager directly
-        if (!currentBaseStorageManager.DeductBuildingCosts(buildingCost, bank))
-        {
-            Debug.LogError("Failed to deduct costs for building.");
-        }
-    }
-
 
     private void MarkGridCells(GameObject buildingInstance, Vector2Int footprint, GridSystem placementGrid)
     {

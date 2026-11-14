@@ -124,36 +124,50 @@ public class Settlement : MonoBehaviour
         return true;
     }
 
-    //Settlement succeeds
-    // -> Always deduct construction costs
-    // -> If transferEntireInventoryOnSettlement == true
-    // -> move all remaining ship cargo into settlement
-    public void CompleteSettlement(BaseStorageManager islandStorage)
+    /// <summary>
+    /// Unloads the founding vessel's remaining cargo into the new settlement.
+    ///
+    /// <paramref name="islandGoods"/> must be the island's own Inventory - the stockpile the
+    /// warehouse panel shows, construction pays from and logistics delivers into. Founding
+    /// used to unload into a BaseStorageManager that placement bolted onto the island on
+    /// the spot: a second, invisible store with a 50-unit cap across ALL goods, so the first
+    /// stack filled it, the rest stayed aboard, and nothing could be built.
+    ///
+    /// Island storage caps each good separately. Whatever does not fit stays on the ship
+    /// and is reported, rather than being refused wholesale.
+    /// </summary>
+    public void CompleteSettlement(Inventory islandGoods)
     {
-        // Optionally transfer everything remaining from the ship into island storage
-        if (transferEntireInventoryOnSettlement && islandStorage != null)
-        {
-            Dictionary<ItemData, int> remaining = unitInventory.GetAllItems();
-            if (remaining != null)
-            {
-                // Snapshot the keys so we can modify the inventory during iteration
-                var entries = new List<KeyValuePair<ItemData, int>>(remaining);
-                foreach (var kvp in entries)
-                {
-                    if (kvp.Key == null || kvp.Value <= 0)
-                        continue;
+        if (!transferEntireInventoryOnSettlement) return;
 
-                    if (islandStorage.CanAddItem(kvp.Key, kvp.Value))
-                    {
-                        islandStorage.AddItem(kvp.Key, kvp.Value);
-                        unitInventory.RemoveItem(kvp.Key, kvp.Value);
-                        Debug.Log($"<color=green>Settlement: Transferred {kvp.Value}x {kvp.Key.displayName} to island storage.</color>");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"Settlement: Could not transfer {kvp.Value}x {kvp.Key.displayName} — island storage full.");
-                    }
-                }
+        if (islandGoods == null)
+        {
+            Debug.LogError($"Settlement: '{name}' founded a settlement with no island Inventory to unload into - cargo kept aboard.", this);
+            return;
+        }
+
+        Dictionary<ItemData, int> cargo = unitInventory != null ? unitInventory.GetAllItems() : null;
+        if (cargo == null) return;
+
+        // Snapshot, because removing from the ship changes the dictionary underneath us.
+        foreach (var kvp in new List<KeyValuePair<ItemData, int>>(cargo))
+        {
+            ItemData item = kvp.Key;
+            if (item == null || kvp.Value <= 0) continue;
+
+            int amount = Mathf.Min(kvp.Value, islandGoods.GetRemainingCapacity(item));
+            int unloaded = 0;
+            if (amount > 0 && islandGoods.TryAddItem(item, amount))
+            {
+                unitInventory.RemoveItem(item, amount);
+                unloaded = amount;
+                Debug.Log($"<color=green>Settlement: Unloaded {amount}x {item.displayName} into {islandGoods.name}.</color>");
+            }
+
+            int leftAboard = kvp.Value - unloaded;
+            if (leftAboard > 0)
+            {
+                Debug.LogWarning($"Settlement: {leftAboard}x {item.displayName} stays aboard '{name}' - island storage for that good is full.", this);
             }
         }
     }

@@ -430,7 +430,8 @@ public class StampPlacementController : MonoBehaviour
         bool isUnsettledIsland = influenceManager == null || !influenceManager.HasWarehouse;
         Unit foundingBoat = null;
         
-        BaseStorageManager storage = _currentIsland.GetBaseStorageManager();
+        // The island's own stockpile - see BuildingPlacer.PlaceBuilding for why not BaseStorageManager.
+        Inventory islandGoods = _currentIsland.GetComponent<Inventory>();
         BuildingCost costPrefab = ghost.sourcePrefab.GetComponent<BuildingCost>();
         
         if (costPrefab != null)
@@ -464,7 +465,7 @@ public class StampPlacementController : MonoBehaviour
                     return false;
                 }
             }
-            else if (storage != null && !storage.CanAffordBuilding(costPrefab))
+            else if (!costPrefab.CanBePaidFrom(islandGoods))
             {
                 Debug.Log($"[StampPlacement] Cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
                 return false;
@@ -502,14 +503,14 @@ public class StampPlacementController : MonoBehaviour
 
             // Trigger settlement transfer
             Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
-            if (boatSettlement != null && storage != null)
+            if (boatSettlement != null)
             {
-                boatSettlement.CompleteSettlement(storage);
+                boatSettlement.CompleteSettlement(islandGoods);
             }
         }
-        else if (buildingCost != null && storage != null && bank != null)
+        else if (buildingCost != null && !buildingCost.TryPayFrom(islandGoods))
         {
-            storage.DeductBuildingCosts(buildingCost, bank);
+            Debug.LogWarning($"[StampPlacement] Could not pay for '{ghost.entry.buildingIdentifier}' from island goods.");
         }
 
         // Mark grid cells

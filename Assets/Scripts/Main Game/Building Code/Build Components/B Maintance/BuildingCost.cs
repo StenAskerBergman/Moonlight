@@ -38,6 +38,38 @@ public class BuildingCost : MonoBehaviour
 
     private static readonly Dictionary<ItemData, int> EmptyCosts = new Dictionary<ItemData, int>();
 
+    /// <summary>
+    /// Whether an island's goods cover this building's item cost. The island's Inventory is
+    /// the stockpile the warehouse panel shows and logistics delivers into, so construction
+    /// pays from the same place the player can see. A building with no item cost is free.
+    /// </summary>
+    public bool CanBePaidFrom(Inventory goods)
+    {
+        if (!TryGetCosts(out Dictionary<ItemData, int> costItems)) return true;
+        if (goods == null) return false;
+
+        foreach (var cost in costItems)
+        {
+            if (cost.Key == null || cost.Value <= 0) continue;
+            if (!goods.HasItem(cost.Key, cost.Value)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>Takes the item cost out of the island's goods. All or nothing.</summary>
+    public bool TryPayFrom(Inventory goods)
+    {
+        if (!CanBePaidFrom(goods)) return false;
+        if (!TryGetCosts(out Dictionary<ItemData, int> costItems)) return true;
+
+        foreach (var cost in costItems)
+        {
+            if (cost.Key == null || cost.Value <= 0) continue;
+            goods.RemoveItem(cost.Key, cost.Value);
+        }
+        return true;
+    }
+
     [SerializeField] private string buildingName; 
     [SerializeField] private int expense;          
     [SerializeField] private int price;             

@@ -106,7 +106,6 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     // Refs 1
         public PlayerFactionController playerFactionController;
-        private Inventory playerInventory;
         private Inventory islandInventory;
         private Island currentIsland;
 
@@ -148,7 +147,6 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         playerFactionController = FindObjectOfType<PlayerFactionController>();
 
         // Subscribe to event for the current island.
-        playerInventory = FindObjectOfType<Inventory>();
         IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
         IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
 
@@ -210,36 +208,24 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     /// <returns> Returns Ints & Strings </returns>
     public void UpdateItemsUI()
     {
+        // Construction materials are the goods of the island being looked at - the same
+        // Inventory the founding ship unloads into and construction pays from. This used to
+        // read FindObjectOfType<Inventory>(), i.e. whichever island Unity happened to return
+        // at startup, so the bar showed 0 modules / 0 tools right after a successful founding.
+        Inventory inventory = islandInventory;
+        if (inventory == null) return;
 
-        // Player Inventory - Window
+        material1Text.text = "" + inventory.GetItemAmount(modulsData);            // Modules
+        material2Text.text = "" + inventory.GetItemAmount(toolsData);             // Tools
 
-        if (playerInventory == null)
-        {
-            Debug.Log("No Player Base Detected! (Reason: playerInventory = Null)");
-            return;
-        }
-        else
-        {
+        material3Text.text = "" + inventory.GetItemAmount(steelData);             // Steel
+        material4Text.text = "" + inventory.GetItemAmount(concreteData);          // Concrete
 
-            // Obtained:
-            // Items Store on the Island to be Obtained by Players
+        material5Text.text = "" + inventory.GetItemAmount(glassData);             // Glass
+        material6Text.text = "" + inventory.GetItemAmount(woodData);              // Wood
 
-            // Items are Stored on the Player Base to be Used by its Player
-
-            material1Text.text = "" + playerInventory.GetItemAmount(modulsData);            // Displays the Modules Amount
-            material2Text.text = "" + playerInventory.GetItemAmount(toolsData);             // Displays the Tools Amount
-
-            material3Text.text = "" + playerInventory.GetItemAmount(steelData);             // Displays the Steel Amount
-            material4Text.text = "" + playerInventory.GetItemAmount(concreteData);          // Displays the concrete Amount
-
-            material5Text.text = "" + playerInventory.GetItemAmount(glassData);             // Displays the glass Amount
-            material6Text.text = "" + playerInventory.GetItemAmount(woodData);              // Displays the wood Amount
-
-            material7Text.text = "" + playerInventory.GetItemAmount(carbonData);            // Displays the carbon Amount
-            material9Text.text = "" + playerInventory.GetItemAmount(keroseneData);          // Displays the kerosene Amount
-
-
-        }
+        material7Text.text = "" + inventory.GetItemAmount(carbonData);            // Carbon
+        material9Text.text = "" + inventory.GetItemAmount(keroseneData);          // Kerosene
     }
 
     /// <summary>

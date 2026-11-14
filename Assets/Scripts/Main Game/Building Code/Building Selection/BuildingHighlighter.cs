@@ -184,6 +184,10 @@ public class BuildingHighlighter : MonoBehaviour
         {
             if (IsOverlay(source)) continue;
 
+            // Placeholder name plates are UI-like; outlining their text mesh would draw a
+            // solid rectangle around every glyph.
+            if (source.GetComponentInParent<PlaceholderLabelBillboard>() != null) continue;
+
             Renderer overlay = CreateOverlayFor(source);
             if (overlay != null) overlayRenderers.Add(overlay);
         }

@@ -192,32 +192,6 @@ public class BuildingChecker : MonoBehaviour
 
     #region Base Requirement Methods
 
-    // A - Nobody Remembers the Past something you will learn one day,
-    // along the way to the end of your life.
-    private BaseStorageManager FetchBaseStorageManager()
-    {
-
-        if (currentIsland == null)
-        {
-            Debug.Log("No current island found.");
-            canPlace = false;
-            return null;
-        }
-
-        // Assuming you can retrieve the appropriate BaseStorageManager for the current island:
-        BaseStorageManager currentIslandStorageManager = currentIsland.GetBaseStorageManager();
-
-        // Null Check
-        if (currentIslandStorageManager == null)
-        {
-            Debug.Log("Failed to retrieve BaseStorageManager for current island.");
-            canPlace = false;
-            return null;
-        }
-
-        return currentIslandStorageManager;
-    }
-
     #endregion
 
     #region  InputCheck + HandleBuildingPlacement Method
@@ -292,8 +266,7 @@ public class BuildingChecker : MonoBehaviour
                 return;  
             }
 
-            FetchBaseStorageManager();
-
+            // Storage is resolved by BuildingPlacer from the island the blueprint stands on.
             Debug.LogFormat("<color=green>placing building - {0}</color>", canPlace);
             Debug.Log("Building Placer: " + buildingPlacer);
             Debug.Log("Current Building Preview: " + currentBuildingPreview);
