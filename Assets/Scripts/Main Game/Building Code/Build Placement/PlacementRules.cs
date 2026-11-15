@@ -60,6 +60,19 @@ public static class PlacementRules
 
         int sizeX = Mathf.Max(1, footprint.x);
         int sizeZ = Mathf.Max(1, footprint.y);
+        bool requiresRoadAccess = false;
+
+        if (data != null && data.BuildingRequirements != null)
+        {
+            foreach (BuildingRequirement req in data.BuildingRequirements)
+            {
+                if (req is GridRequirement gridReq && gridReq.requiresRoadAccess)
+                {
+                    requiresRoadAccess = true;
+                    break;
+                }
+            }
+        }
 
         for (int x = 0; x < sizeX; x++)
         {
@@ -71,6 +84,13 @@ public static class PlacementRules
                     return false;
                 }
             }
+        }
+
+        if (requiresRoadAccess &&
+            (RoadNetwork.Instance == null || !RoadNetwork.Instance.HasRoadAccess(gridSystem, gridOrigin, footprint)))
+        {
+            verdict = PlacementVerdict.UnmetRequirement;
+            return false;
         }
 
         return true;
@@ -161,21 +181,14 @@ public static class PlacementRules
                     if (req is GridRequirement gridReq)
                     {
                         // The quay footprint deliberately spans the land/water boundary,
-                        // so a single-terrain GridRequirement cannot describe it. Keep its
-                        // orthogonal road-access rule, while QuaySystem owns terrain legality.
+                        // so a single-terrain GridRequirement cannot describe it. Multi-cell
+                        // perimeter road access is checked once in EvaluateFootprint.
                         if (data.requiresQuayFoundation)
                         {
-                            if (gridReq.requiresRoadAccess
-                                && (RoadNetwork.Instance == null || !RoadNetwork.Instance.HasRoadAccess(cell)))
-                            {
-                                verdict = PlacementVerdict.UnmetRequirement;
-                                return false;
-                            }
                             continue;
                         }
 
-                        gridReq.SetTargetCell(cell);
-                        if (!gridReq.IsSatisfied())
+                        if (!gridReq.IsTerrainSatisfied(cell))
                         {
                             verdict = PlacementVerdict.UnmetRequirement;
                             return false;

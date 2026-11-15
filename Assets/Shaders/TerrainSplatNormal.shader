@@ -65,6 +65,11 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
         [Header(Detail break up)]
         _MacroTiling ("Macro Variation Tiling", Float) = 0.02
         _MacroStrength ("Macro Variation Strength", Range(0,1)) = 0.25
+
+        [Header(Placement and Influence Overlay)]
+        [HideInInspector] _PlacementMask ("Placement Mask", 2D) = "black" {}
+        [HideInInspector] _PlacementOverlayState ("Placement Overlay State", Vector) = (0, 0, 0, 1)
+        [HideInInspector] _PlacementGridParams ("Placement Grid Params", Vector) = (100, 1, 0, 0)
     }
 
     SubShader
@@ -75,6 +80,7 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+        #include "Placement/PlacementOverlayCommon.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             float4 _Control_ST, _BaseMap_ST, _SurfaceTint_ST, _RegionMask_ST;
@@ -86,21 +92,25 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             float _MacroTiling, _MacroStrength;
             float4 _GrassTintRegion, _SandTintRegion, _RockTintRegion, _SeabedTintRegion;
             float _RegionSmoothnessScale;
+            float4 _PlacementMask_ST;
+            float4 _PlacementOverlayState;
+            float4 _PlacementGridParams;
         CBUFFER_END
 
         TEXTURE2D(_Control);       SAMPLER(sampler_Control);
         TEXTURE2D(_RegionMask);
         TEXTURE2D(_BaseMap);
         TEXTURE2D(_SurfaceTint);
+        TEXTURE2D(_PlacementMask); SAMPLER(sampler_PlacementMask);
 
         TEXTURE2D(_GrassAlbedo);   SAMPLER(sampler_GrassAlbedo);
-        TEXTURE2D(_GrassNormal);
+        TEXTURE2D(_GrassNormal);   SAMPLER(sampler_GrassNormal);
         TEXTURE2D(_SandAlbedo);    SAMPLER(sampler_SandAlbedo);
-        TEXTURE2D(_SandNormal);
+        TEXTURE2D(_SandNormal);    SAMPLER(sampler_SandNormal);
         TEXTURE2D(_RockAlbedo);    SAMPLER(sampler_RockAlbedo);
-        TEXTURE2D(_RockNormal);
+        TEXTURE2D(_RockNormal);    SAMPLER(sampler_RockNormal);
         TEXTURE2D(_SeabedAlbedo);  SAMPLER(sampler_SeabedAlbedo);
-        TEXTURE2D(_SeabedNormal);
+        TEXTURE2D(_SeabedNormal);  SAMPLER(sampler_SeabedNormal);
 
         struct Attributes
         {
@@ -122,6 +132,7 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             float4 shadowCoord: TEXCOORD4;
             DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 5);
             half3 vertexLighting : TEXCOORD6;
+            float3 placementData : TEXCOORD7;
             UNITY_VERTEX_OUTPUT_STEREO
             UNITY_VERTEX_INPUT_INSTANCE_ID
         };
@@ -140,6 +151,9 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             o.positionWS = p.positionWS;
             o.normalWS = n.normalWS;
             o.uv = input.uv;
+            o.placementData = float3(
+                input.positionOS.xz / max(_PlacementGridParams.y, 1e-4),
+                input.positionOS.y);
             OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, o.lightmapUV);
             OUTPUT_SH(n.normalWS, o.vertexSH);
             o.vertexLighting = VertexLighting(p.positionWS, n.normalWS);
@@ -157,12 +171,12 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
         }
 
         void SampleLayer(
-            TEXTURE2D_PARAM(albedoTex, albedoSampler), TEXTURE2D(normalTex),
+            TEXTURE2D_PARAM(albedoTex, albedoSampler), TEXTURE2D_PARAM(normalTex, normalSampler),
             float2 uv, float2 uvDx, float2 uvDy, float normalScale,
             out float3 albedo, out float3 normalTS)
         {
             albedo = SAMPLE_TEXTURE2D_GRAD(albedoTex, albedoSampler, uv, uvDx, uvDy).rgb;
-            normalTS = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(normalTex, albedoSampler, uv, uvDx, uvDy), normalScale);
+            normalTS = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(normalTex, normalSampler, uv, uvDx, uvDy), normalScale);
         }
 
         // Triplanar for rock only. A vertical cliff sampled with world-XZ UVs smears the
@@ -183,9 +197,9 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
                    + SAMPLE_TEXTURE2D_GRAD(_RockAlbedo, sampler_RockAlbedo, uvY, positionDx.xz * tiling, positionDy.xz * tiling).rgb * blend.y
                    + SAMPLE_TEXTURE2D_GRAD(_RockAlbedo, sampler_RockAlbedo, uvZ, positionDx.xy * tiling, positionDy.xy * tiling).rgb * blend.z;
 
-            float3 nX = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockAlbedo, uvX, positionDx.zy * tiling, positionDy.zy * tiling), normalScale);
-            float3 nY = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockAlbedo, uvY, positionDx.xz * tiling, positionDy.xz * tiling), normalScale);
-            float3 nZ = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockAlbedo, uvZ, positionDx.xy * tiling, positionDy.xy * tiling), normalScale);
+            float3 nX = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockNormal, uvX, positionDx.zy * tiling, positionDy.zy * tiling), normalScale);
+            float3 nY = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockNormal, uvY, positionDx.xz * tiling, positionDy.xz * tiling), normalScale);
+            float3 nZ = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_RockNormal, sampler_RockNormal, uvZ, positionDx.xy * tiling, positionDy.xy * tiling), normalScale);
             // Reorient each projection into world coordinates before blending. UV axes
             // stay world-aligned on both signs of a face; the geometric normal
             // supplies the outward direction. Neutral maps return normalWS exactly.
@@ -213,21 +227,21 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             // Explicit gradients keep mip selection valid across weight branches.
             UNITY_BRANCH if (control.r > 0)
             {
-                SampleLayer(TEXTURE2D_ARGS(_GrassAlbedo, sampler_GrassAlbedo), _GrassNormal,
+                SampleLayer(TEXTURE2D_ARGS(_GrassAlbedo, sampler_GrassAlbedo), TEXTURE2D_ARGS(_GrassNormal, sampler_GrassNormal),
                     wpos * _GrassTiling, positionDx.xz * _GrassTiling, positionDy.xz * _GrassTiling,
                     _GrassNormalScale, aGrass, detail);
                 nGrass = PlanarNormalWS(detail, normalWS);
             }
             UNITY_BRANCH if (control.g > 0)
             {
-                SampleLayer(TEXTURE2D_ARGS(_SandAlbedo, sampler_SandAlbedo), _SandNormal,
+                SampleLayer(TEXTURE2D_ARGS(_SandAlbedo, sampler_SandAlbedo), TEXTURE2D_ARGS(_SandNormal, sampler_SandNormal),
                     wpos * _SandTiling, positionDx.xz * _SandTiling, positionDy.xz * _SandTiling,
                     _SandNormalScale, aSand, detail);
                 nSand = PlanarNormalWS(detail, normalWS);
             }
             UNITY_BRANCH if (control.a > 0)
             {
-                SampleLayer(TEXTURE2D_ARGS(_SeabedAlbedo, sampler_SeabedAlbedo), _SeabedNormal,
+                SampleLayer(TEXTURE2D_ARGS(_SeabedAlbedo, sampler_SeabedAlbedo), TEXTURE2D_ARGS(_SeabedNormal, sampler_SeabedNormal),
                     wpos * _SeabedTiling, positionDx.xz * _SeabedTiling, positionDy.xz * _SeabedTiling,
                     _SeabedNormalScale, aSeabed, detail);
                 nSeabed = PlanarNormalWS(detail, normalWS);
@@ -280,8 +294,26 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
                     wpos * _MacroTiling, positionDx.xz * _MacroTiling, positionDy.xz * _MacroTiling).g;
                 albedo *= lerp(1.0, 0.6 + macro * 0.8, _MacroStrength);
             }
+            half3 placementEmission = 0;
+            float aboveWaterMask = step(_PlacementGridParams.z - 0.03, input.placementData.z);
+            float4 overlayState = float4(_PlacementOverlayState.x * aboveWaterMask, _PlacementOverlayState.yzw);
+            half3 overlayTint;
+            half overlayWeight;
+            half overlayWaterAlpha;
+            EvaluatePlacementOverlayCore(
+                TEXTURE2D_ARGS(_PlacementMask, sampler_PlacementMask),
+                input.placementData.xy,
+                _PlacementGridParams.x,
+                overlayState,
+                overlayTint,
+                overlayWeight,
+                placementEmission,
+                overlayWaterAlpha);
+            albedo = lerp(albedo, albedo * overlayTint + overlayTint * 0.25h, saturate(overlayWeight));
+
             surfaceData = (SurfaceData)0;
             surfaceData.albedo = albedo;
+            surfaceData.emission = placementEmission;
             surfaceData.smoothness = smoothness;
             surfaceData.normalTS = float3(0, 0, 1);
             surfaceData.occlusion = 1;

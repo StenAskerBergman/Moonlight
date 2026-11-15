@@ -38,10 +38,22 @@ public sealed class QuayFoundationPreview : MonoBehaviour
     private Vector2Int builtForFootprint = new Vector2Int(int.MinValue, int.MinValue);
     private int builtForPadding = -1;
 
+    private MaterialPropertyBlock propertyBlock;
+    private MaterialPropertyBlock PropertyBlock => propertyBlock ??= new MaterialPropertyBlock();
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int RimColorProperty = Shader.PropertyToID("_RimColor");
+
     /// <summary>
     /// Rebuilds the platform under a blueprint standing at <paramref name="origin"/>.
     /// </summary>
-    public void Show(GridSystem grid, Vector3Int origin, Vector2Int footprint, int padding, Material material)
+    public void Show(
+        GridSystem grid,
+        Vector3Int origin,
+        Vector2Int footprint,
+        int padding,
+        Material material,
+        Color? baseTint = null,
+        Color? rimTint = null)
     {
         if (grid == null)
         {
@@ -74,10 +86,22 @@ public sealed class QuayFoundationPreview : MonoBehaviour
 
         previewObject.SetActive(true);
 
-        // Validity tint follows the blueprint, so the deck reads green/red with it.
-        if (material != null && meshRenderer.sharedMaterial != material)
+        if (material != null)
         {
-            meshRenderer.sharedMaterial = material;
+            Material[] mats = meshRenderer.sharedMaterials;
+            if (mats == null || mats.Length != 2 || mats[0] != material || mats[1] != material)
+            {
+                meshRenderer.sharedMaterials = new[] { material, material };
+            }
+        }
+
+        if (baseTint.HasValue || rimTint.HasValue)
+        {
+            MaterialPropertyBlock block = PropertyBlock;
+            meshRenderer.GetPropertyBlock(block);
+            if (baseTint.HasValue) block.SetColor(BaseColorProperty, baseTint.Value);
+            if (rimTint.HasValue) block.SetColor(RimColorProperty, rimTint.Value);
+            meshRenderer.SetPropertyBlock(block);
         }
     }
 

@@ -1,8 +1,9 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class BuildingPreview : MonoBehaviour
-{    
-    // Inspector Settings and Adjustments 
+{
+    // Inspector Settings and Adjustments
     // And all the variable used in the code
 
     [SerializeField] private bool localCanPlace;
@@ -13,10 +14,10 @@ public class BuildingPreview : MonoBehaviour
     [Space]
     public SnapMode snapMode = SnapMode.Grid;
     public Vector3 offset = new Vector3(5, 0, 5);
-    [SerializeField]private float offsetY; // Can Add offsetY variable
+    [SerializeField] private float offsetY;
     public float size = 1f;
-    
-    // Mats.
+
+    // Mats (legacy fallbacks if custom hologram shader is absent)
     [SerializeField] private Material truePlacement;
     [SerializeField] private Material falsePlacement;
 
@@ -25,14 +26,33 @@ public class BuildingPreview : MonoBehaviour
              "Inland buildings ignore this and keep whatever rotation the player gives them.")]
     [SerializeField] private bool faceAwayFromIsland = true;
     [SerializeField] private float arrowLength = 5f;
-    [SerializeField] private float arrowHeight = 2.5f;
+    [SerializeField] private float arrowHeight = 0.14f;
     [SerializeField] private Color arrowValidColor = new Color(0.25f, 1f, 0.35f, 0.85f);
     [SerializeField] private Color arrowInvalidColor = new Color(1f, 0.25f, 0.25f, 0.85f);
+
+    private static readonly Color ValidBaseColor = new Color(0.14f, 0.94f, 0.38f, 0.62f);
+    private static readonly Color ValidRimColor = new Color(0.55f, 1.0f, 0.72f, 1.0f);
+    private static readonly Color UnaffordableBaseColor = new Color(0.98f, 0.68f, 0.14f, 0.64f);
+    private static readonly Color UnaffordableRimColor = new Color(1.0f, 0.86f, 0.35f, 1.0f);
+    private static readonly Color BlockedBaseColor = new Color(0.98f, 0.16f, 0.14f, 0.64f);
+    private static readonly Color BlockedRimColor = new Color(1.0f, 0.42f, 0.38f, 1.0f);
+
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int RimColorProperty = Shader.PropertyToID("_RimColor");
 
     private BuildingRotator rotator;
     private QuayFoundationPreview quayPreview;
     private GameObject facingArrow;
+    private Mesh facingArrowMesh;
     private Material facingArrowMaterial;
+    private Material hologramMaterial;
+    private MeshRenderer[] cachedPreviewRenderers = System.Array.Empty<MeshRenderer>();
+    private MaterialPropertyBlock _propertyBlock;
+    private MaterialPropertyBlock propertyBlock => _propertyBlock ??= new MaterialPropertyBlock();
+
+    private Color currentBaseTint = ValidBaseColor;
+    private Color currentRimTint = ValidRimColor;
+
     private GridSystem visibleBuildGrid;
     private Island centerCachedIsland;
     private Vector3 cachedIslandCenter;
@@ -41,6 +61,7 @@ public class BuildingPreview : MonoBehaviour
     public Island BoundIsland { get; private set; }
     public Unit BoundBoat { get; private set; }
     public bool IsBoundToIsland => BoundIsland != null;
+
     public void BindToIsland(Island island, Unit boat = null)
     {
         BoundIsland = island;
@@ -65,39 +86,49 @@ public class BuildingPreview : MonoBehaviour
 
     #region Start + OnDestroy
 
-        private void Start()
+    private void Start()
+    {
+        rotator = GetComponent<BuildingRotator>();
+
+        buildingData = GetBuildingData();
+        buildingProperties = GetPropertiesData();
+
+        // Blueprints for buildings without art would otherwise be invisible, leaving nothing
+        // for hologram rendering. Built after buildingData is resolved so the stand-in matches
+        // the real footprint.
+        BuildingPlaceholderModel.Ensure(gameObject, withCollider: false, withLabel: false);
+        CachePreviewRenderers();
+
+        buildingRequirements = FindObjectOfType<BuildingRequirements>();
+        if (buildingRequirements != null)
         {
-            rotator = GetComponent<BuildingRotator>();
+            buildingRequirements.SetRequirements(this);
+        }
 
-            buildingData = GetBuildingData();
-            buildingProperties = GetPropertiesData();
-
-            // Blueprints for buildings without art would otherwise be invisible, leaving nothing
-            // for SetPreviewMaterial to tint green/red. Built after buildingData is resolved so
-            // the stand-in matches the real footprint.
-            // No label: SetPreviewMaterial re-tints every MeshRenderer, text included.
-            BuildingPlaceholderModel.Ensure(gameObject, withCollider: false, withLabel: false);
-
-            buildingRequirements = FindObjectOfType<BuildingRequirements>();
-            if (buildingRequirements != null)
-            {
-                buildingRequirements.SetRequirements(this);   // Set the building requirements for the preview
-            }
-
+        if (IslandManager.instance != null)
+        {
             IslandManager.instance.OnGridSystemDetected += OnGridSystemDetected;
             IslandManager.instance.OnPlayerEnterIsland += OnPlayerEnterIsland;
         }
-        private void OnDestroy()
+    }
+
+    private void OnDestroy()
+    {
+        SetVisibleBuildGrid(null);
+        if (IslandManager.instance != null)
         {
-            SetVisibleBuildGrid(null);
             IslandManager.instance.OnGridSystemDetected -= OnGridSystemDetected;
             IslandManager.instance.OnPlayerEnterIsland -= OnPlayerEnterIsland;
         }
+        if (hologramMaterial != null) Destroy(hologramMaterial);
+        if (facingArrowMaterial != null) Destroy(facingArrowMaterial);
+        if (facingArrowMesh != null) Destroy(facingArrowMesh);
+    }
 
     #endregion
-    
+
     #region Events + GridSystem
-    
+
     private void OnPlayerEnterIsland(Island island)
     {
         if (IsBoundToIsland) return;
@@ -125,49 +156,116 @@ public class BuildingPreview : MonoBehaviour
         }
 
         visibleBuildGrid = newGridSystem;
-        if (visibleBuildGrid != null)
-        {
-            visibleBuildGrid.SetBuildGridVisible(true);
-        }
     }
 
     #endregion
 
     #region Render Related
 
-    // Preview Color & Render Methods
     public void SetPreviewMaterial(bool canPlace)
     {
-        localCanPlace = canPlace;
+        SetPlacementVisualState(canPlace, canPlace);
+    }
 
-        // Only a harbor blueprint gets the seaward arrow - it is the only one whose
-        // facing is decided for it.
-        if (IsHarborBlueprint()) EnsureFacingArrow();
-        else if (facingArrow != null) facingArrow.SetActive(false);
+    public void SetPlacementVisualState(bool isPlacementValid, bool isAffordable)
+    {
+        localCanPlace = isPlacementValid && isAffordable;
 
-        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        Material targetMaterial = canPlace ? truePlacement : falsePlacement;
-
-        foreach (MeshRenderer renderer in renderers)
+        if (IsHarborBlueprint())
         {
-            // The arrow is signage, not part of the silhouette, so it keeps its own
-            // material and only follows the valid/invalid colour.
-            if (facingArrow != null && renderer.gameObject == facingArrow) continue;
+            EnsureFacingArrow();
+            if (facingArrow != null && !facingArrow.activeSelf) facingArrow.SetActive(true);
+        }
+        else if (facingArrow != null && facingArrow.activeSelf)
+        {
+            facingArrow.SetActive(false);
+        }
 
-            renderer.material = targetMaterial;
+        if (!isPlacementValid)
+        {
+            currentBaseTint = BlockedBaseColor;
+            currentRimTint = BlockedRimColor;
+        }
+        else if (!isAffordable)
+        {
+            currentBaseTint = UnaffordableBaseColor;
+            currentRimTint = UnaffordableRimColor;
+        }
+        else
+        {
+            currentBaseTint = ValidBaseColor;
+            currentRimTint = ValidRimColor;
+        }
+
+        if (cachedPreviewRenderers == null || cachedPreviewRenderers.Length == 0)
+        {
+            CachePreviewRenderers();
+        }
+
+        Material holoMat = ResolveHologramMaterial(localCanPlace);
+        for (int i = 0; i < cachedPreviewRenderers.Length; i++)
+        {
+            MeshRenderer r = cachedPreviewRenderers[i];
+            if (r == null) continue;
+            if (facingArrow != null && r.gameObject == facingArrow) continue;
+
+            if (holoMat != null && r.sharedMaterial != holoMat)
+            {
+                r.sharedMaterial = holoMat;
+            }
+
+            r.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetColor(BaseColorProperty, currentBaseTint);
+            propertyBlock.SetColor(RimColorProperty, currentRimTint);
+            r.SetPropertyBlock(propertyBlock);
         }
 
         if (facingArrowMaterial != null)
         {
-            OverlayMaterial.SetColor(facingArrowMaterial, canPlace ? arrowValidColor : arrowInvalidColor);
+            OverlayMaterial.SetColor(facingArrowMaterial, localCanPlace ? arrowValidColor : arrowInvalidColor);
         }
     }
 
-    /// <summary>
-    /// Whether this blueprint is a harbor - the only kind with a seaward side. Uses the
-    /// same test BuildingChecker and BuildInteraction use to decide what founds an island,
-    /// so all three agree on what counts as a harbor.
-    /// </summary>
+    private Material ResolveHologramMaterial(bool canCommit)
+    {
+        if (hologramMaterial == null)
+        {
+            Shader holoShader = Shader.Find("Moonlight/Placement/BuildingBlueprint");
+            if (holoShader != null)
+            {
+                hologramMaterial = new Material(holoShader)
+                {
+                    name = "RuntimeBuildingBlueprintHologram",
+                    hideFlags = HideFlags.DontSave
+                };
+            }
+        }
+
+        return hologramMaterial != null ? hologramMaterial : (canCommit ? truePlacement : falsePlacement);
+    }
+
+    private void CachePreviewRenderers()
+    {
+        var all = GetComponentsInChildren<MeshRenderer>(true);
+        var filtered = new System.Collections.Generic.List<MeshRenderer>(all.Length);
+        MeshRenderer rootCubeRenderer = _clonedVisuals != null ? GetComponent<MeshRenderer>() : null;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            MeshRenderer r = all[i];
+            if (r == null) continue;
+            if (facingArrow != null && r.gameObject == facingArrow) continue;
+            if (r == rootCubeRenderer) continue;
+            if (r.GetComponent<PlaceholderLabelBillboard>() != null) continue;
+
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            filtered.Add(r);
+        }
+
+        cachedPreviewRenderers = filtered.ToArray();
+    }
+
     private bool IsHarborBlueprint()
     {
         if (buildingData != null && buildingData.requiresQuayFoundation) return true;
@@ -185,20 +283,23 @@ public class BuildingPreview : MonoBehaviour
         facingArrow.transform.SetParent(transform, false);
         facingArrow.transform.localPosition = new Vector3(0f, arrowHeight, 0f);
 
-        facingArrow.AddComponent<MeshFilter>().sharedMesh = BuildArrowMesh(arrowLength);
+        facingArrowMesh = BuildArrowMesh(arrowLength);
+        facingArrow.AddComponent<MeshFilter>().sharedMesh = facingArrowMesh;
 
         MeshRenderer arrowRenderer = facingArrow.AddComponent<MeshRenderer>();
-        arrowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        arrowRenderer.shadowCastingMode = ShadowCastingMode.Off;
         arrowRenderer.receiveShadows = false;
 
         facingArrowMaterial = OverlayMaterial.Create(arrowValidColor);
+        // Depth-tested over coastal water & deck so arrow doesn't draw straight through building hulls.
+        if (facingArrowMaterial.HasProperty("_ZTest"))
+        {
+            facingArrowMaterial.SetFloat("_ZTest", (float)CompareFunction.LessEqual);
+        }
+        facingArrowMaterial.renderQueue = (int)RenderQueue.Transparent + 55;
         arrowRenderer.sharedMaterial = facingArrowMaterial;
     }
 
-    /// <summary>
-    /// A flat arrow lying in the XZ plane pointing along local +Z, so it reads as the
-    /// direction the building faces when seen from the game's overhead camera.
-    /// </summary>
     private static Mesh BuildArrowMesh(float length)
     {
         length = Mathf.Max(1f, length);
@@ -233,10 +334,6 @@ public class BuildingPreview : MonoBehaviour
         return mesh;
     }
 
-    /// <summary>
-    /// Centre of the island the blueprint is over, so "outwards" can be resolved as
-    /// "away from the island", which for a harbor means facing the open water.
-    /// </summary>
     private Vector3 GetIslandCenter(Island island)
     {
         if (island == centerCachedIsland) return cachedIslandCenter;
@@ -270,9 +367,6 @@ public class BuildingPreview : MonoBehaviour
 
         Quaternion facing = Quaternion.LookRotation(outward.normalized, Vector3.up);
 
-        // BuildingRotator owns the blueprint's rotation; this only supplies the
-        // orientation it starts from. Assigning transform.rotation here unconditionally
-        // ran after the rotator every frame and undid every scroll the player made.
         if (rotator != null)
         {
             rotator.SetBaseRotation(facing);
@@ -286,20 +380,22 @@ public class BuildingPreview : MonoBehaviour
 
     public void SetRendererColor(Color color)
     {
-        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer renderer in renderers)
+        if (cachedPreviewRenderers == null || cachedPreviewRenderers.Length == 0) CachePreviewRenderers();
+        foreach (MeshRenderer renderer in cachedPreviewRenderers)
         {
-            renderer.material.color = color;
+            if (renderer == null) continue;
+            renderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetColor(BaseColorProperty, color);
+            renderer.SetPropertyBlock(propertyBlock);
         }
     }
 
-
     public void SetRendererEnabled(bool isEnabled)
     {
-        MeshRenderer[] renderers = GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer renderer in renderers)
+        if (cachedPreviewRenderers == null || cachedPreviewRenderers.Length == 0) CachePreviewRenderers();
+        foreach (MeshRenderer renderer in cachedPreviewRenderers)
         {
-            renderer.enabled = isEnabled;
+            if (renderer != null) renderer.enabled = isEnabled;
         }
     }
 
@@ -307,16 +403,17 @@ public class BuildingPreview : MonoBehaviour
 
     private GameObject _clonedVisuals;
 
-    // BUILDING PREFAB RELATED
     public void SetBuildingPrefab(GameObject buildingPrefab)
     {
         this.buildingPrefab = buildingPrefab;
+        buildingData = GetBuildingData();
+        buildingProperties = GetPropertiesData();
+
         if (currentIsland != null)
         {
-            transform.SetParent(currentIsland.transform); // Set Parent
+            transform.SetParent(currentIsland.transform);
         }
 
-        // Generate 1:1 visual silhouette clone from target building prefab
         if (buildingPrefab != null)
         {
             if (_clonedVisuals != null)
@@ -327,7 +424,6 @@ public class BuildingPreview : MonoBehaviour
             _clonedVisuals = Instantiate(buildingPrefab, transform.position, transform.rotation, transform);
             _clonedVisuals.name = $"{buildingPrefab.name}_GhostSilhouette";
 
-            // Strip logic, physics, and audio from the visual ghost
             foreach (var col in _clonedVisuals.GetComponentsInChildren<Collider>(true)) Destroy(col);
             var mbs = _clonedVisuals.GetComponentsInChildren<MonoBehaviour>(true);
             for (int i = mbs.Length - 1; i >= 0; i--)
@@ -336,26 +432,23 @@ public class BuildingPreview : MonoBehaviour
             }
             foreach (var aud in _clonedVisuals.GetComponentsInChildren<AudioSource>(true)) Destroy(aud);
 
-            // Hide the default placeholder cube renderer so only target geometry shows
             MeshRenderer baseRenderer = GetComponent<MeshRenderer>();
             if (baseRenderer != null) baseRenderer.enabled = false;
         }
 
+        CachePreviewRenderers();
         SetPreviewMaterial(localCanPlace);
     }
-
 
     public GameObject GetBuildingPrefab()
     {
         return buildingPrefab;
     }
 
-    // Update Method Starts
     public void Update()
     {
-        #region Hovering Mechanics 
-            
-        // Assigns Island
+        #region Hovering Mechanics
+
         if (!IsBoundToIsland)
         {
             Island hoveredIsland = IslandManager.instance.GetHoveredIsland();
@@ -382,8 +475,7 @@ public class BuildingPreview : MonoBehaviour
                 UpdateGridSystem(currentIsland.GetComponentInChildren<GridSystem>());
             }
         }
-        
-        // Assigns Parent
+
         if (currentIsland != null)
         {
             if (transform.parent != currentIsland.transform)
@@ -394,8 +486,6 @@ public class BuildingPreview : MonoBehaviour
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            // Same reason as BuildingChecker: the island's tall hover trigger sits on
-            // the Ground layer and would otherwise catch the ray before the terrain.
             if (Physics.Raycast(ray, out hit, 1000f, groundLayer, QueryTriggerInteraction.Ignore))
             {
                 Vector3 newPos = hit.point;
@@ -431,13 +521,7 @@ public class BuildingPreview : MonoBehaviour
         }
         #endregion
     }
-    // Update Method Ends
 
-    /// <summary>
-    /// Shows the quay platform this blueprint would stand on - the padded deck and its
-    /// outer retaining wall - resolved through the same grid origin and the same
-    /// QuaySystem cell rule the placer will use a moment later.
-    /// </summary>
     private void UpdateQuayFoundationPreview()
     {
         bool wantsQuay = buildingData != null && buildingData.requiresQuayFoundation && gridSystem != null;
@@ -459,14 +543,11 @@ public class BuildingPreview : MonoBehaviour
             gridSystem.GetFootprintOrigin(transform.position, footprint),
             footprint,
             buildingData.quayFoundationPadding,
-            localCanPlace ? truePlacement : falsePlacement);
+            ResolveHologramMaterial(localCanPlace),
+            currentBaseTint,
+            currentRimTint);
     }
 
-    /// <summary>
-    /// The blueprint's footprint in cells, at its current rotation. Everything that asks
-    /// the grid a question about this blueprint asks with this, so the snap, the
-    /// placement check and the reserved cells cannot disagree.
-    /// </summary>
     public Vector2Int GetFootprint()
     {
         return GridSystem.GetFootprint(
@@ -474,17 +555,15 @@ public class BuildingPreview : MonoBehaviour
             transform.rotation);
     }
 
-    // Get Building Data 
     public BuildingData GetBuildingData()
     {
-        // Both may legitimately be absent: not every building prefab carries a
-        // BuildingData asset, and a null here means "no data driven rules", not a fault.
         BuildingProperties properties = this.buildingPrefab != null
             ? this.buildingPrefab.GetComponent<BuildingProperties>()
             : null;
 
         return properties != null ? properties.buildingData : null;
     }
+
     public BuildingData GetBuildingData2()
     {
         BuildingProperties _buildingProperties = GetPropertiesData();
@@ -492,7 +571,6 @@ public class BuildingPreview : MonoBehaviour
         return buildingData;
     }
 
-    // Get Building Properties
     public BuildingProperties GetPropertiesData()
     {
         BuildingProperties buildingProperties = this.buildingPrefab.GetComponent<BuildingProperties>();
@@ -515,7 +593,6 @@ public class BuildingPreview : MonoBehaviour
         {
             finalBuildingProperties.currentIsland = currentIsland;
             finalBuildingProperties.gridSystem = gridSystem;
-
         }
     }
 }

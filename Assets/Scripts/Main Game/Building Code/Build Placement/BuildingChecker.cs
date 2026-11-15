@@ -39,6 +39,13 @@ public class BuildingChecker : MonoBehaviour
     // Tracks the boat currently providing settlement range for the active preview
     private Unit currentSettlingBoat;
     private Unit hoveredBoat;
+    private Bank bank;
+    private readonly PlacementValidationResult latestValidation = new PlacementValidationResult();
+
+    public PlacementValidationResult LatestValidation => latestValidation;
+    public BuildingPreview ActivePreview => currentBuildingPreview;
+    public Island ActiveIsland => currentIsland;
+    public GridSystem ActiveGrid => gridSystem;
     #endregion
 
     #region Awake + Start + OnDestroy
@@ -58,11 +65,14 @@ public class BuildingChecker : MonoBehaviour
     private void Start()
     {
         canPlace = false;
+        bank = FindObjectOfType<Bank>();
         
         // Subscribe to event for the current island.
-        IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
-        IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
-
+        if (IslandManager.instance != null)
+        {
+            IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
+            IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
+        }
     }
 
     private void OnDestroy()
@@ -168,17 +178,34 @@ public class BuildingChecker : MonoBehaviour
             
             UpdateBuildsite();
             
-            currentBuildingPreview.SetPreviewMaterial(canPlace); // Placement Indicator
+            currentBuildingPreview.SetPlacementVisualState(
+                latestValidation.IsPlacementValid,
+                latestValidation.IsAffordable);
 
             // Update the visual settlement ring to follow whatever boat we evaluated
             UpdateSettlingBoatRing(hoveredBoat);
 
-            // Shade the grid so the player can see where this building may stand before
-            // clicking, rather than discovering it from a refused click. In Anno 2070 style,
-            // this evaluates candidate influence and shows valid green cells and blocked red cells
-            // with a stepped cell boundary centered on the candidate building location.
+            BuildingProperties previewProps = GetPreviewProperties();
+            GameObject previewPrefab = currentBuildingPreview != null ? currentBuildingPreview.GetBuildingPrefab() : null;
             Vector3? previewPos = currentBuildingPreview != null ? (Vector3?)currentBuildingPreview.transform.position : null;
-            PlacementValidityOverlay.Show(gridSystem, currentIsland, GetPreviewProperties(), hoveredBoat, previewPos);
+            Quaternion? previewRot = currentBuildingPreview != null ? (Quaternion?)currentBuildingPreview.transform.rotation : null;
+
+            PlacementValidityOverlay.Show(
+                gridSystem,
+                currentIsland,
+                previewProps,
+                hoveredBoat,
+                previewPos,
+                latestValidation,
+                previewRot);
+            PlacementDepositBeacons.Show(gridSystem, previewProps != null ? previewProps.buildingData : null);
+            PlacementCursorCostHUD.UpdateReadout(
+                previewPrefab,
+                previewPrefab != null ? previewPrefab.GetComponent<BuildingCost>() : null,
+                latestValidation,
+                bank,
+                islandInventory,
+                hoveredBoat);
 
             InputCheck();
         }
@@ -186,6 +213,8 @@ public class BuildingChecker : MonoBehaviour
         {
             UpdateSettlingBoatRing(null); // Ensure it's off if no preview
             PlacementValidityOverlay.HideAll();
+            PlacementDepositBeacons.Hide();
+            PlacementCursorCostHUD.Hide();
         }
     }
     #endregion
@@ -214,35 +243,20 @@ public class BuildingChecker : MonoBehaviour
                 buildingRequirements = GetComponent<BuildingRequirements>();
             }
 
-            if (buildingRequirements != null)
-            {
-                isVerified = buildingRequirements.Verify();
-            }
-            else
-            {
-                isVerified = true;
-            }
+            // PlacementEvaluator validates terrain, footprint road perimeter, influence,
+            // credits, goods, and non-grid BuildingRequirements every frame into canPlace.
+            isVerified = true;
 
-            // Scenario Cases 
-
-            // Can Place && building requirements is Verified
             if (IC || (canPlace && isVerified))
             {
                 HandleBuildingPlacement();
             }
-            else if (!canPlace)
-            {
-                Debug.LogFormat("<color=red>Cant place building - Reason: canPlace: {0}</color>", canPlace);
-                CancelClick();
-            }
-            else if (!isVerified)
-            {
-                Debug.LogFormat("<color=red>Cant place building - Reason: isVerified: {0}</color>", isVerified);
-                CancelClick();
-            }
             else
             {
-                Debug.LogError("Unknown Error: CanPlace is null");
+                string reason = latestValidation != null && latestValidation.FailureReason != PlacementFailureReason.None
+                    ? latestValidation.FormatReasonLabel()
+                    : $"canPlace={canPlace}, isVerified={isVerified}";
+                Debug.Log($"<color=red>Cannot place building: {reason}</color>");
                 CancelClick();
             }
         }
@@ -444,96 +458,57 @@ public class BuildingChecker : MonoBehaviour
             // 1x1 case of this and still answers identically for single-cell buildings.
             Vector2Int previewFootprint = currentBuildingPreview.GetFootprint();
             newPos = newGridSystem.SnapFootprintToGrid(newPos, previewFootprint);
-            Cell cell = newGridSystem.GetCellAtWorldPosition(newPos);
+            Vector3Int gridOrigin = newGridSystem.GetFootprintOrigin(newPos, previewFootprint);
 
-            // Placement Logic Check 
-
-            // Checks for cells
-            if (cell != null)
-            {
-
-                // First,
-                // ensure that the primary cell where you are trying to place the building is not blocked or occupied.
-                if (cell.isBlocked || cell.isOccupied)
-                {
-                    canPlace = false;
-                    currentBuildingPreview.SetPreviewMaterial(canPlace);
-                    Debug.Log(cell.isBlocked ? "Cell is Blocked." : "Cell is occupied, not Open.");
-                    return; // If the primary cell is blocked or occupied, then exit early.
-                }
-                // If Not, Continue...
-
-                // Second,
-                // If the cell is free, check for the entire footprint of the building & check Additional Properties and requirements
-                BuildingProperties buildingProperties = currentBuildingPreview.GetBuildingPrefab().GetComponent<BuildingProperties>();
-                
-                // Null Check for Building Properties.
-                if (buildingProperties == null)
-                {
-                    canPlace = false;
-                    Debug.LogError("buildingProperties is null");
-                    return; // If the building properties are Null, then exit Early.
-                }
-
-
-                // Third,
-                // Re-decide from scratch every frame. canPlace used to only ever be
-                // assigned false anywhere in the class, so the blueprint stayed red
-                // forever and no building could be placed.
-                Vector3Int gridPosition = newGridSystem.GetFootprintOrigin(newPos, previewFootprint);
-
-                // The per-cell footprint rules live in PlacementRules now. They used to be
-                // written out inline here, where nothing else could read them - which meant
-                // the placement overlay would have had to re-implement them and could
-                // silently disagree with what the click actually enforces.
-                canPlace = PlacementRules.EvaluateFootprint(
-                    newGridSystem,
-                    gridPosition,
-                    previewFootprint,
-                    buildingProperties.buildingData,
-                    out _);
-
-                if (canPlace)
-                {
-                    InfluenceManager influenceManager = PlacementRules.GetInfluenceManager(currentIsland, createIfMissing: true);
-
-                    // Shared with BuildInteraction and the action bar so all three agree
-                    // on what counts as the founding building. The old inline test
-                    // required a BuildingData asset, which the Depot does not have, so
-                    // the first harbor was judged an ordinary building and demanded
-                    // island influence that cannot exist before it is built.
-                    bool isWarehouse = InfluenceManager.IsHarborBuilding(buildingProperties);
-
-                    canPlace = PlacementRules.EvaluateInfluence(influenceManager, isWarehouse, newPos, newGridSystem,
-                                                               out Unit foundingBoat, out _);
-
-                    // If this is the first warehouse on an unsettled island, verify boat cargo.
-                    // Cargo is a property of the vessel rather than of the site, so the overlay
-                    // deliberately does not shade cells by it - every cell would fail alike.
-                    if (canPlace && isWarehouse && influenceManager != null && !influenceManager.HasWarehouse && foundingBoat != null)
-                    {
-                        canPlace = BoatCarriesCost(foundingBoat);
-                    }
-                }
-
-                currentBuildingPreview.SetPreviewMaterial(canPlace);
-                Debug.LogFormat("<color=pink>UpdateBuildsite - canPlace: </color>" + canPlace);
-            }
-            else
+            GameObject prefab = currentBuildingPreview.GetBuildingPrefab();
+            BuildingProperties buildingProperties = prefab != null ? prefab.GetComponent<BuildingProperties>() : null;
+            if (buildingProperties == null)
             {
                 canPlace = false;
-                currentBuildingPreview.SetPreviewMaterial(canPlace);
+                latestValidation.Reset();
+                latestValidation.FailureReason = PlacementFailureReason.InvalidTerrain;
+                currentBuildingPreview.SetPreviewMaterial(false);
+                Debug.LogError("buildingProperties is null");
                 return;
             }
+
+            if (bank == null) bank = FindObjectOfType<Bank>();
+            islandInventory = currentIsland != null ? currentIsland.GetComponent<Inventory>() : null;
+
+            Vector3 evaluatedWorldPos = newPos;
+
+            var request = new AllocationRequest
+            {
+                Prefab = prefab,
+                Properties = buildingProperties,
+                Data = buildingProperties.buildingData,
+                Cost = prefab.GetComponent<BuildingCost>(),
+                Grid = newGridSystem,
+                Island = currentIsland,
+                WorldPosition = evaluatedWorldPos,
+                GridOrigin = gridOrigin,
+                Footprint = previewFootprint,
+                IslandGoods = islandInventory,
+                Bank = bank,
+                PreferredBoat = hoveredBoat
+            };
+
+            PlacementEvaluator.Evaluate(in request, latestValidation);
+            canPlace = latestValidation.CanCommit;
+            currentBuildingPreview.SetPlacementVisualState(
+                latestValidation.IsPlacementValid,
+                latestValidation.IsAffordable);
         }
         else
         {
             if (currentBuildingPreview != null)
             {
-                Debug.Log("No Ground Layer");
                 canPlace = false;
-                currentBuildingPreview.SetPreviewMaterial(false);
+                latestValidation.Reset();
+                currentBuildingPreview.SetPlacementVisualState(false, false);
                 currentBuildingPreview.SetRendererEnabled(false);
+                PlacementDepositBeacons.Hide();
+                PlacementCursorCostHUD.Hide();
                 return;
             }
 
@@ -553,30 +528,7 @@ public class BuildingChecker : MonoBehaviour
         return prefab != null ? prefab.GetComponent<BuildingProperties>() : null;
     }
 
-    /// <summary>
-    /// Whether the founding vessel is carrying what the harbor costs. Extracted from
-    /// UpdateBuildsite so the site rules there read as site rules.
-    /// </summary>
-    private bool BoatCarriesCost(Unit foundingBoat)
-    {
-        BuildingCost costComponent = currentBuildingPreview.GetBuildingPrefab()?.GetComponent<BuildingCost>();
-        if (costComponent == null || costComponent.costData == null) return true;
-
-        UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-        if (boatInv == null) return true;
-
-        Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
-        Dictionary<ItemData, int> costItems = costComponent.costData.GetCostItemsDictionary();
-
-        foreach (var kvp in costItems)
-        {
-            if (kvp.Key == null || kvp.Value <= 0) continue;
-
-            if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value) return false;
-        }
-
-        return true;
-    }
+    public Unit ActiveSettlingBoat => currentSettlingBoat != null ? currentSettlingBoat : ResolveSettlingBoat();
 
     /// <summary>
     /// The vessel whose influence circle is shown while a harbor blueprint is out. It is
@@ -615,6 +567,8 @@ public class BuildingChecker : MonoBehaviour
     {
         UpdateSettlingBoatRing(null);
         PlacementValidityOverlay.HideAll();
+        PlacementDepositBeacons.Hide();
+        PlacementCursorCostHUD.Hide();
         if (currentBuildingPreview != null)
         {
             if (currentBuildingPreview.gameObject != null)

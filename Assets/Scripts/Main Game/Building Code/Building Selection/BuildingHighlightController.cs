@@ -2,24 +2,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Decides which buildings wear which highlight, and is the only thing that does.
+/// Decides which buildings wear which highlight and syncs static zone terrain overlays
+/// when an InfluenceZone emitter (Harbor, Warehouse, City Center) is selected.
 ///
-/// Clicking a building turns it blue and turns everything inside its influence green;
-/// clicking away clears both. Keeping the decision in one place is what guarantees the
-/// green set is actually cleared - a building that stops being in range while nothing
-/// is watching would otherwise stay lit forever.
+/// Priority: Selected (blue) > PublisherSupplier (gold) > SubscriberConsumer (mint/cyan) > Influence (green).
 /// </summary>
 [DisallowMultipleComponent]
 public class BuildingHighlightController : MonoBehaviour
 {
     public static BuildingHighlightController Instance { get; private set; }
 
-    [Tooltip("Re-check the influence set on this interval, so buildings finished or destroyed during a selection are picked up.")]
+    [Tooltip("Re-check highlights on this interval while a building is selected.")]
     [SerializeField, Min(0f)] private float refreshInterval = 0.5f;
 
     private readonly List<BuildingHighlighter> litHighlighters = new List<BuildingHighlighter>();
+    private readonly List<Building> scratchSuppliers = new List<Building>();
+    private readonly List<Building> scratchConsumers = new List<Building>();
     private Building currentSelection;
     private float nextRefreshTime;
+    private bool showingStaticZoneOverlay;
 
     private void Awake()
     {
@@ -31,10 +32,6 @@ public class BuildingHighlightController : MonoBehaviour
         Instance = this;
     }
 
-    /// <summary>
-    /// Creates the controller on load so no scene has to be edited to get highlights,
-    /// and so it cannot be missing from one scene and present in another.
-    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
     {
@@ -50,11 +47,6 @@ public class BuildingHighlightController : MonoBehaviour
         ClearAll();
     }
 
-    /// <summary>
-    /// The selection is polled rather than subscribed to. BuildingSelections is a scene
-    /// object whose Awake order relative to this one is not guaranteed, and a missed
-    /// subscription would strand a building lit with no way to clear it.
-    /// </summary>
     private void Update()
     {
         Building selected = BuildingSelections.Instance != null ? BuildingSelections.Instance.SelectedBuilding : null;
@@ -67,8 +59,7 @@ public class BuildingHighlightController : MonoBehaviour
 
         if (currentSelection == null)
         {
-            // The selected building was destroyed out from under us.
-            if (litHighlighters.Count > 0) ClearAll();
+            if (litHighlighters.Count > 0 || showingStaticZoneOverlay) ClearAll();
             return;
         }
 
@@ -78,10 +69,6 @@ public class BuildingHighlightController : MonoBehaviour
         Apply(currentSelection);
     }
 
-    /// <summary>
-    /// Entry point for anything that changes the selection. Also safe to call directly
-    /// if building selection is ever driven from somewhere other than BuildingSelections.
-    /// </summary>
     public void OnSelectionChanged(Building selected)
     {
         currentSelection = selected;
@@ -103,19 +90,48 @@ public class BuildingHighlightController : MonoBehaviour
         BuildingHighlighter selectedHighlighter = GetHighlighter(selected.gameObject);
         if (selectedHighlighter != null) wanted[selectedHighlighter] = BuildingHighlight.Selected;
 
-        foreach (Building influenced in GetInfluencedBuildings(selected))
+        // Producer-consumer links (warm gold suppliers, mint/cyan consumers).
+        DependencyGraphRegistry.QueryDependencies(selected, scratchSuppliers, scratchConsumers);
+
+        for (int i = 0; i < scratchSuppliers.Count; i++)
         {
-            if (influenced == null || influenced == selected) continue;
-
-            BuildingHighlighter highlighter = GetHighlighter(influenced.gameObject);
-
-            // Selected wins - the clicked building never greens itself through its own zone.
-            if (highlighter == null || wanted.ContainsKey(highlighter)) continue;
-
-            wanted[highlighter] = BuildingHighlight.Influence;
+            Building supplier = scratchSuppliers[i];
+            if (supplier == null || supplier == selected) continue;
+            BuildingHighlighter highlighter = GetHighlighter(supplier.gameObject);
+            if (highlighter != null && !wanted.ContainsKey(highlighter))
+            {
+                wanted[highlighter] = BuildingHighlight.PublisherSupplier;
+            }
         }
 
-        // Clear anything lit last pass that no longer belongs, before lighting the new set.
+        for (int i = 0; i < scratchConsumers.Count; i++)
+        {
+            Building consumer = scratchConsumers[i];
+            if (consumer == null || consumer == selected) continue;
+            BuildingHighlighter highlighter = GetHighlighter(consumer.gameObject);
+            if (highlighter != null && !wanted.ContainsKey(highlighter))
+            {
+                wanted[highlighter] = BuildingHighlight.SubscriberConsumer;
+            }
+        }
+
+        // Spatial influence zone (green) + stepped white perimeter terrain projection when idle.
+        InfluenceZone zone = selected.GetComponent<InfluenceZone>() ?? selected.GetComponentInChildren<InfluenceZone>();
+        if (zone != null)
+        {
+            foreach (Building influenced in GetInfluencedBuildings(zone))
+            {
+                if (influenced == null || influenced == selected) continue;
+
+                BuildingHighlighter highlighter = GetHighlighter(influenced.gameObject);
+                if (highlighter == null || wanted.ContainsKey(highlighter)) continue;
+
+                wanted[highlighter] = BuildingHighlight.Influence;
+            }
+        }
+
+        SyncStaticZoneOverlay(selected, zone);
+
         for (int i = litHighlighters.Count - 1; i >= 0; i--)
         {
             BuildingHighlighter lit = litHighlighters[i];
@@ -133,13 +149,42 @@ public class BuildingHighlightController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// The buildings the selection reaches. A building's own InfluenceZone is the
-    /// relationship being shown - what this harbor or depot services.
-    /// </summary>
-    private static IEnumerable<Building> GetInfluencedBuildings(Building selected)
+    private void SyncStaticZoneOverlay(Building selected, InfluenceZone zone)
     {
-        InfluenceZone zone = selected.GetComponent<InfluenceZone>() ?? selected.GetComponentInChildren<InfluenceZone>();
+        bool placementActive = BuildingChecker.instance != null && BuildingChecker.instance.IsPlacingBuilding;
+        if (placementActive)
+        {
+            showingStaticZoneOverlay = false;
+            return;
+        }
+
+        if (zone != null && selected != null)
+        {
+            BuildingProperties props = selected.GetComponent<BuildingProperties>();
+            Island island = props != null && props.currentIsland != null
+                ? props.currentIsland
+                : selected.GetComponentInParent<Island>();
+            GridSystem grid = props != null && props.gridSystem != null
+                ? props.gridSystem
+                : (island != null ? island.GetComponent<GridSystem>() : null);
+
+            if (grid != null)
+            {
+                PlacementValidityOverlay.ShowStaticZone(grid, island, zone);
+                showingStaticZoneOverlay = true;
+                return;
+            }
+        }
+
+        if (showingStaticZoneOverlay)
+        {
+            PlacementValidityOverlay.HideAll();
+            showingStaticZoneOverlay = false;
+        }
+    }
+
+    private static IEnumerable<Building> GetInfluencedBuildings(InfluenceZone zone)
+    {
         if (zone == null) yield break;
 
         foreach (Building building in FindObjectsOfType<Building>())
@@ -154,8 +199,6 @@ public class BuildingHighlightController : MonoBehaviour
     private static BuildingHighlighter GetHighlighter(GameObject target)
     {
         if (target == null) return null;
-
-        // Added on demand so no building prefab needs the component placed by hand.
         return target.GetComponent<BuildingHighlighter>() ?? target.AddComponent<BuildingHighlighter>();
     }
 
@@ -166,5 +209,15 @@ public class BuildingHighlightController : MonoBehaviour
             if (highlighter != null) highlighter.SetHighlight(BuildingHighlight.None);
         }
         litHighlighters.Clear();
+
+        if (showingStaticZoneOverlay)
+        {
+            bool placementActive = BuildingChecker.instance != null && BuildingChecker.instance.IsPlacingBuilding;
+            if (!placementActive)
+            {
+                PlacementValidityOverlay.HideAll();
+            }
+            showingStaticZoneOverlay = false;
+        }
     }
 }

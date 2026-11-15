@@ -114,6 +114,13 @@ public class BuildingPlaceholderModel : MonoBehaviour
             addCollider,
             withLabel ? displayName : null);
 
+        if (_placeholderInstance != null && GetComponent<BuildingPreview>() == null)
+        {
+            ProceduralBuildingLifeDriver lifeDriver = _placeholderInstance.GetComponent<ProceduralBuildingLifeDriver>()
+                ?? _placeholderInstance.AddComponent<ProceduralBuildingLifeDriver>();
+            lifeDriver.RefreshParts();
+        }
+
         _builtWithCollider = addCollider;
         _builtWithLabel = WantsLabel();
     }

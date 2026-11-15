@@ -27,43 +27,43 @@ public class ClimateProfile : ScriptableObject
 
     [Header("Underwater Plateau Surface")]
     [Tooltip("Fine sediment covering the buildable plateau tabletop.")]
-    public Color plateauFineSandColor = new Color(0.62f, 0.59f, 0.47f, 1f);
+    public Color plateauFineSandColor = new Color(0.36f, 0.46f, 0.50f, 1f);
     [Tooltip("Darker, larger-grained sand used in broad tabletop patches and sand descents.")]
-    public Color plateauCoarseSandColor = new Color(0.46f, 0.43f, 0.34f, 1f);
+    public Color plateauCoarseSandColor = new Color(0.24f, 0.33f, 0.38f, 1f);
     [Tooltip("Pale shell and limestone fragments scattered through clean sand.")]
-    public Color plateauShellSedimentColor = new Color(0.76f, 0.73f, 0.61f, 1f);
+    public Color plateauShellSedimentColor = new Color(0.50f, 0.58f, 0.60f, 1f);
     [Tooltip("Loose gravel concentrated where sand meets the rocky rim.")]
-    public Color plateauGravelColor = new Color(0.34f, 0.38f, 0.37f, 1f);
+    public Color plateauGravelColor = new Color(0.26f, 0.34f, 0.36f, 1f);
     [Tooltip("Soft organic mud collected in protected tabletop pockets.")]
-    public Color plateauMudColor = new Color(0.20f, 0.23f, 0.20f, 1f);
+    public Color plateauMudColor = new Color(0.14f, 0.21f, 0.25f, 1f);
     [Tooltip("Deep marine silt covering the lower apron and abyss transition.")]
-    public Color plateauSiltColor = new Color(0.11f, 0.15f, 0.17f, 1f);
+    public Color plateauSiltColor = new Color(0.09f, 0.16f, 0.22f, 1f);
     [Tooltip("Algae and reef growth tint applied around exposed rock.")]
-    public Color plateauReefColor = new Color(0.13f, 0.28f, 0.22f, 1f);
+    public Color plateauReefColor = new Color(0.12f, 0.31f, 0.27f, 1f);
     [Tooltip("How strongly secondary sand, shell, gravel, mud, and reef patches break up the base surface.")]
-    [Range(0f, 1f)] public float plateauMaterialVariation = 0.78f;
+    [Range(0f, 1f)] public float plateauMaterialVariation = 0.82f;
 
     [Header("Underwater Plateau Rock Material")]
     [Tooltip("Deep crevice and undercut colour used by generated plateau rock.")]
-    public Color plateauRockDarkColor = new Color(0.075f, 0.12f, 0.13f, 1f);
+    public Color plateauRockDarkColor = new Color(0.06f, 0.11f, 0.15f, 1f);
     [Tooltip("Dominant blue-grey stone colour used by escarpments and formations.")]
-    public Color plateauRockMidColor = new Color(0.22f, 0.31f, 0.32f, 1f);
+    public Color plateauRockMidColor = new Color(0.19f, 0.29f, 0.34f, 1f);
     [Tooltip("Pale worn faces and mineral edges in the plateau rock.")]
-    public Color plateauRockLightColor = new Color(0.48f, 0.57f, 0.56f, 1f);
+    public Color plateauRockLightColor = new Color(0.42f, 0.54f, 0.58f, 1f);
     [Tooltip("Fine sand deposited on upward-facing rock shelves.")]
-    public Color plateauRockSedimentColor = new Color(0.55f, 0.58f, 0.52f, 1f);
+    public Color plateauRockSedimentColor = new Color(0.38f, 0.48f, 0.51f, 1f);
     [Tooltip("Strength of horizontal geological banding on generated rock.")]
-    [Range(0f, 1f)] public float plateauRockStrataStrength = 0.72f;
+    [Range(0f, 1f)] public float plateauRockStrataStrength = 0.76f;
     [Tooltip("Amount of pale sediment gathered on formation tops and ledges.")]
-    [Range(0f, 1f)] public float plateauRockSedimentStrength = 0.42f;
+    [Range(0f, 1f)] public float plateauRockSedimentStrength = 0.44f;
     [Tooltip("Amount of algae occupying damp faces and crevices.")]
-    [Range(0f, 1f)] public float plateauRockAlgaeStrength = 0.34f;
+    [Range(0f, 1f)] public float plateauRockAlgaeStrength = 0.36f;
     [Tooltip("Wet specular response of exposed plateau rock.")]
     [Range(0f, 1f)] public float plateauRockWetness = 0.48f;
     [Tooltip("Strength of fine current-shaped ripples across the sediment tabletop.")]
-    [Range(0f, 1f)] public float plateauSandRippleStrength = 0.18f;
+    [Range(0f, 1f)] public float plateauSandRippleStrength = 0.24f;
     [Tooltip("Soft underwater sheen on the buildable sediment surface.")]
-    [Range(0f, 1f)] public float plateauSurfaceWetness = 0.36f;
+    [Range(0f, 1f)] public float plateauSurfaceWetness = 0.40f;
 
     [Header("Foliage Scattering")]
     [Tooltip("Authoritative foliage table. Each species carries its own densities, slope and shore " +

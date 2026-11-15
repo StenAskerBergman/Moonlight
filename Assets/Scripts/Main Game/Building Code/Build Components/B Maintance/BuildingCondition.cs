@@ -1,21 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BuildingCondition : MonoBehaviour
 {
     private Building building;
+    private BuildingSimulation simulation;
     private BuildingSupply buildingSupply;
     private BuildingProperties buildingProperties;
 
     [SerializeField] private float checkInterval = 2f;
     private float timeSinceLastCheck;
+    private bool pausedByCondition;
 
     private void Awake()
     {
-        building = GetComponent<Building>();
-        buildingSupply = GetComponent<BuildingSupply>();
-        buildingProperties = GetComponent<BuildingProperties>();
+        CacheComponents();
     }
 
     private void OnEnable()
@@ -30,16 +28,12 @@ public class BuildingCondition : MonoBehaviour
         RoadPlacer.OnRoadRemoved -= HandleRoadNetworkChanged;
     }
 
-    // Any road placed/removed anywhere could affect this building's road-access
-    // requirement, so just re-check conditions immediately rather than waiting
-    // for the next timed pass.
     private void HandleRoadNetworkChanged(Cell changedCell)
     {
         CheckConditions();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         timeSinceLastCheck += Time.deltaTime;
         if (timeSinceLastCheck < checkInterval) return;
@@ -48,51 +42,165 @@ public class BuildingCondition : MonoBehaviour
         CheckConditions();
     }
 
-    private void CheckConditions()
+    public bool EvaluateOperationalConditions(out BuildingEnums.BuildingShutdownReason failureReason)
     {
-        if (building == null || building.buildingData == null) return;
+        CacheComponents();
+        failureReason = BuildingEnums.BuildingShutdownReason.None;
 
-        if (building.CurrentState == BuildingEnums.BuildingState.UnderConstruction
-            || building.CurrentState == BuildingEnums.BuildingState.Destroyed)
-        {
-            return;
-        }
+        BuildingData data = ResolveBuildingData();
+        if (data == null || data.BuildingRequirements == null) return true;
 
-        Cell ownCell = GetOwnCell();
+        GridSystem grid = null;
+        Vector3Int origin = Vector3Int.zero;
+        Vector2Int footprint = Vector2Int.one;
+        bool hasPlacement = buildingProperties != null &&
+                            buildingProperties.TryGetPlacementCells(out grid, out origin, out footprint);
+        Island island = buildingProperties != null ? buildingProperties.currentIsland : GetComponentInParent<Island>();
+        bool quayFoundation = data.requiresQuayFoundation;
 
-        bool requirementsMet = true;
-        foreach (BuildingRequirement requirement in building.buildingData.BuildingRequirements)
+        foreach (BuildingRequirement requirement in data.BuildingRequirements)
         {
             if (requirement == null) continue;
 
             if (requirement is GridRequirement gridRequirement)
             {
-                gridRequirement.SetTargetCell(ownCell);
-            }
+                if (hasPlacement)
+                {
+                    if (!quayFoundation && !IsFootprintTerrainSatisfied(gridRequirement, grid, origin, footprint))
+                    {
+                        failureReason = BuildingEnums.BuildingShutdownReason.UnsupportedAnchor;
+                        return false;
+                    }
 
-            if (!requirement.IsSatisfied())
+                    if (gridRequirement.requiresRoadAccess &&
+                        !ConditionEvaluator.EvaluateFootprint(ConditionEnums.ConditionType.Has_Road, grid, origin, footprint, island))
+                    {
+                        failureReason = BuildingEnums.BuildingShutdownReason.NoRoadAccess;
+                        return false;
+                    }
+                }
+                else
+                {
+                    Cell ownCell = GetOwnCell();
+                    if (!quayFoundation && !gridRequirement.IsTerrainSatisfied(ownCell))
+                    {
+                        failureReason = BuildingEnums.BuildingShutdownReason.UnsupportedAnchor;
+                        return false;
+                    }
+
+                    if (gridRequirement.requiresRoadAccess &&
+                        !ConditionEvaluator.Evaluate(ConditionEnums.ConditionType.Has_Road, ownCell))
+                    {
+                        failureReason = BuildingEnums.BuildingShutdownReason.NoRoadAccess;
+                        return false;
+                    }
+                }
+            }
+            else if (!requirement.IsSatisfied())
             {
-                requirementsMet = false;
-                break;
+                failureReason = BuildingEnums.BuildingShutdownReason.UnsupportedAnchor;
+                return false;
             }
         }
 
-        if (!requirementsMet)
+        return true;
+    }
+
+    public void CheckConditions()
+    {
+        CacheComponents();
+        if (ResolveBuildingData() == null) return;
+
+        BuildingEnums.BuildingState state = simulation != null
+            ? simulation.CurrentState
+            : (building != null ? building.CurrentState : BuildingEnums.BuildingState.UnderConstruction);
+
+        if (state == BuildingEnums.BuildingState.UnderConstruction
+            || state == BuildingEnums.BuildingState.Destroyed)
         {
-            building.SetState(BuildingEnums.BuildingState.Paused);
-        }
-        else if (building.CurrentState == BuildingEnums.BuildingState.Paused)
-        {
-            building.SetState(BuildingEnums.BuildingState.Active);
+            return;
         }
 
-        buildingSupply?.CheckSupplyState();
+        if (!EvaluateOperationalConditions(out BuildingEnums.BuildingShutdownReason failureReason))
+        {
+            pausedByCondition = true;
+            if (simulation != null)
+            {
+                simulation.SetShutdownReason(failureReason);
+                simulation.SetState(BuildingEnums.BuildingState.Paused);
+                simulation.SetEfficiency(0f);
+            }
+            else if (building != null)
+            {
+                building.SetState(BuildingEnums.BuildingState.Paused);
+            }
+            return;
+        }
+
+        bool pausedDueToSiteCondition = pausedByCondition || (simulation != null
+            && simulation.CurrentState == BuildingEnums.BuildingState.Paused
+            && (simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.NoRoadAccess
+                || simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.UnsupportedAnchor));
+
+        if (pausedDueToSiteCondition)
+        {
+            pausedByCondition = false;
+            if (simulation != null)
+            {
+                simulation.SetShutdownReason(BuildingEnums.BuildingShutdownReason.None);
+                simulation.SetState(BuildingEnums.BuildingState.Active);
+                simulation.SetEfficiency(1f);
+            }
+            else if (building != null)
+            {
+                building.SetState(BuildingEnums.BuildingState.Active);
+            }
+        }
+
+        if (simulation == null || simulation.CurrentShutdownReason != BuildingEnums.BuildingShutdownReason.PausedByPlayer)
+        {
+            buildingSupply?.CheckSupplyState();
+        }
+    }
+
+    private void CacheComponents()
+    {
+        if (building == null) building = GetComponent<Building>();
+        if (simulation == null) simulation = GetComponent<BuildingSimulation>();
+        if (buildingSupply == null) buildingSupply = GetComponent<BuildingSupply>();
+        if (buildingProperties == null) buildingProperties = GetComponent<BuildingProperties>();
+    }
+
+    private BuildingData ResolveBuildingData()
+    {
+        if (building != null && building.buildingData != null) return building.buildingData;
+        return buildingProperties != null ? buildingProperties.buildingData : null;
+    }
+
+    private static bool IsFootprintTerrainSatisfied(
+        GridRequirement gridRequirement,
+        GridSystem grid,
+        Vector3Int origin,
+        Vector2Int footprint)
+    {
+        if (grid == null) return false;
+        for (int x = 0; x < footprint.x; x++)
+        {
+            for (int z = 0; z < footprint.y; z++)
+            {
+                Cell cell = grid.GetCell(origin.x + x, origin.z + z);
+                if (!gridRequirement.IsTerrainSatisfied(cell))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private Cell GetOwnCell()
     {
         if (buildingProperties == null || buildingProperties.gridSystem == null) return null;
-
         return buildingProperties.gridSystem.GetCellAtWorldPosition(transform.position);
     }
 }

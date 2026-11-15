@@ -42,21 +42,8 @@ public class BuildingPresentation : MonoBehaviour
             // Randomize starting animation frame/phase [0.0, 1.0]
             machineryAnimator.Play(0, -1, Random.value);
         }
-        else
-        {
-            AssetFallback.LogMissingDeliverable("Animator", "machineryAnimator", this);
-        }
 
-        if (smokeVfx == null)
-        {
-            AssetFallback.LogMissingDeliverable("ParticleSystem", "smokeVfx", this);
-        }
-
-        if (ambientAudioSource == null)
-        {
-            AssetFallback.LogMissingDeliverable("AudioSource", "ambientAudioSource", this);
-        }
-        else if (productionLoopClip != null && ambientAudioSource.clip == null)
+        if (ambientAudioSource != null && productionLoopClip != null && ambientAudioSource.clip == null)
         {
             ambientAudioSource.clip = productionLoopClip;
         }

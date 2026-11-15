@@ -24,7 +24,7 @@ public class PlaceholderModelLibrary : ScriptableObject
 
     [Header("Labels")]
     [Tooltip("Master switch for the floating name labels over placed placeholder buildings.")]
-    public bool showLabels = true;
+    public bool showLabels = false;
 
     private static PlaceholderModelLibrary _runtimeDefault;
 

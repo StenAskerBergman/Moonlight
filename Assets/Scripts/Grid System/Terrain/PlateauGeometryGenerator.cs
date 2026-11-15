@@ -71,7 +71,7 @@ internal static class PlateauGeometryGenerator
         ShelfSlab,
         FracturedButtress,
         RoundedShoulder,
-        NarrowSpire,
+        SteppedTerrace,
     }
 
     private readonly struct ContourPoint
@@ -255,103 +255,67 @@ internal static class PlateauGeometryGenerator
         int chunkSeed,
         int worldSeed)
     {
-        int layerCount = settings.escarpmentStrata;
-        float[] contourDistance = BuildContourDistances(contour, out float perimeter);
-        Vector3[,] wallVertices = new Vector3[contour.Length, layerCount + 1];
+        // Build geological cliff-base talus scree & angular fallen rock aprons along
+        // steep rock escarpment toes instead of an overlapping vertical quad ribbon.
+        // The continuous heightfield owns the stratified wall itself, preventing all
+        // sawtooth skirt artifacts and heightfield z-fighting.
+        int stride = Mathf.Max(2, contour.Length / 36);
+        float upperDrop = Mathf.Max(0.5f, settings.cliffDropDepth);
 
-        // Resolve each shell vertex once. The former per-quad evaluation repeated
-        // every heightfield lookup up to four times and made the visual-only mesh
-        // disproportionately expensive compared with the island itself.
-        for (int point = 0; point < contour.Length; point++)
+        for (int index = 0; index < contour.Length; index += stride)
         {
-            for (int layer = 0; layer <= layerCount; layer++)
+            ContourPoint anchor = contour[index];
+            PlateauSampleData rimData = SamplePlateauData(cache, anchor.Position.x, anchor.Position.z);
+            if (rimData.IsDefined && rimData.SandWeight > rimData.RockWeight + 0.08f)
             {
-                wallVertices[point, layer] = EvaluateWallVertex(
-                    cache,
-                    contour[point],
-                    point,
-                    contour.Length,
-                    layer,
-                    layerCount,
-                    settings,
-                    chunkSeed,
-                    worldSeed);
+                continue;
+            }
+
+            Vector3 outward = anchor.ProfileOutward;
+            Vector3 tangent = Vector3.Cross(outward, Vector3.up);
+            float toeDrop = upperDrop * Mathf.Lerp(0.62f, 0.96f, SeedUnit(chunkSeed, worldSeed, 1103 + index * 17));
+            float toeDistance = ResolveProfileDistance(cache, anchor, toeDrop, settings);
+            float slopeDrop = upperDrop * Mathf.Lerp(0.38f, 0.65f, SeedUnit(chunkSeed, worldSeed, 1129 + index * 17));
+            float midSlopeDistance = ResolveProfileDistance(cache, anchor, slopeDrop, settings);
+
+            int moundSeed = CombineSeed(chunkSeed, worldSeed, 1409 + index * 53);
+            int fragmentCount = 3 + Mathf.FloorToInt(Hash01(moundSeed, 13) * 3f);
+            for (int fragment = 0; fragment < fragmentCount; fragment++)
+            {
+                int fragSeed = moundSeed + fragment * 197;
+                bool isMidLedge = fragment == 0 && Hash01(fragSeed, 23) < 0.55f;
+                float radialDist = isMidLedge
+                    ? midSlopeDistance + SignedHash(fragSeed, 31) * 0.45f
+                    : toeDistance + Hash01(fragSeed, 37) * 1.45f;
+                float lateralOffset = SignedHash(fragSeed, 43) * 1.55f;
+                Vector3 pos = anchor.Position + outward * radialDist + tangent * lateralOffset;
+                PlateauSampleData localData = SamplePlateauData(cache, pos.x, pos.z);
+                if (localData.IsDefined && localData.SandWeight > 0.68f)
+                {
+                    continue;
+                }
+
+                float groundY = SampleHeight(cache, pos.x, pos.z);
+                float sizeScale = isMidLedge ? 1.12f : Mathf.Lerp(0.68f, 1.32f, Hash01(fragSeed, 59));
+                float w = Mathf.Lerp(0.85f, 1.85f, Hash01(fragSeed, 61)) * sizeScale;
+                float d = Mathf.Lerp(0.75f, 1.65f, Hash01(fragSeed, 67)) * sizeScale;
+                float h = Mathf.Lerp(0.55f, 1.28f, Hash01(fragSeed, 71)) * sizeScale;
+                // Sink well into the talus slope so undersides never hover above steep triangles.
+                Vector3 basePos = new Vector3(pos.x, groundY - h * 0.42f, pos.z);
+                Vector3 tiltDir = (outward * 0.32f + Vector3.up).normalized;
+
+                AddAngularTalusBoulder(
+                    mesh,
+                    basePos,
+                    tangent,
+                    outward,
+                    tiltDir,
+                    w,
+                    d,
+                    h,
+                    fragSeed);
             }
         }
-
-        for (int segment = 0; segment < contour.Length; segment++)
-        {
-            int next = (segment + 1) % contour.Length;
-            float u0 = contourDistance[segment] / Mathf.Max(0.001f, perimeter);
-            float u1 = next == 0 ? 1f : contourDistance[next] / Mathf.Max(0.001f, perimeter);
-
-            for (int layer = 0; layer < layerCount; layer++)
-            {
-                Vector3 topA = wallVertices[segment, layer];
-                Vector3 topB = wallVertices[next, layer];
-                Vector3 bottomB = wallVertices[next, layer + 1];
-                Vector3 bottomA = wallVertices[segment, layer + 1];
-
-                float v0 = layer / (float)layerCount;
-                float v1 = (layer + 1f) / layerCount;
-                mesh.AddQuad(
-                    topA,
-                    topB,
-                    bottomB,
-                    bottomA,
-                    new Vector2(u0 * 8f, v0 * 4f),
-                    new Vector2(u1 * 8f, v0 * 4f),
-                    new Vector2(u1 * 8f, v1 * 4f),
-                    new Vector2(u0 * 8f, v1 * 4f));
-            }
-        }
-    }
-
-    private static Vector3 EvaluateWallVertex(
-        TerrainSampleCache cache,
-        ContourPoint point,
-        int pointIndex,
-        int pointCount,
-        int layer,
-        int layerCount,
-        StandalonePlateauSettings settings,
-        int chunkSeed,
-        int worldSeed)
-    {
-        float t = layer / (float)layerCount;
-        int block = pointIndex / 4;
-        float blockOffset = SignedSeed(chunkSeed, worldSeed, 1103 + block * 17) * 0.11f;
-        float fracture = SignedSeed(chunkSeed, worldSeed, 1709 + pointIndex * 23 + layer * 101)
-            * Mathf.Min(0.14f, settings.cliffFractureStrength * 0.10f);
-        float contourPhase = pointIndex / (float)Mathf.Max(1, pointCount) * Mathf.PI * 2f;
-        float layerPhase = SeedUnit(chunkSeed, worldSeed, 1301) * Mathf.PI * 2f + contourPhase * 1.35f;
-        float stratumEnvelope = Mathf.Sin(t * Mathf.PI);
-
-        float drop = EvaluateRockProfileDrop(layer, layerCount, settings);
-
-        // The heightfield profile is evaluated along a radial ray and its width is
-        // shortened and noise-varied locally. Resolve the actual sampled crossing
-        // instead of moving along the smoothed contour normal using a global maximum
-        // width. That keeps this shell just outside the authoritative surface around
-        // lobes and notches rather than exposing it as white curtains between panels.
-        float profileDistance = ResolveProfileDistance(cache, point, drop, settings);
-
-        // A small positive skin keeps the render shell outside the heightfield.
-        // Alternating offsets then cut shallow shelves and undercuts around that
-        // profile without returning to the old near-vertical hanging ribbon.
-        float surfaceVariation = (Mathf.Sin(t * Mathf.PI * 2.5f + layerPhase) * 0.13f
-                + blockOffset
-                + fracture) * stratumEnvelope;
-        float outset = profileDistance + Mathf.Max(0.08f, 0.24f + surfaceVariation);
-        float stratumBreak = SignedSeed(chunkSeed, worldSeed, 1901 + layer * 37) * 0.10f;
-        float y = point.Position.y + 0.04f - drop + stratumBreak * stratumEnvelope;
-
-        Vector3 tangent = Vector3.Cross(point.ProfileOutward, Vector3.up);
-        float shear = SignedSeed(chunkSeed, worldSeed, 2203 + block * 41) * stratumEnvelope * 0.10f;
-        return point.Position
-            + point.ProfileOutward * outset
-            + tangent * shear
-            + Vector3.up * (y - point.Position.y);
     }
 
     private static float ResolveProfileDistance(
@@ -363,17 +327,17 @@ internal static class PlateauGeometryGenerator
         if (drop <= 0.0001f) return 0f;
 
         float targetHeight = point.Position.y - drop;
-        float analyticMaximum = settings.upperEscarpmentWidth
-                * (1f + settings.profileAsymmetry)
-            + settings.lowerApronWidth
-                * (1f + settings.profileAsymmetry * 0.55f);
+        float baseUpper = Mathf.Max(settings.upperEscarpmentWidth, 4.4f);
+        float baseLower = Mathf.Max(settings.lowerApronWidth, 7.2f);
+        float analyticMaximum = baseUpper * (1f + settings.profileAsymmetry + 0.14f)
+            + baseLower * (1f + settings.profileAsymmetry * 0.42f + 0.14f);
         float distanceToEdge = DistanceToChunkEdge(
             point.Position,
             point.ProfileOutward,
             cache.GridSize);
         float scanLimit = Mathf.Min(
             distanceToEdge,
-            analyticMaximum + Mathf.Max(0.5f, cache.Step * 2f));
+            analyticMaximum + Mathf.Max(0.8f, cache.Step * 2f));
         float scanStep = Mathf.Max(0.10f, cache.Step * 0.72f);
         float previousDistance = 0f;
         float previousHeight = point.Position.y;
@@ -395,12 +359,7 @@ internal static class PlateauGeometryGenerator
             previousHeight = height;
         }
 
-        // The profile can terminate very close to the chunk seam, where the last
-        // bilinear sample may sit fractionally above the requested band. Preserve a
-        // deterministic, bounded fallback instead of extending beyond the chunk.
-        return Mathf.Min(
-            distanceToEdge,
-            InverseRockProfileDistance(drop, settings));
+        return Mathf.Min(distanceToEdge, scanLimit * 0.5f);
     }
 
     private static float DistanceToChunkEdge(
@@ -432,76 +391,6 @@ internal static class PlateauGeometryGenerator
         return Mathf.Max(0f, Mathf.Min(xDistance, zDistance));
     }
 
-    private static float EvaluateRockProfileDrop(
-        int layer,
-        int layerCount,
-        StandalonePlateauSettings settings)
-    {
-        if (layer <= 0) return 0f;
-        if (layer >= layerCount)
-        {
-            return settings.cliffDropDepth + settings.lowerApronDrop;
-        }
-
-        // Allocate most bands to the steep upper escarpment while reserving at
-        // least one for the apron. Within each region, advance in profile-distance
-        // space and evaluate the forward heightfield curve. Its inverse below then
-        // returns evenly distributed radial strata instead of one oversized last
-        // apron quad.
-        int upperLayerCount = Mathf.Clamp(
-            Mathf.RoundToInt(layerCount * 0.60f),
-            2,
-            layerCount - 1);
-        if (layer <= upperLayerCount)
-        {
-            float upperProgress = layer / (float)upperLayerCount;
-            return settings.cliffDropDepth * Mathf.Pow(upperProgress, 0.42f);
-        }
-
-        int lowerLayerCount = layerCount - upperLayerCount;
-        float lowerProgress = (layer - upperLayerCount) / (float)lowerLayerCount;
-        float softeningDrop = 1f - Mathf.Pow(1f - lowerProgress, 2.6f);
-        return settings.cliffDropDepth + settings.lowerApronDrop * softeningDrop;
-    }
-
-    private static float InverseRockProfileDistance(
-        float drop,
-        StandalonePlateauSettings settings)
-    {
-        float upperDrop = Mathf.Max(0.001f, settings.cliffDropDepth);
-        float maximumUpperWidth = settings.upperEscarpmentWidth
-            * (1f + settings.profileAsymmetry);
-        if (drop <= upperDrop)
-        {
-            float normalizedDrop = Mathf.Clamp01(drop / upperDrop);
-            float upperProgress = Mathf.Pow(normalizedDrop, 1f / 0.42f);
-            return maximumUpperWidth * upperProgress;
-        }
-
-        float lowerDrop = Mathf.Max(0.001f, settings.lowerApronDrop);
-        float normalizedLowerDrop = Mathf.Clamp01((drop - upperDrop) / lowerDrop);
-        float lowerProgress = 1f - Mathf.Pow(1f - normalizedLowerDrop, 1f / 2.6f);
-        float maximumLowerWidth = settings.lowerApronWidth
-            * (1f + settings.profileAsymmetry * 0.55f);
-        return maximumUpperWidth + maximumLowerWidth * lowerProgress;
-    }
-
-    private static float[] BuildContourDistances(ContourPoint[] contour, out float perimeter)
-    {
-        float[] distances = new float[contour.Length];
-        float running = 0f;
-        for (int index = 1; index < contour.Length; index++)
-        {
-            running += Vector3.Distance(contour[index - 1].Position, contour[index].Position);
-            distances[index] = running;
-        }
-
-        perimeter = running + Vector3.Distance(
-            contour[contour.Length - 1].Position,
-            contour[0].Position);
-        return distances;
-    }
-
     private static void BuildPerimeterFormations(
         MeshAccumulator mesh,
         TerrainSampleCache cache,
@@ -524,6 +413,13 @@ internal static class PlateauGeometryGenerator
                     + (cluster + 0.5f) * spacing
                     + (SeedUnit(chunkSeed, worldSeed, 521 + cluster * 31) - 0.5f) * spacing * 0.58f;
                 int contourIndex = FindContourIndex(contour, center, angle);
+                ContourPoint anchor = contour[contourIndex];
+                PlateauSampleData anchorData = SamplePlateauData(cache, anchor.Position.x, anchor.Position.z);
+                if (anchorData.IsDefined && anchorData.SandWeight > 0.62f && anchorData.RockWeight < 0.34f)
+                {
+                    continue;
+                }
+
                 float width = settings.perimeterClusterWidth
                     * Mathf.Lerp(0.68f, 1.32f, SeedUnit(chunkSeed, worldSeed, 541 + cluster * 31));
                 float depth = settings.perimeterClusterDepth
@@ -534,7 +430,7 @@ internal static class PlateauGeometryGenerator
                 AddRockCluster(
                     mesh,
                     cache,
-                    contour[contourIndex],
+                    anchor,
                     width,
                     depth,
                     height,
@@ -544,48 +440,52 @@ internal static class PlateauGeometryGenerator
             }
         }
 
-        for (int spire = 0; spire < settings.perimeterSpireCount; spire++)
+        for (int landmark = 0; landmark < settings.perimeterSpireCount; landmark++)
         {
             if (settings.occasionalSpireHeight <= 0f) break;
-            float angle = SeedUnit(chunkSeed, worldSeed, 701 + spire * 43) * Mathf.PI * 2f;
+            float angle = SeedUnit(chunkSeed, worldSeed, 701 + landmark * 43) * Mathf.PI * 2f;
             int contourIndex = FindContourIndex(contour, center, angle);
             ContourPoint anchor = contour[contourIndex];
-            // outward x up completes a right-handed horizontal frame. The previous
-            // up x outward basis reversed every rock ring and made all faces inward.
+            PlateauSampleData anchorData = SamplePlateauData(cache, anchor.Position.x, anchor.Position.z);
+            if (anchorData.IsDefined && anchorData.SandWeight > 0.58f && anchorData.RockWeight < 0.38f)
+            {
+                continue;
+            }
+
             Vector3 tangent = Vector3.Cross(anchor.Outward, Vector3.up);
             float width = settings.spireBaseWidth
-                * Mathf.Lerp(0.72f, 1.28f, SeedUnit(chunkSeed, worldSeed, 719 + spire * 43));
+                * Mathf.Lerp(0.84f, 1.36f, SeedUnit(chunkSeed, worldSeed, 719 + landmark * 43));
             float height = settings.occasionalSpireHeight
-                * Mathf.Lerp(0.58f, 1f, SeedUnit(chunkSeed, worldSeed, 751 + spire * 43));
-            float inset = Mathf.Max(settings.rockyRimWidth * 0.48f, width * 0.46f);
+                * Mathf.Lerp(0.62f, 1.02f, SeedUnit(chunkSeed, worldSeed, 751 + landmark * 43));
+            float inset = Mathf.Min(settings.rockyRimWidth * 0.42f, width * 0.36f);
             Vector3 basePosition = anchor.Position
                 - anchor.Outward * inset
-                + tangent * SignedSeed(chunkSeed, worldSeed, 3301 + spire * 61) * width * 0.22f;
-            basePosition = MoveInsideTabletop(cache, basePosition, -anchor.Outward);
-            basePosition.y = Mathf.Max(
+                + tangent * SignedSeed(chunkSeed, worldSeed, 3301 + landmark * 61) * width * 0.22f;
+            basePosition = EnsureNonBuildableRimPosition(cache, basePosition, anchor.Outward);
+            basePosition.y = Mathf.Min(
                 anchor.Position.y,
-                SampleHeight(cache, basePosition.x, basePosition.z)) - 0.18f;
+                SampleHeight(cache, basePosition.x, basePosition.z)) - 0.85f;
 
+            // Replace pointed 7-sided cones with clustered hexagonal/pentagonal basalt columns
+            // rising from a stepped bedrock shoulder.
             AddRockVolume(
                 mesh,
                 basePosition,
                 tangent,
                 anchor.Outward,
-                width * 1.15f,
-                width * 0.86f,
-                height * 0.34f,
-                RockArchetype.FoundationBoulder,
-                CombineSeed(chunkSeed, worldSeed, 3407 + spire * 73));
-            AddRockVolume(
+                width * 1.18f,
+                width * 0.92f,
+                height * 0.38f + 0.65f,
+                RockArchetype.SteppedTerrace,
+                CombineSeed(chunkSeed, worldSeed, 3407 + landmark * 73));
+            AddColumnarBasaltBundle(
                 mesh,
-                basePosition + Vector3.up * height * 0.12f,
+                basePosition + Vector3.up * 0.32f,
                 tangent,
                 anchor.Outward,
-                width * 0.58f,
-                width * 0.50f,
-                height,
-                RockArchetype.NarrowSpire,
-                CombineSeed(chunkSeed, worldSeed, 3511 + spire * 73));
+                width * 0.88f,
+                height + 0.55f,
+                CombineSeed(chunkSeed, worldSeed, 3511 + landmark * 73));
         }
     }
 
@@ -602,27 +502,26 @@ internal static class PlateauGeometryGenerator
     {
         Vector3 tangent = Vector3.Cross(anchor.Outward, Vector3.up);
 
-        // Each perimeter cluster is one overlapping geological mass. A broad,
-        // embedded foundation supplies the common base; medium slabs, shoulders,
-        // and buttresses overlap it, and exactly one support may become the local
-        // dominant peak.
-        float foundationInset = Mathf.Max(
-            settings.rockyRimWidth * 0.48f,
-            clusterDepth * 0.42f);
+        // Each perimeter cluster is one overlapping geological headland massing: a deep
+        // stratified foundation shelf, stepped rock buttresses along the non-buildable
+        // rim collar, and a fractured cliff rib descending into the upper escarpment.
+        float foundationInset = Mathf.Min(
+            settings.rockyRimWidth * 0.44f,
+            clusterDepth * 0.36f);
         Vector3 foundationBase = anchor.Position - anchor.Outward * foundationInset;
-        foundationBase = MoveInsideTabletop(cache, foundationBase, -anchor.Outward);
-        foundationBase.y = Mathf.Max(
+        foundationBase = EnsureNonBuildableRimPosition(cache, foundationBase, anchor.Outward);
+        foundationBase.y = Mathf.Min(
             anchor.Position.y,
-            SampleHeight(cache, foundationBase.x, foundationBase.z)) - 0.34f;
+            SampleHeight(cache, foundationBase.x, foundationBase.z)) - 0.78f;
         AddRockVolume(
             mesh,
             foundationBase,
             tangent,
             anchor.Outward,
-            clusterWidth * 0.92f,
-            clusterDepth * 1.12f,
-            clusterHeight * Mathf.Lerp(0.36f, 0.46f, Hash01(seed, 379)),
-            RockArchetype.FoundationBoulder,
+            clusterWidth * 0.94f,
+            clusterDepth * 1.08f,
+            clusterHeight * Mathf.Lerp(0.40f, 0.52f, Hash01(seed, 379)) + 0.55f,
+            RockArchetype.SteppedTerrace,
             seed + 101);
 
         int supportCount = Mathf.Max(2, rockCount - 1);
@@ -639,9 +538,9 @@ internal static class PlateauGeometryGenerator
             RockArchetype archetype;
             if (isDominant)
             {
-                archetype = Hash01(seed, 421) < 0.58f
+                archetype = Hash01(seed, 421) < 0.62f
                     ? RockArchetype.FracturedButtress
-                    : RockArchetype.RoundedShoulder;
+                    : RockArchetype.SteppedTerrace;
             }
             else
             {
@@ -651,7 +550,7 @@ internal static class PlateauGeometryGenerator
                         archetype = RockArchetype.ShelfSlab;
                         break;
                     case 1:
-                        archetype = RockArchetype.RoundedShoulder;
+                        archetype = RockArchetype.SteppedTerrace;
                         break;
                     default:
                         archetype = RockArchetype.FracturedButtress;
@@ -667,75 +566,242 @@ internal static class PlateauGeometryGenerator
                 case RockArchetype.ShelfSlab:
                     width = clusterWidth * Mathf.Lerp(0.42f, 0.60f, Hash01(seed, 467 + support * 23));
                     depth = clusterDepth * Mathf.Lerp(0.42f, 0.60f, Hash01(seed, 499 + support * 29));
-                    height = clusterHeight * Mathf.Lerp(0.22f, 0.34f, Hash01(seed, 541 + support * 31));
+                    height = clusterHeight * Mathf.Lerp(0.24f, 0.36f, Hash01(seed, 541 + support * 31));
                     break;
                 case RockArchetype.FracturedButtress:
-                    width = clusterWidth * Mathf.Lerp(0.28f, 0.42f, Hash01(seed, 467 + support * 23));
-                    depth = clusterDepth * Mathf.Lerp(0.48f, 0.70f, Hash01(seed, 499 + support * 29));
-                    height = clusterHeight * Mathf.Lerp(0.42f, 0.58f, Hash01(seed, 541 + support * 31));
+                    width = clusterWidth * Mathf.Lerp(0.30f, 0.44f, Hash01(seed, 467 + support * 23));
+                    depth = clusterDepth * Mathf.Lerp(0.48f, 0.72f, Hash01(seed, 499 + support * 29));
+                    height = clusterHeight * Mathf.Lerp(0.44f, 0.62f, Hash01(seed, 541 + support * 31));
                     break;
                 default:
-                    width = clusterWidth * Mathf.Lerp(0.36f, 0.54f, Hash01(seed, 467 + support * 23));
-                    depth = clusterDepth * Mathf.Lerp(0.54f, 0.76f, Hash01(seed, 499 + support * 29));
-                    height = clusterHeight * Mathf.Lerp(0.34f, 0.54f, Hash01(seed, 541 + support * 31));
+                    width = clusterWidth * Mathf.Lerp(0.38f, 0.56f, Hash01(seed, 467 + support * 23));
+                    depth = clusterDepth * Mathf.Lerp(0.50f, 0.74f, Hash01(seed, 499 + support * 29));
+                    height = clusterHeight * Mathf.Lerp(0.36f, 0.54f, Hash01(seed, 541 + support * 31));
                     break;
             }
 
             if (isDominant)
             {
-                width = Mathf.Max(width, clusterWidth * 0.42f);
-                depth = Mathf.Max(depth, clusterDepth * 0.60f);
+                width = Mathf.Max(width, clusterWidth * 0.44f);
+                depth = Mathf.Max(depth, clusterDepth * 0.58f);
                 height = clusterHeight
-                    * Mathf.Lerp(0.78f, 1f, Hash01(seed, 593))
+                    * Mathf.Lerp(0.80f, 1.04f, Hash01(seed, 593))
                     * Mathf.Lerp(0.92f, 1.08f, Mathf.Clamp01(centerBias));
             }
 
             float semanticInset = settings.rockyRimWidth
-                * Mathf.Lerp(0.38f, 0.64f, Hash01(seed, 433 + support * 19));
-            float inward = Mathf.Max(semanticInset, depth * 0.42f + 0.12f);
+                * Mathf.Lerp(0.28f, 0.52f, Hash01(seed, 433 + support * 19));
+            float inward = Mathf.Min(semanticInset, depth * 0.42f + 0.10f);
             Vector3 basePosition = anchor.Position
                 + tangent * lateral
                 - anchor.Outward * inward;
-            basePosition = MoveInsideTabletop(cache, basePosition, -anchor.Outward);
-            basePosition.y = Mathf.Max(
-                anchor.Position.y,
-                SampleHeight(cache, basePosition.x, basePosition.z)) - 0.20f;
+            basePosition = EnsureNonBuildableRimPosition(cache, basePosition, anchor.Outward);
+            PlateauSampleData localData = SamplePlateauData(cache, basePosition.x, basePosition.z);
+            if (localData.IsDefined && (localData.BuildableWeight > 0.32f || localData.SandWeight > 0.64f))
+            {
+                continue;
+            }
 
-            AddRockVolume(
-                mesh,
-                basePosition,
-                tangent,
-                anchor.Outward,
-                width,
-                depth,
-                height,
-                archetype,
-                seed + support * 1013);
+            basePosition.y = Mathf.Min(
+                anchor.Position.y,
+                SampleHeight(cache, basePosition.x, basePosition.z)) - 0.56f;
+
+            if (isDominant && Hash01(seed, 607) > 0.48f)
+            {
+                AddColumnarBasaltBundle(
+                    mesh,
+                    basePosition + Vector3.up * 0.15f,
+                    tangent,
+                    anchor.Outward,
+                    Mathf.Min(width, depth) * 0.64f,
+                    height + 0.50f,
+                    seed + support * 1013 + 79);
+            }
+            else
+            {
+                AddRockVolume(
+                    mesh,
+                    basePosition,
+                    tangent,
+                    anchor.Outward,
+                    width,
+                    depth,
+                    height + 0.48f,
+                    archetype,
+                    seed + support * 1013);
+            }
         }
 
-        // Most, but not every, mass grows a vertical support into the upper
-        // escarpment. Its base follows the same inverse profile as the wall, so the
-        // rim and cliff overlap as one structure instead of meeting at a clean seam.
+        // Most headlands extend a buttress rib down into the upper escarpment so rim rock
+        // and cliff wall read as one folded bedrock structure.
         if (Hash01(seed, 613) > 0.24f)
         {
             float descent = settings.cliffDropDepth
                 * Mathf.Lerp(0.46f, 0.72f, Hash01(seed, 619));
             Vector3 cliffTangent = Vector3.Cross(anchor.ProfileOutward, Vector3.up);
-            float profileDistance = ResolveProfileDistance(cache, anchor, descent, settings) + 0.28f;
+            float profileDistance = ResolveProfileDistance(cache, anchor, descent, settings) + 0.24f;
             Vector3 buttressBase = anchor.Position
                 + anchor.ProfileOutward * profileDistance
                 + cliffTangent * SignedHash(seed, 631) * clusterWidth * 0.16f
-                + Vector3.down * (descent + 0.22f);
+                + Vector3.down * (descent + 0.45f);
             AddRockVolume(
                 mesh,
                 buttressBase,
                 cliffTangent,
                 anchor.ProfileOutward,
-                clusterWidth * Mathf.Lerp(0.28f, 0.38f, Hash01(seed, 641)),
+                clusterWidth * Mathf.Lerp(0.28f, 0.40f, Hash01(seed, 641)),
                 clusterDepth * Mathf.Lerp(0.54f, 0.78f, Hash01(seed, 653)),
-                descent + clusterHeight * Mathf.Lerp(0.24f, 0.36f, Hash01(seed, 661)),
+                descent + clusterHeight * Mathf.Lerp(0.26f, 0.40f, Hash01(seed, 661)),
                 RockArchetype.FracturedButtress,
                 seed + 1709);
+        }
+    }
+
+    private static void AddColumnarBasaltBundle(
+        MeshAccumulator mesh,
+        Vector3 centerBase,
+        Vector3 tangent,
+        Vector3 outward,
+        float radius,
+        float maxHeight,
+        int seed)
+    {
+        int columnCount = 6 + Mathf.FloorToInt(Hash01(seed, 17) * 4f);
+        float goldenAngle = 2.39996323f;
+
+        for (int index = 0; index < columnCount; index++)
+        {
+            int colSeed = seed + index * 313;
+            float norm = index / (float)Mathf.Max(1, columnCount - 1);
+            float radial = index == 0 ? 0f : Mathf.Sqrt(norm) * radius * Mathf.Lerp(0.42f, 0.86f, Hash01(colSeed, 23));
+            float theta = index * goldenAngle + Hash01(colSeed, 29) * 0.45f;
+            Vector3 offset = tangent * (Mathf.Cos(theta) * radial) + outward * (Mathf.Sin(theta) * radial);
+
+            float radialFalloff = 1f - Mathf.Clamp01(radial / Mathf.Max(0.1f, radius));
+            float columnHeight = maxHeight
+                * Mathf.Lerp(0.36f, 1.0f, radialFalloff * 0.72f + Hash01(colSeed, 37) * 0.28f);
+            float columnRadius = radius * Mathf.Lerp(0.22f, 0.36f, Hash01(colSeed, 41));
+            int sides = Hash01(colSeed, 47) < 0.65f ? 6 : 5;
+            Vector3 tiltAxis = (tangent * SignedHash(colSeed, 53) + outward * SignedHash(colSeed, 59) + Vector3.up * 6.5f).normalized;
+            float topSlantX = SignedHash(colSeed, 61) * 0.16f;
+            float topSlantZ = SignedHash(colSeed, 67) * 0.16f;
+
+            AddBasaltPrismColumn(
+                mesh,
+                centerBase + offset,
+                tangent,
+                outward,
+                tiltAxis,
+                columnRadius,
+                columnHeight,
+                sides,
+                topSlantX,
+                topSlantZ,
+                colSeed);
+        }
+    }
+
+    private static void AddBasaltPrismColumn(
+        MeshAccumulator mesh,
+        Vector3 basePos,
+        Vector3 tangent,
+        Vector3 outward,
+        Vector3 upAxis,
+        float radius,
+        float height,
+        int sides,
+        float slantX,
+        float slantZ,
+        int seed)
+    {
+        float rotation = Hash01(seed, 71) * Mathf.PI * 2f;
+        Vector3[] bottomRing = new Vector3[sides];
+        Vector3[] midRing = new Vector3[sides];
+        Vector3[] topRing = new Vector3[sides];
+        Vector3[] crownRing = new Vector3[sides];
+
+        for (int side = 0; side < sides; side++)
+        {
+            float angle = rotation + side / (float)sides * Mathf.PI * 2f;
+            float jitter = Mathf.Lerp(0.84f, 1.16f, Hash01(seed, 101 + side * 19));
+            float cx = Mathf.Cos(angle) * radius * jitter;
+            float cz = Mathf.Sin(angle) * radius * jitter;
+            Vector3 radialVec = tangent * cx + outward * cz;
+            float slantDelta = (Mathf.Cos(angle) * slantX + Mathf.Sin(angle) * slantZ) * radius;
+            float topHeight = Mathf.Max(0.25f, height + slantDelta);
+
+            bottomRing[side] = basePos + radialVec * 1.12f;
+            midRing[side] = basePos + upAxis * (topHeight * 0.62f) + radialVec * 0.98f;
+            topRing[side] = basePos + upAxis * (topHeight * 0.92f) + radialVec * 0.92f;
+            crownRing[side] = basePos + upAxis * topHeight + radialVec * 0.72f;
+        }
+
+        Vector3 topCenter = Vector3.zero;
+        for (int side = 0; side < sides; side++) topCenter += crownRing[side];
+        topCenter /= sides;
+
+        for (int side = 0; side < sides; side++)
+        {
+            int next = (side + 1) % sides;
+            mesh.AddQuadWorldUv(bottomRing[side], bottomRing[next], midRing[next], midRing[side]);
+            mesh.AddQuadWorldUv(midRing[side], midRing[next], topRing[next], topRing[side]);
+            mesh.AddQuadWorldUv(topRing[side], topRing[next], crownRing[next], crownRing[side]);
+            mesh.AddTriangleWorldUv(topCenter, crownRing[side], crownRing[next]);
+        }
+    }
+
+    private static void AddAngularTalusBoulder(
+        MeshAccumulator mesh,
+        Vector3 basePos,
+        Vector3 tangent,
+        Vector3 outward,
+        Vector3 upAxis,
+        float width,
+        float depth,
+        float height,
+        int seed)
+    {
+        int sides = 6;
+        float[] ringHeights = { 0f, 0.42f, 0.80f, 1f };
+        float[] ringRadii = { 0.88f, 1.05f, 0.82f, 0.42f };
+        Vector3[,] points = new Vector3[ringHeights.Length, sides];
+        float baseRot = Hash01(seed, 19) * Mathf.PI * 2f;
+
+        for (int ring = 0; ring < ringHeights.Length; ring++)
+        {
+            float t = ringHeights[ring];
+            float twist = baseRot + SignedHash(seed, 43 + ring * 23) * 0.24f;
+            for (int side = 0; side < sides; side++)
+            {
+                float angle = twist + side / (float)sides * Mathf.PI * 2f;
+                float rScale = ringRadii[ring] * Mathf.Lerp(0.76f, 1.24f, Hash01(seed, 97 + ring * 31 + side * 13));
+                float rx = Mathf.Cos(angle) * width * 0.5f * rScale;
+                float rz = Mathf.Sin(angle) * depth * 0.5f * rScale;
+                float slantY = height * (t + SignedHash(seed, 149 + side * 17) * 0.08f);
+                points[ring, side] = basePos + tangent * rx + outward * rz + upAxis * slantY;
+            }
+        }
+
+        for (int ring = 0; ring < ringHeights.Length - 1; ring++)
+        {
+            for (int side = 0; side < sides; side++)
+            {
+                int next = (side + 1) % sides;
+                mesh.AddQuadWorldUv(
+                    points[ring, side],
+                    points[ring, next],
+                    points[ring + 1, next],
+                    points[ring + 1, side]);
+            }
+        }
+
+        Vector3 topCenter = Vector3.zero;
+        for (int side = 0; side < sides; side++) topCenter += points[ringHeights.Length - 1, side];
+        topCenter /= sides;
+        for (int side = 0; side < sides; side++)
+        {
+            int next = (side + 1) % sides;
+            mesh.AddTriangleWorldUv(topCenter, points[ringHeights.Length - 1, side], points[ringHeights.Length - 1, next]);
         }
     }
 
@@ -752,8 +818,9 @@ internal static class PlateauGeometryGenerator
     {
         int sideCount = archetype == RockArchetype.FoundationBoulder
             || archetype == RockArchetype.ShelfSlab
-                ? 8
-                : 7;
+            || archetype == RockArchetype.SteppedTerrace
+                ? 7
+                : 6;
         const int ringCount = 6;
         float[] ringHeight;
         float[] ringRadius;
@@ -762,41 +829,44 @@ internal static class PlateauGeometryGenerator
         switch (archetype)
         {
             case RockArchetype.FoundationBoulder:
-                ringHeight = new[] { 0f, 0.12f, 0.36f, 0.63f, 0.84f, 1f };
-                ringRadius = new[] { 0.72f, 1f, 1.02f, 0.96f, 0.82f, 0.58f };
-                leanScale = 0.035f;
-                rotationJitter = 0.10f;
+                ringHeight = new[] { 0f, 0.14f, 0.40f, 0.68f, 0.88f, 1f };
+                ringRadius = new[] { 0.86f, 1f, 1.02f, 0.92f, 0.74f, 0.46f };
+                leanScale = 0.04f;
+                rotationJitter = 0.14f;
                 break;
             case RockArchetype.ShelfSlab:
-                ringHeight = new[] { 0f, 0.10f, 0.30f, 0.62f, 0.86f, 1f };
-                ringRadius = new[] { 0.78f, 1f, 1.03f, 1f, 0.94f, 0.78f };
-                leanScale = 0.045f;
-                rotationJitter = 0.07f;
+                ringHeight = new[] { 0f, 0.12f, 0.34f, 0.64f, 0.88f, 1f };
+                ringRadius = new[] { 0.88f, 1f, 1.02f, 0.96f, 0.88f, 0.70f };
+                leanScale = 0.04f;
+                rotationJitter = 0.09f;
                 break;
             case RockArchetype.FracturedButtress:
-                ringHeight = new[] { 0f, 0.08f, 0.32f, 0.62f, 0.86f, 1f };
-                ringRadius = new[] { 0.82f, 1f, 0.95f, 0.87f, 0.75f, 0.54f };
-                leanScale = 0.075f;
+                ringHeight = new[] { 0f, 0.12f, 0.38f, 0.62f, 0.84f, 1f };
+                ringRadius = new[] { 0.92f, 1f, 0.90f, 0.80f, 0.66f, 0.46f };
+                leanScale = 0.06f;
                 rotationJitter = 0.16f;
                 break;
-            case RockArchetype.RoundedShoulder:
-                ringHeight = new[] { 0f, 0.14f, 0.38f, 0.64f, 0.84f, 1f };
-                ringRadius = new[] { 0.62f, 0.88f, 1f, 0.92f, 0.70f, 0.32f };
-                leanScale = 0.065f;
-                rotationJitter = 0.18f;
+            case RockArchetype.SteppedTerrace:
+                // Horizontal rock bench steps echoing sedimentary shelf faces.
+                ringHeight = new[] { 0f, 0.24f, 0.36f, 0.66f, 0.78f, 1f };
+                ringRadius = new[] { 1.04f, 1f, 0.82f, 0.78f, 0.60f, 0.48f };
+                leanScale = 0.04f;
+                rotationJitter = 0.10f;
                 break;
             default:
-                ringHeight = new[] { 0f, 0.10f, 0.34f, 0.65f, 0.88f, 1f };
-                ringRadius = new[] { 0.64f, 1f, 0.84f, 0.58f, 0.31f, 0.06f };
-                leanScale = 0.12f;
-                rotationJitter = 0.22f;
+                ringHeight = new[] { 0f, 0.14f, 0.38f, 0.64f, 0.84f, 1f };
+                ringRadius = new[] { 0.78f, 0.94f, 1f, 0.88f, 0.66f, 0.36f };
+                leanScale = 0.055f;
+                rotationJitter = 0.18f;
                 break;
         }
 
         Vector3[,] points = new Vector3[ringCount, sideCount];
         Vector2 lean = new Vector2(SignedHash(seed, 17), SignedHash(seed, 29)) * leanScale;
-        float baseRotation = archetype == RockArchetype.ShelfSlab ? Mathf.PI * 0.125f : 0f;
-        float noiseAmplitude = archetype == RockArchetype.ShelfSlab ? 0.08f : 0.16f;
+        float baseRotation = Hash01(seed, 53) * Mathf.PI * 2f;
+        float noiseAmplitude = archetype == RockArchetype.ShelfSlab || archetype == RockArchetype.SteppedTerrace
+            ? 0.14f
+            : 0.20f;
 
         for (int ring = 0; ring < ringCount; ring++)
         {
@@ -867,24 +937,45 @@ internal static class PlateauGeometryGenerator
         return bestIndex;
     }
 
-    private static Vector3 MoveInsideTabletop(
+    private static Vector3 EnsureNonBuildableRimPosition(
         TerrainSampleCache cache,
         Vector3 position,
-        Vector3 inward)
+        Vector3 outward)
     {
-        inward.y = 0f;
-        if (inward.sqrMagnitude <= 0.0001f) return position;
-        inward.Normalize();
+        outward.y = 0f;
+        if (outward.sqrMagnitude <= 0.0001f) return position;
+        outward.Normalize();
 
-        const int maximumAttempts = 12;
         float step = Mathf.Max(0.25f, cache.Step * 1.5f);
+        const int maximumAttempts = 10;
         for (int attempt = 0; attempt < maximumAttempts; attempt++)
         {
-            if (IsTabletop(cache, position.x, position.z)) break;
-            position += inward * step;
+            if (!IsTabletop(cache, position.x, position.z))
+            {
+                position -= outward * step;
+                break;
+            }
+
+            PlateauSampleData data = SamplePlateauData(cache, position.x, position.z);
+            if (!data.IsDefined || data.BuildableWeight <= 0.22f)
+            {
+                break;
+            }
+
+            // Push slightly outward toward the rim collar so formations frame buildable basins
+            // rather than burying buildable tiles.
+            position += outward * step;
         }
 
         return position;
+    }
+
+    private static PlateauSampleData SamplePlateauData(TerrainSampleCache cache, float x, float z)
+    {
+        if (cache.PlateauData == null) return default;
+        int sampleX = Mathf.Clamp(Mathf.RoundToInt(x / cache.Step), 0, cache.Resolution - 1);
+        int sampleZ = Mathf.Clamp(Mathf.RoundToInt(z / cache.Step), 0, cache.Resolution - 1);
+        return cache.PlateauData[cache.GetIndex(sampleX, sampleZ)];
     }
 
     private static bool IsTabletop(TerrainSampleCache cache, float x, float z)

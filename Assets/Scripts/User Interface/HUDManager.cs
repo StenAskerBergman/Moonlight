@@ -108,6 +108,8 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         public PlayerFactionController playerFactionController;
         private Inventory islandInventory;
         private Island currentIsland;
+        private Bank bank;
+        private bool hudDirty = true;
 
     // Resource Items
         [Header("Resource Items")]
@@ -145,10 +147,18 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         // Locates PlayerFactionController
         playerFactionController = FindObjectOfType<PlayerFactionController>();
+        bank = FindObjectOfType<Bank>();
+        if (bank != null)
+        {
+            bank.OnBankValueChanged += MarkHudDirty;
+        }
 
         // Subscribe to event for the current island.
-        IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
-        IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
+        if (IslandManager.instance != null)
+        {
+            IslandManager.instance.OnPlayerHoverIsland += OnCurrentIslandChanged;
+            IslandManager.instance.OnPlayerEnterIsland += OnCurrentIslandChanged;
+        }
 
         // Initially hide all info panels
         if (InfoPanel != null) InfoPanel.SetActive(false);
@@ -159,13 +169,25 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     private void OnDestroy()
     {
         // Unsubscribes on Destruction
-        IslandManager.instance.OnPlayerHoverIsland -= OnCurrentIslandChanged;
-        IslandManager.instance.OnPlayerEnterIsland -= OnCurrentIslandChanged;
+        if (IslandManager.instance != null)
+        {
+            IslandManager.instance.OnPlayerHoverIsland -= OnCurrentIslandChanged;
+            IslandManager.instance.OnPlayerEnterIsland -= OnCurrentIslandChanged;
+        }
+
+        if (bank != null)
+        {
+            bank.OnBankValueChanged -= MarkHudDirty;
+        }
+
+        if (islandInventory != null)
+        {
+            islandInventory.OnInventoryChanged -= MarkHudDirty;
+        }
 
         if (strategicMapButton != null) strategicMapButton.onClick.RemoveListener(ToggleStrategicMap);
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.M))
@@ -173,31 +195,40 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             ToggleStrategicMap();
         }
 
-        if (currentIsland != null)
+        if (hudDirty && currentIsland != null && islandInventory != null)
         {
-            // Player Based
+            hudDirty = false;
             UpdateItemsUI();
-
-            // Island Based
             UpdateResourceUI();
         }
     }
 
-
-
+    private void MarkHudDirty()
+    {
+        hudDirty = true;
+    }
 
     private void OnCurrentIslandChanged(Island island)
     {
-        
-        if (island == null)
-        {
-            Debug.Log("Island = Null");
-            return;
-        }
-        currentIsland = island;
-        islandNameText.text = island.name.ToString();
-        islandInventory = island.GetComponent<Inventory>(); 
+        if (island == null) return;
 
+        Inventory nextInventory = island.GetComponent<Inventory>();
+        if (islandInventory != nextInventory)
+        {
+            if (islandInventory != null)
+            {
+                islandInventory.OnInventoryChanged -= MarkHudDirty;
+            }
+            islandInventory = nextInventory;
+            if (islandInventory != null)
+            {
+                islandInventory.OnInventoryChanged += MarkHudDirty;
+            }
+        }
+
+        currentIsland = island;
+        if (islandNameText != null) islandNameText.text = island.name;
+        hudDirty = true;
     }
 
 
@@ -238,14 +269,11 @@ public class HUDManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (currentIsland == null || islandInventory == null)
         {
-            Debug.LogError("Failed to update resource UI. Current island or inventory is null.");
             return;
         }
-        else
-        {
-            UpdateResourcePanel(islandInventory);
-            UpdateResourceSliders(islandInventory);
-        }
+
+        UpdateResourcePanel(islandInventory);
+        UpdateResourceSliders(islandInventory);
     }
     // Helper method to check for null and log a specific error message
     void CheckPanelNull(object panelText, string panelName)

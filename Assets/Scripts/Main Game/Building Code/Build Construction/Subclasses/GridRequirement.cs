@@ -10,61 +10,55 @@ public class GridRequirement : BuildingRequirement
     // therefore safe for current ScriptableObject assets while making the intent clear.
     public enum GridType { island, underwaterPlateau, coastal, shallow, other, deep, abyssal };
 
-    // When true, the target cell must also have a road cell in its neighbors
-    // (checked via RoadNetwork) on top of the gridType terrain check below.
+    // When true, the target footprint must also touch a registered road cell along its perimeter.
     public bool requiresRoadAccess;
 
-    // Set by BuildingChecker.UpdateBuildsite() before this requirement is evaluated.
-    // BuildingRequirement.IsSatisfied() takes no arguments and this requirement is a
-    // shared ScriptableObject asset, so the cell being checked has to be handed in
-    // from outside rather than looked up here.
     private Cell targetCell;
     public void SetTargetCell(Cell cell)
     {
         targetCell = cell;
     }
 
-    public override bool IsSatisfied()
+    /// <summary>
+    /// Evaluates only terrain compatibility for a single cell so multi-cell footprints
+    /// can validate road connectivity across the full perimeter instead of interior cells.
+    /// </summary>
+    public bool IsTerrainSatisfied(Cell cell)
     {
-        if (targetCell == null) return false;
+        if (cell == null) return false;
 
-        bool terrainSatisfied;
         switch (gridType)
         {
             case GridType.island:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Land
-                    || targetCell.currentTerrainType == Cell.TerrainType.Beach;
-                break;
+                return cell.currentTerrainType == Cell.TerrainType.Land
+                    || cell.currentTerrainType == Cell.TerrainType.Beach;
 
             case GridType.coastal:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Coast
-                    || targetCell.currentTerrainType == Cell.TerrainType.Beach;
-                break;
+                return cell.currentTerrainType == Cell.TerrainType.Coast
+                    || cell.currentTerrainType == Cell.TerrainType.Beach;
 
             case GridType.shallow:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Shallow;
-                break;
+                return cell.currentTerrainType == Cell.TerrainType.Shallow;
 
             case GridType.underwaterPlateau:
-                terrainSatisfied = targetCell.IsBuildableUnderwaterPlateau;
-                break;
+                return cell.IsBuildableUnderwaterPlateau;
 
             case GridType.deep:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Deep;
-                break;
+                return cell.currentTerrainType == Cell.TerrainType.Deep;
 
             case GridType.abyssal:
-                terrainSatisfied = targetCell.currentTerrainType == Cell.TerrainType.Abyssal;
-                break;
+                return cell.currentTerrainType == Cell.TerrainType.Abyssal;
 
             case GridType.other:
             default:
                 // TODO: define what "other" should require once a concrete use case exists
-                terrainSatisfied = true;
-                break;
+                return true;
         }
+    }
 
-        if (!terrainSatisfied) return false;
+    public override bool IsSatisfied()
+    {
+        if (!IsTerrainSatisfied(targetCell)) return false;
 
         if (requiresRoadAccess)
         {

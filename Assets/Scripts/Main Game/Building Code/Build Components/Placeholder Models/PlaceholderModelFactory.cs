@@ -84,11 +84,17 @@ public static class PlaceholderModelFactory
 
         Material body = GetMaterial(profile.color);
         Material accent = GetMaterial(profile.accentColor);
+        Color apronColor = Color.Lerp(new Color(0.24f, 0.26f, 0.29f), profile.accentColor, 0.28f);
+        Color curbColor = Color.Lerp(profile.accentColor, new Color(0.76f, 0.80f, 0.85f), 0.38f);
+        Material apronMat = GetMaterial(apronColor);
+        Material curbMat = GetMaterial(curbColor);
+        Material ledMat = GetLedMaterial();
 
-        // 1. Plot: the exact grid cells this building claims.
+        // 1. Stepped Plaza Base: concrete foundation apron + perimeter curb + crisp team accent stripe.
         AddPart(placeholder.transform, PrimitiveType.Cube, "Plot",
             new Vector3(0f, (PlotThickness - PlotSkirtDepth) * 0.5f, 0f),
-            new Vector3(sizeX - PlotCellInset, PlotThickness + PlotSkirtDepth, sizeZ - PlotCellInset), accent);
+            new Vector3(sizeX - PlotCellInset, PlotThickness + PlotSkirtDepth, sizeZ - PlotCellInset), apronMat);
+        AddPlazaCurb(placeholder.transform, sizeX - PlotCellInset, sizeZ - PlotCellInset, curbMat, accent);
 
         // 2. Body, standing on the plot.
         Transform bodyRoot = new GameObject("Body").transform;
@@ -96,7 +102,7 @@ public static class PlaceholderModelFactory
         bodyRoot.SetParent(placeholder.transform, false);
         bodyRoot.localPosition = new Vector3(0f, PlotThickness, 0f);
 
-        float top = BuildBody(bodyRoot, profile.shape, sizeX, sizeZ, fill, height, body, accent);
+        float top = BuildBody(bodyRoot, profile.shape, sizeX, sizeZ, fill, height, body, accent, ledMat);
 
         if (addCollider)
         {
@@ -117,7 +123,7 @@ public static class PlaceholderModelFactory
 
     /// <summary>Builds the role silhouette and returns the height of its highest point.</summary>
     private static float BuildBody(Transform parent, PlaceholderShape shape, float sizeX, float sizeZ,
-                                   float fill, float height, Material body, Material accent)
+                                   float fill, float height, Material body, Material accent, Material ledMat)
     {
         float innerX = sizeX * fill;
         float innerZ = sizeZ * fill;
@@ -132,21 +138,28 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Cube, "Roof",
                     new Vector3(0f, height + height * 0.2f, 0f),
                     new Vector3(innerX * 1.05f, height * 0.4f, innerZ * 0.55f), accent);
+                AddStatusLed(parent, new Vector3(innerX * 0.36f, height * 1.43f, innerZ * 0.2f), ledMat);
                 return height * 1.4f;
 
             case PlaceholderShape.Tower:
+            {
                 AddPart(parent, PrimitiveType.Cube, "Base",
                     new Vector3(0f, height * 0.1f, 0f),
                     new Vector3(innerX, height * 0.2f, innerZ), accent);
                 AddPart(parent, PrimitiveType.Cube, "Shaft",
                     new Vector3(0f, height * 0.5f + height * 0.1f, 0f),
                     new Vector3(innerX * 0.7f, height, innerZ * 0.7f), body);
+                float rotorY = height * 1.1f + 0.08f;
+                AddRotorCross(parent, "Rotor Radar", new Vector3(0f, rotorY, 0f), Mathf.Clamp(minInner * 0.55f, 0.35f, 1.2f), accent);
+                AddStatusLed(parent, new Vector3(innerX * 0.28f, height * 1.12f, innerZ * 0.28f), ledMat);
                 return height * 1.1f;
+            }
 
             case PlaceholderShape.Platform:
                 AddPart(parent, PrimitiveType.Cube, "Pad",
                     new Vector3(0f, height * 0.5f, 0f),
                     new Vector3(innerX, height, innerZ), body);
+                AddStatusLed(parent, new Vector3(innerX * 0.38f, height + 0.05f, innerZ * 0.38f), ledMat);
                 return height;
 
             case PlaceholderShape.Silo:
@@ -157,6 +170,8 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Cylinder, "Drum",
                     new Vector3(0f, height * 0.5f, 0f),
                     new Vector3(minInner, height * 0.5f, minInner), body);
+                AddRotorCross(parent, "Rotor Turbine", new Vector3(0f, height + 0.06f, 0f), Mathf.Clamp(minInner * 0.5f, 0.3f, 1.0f), accent);
+                AddStatusLed(parent, new Vector3(minInner * 0.35f, height + 0.05f, 0f), ledMat);
                 return height;
 
             case PlaceholderShape.Rig:
@@ -179,6 +194,8 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Cube, "Deck",
                     new Vector3(0f, legHeight + deckHeight * 0.5f, 0f),
                     new Vector3(innerX, deckHeight, innerZ), body);
+                AddRotorCross(parent, "Rotor Crane", new Vector3(0f, height + 0.08f, 0f), Mathf.Clamp(minInner * 0.52f, 0.35f, 1.1f), accent);
+                AddStatusLed(parent, new Vector3(innerX * 0.36f, height + 0.05f, -innerZ * 0.36f), ledMat);
                 return height;
             }
 
@@ -198,6 +215,9 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Cylinder, "Chimney",
                     new Vector3(innerX * 0.5f - stackDiameter, stackHeight * 0.5f, innerZ * 0.5f - stackDiameter),
                     new Vector3(stackDiameter, stackHeight * 0.5f, stackDiameter), accent);
+
+                AddRotorCross(parent, "Rotor Vent", new Vector3(-innerX * 0.2f, hallHeight + height * 0.11f, -innerZ * 0.18f), Mathf.Clamp(minInner * 0.38f, 0.28f, 0.85f), accent);
+                AddStatusLed(parent, new Vector3(-innerX * 0.38f, hallHeight + height * 0.11f, innerZ * 0.38f), ledMat);
                 return stackHeight;
             }
 
@@ -230,6 +250,7 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Sphere, "Dome",
                     Vector3.zero,
                     new Vector3(innerX * 0.95f, height * 2f, innerZ * 0.95f), body);
+                AddStatusLed(parent, new Vector3(0f, height + 0.05f, 0f), ledMat);
                 return height;
             }
 
@@ -237,8 +258,81 @@ public static class PlaceholderModelFactory
                 AddPart(parent, PrimitiveType.Cube, "Body",
                     new Vector3(0f, height * 0.5f, 0f),
                     new Vector3(innerX, height, innerZ), body);
+                AddPart(parent, PrimitiveType.Cube, "Team Accent Collar",
+                    new Vector3(0f, height * 0.88f, 0f),
+                    new Vector3(innerX * 1.03f, Mathf.Max(0.06f, height * 0.08f), innerZ * 1.03f), accent);
+                AddStatusLed(parent, new Vector3(innerX * 0.36f, height + 0.05f, innerZ * 0.36f), ledMat);
                 return height;
         }
+    }
+
+    private static void AddPlazaCurb(Transform parent, float plotW, float plotD, Material curbMat, Material teamAccentMat)
+    {
+        const float CurbWidth = 0.085f;
+        const float CurbHeight = 0.05f;
+        float y = PlotThickness + CurbHeight * 0.5f;
+        float halfW = plotW * 0.5f - CurbWidth * 0.5f;
+        float halfD = plotD * 0.5f - CurbWidth * 0.5f;
+
+        AddPart(parent, PrimitiveType.Cube, "Curb North",
+            new Vector3(0f, y, halfD), new Vector3(plotW, CurbHeight, CurbWidth), curbMat);
+        AddPart(parent, PrimitiveType.Cube, "Curb South",
+            new Vector3(0f, y, -halfD), new Vector3(plotW, CurbHeight, CurbWidth), curbMat);
+        AddPart(parent, PrimitiveType.Cube, "Curb East",
+            new Vector3(halfW, y, 0f), new Vector3(CurbWidth, CurbHeight, Mathf.Max(0.05f, plotD - CurbWidth * 2f)), curbMat);
+        AddPart(parent, PrimitiveType.Cube, "Curb West",
+            new Vector3(-halfW, y, 0f), new Vector3(CurbWidth, CurbHeight, Mathf.Max(0.05f, plotD - CurbWidth * 2f)), curbMat);
+
+        // Crisp front team accent stripe along the +Z face so ownership reads sharply at distance.
+        AddPart(parent, PrimitiveType.Cube, "Team Accent Strip",
+            new Vector3(0f, PlotThickness + CurbHeight + 0.015f, halfD - CurbWidth * 0.1f),
+            new Vector3(Mathf.Min(plotW * 0.55f, 1.4f), 0.03f, CurbWidth * 0.75f), teamAccentMat);
+    }
+
+    private static void AddRotorCross(Transform parent, string name, Vector3 localPosition, float span, Material mat)
+    {
+        GameObject hub = new GameObject(name);
+        hub.layer = parent.gameObject.layer;
+        hub.transform.SetParent(parent, false);
+        hub.transform.localPosition = localPosition;
+
+        AddPart(hub.transform, PrimitiveType.Cylinder, "Hub",
+            Vector3.zero, new Vector3(span * 0.18f, 0.04f, span * 0.18f), mat);
+        AddPart(hub.transform, PrimitiveType.Cube, "BladeA",
+            Vector3.zero, new Vector3(span, 0.035f, span * 0.12f), mat);
+        AddPart(hub.transform, PrimitiveType.Cube, "BladeB",
+            Vector3.zero, new Vector3(span * 0.12f, 0.035f, span), mat);
+    }
+
+    private static void AddStatusLed(Transform parent, Vector3 localPosition, Material ledMat)
+    {
+        if (ledMat == null) return;
+        DisableShadows(AddPart(parent, PrimitiveType.Cube, "StatusLED",
+            localPosition, new Vector3(0.14f, 0.09f, 0.14f), ledMat));
+    }
+
+    private static Material _ledMaterial;
+    private static Material GetLedMaterial()
+    {
+        if (_ledMaterial != null) return _ledMaterial;
+
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        if (shader == null) return null;
+
+        _ledMaterial = new Material(shader)
+        {
+            name = "Placeholder (Status LED)",
+            hideFlags = HideFlags.HideAndDontSave
+        };
+        Color initial = new Color(0.18f, 0.95f, 0.45f, 1f);
+        if (_ledMaterial.HasProperty("_BaseColor")) _ledMaterial.SetColor("_BaseColor", initial);
+        if (_ledMaterial.HasProperty("_Color")) _ledMaterial.SetColor("_Color", initial);
+        if (_ledMaterial.HasProperty("_EmissionColor"))
+        {
+            _ledMaterial.EnableKeyword("_EMISSION");
+            _ledMaterial.SetColor("_EmissionColor", initial * 1.4f);
+        }
+        return _ledMaterial;
     }
 
     /// <summary>

@@ -478,11 +478,13 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     // strongly attenuating on slopes and completely vanishing on vertical cliff faces.
                     float slopeFactor = smoothstep(0.45, 0.8, saturate(worldNormal.y));
 
-                    // Strong depth fade: caustics extinguish rapidly as depth below water increases
+                    // Softened depth curve so submerged plateaus (e.g. -8..10m depth) catch clear sunlight caustics
+                    // while attenuating cleanly toward abyssal trenches.
                     float depthBelowWater = max(0.0, _WaterLevel - positionWS.y);
-                    float depthFade = saturate(1.0 - depthBelowWater / max(_CausticsFadeDepth, 0.5));
-                    depthFade = depthFade * depthFade * exp(-depthBelowWater * 0.35);
-                    depthFade *= exp(-waterDistance * _FogDensity * 1.2);
+                    float effectiveFadeDepth = max(_CausticsFadeDepth * 1.85, 16.0);
+                    float depthFade = pow(saturate(1.0 - depthBelowWater / effectiveFadeDepth), 1.35);
+                    depthFade *= exp(-depthBelowWater * 0.075);
+                    depthFade *= exp(-waterDistance * _FogDensity * 0.85);
 
                     float causticVal = CalculateCaustics(positionWS.xz, time);
 

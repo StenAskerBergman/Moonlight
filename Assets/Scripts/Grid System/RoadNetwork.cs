@@ -175,6 +175,79 @@ public class RoadNetwork : MonoBehaviour
         return GetAdjacentRoadCell(buildingCell) != null;
     }
 
+    /// <summary>
+    /// Collects all unique registered road cells orthogonally adjacent to any cell inside the
+    /// building's rotated footprint. Used both for multi-cell road validation and for the
+    /// preview road-connection highlight.
+    /// </summary>
+    public void GetAdjacentRoadCells(GridSystem grid, Vector3Int origin, Vector2Int footprint, List<Cell> results)
+    {
+        if (results == null) return;
+        results.Clear();
+        if (grid == null) return;
+
+        int sizeX = Mathf.Max(1, footprint.x);
+        int sizeZ = Mathf.Max(1, footprint.y);
+
+        // North / South edges of the footprint
+        for (int x = 0; x < sizeX; x++)
+        {
+            TryAddRoadCell(grid.GetCell(origin.x + x, origin.z - 1), results);
+            TryAddRoadCell(grid.GetCell(origin.x + x, origin.z + sizeZ), results);
+        }
+
+        // West / East edges of the footprint
+        for (int z = 0; z < sizeZ; z++)
+        {
+            TryAddRoadCell(grid.GetCell(origin.x - 1, origin.z + z), results);
+            TryAddRoadCell(grid.GetCell(origin.x + sizeX, origin.z + z), results);
+        }
+    }
+
+    /// <summary>
+    /// Returns true when at least one orthogonal neighbor of the rotated footprint is a registered road cell.
+    /// </summary>
+    public bool HasRoadAccess(GridSystem grid, Vector3Int origin, Vector2Int footprint)
+    {
+        if (grid == null) return false;
+
+        int sizeX = Mathf.Max(1, footprint.x);
+        int sizeZ = Mathf.Max(1, footprint.y);
+
+        for (int x = 0; x < sizeX; x++)
+        {
+            if (IsRegisteredRoadCell(grid.GetCell(origin.x + x, origin.z - 1)) ||
+                IsRegisteredRoadCell(grid.GetCell(origin.x + x, origin.z + sizeZ)))
+            {
+                return true;
+            }
+        }
+
+        for (int z = 0; z < sizeZ; z++)
+        {
+            if (IsRegisteredRoadCell(grid.GetCell(origin.x - 1, origin.z + z)) ||
+                IsRegisteredRoadCell(grid.GetCell(origin.x + sizeX, origin.z + z)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool IsRegisteredRoadCell(Cell cell)
+    {
+        return cell != null && _roadCells.Contains(cell);
+    }
+
+    private void TryAddRoadCell(Cell cell, List<Cell> results)
+    {
+        if (IsRegisteredRoadCell(cell) && !results.Contains(cell))
+        {
+            results.Add(cell);
+        }
+    }
+
     // Drivable route between the road cells serving two buildings. GetPath only
     // accepts road cells as endpoints, so each building's adjacent road cell is
     // resolved first. Null when either building lacks road access, or when the two

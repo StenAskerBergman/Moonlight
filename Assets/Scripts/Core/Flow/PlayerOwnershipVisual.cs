@@ -10,7 +10,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class PlayerOwnershipVisual : MonoBehaviour
 {
-    [SerializeField, Range(0f, 1f)] private float bodyTintStrength = 0.28f;
+    [SerializeField, Range(0f, 1f)] private float bodyTintStrength = 0.08f;
     [SerializeField, Range(0f, 1f)] private float accentTintStrength = 1f;
 
     private Owner owner;
@@ -56,6 +56,7 @@ public sealed class PlayerOwnershipVisual : MonoBehaviour
 
         foreach (SpriteRenderer sprite in GetComponentsInChildren<SpriteRenderer>(true))
         {
+            if (IsSelectionVisual(sprite.transform)) continue;
             float strength = IsOwnershipName(sprite.name) ? accentTintStrength : bodyTintStrength;
             Color tint = Color.Lerp(sprite.color, teamColor, strength);
             tint.a = sprite.color.a;
@@ -98,7 +99,29 @@ public sealed class PlayerOwnershipVisual : MonoBehaviour
 
     private static bool IsSelectionVisual(Transform candidate)
     {
-        return candidate != null
-            && candidate.name.IndexOf("selection", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (candidate == null) return false;
+
+        Transform current = candidate;
+        while (current != null)
+        {
+            if (current.GetComponent<BuildingStatusBadge>() != null
+                || current.GetComponent<BuildingSelectionRing>() != null
+                || current.GetComponent<PlaceholderLabelBillboard>() != null)
+            {
+                return true;
+            }
+
+            string n = current.name;
+            if (n.IndexOf("selection", StringComparison.OrdinalIgnoreCase) >= 0
+                || n.IndexOf("badge", StringComparison.OrdinalIgnoreCase) >= 0
+                || n.IndexOf("scaffold", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
     }
 }

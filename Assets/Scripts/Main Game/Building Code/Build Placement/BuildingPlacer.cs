@@ -7,15 +7,8 @@ public class BuildingPlacer : MonoBehaviour
     [Header("Dependencies")]
     [SerializeField] private Bank bank;
     [SerializeField] private BuildingChecker buildingChecker;
-    [SerializeField] private BaseStorageManager baseStorageManager;
     [SerializeField] private BuildingRequirements buildingRequirements;
 
-    [Header("Inventories")]
-    [SerializeField] private Inventory islandInventory;
-    [SerializeField] private Inventory playerInventory;
-
-    private bool canAfford;
-    private string playerBaseID;
     private Island currentIsland;
     private GridSystem gridSystem;
     private IslandManager islandManager;
@@ -36,8 +29,12 @@ public class BuildingPlacer : MonoBehaviour
     private void InitializeBuildingPlacer()
     {
         islandManager = IslandManager.instance;
-        islandManager.OnGridSystemDetected += OnGridSystemDetected;
-        islandManager.OnPlayerEnterIsland += OnPlayerEnterIsland;
+        if (islandManager != null)
+        {
+            islandManager.OnGridSystemDetected += OnGridSystemDetected;
+            islandManager.OnPlayerEnterIsland += OnPlayerEnterIsland;
+        }
+        if (bank == null) bank = FindObjectOfType<Bank>();
 
         EnsureDependenciesAreSet();
     }
@@ -50,27 +47,21 @@ public class BuildingPlacer : MonoBehaviour
 
     private void UnsubscribeFromEvents()
     {
-        islandManager.OnGridSystemDetected -= OnGridSystemDetected;
-        islandManager.OnPlayerEnterIsland -= OnPlayerEnterIsland;
+        if (islandManager != null)
+        {
+            islandManager.OnGridSystemDetected -= OnGridSystemDetected;
+            islandManager.OnPlayerEnterIsland -= OnPlayerEnterIsland;
+        }
     }
 
     private void OnPlayerEnterIsland(Island island)
     {
         currentIsland = island;
-        UpdateIslandInventory();
     }
 
     private void OnGridSystemDetected(GridSystem detectedGridSystem)
     {
         gridSystem = detectedGridSystem;
-        UpdateIslandInventory();
-    }
-
-    private void UpdateIslandInventory()
-    {
-        if (currentIsland == null || string.IsNullOrEmpty(playerBaseID)) return;
-        islandInventory = currentIsland.GetPlayerBaseInventory(playerBaseID);
-        // if (islandInventory == null) return;
     }
 
     private Vector3 CalculateOffset(Vector3 buildingSize)
@@ -88,157 +79,115 @@ public class BuildingPlacer : MonoBehaviour
     // Logic for placing the building
     public void PlaceBuilding(BuildingPreview buildingPreview, Transform islandTransform)
     {
-        // Logic for checking if the placement is valid
-        if (!IsValidPlacement(buildingPreview, islandTransform))
+        if (buildingPreview == null || buildingPreview.buildingPrefab == null)
         {
-            Debug.Log("Invalid Placement!");
+            Debug.LogError("BuildingPreview component or prefab not found.");
             return;
         }
 
-        // The goods of the island this building stands on. The island's Inventory is the
-        // one stockpile the warehouse panel shows and logistics delivers into, so founding
-        // cargo lands there and construction pays from there.
-        //
-        // This used to resolve a BaseStorageManager - first on whatever island the camera had
-        // last "entered", then by bolting a brand-new one onto the island. Generated islands
-        // carry no BaseStorageManager, so every founding created a second, invisible store
-        // with a 50-unit cap across all goods. The founding cargo went in there (one stack
-        // fit, the rest stayed aboard) and the real stockpile stayed empty.
-        Island placedIsland = islandTransform.GetComponent<Island>() ?? islandTransform.GetComponentInParent<Island>();
-        Inventory islandGoods = placedIsland != null ? placedIsland.GetComponent<Inventory>() : null;
-
-        // Get Building Cost from the preview prefab before instantiating
-        BuildingCost buildingCostPrefab = buildingPreview != null && buildingPreview.buildingPrefab != null 
-            ? buildingPreview.buildingPrefab.GetComponent<BuildingCost>() 
-            : null;
-
-        InfluenceManager influenceManager = islandTransform.GetComponent<InfluenceManager>();
-        bool isUnsettledIsland = influenceManager == null || !influenceManager.HasWarehouse;
-        Unit foundingBoat = null;
-
-        // Logic for checking if the player can afford the building
-        if (isUnsettledIsland)
+        // Validate the island the blueprint is actually standing on.
+        Island placedIsland = buildingPreview.currentIsland;
+        if (placedIsland == null && islandTransform != null)
         {
-            foundingBoat = InfluenceManager.GetNearestPlayerBoat(buildingPreview.transform.position);
-
-            // No vessel, no founding. Without this the harbor was built for free and the
-            // island settled with nothing unloaded into it.
-            if (foundingBoat == null)
-            {
-                Debug.LogWarning("Founding refused: no player vessel within founding range of the harbor site.");
-                buildingChecker.CancelBuilding();
-                return;
-            }
-
-            {
-                UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-                Dictionary<ItemData, int> costItems;
-                if (buildingCostPrefab != null && boatInv != null && buildingCostPrefab.TryGetCosts(out costItems))
-                {
-                    Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
-                    foreach (var kvp in costItems)
-                    {
-                        if (kvp.Key != null && kvp.Value > 0)
-                        {
-                            if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
-                            {
-                                Debug.Log("Boat does not have enough resources to found harbor!");
-                                buildingChecker.CancelBuilding();
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
+            placedIsland = islandTransform.GetComponent<Island>()
+                        ?? islandTransform.GetComponentInParent<Island>();
         }
-        else
+        if (placedIsland == null && islandManager != null)
         {
-            if (buildingCostPrefab != null && !buildingCostPrefab.CanBePaidFrom(islandGoods))
-            {
-                Debug.Log(islandGoods == null
-                    ? "Island has no Inventory to pay construction from!"
-                    : "Not Enough Resources in Island Storage!");
-                buildingChecker.CancelBuilding();
-                return;
-            }
+            placedIsland = islandManager.GetIslandInFrontOfCamera(Camera.main);
         }
-
-        // Credits are the other half of the price. Bank charges them from its
-        // OnBuildingPlaced handler, which only runs once the building already exists, so
-        // without this the balance simply went negative and nothing could refuse it.
-        if (!CanAffordCredits(buildingCostPrefab))
+        if (placedIsland == null)
         {
-            buildingChecker.CancelBuilding();
+            Debug.Log("No island found for the building site.");
             return;
+        }
+
+        Transform resolvedIslandTransform = islandTransform != null ? islandTransform : placedIsland.transform;
+
+        // Resolved here rather than read from the placer's own gridSystem field, which
+        // nothing assigns during this flow.
+        GridSystem placementGrid = buildingPreview.gridSystem;
+        if (placementGrid == null && resolvedIslandTransform != null)
+        {
+            placementGrid = resolvedIslandTransform.GetComponent<GridSystem>()
+                         ?? resolvedIslandTransform.GetComponentInChildren<GridSystem>();
+        }
+        if (placementGrid == null)
+        {
+            Debug.LogWarning("BuildingPlacer: no GridSystem found for placement.");
+            return;
+        }
+
+        if (bank == null) bank = FindObjectOfType<Bank>();
+        Inventory islandGoods = placedIsland.GetComponent<Inventory>();
+        GameObject prefab = buildingPreview.buildingPrefab;
+        BuildingProperties prefabProps = prefab.GetComponent<BuildingProperties>();
+        BuildingData prefabData = prefabProps != null ? prefabProps.buildingData : null;
+        BuildingCost buildingCostPrefab = prefab.GetComponent<BuildingCost>();
+
+        // One footprint and one origin resolved through the grid's own convention.
+        Vector2Int footprint = GridSystem.GetFootprint(
+            BuildingProperties.ResolveSize(prefabProps, prefabData),
+            buildingPreview.transform.rotation);
+        Vector3 snappedPos = placementGrid.SnapFootprintToGrid(buildingPreview.transform.position, footprint);
+        Vector3Int gridOrigin = placementGrid.GetFootprintOrigin(snappedPos, footprint);
+
+        Unit preferredBoat = buildingChecker != null ? buildingChecker.ActiveSettlingBoat : null;
+        PlacementValidationResult validation = PlacementEvaluator.Evaluate(new AllocationRequest
+        {
+            Prefab = prefab,
+            Properties = prefabProps,
+            Data = prefabData,
+            Cost = buildingCostPrefab,
+            Grid = placementGrid,
+            Island = placedIsland,
+            WorldPosition = snappedPos,
+            GridOrigin = gridOrigin,
+            Footprint = footprint,
+            IslandGoods = islandGoods,
+            Bank = bank,
+            PreferredBoat = preferredBoat
+        });
+
+        if (!validation.CanCommit)
+        {
+            Debug.Log($"Placement refused ({validation.FailureReason}): {validation.FormatReasonLabel()}");
+            // Keep preview active so the player sees the red blocked state and reason instead of losing build mode.
+            return;
+        }
+
+        // Verify & charge both credits and island/boat goods atomically BEFORE instantiating.
+        if (buildingCostPrefab != null &&
+            !buildingCostPrefab.TryPayAtomic(islandGoods, bank, validation.FoundingBoat, validation.IsUnsettledHarbor))
+        {
+            Debug.LogWarning($"Payment declined atomically for {buildingCostPrefab.GetBuildingName()}.");
+            return;
+        }
+
+        if (validation.IsUnsettledHarbor && validation.FoundingBoat != null)
+        {
+            // Trigger the boat's Settlement behavior to execute cargo transfer
+            // now that the harbor cost has been paid.
+            Settlement boatSettlement = validation.FoundingBoat.GetComponent<Settlement>();
+            if (boatSettlement != null)
+            {
+                boatSettlement.CompleteSettlement(islandGoods);
+            }
         }
 
         // Spawn Building
-        GameObject buildingInstance = InstantiateBuilding(buildingPreview, islandTransform);
+        GameObject buildingInstance = InstantiateBuilding(buildingPreview, resolvedIslandTransform, snappedPos);
         if (buildingInstance == null)
         {
             Debug.LogError("Failed to instantiate building.");
             return;
         }
 
-        BuildingProperties buildingProperties = SetBuildingProperties(buildingInstance, buildingPreview);
-        BuildingCost buildingCost = buildingInstance.GetComponent<BuildingCost>();
-
-        // Credits come out here, in the same method that just verified they were there.
-        ChargeCredits(buildingCost);
-
-        if (isUnsettledIsland && foundingBoat != null)
-        {
-            UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-            Dictionary<ItemData, int> paidCostItems;
-            if (buildingCost != null && boatInv != null && buildingCost.TryGetCosts(out paidCostItems))
-            {
-                foreach (var kvp in paidCostItems)
-                {
-                    if (kvp.Key != null && kvp.Value > 0)
-                    {
-                        boatInv.RemoveItem(kvp.Key, kvp.Value);
-                    }
-                }
-            }
-
-            // --- WIRING SETTLEMENT.CS ---
-            // Trigger the boat's Settlement behavior to execute cargo transfer
-            // now that the warehouse cost has been paid.
-            Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
-            if (boatSettlement != null)
-            {
-                boatSettlement.CompleteSettlement(islandGoods);
-            }
-            // ----------------------------
-        }
-        else if (buildingCost != null && !buildingCost.TryPayFrom(islandGoods))
-        {
-            Debug.LogError("Failed to deduct costs for building.");
-        }
-        // Resolved here rather than read from the placer's own gridSystem field, which
-        // nothing assigns during this flow. It was null, so MarkGridCells threw and took
-        // the rest of placement down with it - including the influence zone registration
-        // below, which is what actually settles the island.
-        GridSystem placementGrid = buildingPreview.gridSystem;
-        if (placementGrid == null && islandTransform != null)
-        {
-            placementGrid = islandTransform.GetComponent<GridSystem>()
-                         ?? islandTransform.GetComponentInChildren<GridSystem>();
-        }
-
-        // One footprint and one origin, resolved through the grid's own convention, then
-        // used both for the reserved cells and for the quay. Deriving them twice is how
-        // the quay came to sit half a cell away from the building it belongs to.
-        Vector2Int footprint = GridSystem.GetFootprint(
-            BuildingProperties.ResolveSize(
-                buildingProperties,
-                buildingProperties != null ? buildingProperties.buildingData : null),
-            buildingInstance.transform.rotation);
+        BuildingProperties buildingProperties = SetBuildingProperties(buildingInstance, placedIsland, placementGrid);
 
         if (buildingProperties != null
             && buildingProperties.buildingData != null
-            && buildingProperties.buildingData.requiresQuayFoundation
-            && placementGrid != null)
+            && buildingProperties.buildingData.requiresQuayFoundation)
         {
             QuaySystem quay = QuaySystem.GetOrCreate(placementGrid);
             Vector3 quayPosition = buildingInstance.transform.position;
@@ -264,25 +213,24 @@ public class BuildingPlacer : MonoBehaviour
             footprint,
             IsUnderwaterPlacement(buildingProperties, placementGrid, buildingInstance.transform.position));
 
-        // Register Influence Zone (Phase 3)
+        // Register Influence Zone
         InfluenceZone zone = buildingInstance.GetComponent<InfluenceZone>();
         if (zone != null)
         {
-            InfluenceManager manager = islandTransform.GetComponent<InfluenceManager>();
-            if (manager == null)
-            {
-                manager = islandTransform.gameObject.AddComponent<InfluenceManager>();
-            }
+            InfluenceManager manager = resolvedIslandTransform.GetComponent<InfluenceManager>()
+                                    ?? placedIsland.GetComponent<InfluenceManager>()
+                                    ?? placedIsland.gameObject.AddComponent<InfluenceManager>();
             manager.RegisterZone(zone);
         }
 
         InitializePlacedBuilding(buildingInstance);
+        ConfirmPlacement?.Invoke(buildingInstance);
 
-        buildingChecker.CancelBuilding();
+        if (buildingChecker != null) buildingChecker.CancelBuilding();
 
         // Founding hands the player their new settlement: the construction window opens so
         // they can start spending the cargo that was just unloaded.
-        if (isUnsettledIsland)
+        if (validation.IsUnsettledHarbor)
         {
             StartCoroutine(OpenConstructionWindowAfterFounding());
         }
@@ -351,53 +299,9 @@ public class BuildingPlacer : MonoBehaviour
             buildingInstance.AddComponent<ConstructionSite>();
         }
     }
-    public bool CheckIfCanAffordBuilding(BuildingCost buildingCost)
+
+    private GameObject InstantiateBuilding(BuildingPreview buildingPreview, Transform islandTransform, Vector3 targetPosition)
     {
-        return baseStorageManager.CanAffordBuilding(buildingCost);
-    }
-
-
-    private bool IsValidPlacement(BuildingPreview buildingPreview, Transform islandTransform)
-    {
-        if (buildingPreview == null)
-        {
-            Debug.LogError("BuildingPreview component not found.");
-            return false;
-        }
-
-        // Validate the island the blueprint is actually standing on. This used to ask
-        // IslandManager for whatever island happened to be in front of the camera, so a
-        // perfectly good site was rejected purely because of the angle the player was
-        // looking from - and it always failed outright since IslandManager.islands is
-        // never populated.
-        Island currentIsland = buildingPreview.currentIsland;
-
-        if (currentIsland == null && islandTransform != null)
-        {
-            currentIsland = islandTransform.GetComponent<Island>()
-                         ?? islandTransform.GetComponentInParent<Island>();
-        }
-
-        if (currentIsland == null && islandManager != null)
-        {
-            currentIsland = islandManager.GetIslandInFrontOfCamera(Camera.main);
-        }
-
-        if (currentIsland == null)
-        {
-            Debug.Log("No island found for the building site.");
-            return false;
-        }
-
-        // Other validations...
-        return true;
-    }
-
-
-    private GameObject InstantiateBuilding(BuildingPreview buildingPreview, Transform islandTransform)
-    {
-        // Logic for instantiating the building
-        Vector3 targetPosition = buildingPreview.transform.position;
         Quaternion targetRotation = buildingPreview.transform.rotation;
         GameObject buildingInstance = Instantiate(buildingPreview.buildingPrefab, targetPosition, targetRotation, islandTransform);
 
@@ -408,13 +312,17 @@ public class BuildingPlacer : MonoBehaviour
         return buildingInstance;
     }
 
-
-    private BuildingProperties SetBuildingProperties(GameObject buildingInstance, BuildingPreview buildingPreview)
+    private BuildingProperties SetBuildingProperties(
+        GameObject buildingInstance,
+        Island placedIsland,
+        GridSystem placementGrid)
     {
-        // Logic for setting building properties
         BuildingProperties buildingProperties = buildingInstance.GetComponent<BuildingProperties>();
-        buildingProperties.currentIsland = buildingPreview.currentIsland;
-        buildingProperties.gridSystem = buildingPreview.gridSystem;
+        if (buildingProperties != null)
+        {
+            buildingProperties.currentIsland = placedIsland;
+            buildingProperties.gridSystem = placementGrid;
+        }
         return buildingProperties;
     }
 
@@ -423,45 +331,6 @@ public class BuildingPlacer : MonoBehaviour
     public List<ItemCost> GetAllCostItems()
     {
         return costs;
-    }
-
-    /// <summary>
-    /// Takes the building's credit price. The affordability gate above has already run, so
-    /// this is expected to succeed; a refusal here means something spent the balance
-    /// between the check and the build and is worth hearing about.
-    /// </summary>
-    private void ChargeCredits(BuildingCost buildingCost)
-    {
-        if (buildingCost == null || bank == null) return;
-
-        int price = buildingCost.GetPrice();
-        if (price <= 0) return;
-
-        if (!bank.TrySpend(price, buildingCost.GetBuildingName()))
-        {
-            Debug.LogWarning("Balance changed between approving and building " +
-                             buildingCost.GetBuildingName() + " - it was not charged.", buildingCost);
-        }
-    }
-
-    /// <summary>
-    /// Whether the player can pay this building's credit price. Answers true when there is
-    /// no bank or no price, so a project that has not wired credits up yet is not blocked
-    /// from building anything.
-    /// </summary>
-    private bool CanAffordCredits(BuildingCost buildingCost)
-    {
-        if (buildingCost == null) return true;
-
-        if (bank == null) bank = FindObjectOfType<Bank>();
-        if (bank == null) return true;
-
-        int price = buildingCost.GetPrice();
-        if (bank.CanAfford(price)) return true;
-
-        Debug.Log($"Not enough credits for {buildingCost.GetBuildingName()}: " +
-                  $"{price} needed, {bank.Balance} available.");
-        return false;
     }
 
     private void MarkGridCells(GameObject buildingInstance, Vector2Int footprint, GridSystem placementGrid)

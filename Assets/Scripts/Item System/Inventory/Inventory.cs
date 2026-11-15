@@ -28,7 +28,9 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
 
     private void UpdateItemListForEditor()
     {
+        EnsureStorageManager();
         itemListForEditor.Clear();
+        if (storageManager == null) return;
         var allItems = storageManager.GetAllItems; // Get the current state from the StorageManager
         foreach (var kvp in allItems)
         {
@@ -162,7 +164,11 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     /// manager isn't up yet or reports no limit; callers should treat that as unbounded
     /// and skip the bar rather than dividing by it.
     /// </summary>
-    public int GetCapacityLimit() => storageManager != null ? storageManager.GetCapacityLimit() : 0;
+    public int GetCapacityLimit()
+    {
+        EnsureStorageManager();
+        return storageManager != null ? storageManager.GetCapacityLimit() : 0;
+    }
 
     /// <summary>
     /// Returns the quantity of this commodity legally available for export,
@@ -188,6 +194,7 @@ public class Inventory : MonoBehaviour, IUniqueIdentifier
     public int GetRemainingCapacity(ItemData item)
     {
         if (item == null) return 0;
+        EnsureStorageManager();
         if (storageManager is IslandStorageManager ism)
         {
             return ism.GetRemainingCapacity(item);

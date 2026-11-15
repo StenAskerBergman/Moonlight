@@ -284,56 +284,49 @@ public class StampPlacementController : MonoBehaviour
 
     // ───────── Validation ─────────
 
+    private PlacementValidationResult EvaluateBuildingPlacement(
+        Vector3 worldPos,
+        StampBuildingEntry entry,
+        GameObject prefab,
+        out Vector2Int footprint,
+        out Vector3Int gridOrigin)
+    {
+        footprint = Vector2Int.one;
+        gridOrigin = Vector3Int.zero;
+        if (_currentGridSystem == null || prefab == null)
+        {
+            return new PlacementValidationResult { FailureReason = PlacementFailureReason.NoGrid };
+        }
+
+        Quaternion entryRot = Quaternion.Euler(0f, entry.rotationY + _currentRotation, 0f);
+        footprint = GridSystem.GetFootprint(entry.buildingSize, entryRot);
+        gridOrigin = _currentGridSystem.GetFootprintOrigin(worldPos, footprint);
+
+        BuildingProperties props = prefab.GetComponent<BuildingProperties>();
+        Inventory islandGoods = _currentIsland != null ? _currentIsland.GetComponent<Inventory>() : null;
+        Bank bank = FindObjectOfType<Bank>();
+
+        var request = new AllocationRequest
+        {
+            Prefab = prefab,
+            Properties = props,
+            Data = props != null ? props.buildingData : null,
+            Cost = prefab.GetComponent<BuildingCost>(),
+            Grid = _currentGridSystem,
+            Island = _currentIsland,
+            WorldPosition = worldPos,
+            GridOrigin = gridOrigin,
+            Footprint = footprint,
+            IslandGoods = islandGoods,
+            Bank = bank
+        };
+
+        return PlacementEvaluator.Evaluate(in request);
+    }
+
     private bool ValidateBuildingPlacement(Vector3 worldPos, StampBuildingEntry entry, GameObject prefab)
     {
-        if (_currentGridSystem == null) return false;
-
-        Vector3Int gridPos = _currentGridSystem.WorldToCell(worldPos);
-        Vector3 size = entry.buildingSize;
-
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int z = 0; z < size.z; z++)
-            {
-                Cell cell = _currentGridSystem.GetCell(gridPos.x + x, gridPos.z + z);
-                if (cell == null || cell.isBlocked || cell.isOccupied)
-                    return false;
-            }
-        }
-
-        // Check influence
-        if (_currentIsland != null)
-        {
-            InfluenceManager influence = _currentIsland.GetComponent<InfluenceManager>();
-            if (influence == null && _currentIsland.islandObject != null)
-                influence = _currentIsland.islandObject.GetComponent<InfluenceManager>();
-
-            if (influence != null)
-            {
-                BuildingProperties props = prefab.GetComponent<BuildingProperties>();
-                BuildingData data = props != null ? props.buildingData : null;
-                bool isWarehouse = data != null && (
-                    data.buildingType == BuildingEnums.BuildingType.OnShore.ToString() ||
-                    (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag => tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) || tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase))) ||
-                    (data.buildingName != null && (data.buildingName.IndexOf("Warehouse", System.StringComparison.OrdinalIgnoreCase) >= 0 || data.buildingName.IndexOf("Harbor", System.StringComparison.OrdinalIgnoreCase) >= 0))
-                );
-
-                if (isWarehouse)
-                {
-                    Unit foundingBoat = null;
-                    if (!influence.CanPlaceWarehouse(worldPos, _currentGridSystem, out foundingBoat))
-                    {
-                        return false;
-                    }
-                }
-                else if (!influence.IsWithinBuildableArea(worldPos))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return EvaluateBuildingPlacement(worldPos, entry, prefab, out _, out _).CanCommit;
     }
 
     private bool ValidateRoadPlacement(Vector3 worldPos)
@@ -360,7 +353,7 @@ public class StampPlacementController : MonoBehaviour
         MeshRenderer[] renderers = ghost.GetComponentsInChildren<MeshRenderer>();
         foreach (var rend in renderers)
         {
-            rend.material = mat;
+            if (rend.sharedMaterial != mat) rend.sharedMaterial = mat;
         }
     }
 
@@ -418,65 +411,51 @@ public class StampPlacementController : MonoBehaviour
 
     private bool PlaceSingleBuilding(BuildingGhost ghost)
     {
+        if (ghost.ghostObj == null || ghost.sourcePrefab == null || _currentGridSystem == null || _currentIsland == null)
+        {
+            return false;
+        }
+
         Vector3 position = ghost.ghostObj.transform.position;
         Quaternion rotation = ghost.ghostObj.transform.rotation;
 
-        // Re-validate just before placing
-        if (!ValidateBuildingPlacement(position, ghost.entry, ghost.sourcePrefab))
-            return false;
+        PlacementValidationResult validation = EvaluateBuildingPlacement(
+            position,
+            ghost.entry,
+            ghost.sourcePrefab,
+            out Vector2Int footprint,
+            out Vector3Int gridOrigin);
 
-        // Check cost affordability
-        InfluenceManager influenceManager = _currentIsland.GetComponent<InfluenceManager>();
-        bool isUnsettledIsland = influenceManager == null || !influenceManager.HasWarehouse;
-        Unit foundingBoat = null;
-        
-        // The island's own stockpile - see BuildingPlacer.PlaceBuilding for why not BaseStorageManager.
-        Inventory islandGoods = _currentIsland.GetComponent<Inventory>();
-        BuildingCost costPrefab = ghost.sourcePrefab.GetComponent<BuildingCost>();
-        
-        if (costPrefab != null)
+        if (!validation.CanCommit)
         {
-            if (isUnsettledIsland)
+            Debug.Log($"[StampPlacement] Cannot place '{ghost.entry.buildingIdentifier}' ({validation.FailureReason}). Skipping.");
+            return false;
+        }
+
+        Inventory islandGoods = _currentIsland.GetComponent<Inventory>();
+        Bank bank = FindObjectOfType<Bank>();
+        BuildingCost costPrefab = ghost.sourcePrefab.GetComponent<BuildingCost>();
+
+        if (costPrefab != null &&
+            !costPrefab.TryPayAtomic(islandGoods, bank, validation.FoundingBoat, validation.IsUnsettledHarbor))
+        {
+            Debug.Log($"[StampPlacement] Payment declined atomically for '{ghost.entry.buildingIdentifier}'. Skipping.");
+            return false;
+        }
+
+        if (validation.IsUnsettledHarbor && validation.FoundingBoat != null)
+        {
+            Settlement boatSettlement = validation.FoundingBoat.GetComponent<Settlement>();
+            if (boatSettlement != null)
             {
-                foundingBoat = InfluenceManager.GetNearestPlayerBoat(position);
-                if (foundingBoat != null)
-                {
-                    UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-                    if (costPrefab.costData != null && boatInv != null)
-                    {
-                        var costItems = costPrefab.costData.GetCostItemsDictionary();
-                        var boatItems = boatInv.GetAllItems();
-                        foreach (var kvp in costItems)
-                        {
-                            if (kvp.Key != null && kvp.Value > 0)
-                            {
-                                if (!boatItems.ContainsKey(kvp.Key) || boatItems[kvp.Key] < kvp.Value)
-                                {
-                                    Debug.Log($"[StampPlacement] Boat cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.Log($"[StampPlacement] No founding boat nearby for '{ghost.entry.buildingIdentifier}'. Skipping.");
-                    return false;
-                }
-            }
-            else if (!costPrefab.CanBePaidFrom(islandGoods))
-            {
-                Debug.Log($"[StampPlacement] Cannot afford '{ghost.entry.buildingIdentifier}'. Skipping.");
-                return false;
+                boatSettlement.CompleteSettlement(islandGoods);
             }
         }
 
-        // Instantiate under island transform
         Transform islandTransform = _currentIsland.transform;
         GameObject instance = Instantiate(ghost.sourcePrefab, position, rotation, islandTransform);
+        BuildingPlaceholderModel.Ensure(instance);
 
-        // Set properties
         BuildingProperties props = instance.GetComponent<BuildingProperties>();
         if (props != null)
         {
@@ -484,64 +463,43 @@ public class StampPlacementController : MonoBehaviour
             props.gridSystem = _currentGridSystem;
         }
 
-        // Deduct costs
-        BuildingCost buildingCost = instance.GetComponent<BuildingCost>();
-        Bank bank = FindObjectOfType<Bank>();
-        
-        if (isUnsettledIsland && foundingBoat != null)
+        if (props != null && props.buildingData != null && props.buildingData.requiresQuayFoundation)
         {
-            UnitInventory boatInv = foundingBoat.GetComponent<UnitInventory>();
-            if (buildingCost != null && buildingCost.costData != null && boatInv != null)
-            {
-                var costItems = buildingCost.costData.GetCostItemsDictionary();
-                foreach (var kvp in costItems)
-                {
-                    if (kvp.Key != null && kvp.Value > 0)
-                        boatInv.RemoveItem(kvp.Key, kvp.Value);
-                }
-            }
+            QuaySystem quay = QuaySystem.GetOrCreate(_currentGridSystem);
+            Vector3 quayPos = instance.transform.position;
+            quayPos.y = quay.TopElevationWorld;
+            instance.transform.position = quayPos;
 
-            // Trigger settlement transfer
-            Settlement boatSettlement = foundingBoat.GetComponent<Settlement>();
-            if (boatSettlement != null)
-            {
-                boatSettlement.CompleteSettlement(islandGoods);
-            }
-        }
-        else if (buildingCost != null && !buildingCost.TryPayFrom(islandGoods))
-        {
-            Debug.LogWarning($"[StampPlacement] Could not pay for '{ghost.entry.buildingIdentifier}' from island goods.");
+            Building quayOwner = instance.GetComponent<Building>();
+            quay.RegisterAutomaticFoundation(
+                quayOwner,
+                _currentGridSystem.GetFootprintOrigin(instance.transform.position, footprint),
+                footprint,
+                props.buildingData.quayFoundationPadding);
         }
 
-        // Mark grid cells
-        Vector3 buildingSize = ghost.entry.buildingSize;
-        Vector3Int gridPos = _currentGridSystem.WorldToCell(position);
         Building buildingComponent = instance.GetComponent<Building>();
-        for (int x = 0; x < buildingSize.x; x++)
+        for (int x = 0; x < footprint.x; x++)
         {
-            for (int z = 0; z < buildingSize.z; z++)
+            for (int z = 0; z < footprint.y; z++)
             {
-                Vector3 cellWorldPos = new Vector3(
-                    (gridPos.x + x) * _currentGridSystem.cellSize,
-                    0,
-                    (gridPos.z + z) * _currentGridSystem.cellSize);
-                _currentGridSystem.MarkCellAsOccupied(cellWorldPos, buildingComponent);
+                Vector3 cellCenterWorld = _currentGridSystem.GetCellCenterWorld(gridOrigin.x + x, gridOrigin.z + z);
+                _currentGridSystem.MarkCellAsOccupied(cellCenterWorld, buildingComponent);
             }
         }
 
-        // Register influence zone if present
         InfluenceZone zone = instance.GetComponent<InfluenceZone>();
         if (zone != null)
         {
-            InfluenceManager manager = islandTransform.GetComponent<InfluenceManager>();
-            if (manager == null)
-                manager = islandTransform.gameObject.AddComponent<InfluenceManager>();
+            InfluenceManager manager = islandTransform.GetComponent<InfluenceManager>()
+                                    ?? islandTransform.gameObject.AddComponent<InfluenceManager>();
             manager.RegisterZone(zone);
         }
 
-        // Add construction site to start the build process
         if (instance.GetComponent<ConstructionSite>() == null)
+        {
             instance.AddComponent<ConstructionSite>();
+        }
 
         return true;
     }

@@ -59,15 +59,106 @@ public class BuildingCost : MonoBehaviour
     /// <summary>Takes the item cost out of the island's goods. All or nothing.</summary>
     public bool TryPayFrom(Inventory goods)
     {
-        if (!CanBePaidFrom(goods)) return false;
-        if (!TryGetCosts(out Dictionary<ItemData, int> costItems)) return true;
+        Dictionary<ItemData, int> positiveCosts = BuildPositiveCostMap();
+        if (positiveCosts.Count == 0) return true;
+        if (goods == null) return false;
+
+        return goods.TryRemoveItems(positiveCosts);
+    }
+
+    /// <summary>Whether the specified vessel holds enough cargo to fund construction.</summary>
+    public bool CanBePaidFromBoat(Unit boat)
+    {
+        Dictionary<ItemData, int> positiveCosts = BuildPositiveCostMap();
+        if (positiveCosts.Count == 0) return true;
+        if (boat == null) return false;
+
+        UnitInventory boatInv = boat.GetComponent<UnitInventory>();
+        if (boatInv == null) return false;
+
+        Dictionary<ItemData, int> boatItems = boatInv.GetAllItems();
+        foreach (var cost in positiveCosts)
+        {
+            if (!boatItems.TryGetValue(cost.Key, out int available) || available < cost.Value)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>Deducts the building's goods cost atomically from a founding vessel.</summary>
+    public bool TryPayFromBoat(Unit boat)
+    {
+        Dictionary<ItemData, int> positiveCosts = BuildPositiveCostMap();
+        if (positiveCosts.Count == 0) return true;
+        if (!CanBePaidFromBoat(boat)) return false;
+
+        UnitInventory boatInv = boat.GetComponent<UnitInventory>();
+        if (boatInv == null) return false;
+
+        var deducted = new List<KeyValuePair<ItemData, int>>();
+        foreach (var cost in positiveCosts)
+        {
+            if (!boatInv.RemoveItem(cost.Key, cost.Value))
+            {
+                foreach (var rollback in deducted)
+                {
+                    boatInv.AddItem(rollback.Key, rollback.Value, "Rollback");
+                }
+                return false;
+            }
+            deducted.Add(cost);
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Verifies and deducts both credits and island/boat goods atomically, rolling back
+    /// any spent credits if goods deduction fails.
+    /// </summary>
+    public bool TryPayAtomic(Inventory islandGoods, Bank bank, Unit foundingBoat, bool isUnsettledHarbor)
+    {
+        if (isUnsettledHarbor)
+        {
+            if (foundingBoat == null || !CanBePaidFromBoat(foundingBoat)) return false;
+        }
+        else if (!CanBePaidFrom(islandGoods))
+        {
+            return false;
+        }
+
+        int creditPrice = Mathf.Max(0, GetPrice());
+        if (creditPrice > 0 && bank != null && !bank.TrySpend(creditPrice, GetBuildingName()))
+        {
+            return false;
+        }
+
+        bool goodsPaid = isUnsettledHarbor ? TryPayFromBoat(foundingBoat) : TryPayFrom(islandGoods);
+        if (!goodsPaid)
+        {
+            if (creditPrice > 0 && bank != null)
+            {
+                bank.Deposit(creditPrice, $"{GetBuildingName()} rollback");
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    private Dictionary<ItemData, int> BuildPositiveCostMap()
+    {
+        var positive = new Dictionary<ItemData, int>();
+        if (!TryGetCosts(out Dictionary<ItemData, int> costItems)) return positive;
 
         foreach (var cost in costItems)
         {
             if (cost.Key == null || cost.Value <= 0) continue;
-            goods.RemoveItem(cost.Key, cost.Value);
+            positive.TryGetValue(cost.Key, out int existing);
+            positive[cost.Key] = existing + cost.Value;
         }
-        return true;
+        return positive;
     }
 
     [SerializeField] private string buildingName; 

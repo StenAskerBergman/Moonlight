@@ -27,9 +27,7 @@ public class Settlement : MonoBehaviour
     [SerializeField] private int circleSegments = 64;
 
     [Header("Range Visual")]
-    [Tooltip("How far past the settle circle the darkened shroud reaches.")]
-    [SerializeField] private float shroudOuterScale = 14f;
-    [SerializeField] private Color shroudColor = new Color(0f, 0f, 0f, 0.55f);
+    [SerializeField] private bool showLegacyRangeRing = false;
     [SerializeField] private Color ringColor = Color.white;
     [SerializeField] private float ringWidth = 0.35f;
 
@@ -195,12 +193,19 @@ public class Settlement : MonoBehaviour
 
     private void SetRangeVisualsVisible(bool visible)
     {
-        if (settleRangeRenderer != null) settleRangeRenderer.enabled = visible;
-        if (shroudObject != null) shroudObject.SetActive(visible);
+        if (settleRangeRenderer != null) settleRangeRenderer.enabled = visible && showLegacyRangeRing;
+        if (shroudObject != null) shroudObject.SetActive(false);
     }
 
     private void EnsureRangeVisuals()
     {
+        if (!showLegacyRangeRing)
+        {
+            if (settleRangeRenderer != null) settleRangeRenderer.enabled = false;
+            if (shroudObject != null) shroudObject.SetActive(false);
+            return;
+        }
+
         if (settleRangeRenderer == null)
         {
             GameObject ringObject = new GameObject("Settle Range Ring");
@@ -218,24 +223,9 @@ public class Settlement : MonoBehaviour
         settleRangeRenderer.startColor = ringColor;
         settleRangeRenderer.endColor = ringColor;
 
-        if (shroudObject == null)
-        {
-            shroudObject = new GameObject("Settle Range Shroud");
-            shroudObject.transform.SetParent(transform, false);
-
-            shroudObject.AddComponent<MeshFilter>();
-            MeshRenderer shroudRenderer = shroudObject.AddComponent<MeshRenderer>();
-            shroudRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            shroudRenderer.receiveShadows = false;
-            shroudRenderer.sharedMaterial = OverlayMaterial.Create(shroudColor);
-        }
-
         if (!Mathf.Approximately(builtForRange, SettleRange))
         {
             DrawSettleRange();
-
-            shroudMesh = BuildShroudMesh(SettleRange, SettleRange * Mathf.Max(2f, shroudOuterScale), circleSegments);
-            shroudObject.GetComponent<MeshFilter>().sharedMesh = shroudMesh;
             builtForRange = SettleRange;
         }
     }

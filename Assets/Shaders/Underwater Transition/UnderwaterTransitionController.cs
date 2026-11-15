@@ -51,24 +51,24 @@ namespace Moonlight.Rendering
         [SerializeField] private Color abyssalColor = new Color(0.002f, 0.035f, 0.055f, 1f);
         [Tooltip("Wavelength absorption coefficients (RGB). Higher value = faster decay. Defaults approximate real seawater: red absorbs ~8x faster than blue, green ~2.5x faster.")]
         [SerializeField] private Vector4 absorptionCoefficients = new Vector4(0.16f, 0.05f, 0.02f, 0f);
-        [Range(0.001f, 0.2f), SerializeField] private float fogDensity = 0.038f;
-        [Min(0.5f), SerializeField] private float deepDepthThreshold = 6f;
-        [Min(1f), SerializeField] private float abyssDepthThreshold = 14f;
+        [Range(0.001f, 0.2f), SerializeField] private float fogDensity = 0.022f;
+        [Min(0.5f), SerializeField] private float deepDepthThreshold = 9.5f;
+        [Min(1f), SerializeField] private float abyssDepthThreshold = 19f;
         [Range(0f, 2f), SerializeField] private float sunScatteringIntensity = 0.65f;
-        [Range(0.01f, 0.5f), SerializeField] private float sunDepthExtinction = 0.12f;
+        [Range(0.01f, 0.5f), SerializeField] private float sunDepthExtinction = 0.07f;
 
         [Header("Lower Apron Fade")]
         [SerializeField] private bool enableLowerApronFade = true;
-        [Min(0f), SerializeField] private float lowerApronFadeStart = 10f;
-        [Min(0.1f), SerializeField] private float lowerApronFadeEnd = 24f;
-        [Range(0f, 1f), SerializeField] private float lowerApronFadeStrength = 0.95f;
+        [Min(0f), SerializeField] private float lowerApronFadeStart = 12f;
+        [Min(0.1f), SerializeField] private float lowerApronFadeEnd = 26f;
+        [Range(0f, 1f), SerializeField] private float lowerApronFadeStrength = 0.92f;
 
         [Header("Caustics")]
         [SerializeField] private bool enableCaustics = true;
-        [Range(0f, 2f), SerializeField] private float causticsStrength = 0.45f;
+        [Range(0f, 2f), SerializeField] private float causticsStrength = 0.65f;
         [Range(0.05f, 2f), SerializeField] private float causticsScale = 0.35f;
         [Range(0.05f, 2f), SerializeField] private float causticsSpeed = 0.4f;
-        [Min(1f), SerializeField] private float causticsFadeDepth = 9f;
+        [Min(1f), SerializeField] private float causticsFadeDepth = 18f;
 
         [Header("Marine Snow & Particles")]
         [SerializeField] private bool enableMarineSnow = true;
@@ -887,21 +887,21 @@ namespace Moonlight.Rendering
         internal static Color DeepWaterColor = new Color(0.025f, 0.22f, 0.29f, 1f);
         internal static Color AbyssalColor = new Color(0.002f, 0.035f, 0.055f, 1f);
         internal static Vector4 AbsorptionCoefficients = new Vector4(0.24f, 0.065f, 0.02f, 0f);
-        internal static float FogDensity = 0.038f;
-        internal static float DeepDepthThreshold = 6f;
-        internal static float AbyssDepthThreshold = 14f;
+        internal static float FogDensity = 0.022f;
+        internal static float DeepDepthThreshold = 9.5f;
+        internal static float AbyssDepthThreshold = 19f;
         internal static float SunScatteringIntensity = 0.65f;
-        internal static float SunDepthExtinction = 0.12f;
+        internal static float SunDepthExtinction = 0.07f;
 
-        internal static float LowerApronFadeStart = 10f;
-        internal static float LowerApronFadeEnd = 24f;
-        internal static float LowerApronFadeStrength = 0.95f;
+        internal static float LowerApronFadeStart = 12f;
+        internal static float LowerApronFadeEnd = 26f;
+        internal static float LowerApronFadeStrength = 0.92f;
 
         internal static bool EnableCaustics = true;
-        internal static float CausticsStrength = 0.45f;
+        internal static float CausticsStrength = 0.65f;
         internal static float CausticsScale = 0.35f;
         internal static float CausticsSpeed = 0.4f;
-        internal static float CausticsFadeDepth = 9f;
+        internal static float CausticsFadeDepth = 18f;
 
         internal static bool EnableMarineSnow = true;
         internal static float MarineSnowIntensity = 0.45f;

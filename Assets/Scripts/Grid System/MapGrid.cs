@@ -62,6 +62,28 @@ public class MapGrid : MonoBehaviour
     private static readonly int PlateauRippleStrengthProperty = Shader.PropertyToID("_RippleStrength");
     private static readonly int PlateauSmoothnessProperty = Shader.PropertyToID("_Smoothness");
     private static readonly int PlateauWorldSeedProperty = Shader.PropertyToID("_WorldSeed");
+    private static readonly int PlateauWaterLevelProperty = Shader.PropertyToID("_WaterLevel");
+    private static readonly int[] PlateauSharedTextureProperties =
+    {
+        Shader.PropertyToID("_RockAlbedo"),
+        Shader.PropertyToID("_RockNormal"),
+        Shader.PropertyToID("_SandAlbedo"),
+        Shader.PropertyToID("_SandNormal"),
+        Shader.PropertyToID("_SeabedAlbedo"),
+        Shader.PropertyToID("_SeabedNormal"),
+        Shader.PropertyToID("_GrassAlbedo"),
+        Shader.PropertyToID("_GrassNormal"),
+    };
+    private static readonly int[] PlateauSharedFloatProperties =
+    {
+        Shader.PropertyToID("_RockTiling"),
+        Shader.PropertyToID("_RockNormalScale"),
+        Shader.PropertyToID("_SandTiling"),
+        Shader.PropertyToID("_SandNormalScale"),
+        Shader.PropertyToID("_SeabedTiling"),
+        Shader.PropertyToID("_SeabedNormalScale"),
+        Shader.PropertyToID("_GrassTiling"),
+    };
     private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
     private const string GeneratedInlandWaterRootName = "Generated Inland Water";
     private const string GeneratedDepositVisualsRootName = "Generated Resource Deposits";
@@ -960,6 +982,11 @@ public class MapGrid : MonoBehaviour
             }
         }
 
+        if (currentGridType == GridType.Type.Plateau && (ventSpots.Count > 0 || oreSpots.Count > 0))
+        {
+            PlacePlateauDepositLandmarks(ventSpots, oreSpots);
+        }
+
         // 5. Forest Grove: 1-2 discrete interior fertile groves
         List<Vector2Int> forestSpots = new List<Vector2Int>();
         for (int y = 5; y < size - 5 && forestSpots.Count < 2; y += 3)
@@ -1406,12 +1433,11 @@ public class MapGrid : MonoBehaviour
     private void ApplyTerrainSurfaceMaterial(MeshRenderer renderer)
     {
         if (renderer == null) return;
-        // World chunks can contain a neighbouring island's land. Their slot kind cannot
-        // select a different shader for that same canonical terrain field.
-        bool standalonePlateau = !(TerrainSource?.IsWorldView ?? false)
-            && currentGridType == GridType.Type.Plateau && plateauSurfaceMaterial != null;
-        renderer.sharedMaterial = standalonePlateau ? plateauSurfaceMaterial : terrainMaterial;
-        if (standalonePlateau) ConfigurePlateauMaterial(renderer, PlateauMaterialRole.Surface);
+        // Standalone plateau chunks retain their plateau slot type even inside WorldTerrainField,
+        // and UnderwaterPlateauMaterial handles neighbouring ocean/island border continuity seamlessly.
+        bool isPlateau = currentGridType == GridType.Type.Plateau && plateauSurfaceMaterial != null;
+        renderer.sharedMaterial = isPlateau ? plateauSurfaceMaterial : terrainMaterial;
+        if (isPlateau) ConfigurePlateauMaterial(renderer, PlateauMaterialRole.Surface);
     }
 
     private void ApplyPlateauGeometry(PlateauGeometryResult geometry)
@@ -1545,6 +1571,270 @@ public class MapGrid : MonoBehaviour
 
             CreateCrudeOilVisual(prefab, visualRoot.transform, anchor, center, visualHeight);
         }
+    }
+
+    private void PlacePlateauDepositLandmarks(List<Vector2Int> ventSpots, List<Vector2Int> oreSpots)
+    {
+        Transform existingRoot = transform.Find(GeneratedDepositVisualsRootName);
+        GameObject visualRoot;
+        if (existingRoot != null)
+        {
+            visualRoot = existingRoot.gameObject;
+        }
+        else
+        {
+            visualRoot = new GameObject(GeneratedDepositVisualsRootName);
+            visualRoot.layer = gameObject.layer;
+            visualRoot.transform.SetParent(transform, false);
+        }
+
+        Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        Material ventMaterial = new Material(litShader)
+        {
+            name = "Generated Hydrothermal Vent Material",
+            color = new Color(0.14f, 0.17f, 0.19f, 1f)
+        };
+        if (ventMaterial.HasProperty("_BaseColor")) ventMaterial.SetColor("_BaseColor", new Color(0.14f, 0.17f, 0.19f, 1f));
+        if (ventMaterial.HasProperty("_Smoothness")) ventMaterial.SetFloat("_Smoothness", 0.35f);
+        if (ventMaterial.HasProperty("_EmissionColor"))
+        {
+            ventMaterial.EnableKeyword("_EMISSION");
+            ventMaterial.SetColor("_EmissionColor", new Color(0.32f, 0.12f, 0.04f, 1f));
+        }
+        TrackGeneratedVisualResource(ventMaterial);
+
+        Material oreMaterial = new Material(litShader)
+        {
+            name = "Generated Seabed Ore Material",
+            color = new Color(0.22f, 0.28f, 0.34f, 1f)
+        };
+        if (oreMaterial.HasProperty("_BaseColor")) oreMaterial.SetColor("_BaseColor", new Color(0.22f, 0.28f, 0.34f, 1f));
+        if (oreMaterial.HasProperty("_Metallic")) oreMaterial.SetFloat("_Metallic", 0.58f);
+        if (oreMaterial.HasProperty("_Smoothness")) oreMaterial.SetFloat("_Smoothness", 0.64f);
+        TrackGeneratedVisualResource(oreMaterial);
+
+        Material plumeMaterial = CreateVentPlumeMaterial();
+
+        foreach (Vector2Int spot in ventSpots)
+        {
+            Cell cell = grid[spot.x, spot.y];
+            int seed = DepositCandidateScore(spot);
+            GameObject vent = new GameObject($"Hydrothermal Vent ({spot.x}, {spot.y})", typeof(MeshFilter), typeof(MeshRenderer));
+            vent.layer = gameObject.layer;
+            vent.transform.SetParent(visualRoot.transform, false);
+            vent.transform.localPosition = new Vector3(cell.localCenter.x, cell.height - 0.04f, cell.localCenter.z);
+            vent.transform.localRotation = Quaternion.Euler(0f, ((uint)seed & 0xFFu) / 255f * 360f, 0f);
+
+            Mesh chimneyMesh = BuildHydrothermalVentMesh(seed);
+            TrackGeneratedVisualResource(chimneyMesh);
+            vent.GetComponent<MeshFilter>().sharedMesh = chimneyMesh;
+            vent.GetComponent<MeshRenderer>().sharedMaterial = ventMaterial;
+
+            AttachHydrothermalPlume(vent.transform, plumeMaterial);
+        }
+
+        foreach (Vector2Int spot in oreSpots)
+        {
+            Cell cell = grid[spot.x, spot.y];
+            int seed = DepositCandidateScore(spot);
+            GameObject ore = new GameObject($"Seabed Ore Nodules ({spot.x}, {spot.y})", typeof(MeshFilter), typeof(MeshRenderer));
+            ore.layer = gameObject.layer;
+            ore.transform.SetParent(visualRoot.transform, false);
+            ore.transform.localPosition = new Vector3(cell.localCenter.x, cell.height - 0.02f, cell.localCenter.z);
+            ore.transform.localRotation = Quaternion.Euler(0f, ((uint)seed & 0xFFu) / 255f * 360f, 0f);
+
+            Mesh noduleMesh = BuildOreNoduleMesh(seed);
+            TrackGeneratedVisualResource(noduleMesh);
+            ore.GetComponent<MeshFilter>().sharedMesh = noduleMesh;
+            ore.GetComponent<MeshRenderer>().sharedMaterial = oreMaterial;
+        }
+    }
+
+    private Material CreateVentPlumeMaterial()
+    {
+        Texture2D tex = new Texture2D(16, 16, TextureFormat.RGBA32, false)
+        {
+            name = "Generated Vent Plume Texture",
+            wrapMode = TextureWrapMode.Clamp
+        };
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                float dx = (x + 0.5f) / 16f * 2f - 1f;
+                float dy = (y + 0.5f) / 16f * 2f - 1f;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                float alpha = Mathf.Clamp01(1f - dist);
+                alpha *= alpha;
+                tex.SetPixel(x, y, new Color(0.55f, 0.72f, 0.78f, alpha));
+            }
+        }
+        tex.Apply(false, true);
+        TrackGeneratedVisualResource(tex);
+
+        Shader particleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+            ?? Shader.Find("Particles/Standard Unlit")
+            ?? Shader.Find("Sprites/Default");
+        Material mat = new Material(particleShader)
+        {
+            name = "Generated Vent Plume Material"
+        };
+        if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+        if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", new Color(0.45f, 0.65f, 0.74f, 0.48f));
+        if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+        if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+        mat.renderQueue = 3000;
+        TrackGeneratedVisualResource(mat);
+        return mat;
+    }
+
+    private static void AttachHydrothermalPlume(Transform parent, Material plumeMaterial)
+    {
+        GameObject plumeObj = new GameObject("Thermal Plume");
+        plumeObj.layer = parent.gameObject.layer;
+        plumeObj.transform.SetParent(parent, false);
+        plumeObj.transform.localPosition = new Vector3(0f, 0.68f, 0f);
+
+        ParticleSystem ps = plumeObj.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.duration = 2.5f;
+        main.loop = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2.4f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.45f, 0.85f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.14f, 0.34f);
+        main.startColor = new Color(0.50f, 0.72f, 0.80f, 0.42f);
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+        main.gravityModifier = -0.08f;
+        main.maxParticles = 24;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 7f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 12f;
+        shape.radius = 0.08f;
+
+        var sizeOverLifetime = ps.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.4f, 1f, 1.5f));
+
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        renderer.sharedMaterial = plumeMaterial;
+    }
+
+    private static Mesh BuildHydrothermalVentMesh(int seed)
+    {
+        List<Vector3> verts = new List<Vector3>();
+        List<int> tris = new List<int>();
+        System.Random rng = new System.Random(seed ^ 0x2F91);
+
+        int chimneyCount = 3;
+        for (int c = 0; c < chimneyCount; c++)
+        {
+            float angle = c * Mathf.PI * 2f / chimneyCount + (float)rng.NextDouble() * 0.5f;
+            float offsetR = c == 0 ? 0.04f : Mathf.Lerp(0.14f, 0.24f, (float)rng.NextDouble());
+            Vector3 basePos = new Vector3(Mathf.Cos(angle) * offsetR, 0f, Mathf.Sin(angle) * offsetR);
+            float height = c == 0
+                ? Mathf.Lerp(0.68f, 0.86f, (float)rng.NextDouble())
+                : Mathf.Lerp(0.32f, 0.56f, (float)rng.NextDouble());
+            float rBot = c == 0 ? 0.24f : Mathf.Lerp(0.14f, 0.20f, (float)rng.NextDouble());
+            float rTop = rBot * 0.42f;
+            const int sides = 7;
+
+            int vBase = verts.Count;
+            float[] heights = { 0f, height * 0.45f, height };
+            float[] radii = { rBot, rBot * 0.68f, rTop };
+            for (int ring = 0; ring < 3; ring++)
+            {
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = s * Mathf.PI * 2f / sides;
+                    float jitter = 0.86f + (float)rng.NextDouble() * 0.28f;
+                    verts.Add(basePos + new Vector3(
+                        Mathf.Cos(a) * radii[ring] * jitter,
+                        heights[ring],
+                        Mathf.Sin(a) * radii[ring] * jitter));
+                }
+            }
+
+            for (int ring = 0; ring < 2; ring++)
+            {
+                for (int s = 0; s < sides; s++)
+                {
+                    int next = (s + 1) % sides;
+                    int a = vBase + ring * sides + s;
+                    int b = vBase + ring * sides + next;
+                    int cVert = vBase + (ring + 1) * sides + next;
+                    int d = vBase + (ring + 1) * sides + s;
+                    tris.Add(a); tris.Add(d); tris.Add(cVert);
+                    tris.Add(a); tris.Add(cVert); tris.Add(b);
+                }
+            }
+
+            // Recessed vent orifice rim
+            int craterCenter = verts.Count;
+            verts.Add(basePos + new Vector3(0f, height * 0.84f, 0f));
+            for (int s = 0; s < sides; s++)
+            {
+                int next = (s + 1) % sides;
+                tris.Add(craterCenter);
+                tris.Add(vBase + 2 * sides + next);
+                tris.Add(vBase + 2 * sides + s);
+            }
+        }
+
+        Mesh mesh = new Mesh { name = "Generated Hydrothermal Vent" };
+        mesh.SetVertices(verts);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    private static Mesh BuildOreNoduleMesh(int seed)
+    {
+        List<Vector3> verts = new List<Vector3>();
+        List<int> tris = new List<int>();
+        System.Random rng = new System.Random(seed ^ 0x51A7);
+
+        int noduleCount = 7;
+        for (int n = 0; n < noduleCount; n++)
+        {
+            float angle = n * 2.399963f + (float)rng.NextDouble() * 0.4f;
+            float dist = n == 0 ? 0f : Mathf.Lerp(0.14f, 0.34f, Mathf.Sqrt(n / (float)noduleCount));
+            Vector3 center = new Vector3(Mathf.Cos(angle) * dist, 0f, Mathf.Sin(angle) * dist);
+            float radius = n == 0
+                ? Mathf.Lerp(0.18f, 0.24f, (float)rng.NextDouble())
+                : Mathf.Lerp(0.08f, 0.15f, (float)rng.NextDouble());
+            float height = radius * Mathf.Lerp(0.85f, 1.35f, (float)rng.NextDouble());
+
+            // Crisp faceted octahedral crystal/nodule nugget resting partly submerged.
+            int baseIdx = verts.Count;
+            verts.Add(center + Vector3.up * height);
+            const int sides = 5;
+            for (int s = 0; s < sides; s++)
+            {
+                float a = s * Mathf.PI * 2f / sides + angle;
+                float r = radius * Mathf.Lerp(0.75f, 1.25f, (float)rng.NextDouble());
+                verts.Add(center + new Vector3(Mathf.Cos(a) * r, -0.02f, Mathf.Sin(a) * r));
+            }
+            for (int s = 0; s < sides; s++)
+            {
+                int next = (s + 1) % sides;
+                tris.Add(baseIdx);
+                tris.Add(baseIdx + 1 + next);
+                tris.Add(baseIdx + 1 + s);
+            }
+        }
+
+        Mesh mesh = new Mesh { name = "Generated Seabed Ore Nodules" };
+        mesh.SetVertices(verts);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
     }
 
     private List<Vector2Int> SelectCrudeOilCandidates(List<Vector2Int> candidates, int targetCount)
@@ -1785,35 +2075,35 @@ public class MapGrid : MonoBehaviour
         ClimateProfile profile = climateProfile;
         Color darkRock = profile != null
             ? profile.plateauRockDarkColor
-            : new Color(0.075f, 0.12f, 0.13f, 1f);
+            : new Color(0.06f, 0.11f, 0.15f, 1f);
         Color midRock = profile != null
             ? profile.plateauRockMidColor
-            : new Color(0.22f, 0.31f, 0.32f, 1f);
+            : new Color(0.19f, 0.29f, 0.34f, 1f);
         Color lightRock = profile != null
             ? profile.plateauRockLightColor
-            : new Color(0.48f, 0.57f, 0.56f, 1f);
+            : new Color(0.42f, 0.54f, 0.58f, 1f);
         Color sediment = profile != null
             ? profile.plateauRockSedimentColor
-            : new Color(0.55f, 0.58f, 0.52f, 1f);
+            : new Color(0.38f, 0.48f, 0.51f, 1f);
         Color algae = profile != null
             ? profile.plateauReefColor
-            : new Color(0.13f, 0.28f, 0.22f, 1f);
-        float strata = profile != null ? profile.plateauRockStrataStrength : 0.72f;
-        float sedimentStrength = profile != null ? profile.plateauRockSedimentStrength : 0.42f;
-        float algaeStrength = profile != null ? profile.plateauRockAlgaeStrength : 0.34f;
+            : new Color(0.12f, 0.31f, 0.27f, 1f);
+        float strata = profile != null ? profile.plateauRockStrataStrength : 0.76f;
+        float sedimentStrength = profile != null ? profile.plateauRockSedimentStrength : 0.44f;
+        float algaeStrength = profile != null ? profile.plateauRockAlgaeStrength : 0.36f;
         float rockWetness = profile != null ? profile.plateauRockWetness : 0.48f;
-        float rippleStrength = profile != null ? profile.plateauSandRippleStrength : 0.18f;
-        float surfaceWetness = profile != null ? profile.plateauSurfaceWetness : 0.36f;
+        float rippleStrength = profile != null ? profile.plateauSandRippleStrength : 0.24f;
+        float surfaceWetness = profile != null ? profile.plateauSurfaceWetness : 0.40f;
 
         float generatedColorBlend = role == PlateauMaterialRole.Surface ? 1f : 0f;
-        float roleStrata = role == PlateauMaterialRole.Surface ? strata * 0.32f : strata;
+        float roleStrata = role == PlateauMaterialRole.Surface ? strata * 0.48f : strata;
         float roleSediment = role == PlateauMaterialRole.Surface
-            ? sedimentStrength * 0.35f
+            ? sedimentStrength * 0.42f
             : role == PlateauMaterialRole.Formation
                 ? sedimentStrength
-                : sedimentStrength * 0.58f;
+                : sedimentStrength * 0.65f;
         float roleAlgae = role == PlateauMaterialRole.Surface
-            ? algaeStrength * 0.24f
+            ? algaeStrength * 0.28f
             : role == PlateauMaterialRole.Formation
                 ? Mathf.Clamp01(algaeStrength * 1.12f)
                 : algaeStrength;
@@ -1834,6 +2124,29 @@ public class MapGrid : MonoBehaviour
         properties.SetFloat(PlateauSmoothnessProperty,
             role == PlateauMaterialRole.Surface ? surfaceWetness : rockWetness);
         properties.SetFloat(PlateauWorldSeedProperty, activeGenerationSeed * 0.0137f);
+        float resolvedWaterLevel = TerrainSource != null && TerrainSource.Settings != null
+            ? TerrainSource.Settings.waterHeight
+            : generationSettings.waterHeight;
+        properties.SetFloat(PlateauWaterLevelProperty, resolvedWaterLevel);
+
+        if (terrainMaterial != null)
+        {
+            foreach (int texProp in PlateauSharedTextureProperties)
+            {
+                if (!terrainMaterial.HasProperty(texProp)) continue;
+                Texture tex = terrainMaterial.GetTexture(texProp);
+                if (tex != null) properties.SetTexture(texProp, tex);
+            }
+
+            foreach (int floatProp in PlateauSharedFloatProperties)
+            {
+                if (terrainMaterial.HasProperty(floatProp))
+                {
+                    properties.SetFloat(floatProp, terrainMaterial.GetFloat(floatProp));
+                }
+            }
+        }
+
         renderer.SetPropertyBlock(properties);
     }
 
@@ -1866,7 +2179,7 @@ public class MapGrid : MonoBehaviour
         bool diagnostic = debugViewMode != TerrainDebugViewMode.Normal;
         Texture2D control = splat || plateau ? builder.BuildTerrainControlMap() : null;
         Texture2D colour = !splat || diagnostic ? builder.Build() : null;
-        Texture2D tint = splat ? builder.BuildSurfaceTintMap() : null;
+        Texture2D tint = splat || plateau ? builder.BuildSurfaceTintMap() : null;
         Texture2D region = splat ? builder.BuildRegionMask() : null;
         if (control != null) control.name = "Generated Terrain Control Map";
         if (colour != null) colour.name = $"Generated Terrain Texture ({debugViewMode})";

@@ -151,6 +151,17 @@ public sealed class QuaySystem : MonoBehaviour
 
     public float TopElevationWorld => transform.TransformPoint(new Vector3(0f, TopElevationLocal, 0f)).y;
 
+    public float WaterSurfaceLocal
+    {
+        get
+        {
+            ResolveDependencies();
+            TerrainGenerationSettings settings = mapGrid != null ? mapGrid.generationSettings : null;
+            float fallback = settings != null ? settings.AuthoritativeWaterSurfaceHeight : 0f;
+            return ResolveVisibleWaterSurface(fallback);
+        }
+    }
+
     private bool waterSurfaceResolved;
     private float cachedWaterSurfaceLocal;
 

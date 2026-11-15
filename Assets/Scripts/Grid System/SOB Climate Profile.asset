@@ -24,24 +24,24 @@ MonoBehaviour:
   riverColor: {r: 0.22, g: 0.52, b: 0.9, a: 1}
   shallowWaterColor: {r: 0.38, g: 0.74, b: 0.95, a: 1}
   deepWaterColor: {r: 0.06, g: 0.14, b: 0.45, a: 1}
-  plateauFineSandColor: {r: 0.62, g: 0.59, b: 0.47, a: 1}
-  plateauCoarseSandColor: {r: 0.46, g: 0.43, b: 0.34, a: 1}
-  plateauShellSedimentColor: {r: 0.76, g: 0.73, b: 0.61, a: 1}
-  plateauGravelColor: {r: 0.34, g: 0.38, b: 0.37, a: 1}
-  plateauMudColor: {r: 0.2, g: 0.23, b: 0.2, a: 1}
-  plateauSiltColor: {r: 0.11, g: 0.15, b: 0.17, a: 1}
-  plateauReefColor: {r: 0.13, g: 0.28, b: 0.22, a: 1}
-  plateauMaterialVariation: 0.78
-  plateauRockDarkColor: {r: 0.075, g: 0.12, b: 0.13, a: 1}
-  plateauRockMidColor: {r: 0.22, g: 0.31, b: 0.32, a: 1}
-  plateauRockLightColor: {r: 0.48, g: 0.57, b: 0.56, a: 1}
-  plateauRockSedimentColor: {r: 0.55, g: 0.58, b: 0.52, a: 1}
-  plateauRockStrataStrength: 0.72
-  plateauRockSedimentStrength: 0.42
-  plateauRockAlgaeStrength: 0.34
+  plateauFineSandColor: {r: 0.36, g: 0.46, b: 0.5, a: 1}
+  plateauCoarseSandColor: {r: 0.24, g: 0.33, b: 0.38, a: 1}
+  plateauShellSedimentColor: {r: 0.5, g: 0.58, b: 0.6, a: 1}
+  plateauGravelColor: {r: 0.26, g: 0.34, b: 0.36, a: 1}
+  plateauMudColor: {r: 0.14, g: 0.21, b: 0.25, a: 1}
+  plateauSiltColor: {r: 0.09, g: 0.16, b: 0.22, a: 1}
+  plateauReefColor: {r: 0.12, g: 0.31, b: 0.27, a: 1}
+  plateauMaterialVariation: 0.82
+  plateauRockDarkColor: {r: 0.06, g: 0.11, b: 0.15, a: 1}
+  plateauRockMidColor: {r: 0.19, g: 0.29, b: 0.34, a: 1}
+  plateauRockLightColor: {r: 0.42, g: 0.54, b: 0.58, a: 1}
+  plateauRockSedimentColor: {r: 0.38, g: 0.48, b: 0.51, a: 1}
+  plateauRockStrataStrength: 0.76
+  plateauRockSedimentStrength: 0.44
+  plateauRockAlgaeStrength: 0.36
   plateauRockWetness: 0.48
-  plateauSandRippleStrength: 0.18
-  plateauSurfaceWetness: 0.36
+  plateauSandRippleStrength: 0.24
+  plateauSurfaceWetness: 0.4
   foliageSpecies:
   - {fileID: 11400000, guid: bebda739cf39f8c42a587a8341b6d495, type: 2}
   - {fileID: 11400000, guid: f0bbd48be27ab014d863fed64fae9d7e, type: 2}

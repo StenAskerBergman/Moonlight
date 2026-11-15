@@ -117,10 +117,12 @@ public sealed class BuildingSelectionRing : MonoBehaviour
 
         foreach (Renderer renderer in renderers)
         {
-            // Skip the ring's own renderer, and the highlight overlays, or the ring would
-            // grow a little every time it was measured.
+            // Skip the ring's own renderer, highlight overlays, and floating placeholder labels
+            // so label/overlay geometry never inflates the ring radius.
             if (renderer is LineRenderer) continue;
             if (renderer.GetComponentInParent<BuildingSelectionRing>() != this) continue;
+            if (renderer.GetComponentInParent<PlaceholderLabelBillboard>() != null) continue;
+            if (renderer.name.EndsWith("Highlight Overlay")) continue;
 
             if (!any) { bounds = renderer.bounds; any = true; }
             else bounds.Encapsulate(renderer.bounds);

@@ -64,6 +64,15 @@ public sealed class WarehousePanelUI : MonoBehaviour
             // The existing instance is an unwired copy; this working panel takes over.
             Destroy(Instance);
         }
+
+        if (!IsWired)
+        {
+            Debug.LogError(
+                $"WarehousePanelUI on '{name}' has no panelRoot assigned. Drag '{PanelPrefabPath}' " +
+                "under the HUD Canvas in the scene so Warehouse selection works in both Editor and builds.",
+                this);
+        }
+
         Instance = this;
 
         if (tierTabTemplate != null) tierTabTemplate.gameObject.SetActive(false);
@@ -102,45 +111,6 @@ public sealed class WarehousePanelUI : MonoBehaviour
     {
         if (Instance == this) Instance = null;
     }
-
-#if UNITY_EDITOR
-    /// <summary>
-    /// Editor safety net. Match does not contain the wired Warehouse Panel prefab - only an
-    /// unwired WarehousePanelUI under an inactive legacy menu - so selecting a harbor opened
-    /// nothing. When a gameplay scene loads without a working panel, spawn the prefab under
-    /// the HUD canvas for this play session and say so. Builds get no such help: put the
-    /// prefab in the scene to fix it for good.
-    /// </summary>
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void EnsureWiredPanelInEditor()
-    {
-        if (Instance != null && Instance.IsWired) return;
-        if (BuildingSelections.Instance == null) return; // not a scene with building selection
-
-        WarehousePanelUI prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<WarehousePanelUI>(PanelPrefabPath);
-        Canvas canvas = FindHudCanvas();
-        if (prefab == null || canvas == null) return;
-
-        Instantiate(prefab, canvas.transform, false);
-        Debug.LogWarning(
-            $"WarehousePanelUI: this scene has no wired Warehouse Panel, so '{PanelPrefabPath}' was spawned " +
-            $"under '{canvas.name}' for this play session. Drag that prefab under the HUD canvas in the scene " +
-            "to make it permanent (and to have it in builds).");
-    }
-
-    private static Canvas FindHudCanvas()
-    {
-        GameObject builderPanel = UnitSelections.Instance != null ? UnitSelections.Instance.builderUIPanel : null;
-        Canvas fromHud = builderPanel != null ? builderPanel.GetComponentInParent<Canvas>(true) : null;
-        if (fromHud != null) return fromHud.rootCanvas;
-
-        foreach (Canvas canvas in FindObjectsOfType<Canvas>())
-        {
-            if (canvas.isRootCanvas && canvas.renderMode != RenderMode.WorldSpace) return canvas;
-        }
-        return null;
-    }
-#endif
 
     private void OnSelectionChanged(Building building)
     {

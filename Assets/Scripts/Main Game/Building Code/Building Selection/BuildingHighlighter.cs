@@ -184,9 +184,14 @@ public class BuildingHighlighter : MonoBehaviour
         {
             if (IsOverlay(source)) continue;
 
-            // Placeholder name plates are UI-like; outlining their text mesh would draw a
-            // solid rectangle around every glyph.
-            if (source.GetComponentInParent<PlaceholderLabelBillboard>() != null) continue;
+            // Placeholder name plates, floating badges, rings, and temporary scaffold poles are UI/VFX.
+            if (source.GetComponentInParent<PlaceholderLabelBillboard>() != null
+                || source.GetComponentInParent<BuildingStatusBadge>() != null
+                || source.GetComponentInParent<BuildingSelectionRing>() != null
+                || source.name.IndexOf("Scaffold", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                continue;
+            }
 
             Renderer overlay = CreateOverlayFor(source);
             if (overlay != null) overlayRenderers.Add(overlay);
@@ -301,6 +306,12 @@ public class BuildingHighlighter : MonoBehaviour
                     ? influenceMaterialOverride
                     : BuildingHighlightMaterials.Influence;
 
+            case BuildingHighlight.PublisherSupplier:
+                return BuildingHighlightMaterials.Supplier;
+
+            case BuildingHighlight.SubscriberConsumer:
+                return BuildingHighlightMaterials.Consumer;
+
             default:
                 return null;
         }
@@ -310,25 +321,35 @@ public class BuildingHighlighter : MonoBehaviour
 }
 
 /// <summary>
-/// The two shared highlight materials, created once for the whole game.
+/// Shared highlight materials, created once for the whole game.
 ///
 /// They are shared rather than per building on purpose: an instance per building would
 /// break SRP batching and leak a material every time a building is destroyed.
-///
-/// The shaders are found by name, so they must be reachable in a player build - add both
-/// Moonlight/Highlights shaders to Project Settings > Graphics > Always Included Shaders,
-/// or assign the material overrides on the prefab instead.
 /// </summary>
 public static class BuildingHighlightMaterials
 {
     public const string SelectedShaderName = "Moonlight/Highlights/BuildingSelectedBlue";
     public const string InfluenceShaderName = "Moonlight/Highlights/BuildingInfluenceGreen";
 
+    private static readonly int HighlightColorId = Shader.PropertyToID("_HighlightColor");
+    private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
+    private static readonly int RimAlphaId = Shader.PropertyToID("_RimAlpha");
+
     private static Material selected;
     private static Material influence;
+    private static Material supplier;
+    private static Material consumer;
 
     public static Material Selected => selected != null ? selected : (selected = Create(SelectedShaderName));
     public static Material Influence => influence != null ? influence : (influence = Create(InfluenceShaderName));
+
+    public static Material Supplier => supplier != null
+        ? supplier
+        : (supplier = CreateTinted(SelectedShaderName, "Highlight Supplier (Gold)", new Color(1.0f, 0.72f, 0.14f, 1.0f), 0.075f, 0.72f));
+
+    public static Material Consumer => consumer != null
+        ? consumer
+        : (consumer = CreateTinted(SelectedShaderName, "Highlight Consumer (Mint)", new Color(0.20f, 0.96f, 0.80f, 1.0f), 0.075f, 0.72f));
 
     private static Material Create(string shaderName)
     {
@@ -341,5 +362,16 @@ public static class BuildingHighlightMaterials
         }
 
         return new Material(shader) { name = shaderName, hideFlags = HideFlags.DontSave };
+    }
+
+    private static Material CreateTinted(string shaderName, string matName, Color color, float outlineWidth, float rimAlpha)
+    {
+        Material mat = Create(shaderName);
+        if (mat == null) return null;
+        mat.name = matName;
+        if (mat.HasProperty(HighlightColorId)) mat.SetColor(HighlightColorId, color);
+        if (mat.HasProperty(OutlineWidthId)) mat.SetFloat(OutlineWidthId, outlineWidth);
+        if (mat.HasProperty(RimAlphaId)) mat.SetFloat(RimAlphaId, rimAlpha);
+        return mat;
     }
 }

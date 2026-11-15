@@ -18,6 +18,11 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
     private BuildingOutput output;
     private float nextProductionTime;
 
+    // Per-instance runtime overrides prevent mutating shared BuildingProductionData SO assets.
+    private int? runtimeProductionRate;
+    private int? runtimeProductionCapacity;
+    private ResourceType? runtimeProducedResource;
+
     private void Awake()
     {
         building = GetComponent<Building>();
@@ -58,27 +63,29 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
 
     public int GetProductionRate()
     {
+        if (runtimeProductionRate.HasValue) return runtimeProductionRate.Value;
         return _data != null ? _data.ProductionRate : fallbackProductionRate;
     }
 
     public void SetProductionRate(int rate)
     {
-        if (_data != null) _data.ProductionRate = rate;
-        else fallbackProductionRate = Mathf.Max(1, rate);
+        runtimeProductionRate = Mathf.Max(1, rate);
     }
 
     public int GetProductionCapacity()
     {
+        if (runtimeProductionCapacity.HasValue) return runtimeProductionCapacity.Value;
         return _data != null ? _data.ProductionCapacity : output != null ? output.OutputCapacity : 30;
     }
 
     public void SetProductionCapacity(int capacity)
     {
-        if (_data != null) _data.ProductionCapacity = capacity;
+        runtimeProductionCapacity = Mathf.Max(1, capacity);
     }
 
     public ResourceType GetProducedResource()
     {
+        if (runtimeProducedResource.HasValue) return runtimeProducedResource.Value;
         return _data != null ? _data.ProducedResource : fallbackResource;
     }
 
@@ -89,49 +96,8 @@ public class BuildingProductionController : MonoBehaviour, IBuildingProduction
 
     public void SetProducedResource(ResourceType resource)
     {
-        if (_data != null) _data.ProducedResource = resource;
-        else fallbackResource = resource;
+        runtimeProducedResource = resource;
     }
 
     #endregion
-
 }
-
-// Really Old Way
-//private float lastDeliveryTime;
-//public float deliveryInterval = 1.0f;
-//public float resetInterval = 60.0f;
-
-//private void DeliveryInterval()
-//{
-//	float elapsedTime = Time.time - lastDeliveryTime;
-
-//	if (elapsedTime > deliveryInterval)
-//	{
-//		int deliveries = Mathf.FloorToInt(elapsedTime / deliveryInterval);
-
-//		for (int i = 0; i < deliveries; i++)
-//		{
-//			DeliverChunk();
-//		}
-
-//		lastDeliveryTime += deliveries * deliveryInterval;
-//	}
-
-//	if (Time.time > lastDeliveryTime + resetInterval)
-//	{
-//		lastDeliveryTime = Time.time % resetInterval;
-//	}
-//}
-
-
-//   private void DeliverChunk()
-//   {
-//	// Legacy Model
-//       //Bank.BM = Bank.BM + 20; // Add 20 units of building material to the player's bank
-//   }
-
-//   void FixedUpdate()
-//   {
-//       DeliveryInterval(); // Call the DeliveryInterval() method every physics frame
-//   }

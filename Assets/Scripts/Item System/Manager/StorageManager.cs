@@ -21,15 +21,21 @@ public class StorageManager : MonoBehaviour
     // Unity Constructor
     private void Awake()
     {
-        if (!storage)
+        EnsureStorage();
+    }
+
+    private void EnsureStorage()
+    {
+        if (storage == null)
         {
-            storage = GetComponent<Storage>(); 
+            storage = GetComponent<Storage>();
         }
     }
 
     public virtual int GetItemQuantity(ItemData itemData)
     {
-        return storage.GetItemQuantity(itemData);
+        EnsureStorage();
+        return storage != null ? storage.GetItemQuantity(itemData) : 0;
     }
 
     // Add & Remove methods
@@ -40,37 +46,39 @@ public class StorageManager : MonoBehaviour
 
     public virtual bool TryAddItem(ItemData itemData, int quantity)
     {
+        EnsureStorage();
         return storage != null && storage.TryAddItem(itemData, quantity);
     }
 
     public virtual bool RemoveItem(ItemData itemData, int quantity)
     {
-        return storage.RemoveItem(itemData, quantity);
+        EnsureStorage();
+        return storage != null && storage.RemoveItem(itemData, quantity);
     }
 
 
     // Validation methods
     public virtual bool CanAddItem(ItemData itemData, int quantity)
     {
+        EnsureStorage();
         return storage != null && storage.CanAddItem(itemData, quantity);
     }
 
     public virtual bool CanRemoveItem(ItemData itemData, int quantity)
     {
+        EnsureStorage();
         return storage != null && itemData != null && quantity > 0 && storage.GetItemQuantity(itemData) >= quantity;
     }
 
     // Capacity - Limit methods
     public virtual int GetCapacityLimit()
     {
-        return storage.GetCapacityLimit();
+        EnsureStorage();
+        return storage != null ? storage.GetCapacityLimit() : 0;
     }
     public virtual int GetCapacityLeft(ItemData itemData)
     {
-        // Old Code:
-            // return GetItemQuantity - storage.GetCapacityLimit(); // Method Groups Can't do this equation, and ai says it can throw a exception error
-        
-
+        EnsureStorage();
         // Note: If capacityLimit has a value, return it. Otherwise, return 0.
         if (storage == null) return 0;
         int itemCap = storage.GetCapacityLimit();
@@ -80,7 +88,8 @@ public class StorageManager : MonoBehaviour
 
     public virtual bool HasReachedCapacity(int quantityToAdd)
     {
-        return storage.HasReachedCapacity(quantityToAdd);
+        EnsureStorage();
+        return storage != null && storage.HasReachedCapacity(quantityToAdd);
     }
 
     // StorageManager.cs
@@ -89,17 +98,20 @@ public class StorageManager : MonoBehaviour
     {
         get
         {
-            return storage.GetAllItems();
+            EnsureStorage();
+            return storage != null ? storage.GetAllItems() : new Dictionary<ItemData, int>();
         }
     }
 
     public virtual bool TryAddItems(IReadOnlyDictionary<ItemData, int> itemsToAdd)
     {
+        EnsureStorage();
         return storage != null && storage.TryAddItems(itemsToAdd);
     }
 
     public virtual bool TryRemoveItems(IReadOnlyDictionary<ItemData, int> itemsToRemove)
     {
+        EnsureStorage();
         return storage != null && storage.TryRemoveItems(itemsToRemove);
     }
 

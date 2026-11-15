@@ -5,6 +5,7 @@ using UnityEngine;
 public class BuildingSupply : MonoBehaviour
 {
     private Building building;
+    private BuildingSimulation simulation;
 
     // TODO: assign in the Inspector per building prefab - the resources this
     // building needs on hand to keep operating.
@@ -13,6 +14,20 @@ public class BuildingSupply : MonoBehaviour
     private void Awake()
     {
         building = GetComponent<Building>();
+        simulation = GetComponent<BuildingSimulation>();
+    }
+
+    public void FillRequiredResources(List<ItemEnums.ResourceType> results)
+    {
+        if (results == null || requiredSupplies == null) return;
+        foreach (ResourceRequirement requirement in requiredSupplies)
+        {
+            if (TryResolveRequirement(requirement, out ItemEnums.ResourceType resourceType, out _) &&
+                !results.Contains(resourceType))
+            {
+                results.Add(resourceType);
+            }
+        }
     }
 
     public bool HasRequiredSupplies()
@@ -83,11 +98,43 @@ public class BuildingSupply : MonoBehaviour
     {
         if (building == null) return;
 
+        BuildingEnums.BuildingState currentState = simulation != null ? simulation.CurrentState : building.CurrentState;
+        if (currentState == BuildingEnums.BuildingState.UnderConstruction ||
+            currentState == BuildingEnums.BuildingState.Destroyed)
+        {
+            return;
+        }
+
+        if (simulation != null &&
+            (simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.PausedByPlayer ||
+             simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.NoRoadAccess ||
+             simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.UnsupportedAnchor))
+        {
+            return;
+        }
+
         if (!HasRequiredSupplies())
         {
-            building.SetState(BuildingEnums.BuildingState.Paused);
+            if (simulation != null)
+            {
+                simulation.SetShutdownReason(BuildingEnums.BuildingShutdownReason.MissingInput);
+                simulation.SetState(BuildingEnums.BuildingState.Paused);
+                simulation.SetEfficiency(0f);
+            }
+            else
+            {
+                building.SetState(BuildingEnums.BuildingState.Paused);
+            }
         }
-        else if (building.CurrentState == BuildingEnums.BuildingState.Paused)
+        else if (simulation != null &&
+                 simulation.CurrentState == BuildingEnums.BuildingState.Paused &&
+                 simulation.CurrentShutdownReason == BuildingEnums.BuildingShutdownReason.MissingInput)
+        {
+            simulation.SetShutdownReason(BuildingEnums.BuildingShutdownReason.None);
+            simulation.SetState(BuildingEnums.BuildingState.Active);
+            simulation.SetEfficiency(1f);
+        }
+        else if (simulation == null && building.CurrentState == BuildingEnums.BuildingState.Paused)
         {
             building.SetState(BuildingEnums.BuildingState.Active);
         }

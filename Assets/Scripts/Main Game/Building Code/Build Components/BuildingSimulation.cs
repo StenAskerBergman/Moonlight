@@ -119,9 +119,10 @@ public class BuildingSimulation : MonoBehaviour
     }
 
     /// <summary>
-    /// Updates construction progress (0.0 to 1.0). When reaching 1.0, transitions automatically to Active.
+    /// Updates construction progress (0.0 to 1.0). When autoActivate is true and reaching 1.0,
+    /// transitions automatically to Active.
     /// </summary>
-    public void SetConstructionProgress(float progress)
+    public void SetConstructionProgress(float progress, bool autoActivate = true)
     {
         progress = Mathf.Clamp01(progress);
         if (Mathf.Approximately(constructionProgress, progress)) return;
@@ -129,7 +130,7 @@ public class BuildingSimulation : MonoBehaviour
         constructionProgress = progress;
         OnConstructionProgressChanged?.Invoke(constructionProgress);
 
-        if (constructionProgress >= 1f && currentState == BuildingEnums.BuildingState.UnderConstruction)
+        if (autoActivate && constructionProgress >= 1f && currentState == BuildingEnums.BuildingState.UnderConstruction)
         {
             SetState(BuildingEnums.BuildingState.Active);
             SetShutdownReason(BuildingEnums.BuildingShutdownReason.None);

@@ -55,7 +55,7 @@ public class IslandFoliagePlacer : MonoBehaviour
         foliageRoot = new GameObject(RootName).transform;
         foliageRoot.SetParent(transform, false);
         System.Random random = new System.Random(unchecked(seed ^ 0x4A71C3));
-        if (isStandalonePlateau && (climateProfile == null || climateProfile.populateUnderwaterPlateaus)) ScatterPlateauLife(grid, random);
+        if (isStandalonePlateau && (climateProfile == null || climateProfile.populateUnderwaterPlateaus)) ScatterPlateauLife(grid, cache, random);
         if (climateProfile != null) ScatterLand(grid, seed);
     }
 
@@ -351,43 +351,114 @@ public class IslandFoliagePlacer : MonoBehaviour
         patch.Dirty = false;
     }
 
-    private void ScatterPlateauLife(Cell[,] grid, System.Random random)
+    private void ScatterPlateauLife(Cell[,] grid, TerrainSampleCache cache, System.Random random)
     {
-        List<Cell> tabletop = new List<Cell>();
+        List<Cell> allPlateauCells = new List<Cell>();
+        List<Cell> kelpHabitatCells = new List<Cell>();
+        List<Cell> coralHabitatCells = new List<Cell>();
+        List<Cell> wildlifeHabitatCells = new List<Cell>();
+
         for (int z = 0; z < grid.GetLength(1); z++)
         for (int x = 0; x < grid.GetLength(0); x++)
         {
             Cell cell = grid[x, z];
-            if (cell.currentTerrainType == Cell.TerrainType.Plateau && cell.IsDeliberateUnderwaterPlateau) tabletop.Add(cell);
+            if (cell.currentTerrainType != Cell.TerrainType.Plateau) continue;
+            allPlateauCells.Add(cell);
+
+            if (!cell.isDeposit && !cell.isOccupied && !cell.isBlocked)
+            {
+                PlateauSampleData data = SamplePlateauData(cache, cell.localCenter.x, cell.localCenter.z);
+                if (data.IsDefined)
+                {
+                    // Prefer rocky rim collars & gravel seams for benthic beds while keeping
+                    // the open central building ground clean and readable.
+                    if (data.RockWeight > 0.36f && data.BuildableWeight < 0.28f)
+                    {
+                        coralHabitatCells.Add(cell);
+                    }
+                    else if ((data.GravelWeight > 0.14f || data.RockWeight * data.SandWeight > 0.08f)
+                        && data.BuildableWeight < 0.55f)
+                    {
+                        kelpHabitatCells.Add(cell);
+                    }
+                    else if (data.SandWeight > 0.45f && !cell.IsBuildableUnderwaterPlateau)
+                    {
+                        kelpHabitatCells.Add(cell);
+                    }
+                }
+                else if (!cell.IsBuildableUnderwaterPlateau)
+                {
+                    coralHabitatCells.Add(cell);
+                    kelpHabitatCells.Add(cell);
+                }
+            }
+
+            if (cell.IsDeliberateUnderwaterPlateau || cell.IsBuildableUnderwaterPlateau)
+            {
+                wildlifeHabitatCells.Add(cell);
+            }
         }
-        if (tabletop.Count == 0) return;
+
+        if (allPlateauCells.Count == 0) return;
 
         Transform plants = CreateGroup("Underwater Foliage");
+        Transform corals = CreateGroup("Underwater Reef Corals");
         Transform wildlife = CreateGroup("Underwater Wildlife");
         Material kelpMaterial = null;
+        Material coralWarmMaterial = null;
+        Material coralTealMaterial = null;
         Material fishMaterial = null;
-        int foliageCount = 0;
-        foreach (Cell cell in tabletop)
+        Mesh fishMesh = null;
+
+        // 1. Habitat-clustered kelp beds along rocky rim bases & gravel seams.
+        List<Cell> kelpPool = kelpHabitatCells.Count > 0 ? kelpHabitatCells : allPlateauCells;
+        int targetKelpClusters = Mathf.Clamp(
+            Mathf.RoundToInt(kelpPool.Count * (climateProfile != null ? climateProfile.underwaterFoliageDensity * 0.45f : 0.08f)),
+            Mathf.Max(6, (climateProfile != null ? climateProfile.minimumFoliagePerPlateau : 12) / 2),
+            24);
+
+        for (int cluster = 0; cluster < targetKelpClusters; cluster++)
         {
-            float density = climateProfile != null ? climateProfile.underwaterFoliageDensity : 0.16f;
-            if (Next(random) > density) continue;
-            SpawnPlant(cell, plants, random, ref kelpMaterial);
-            foliageCount++;
+            Cell anchor = kelpPool[random.Next(kelpPool.Count)];
+            int shootsInBed = 2 + random.Next(2);
+            for (int shoot = 0; shoot < shootsInBed; shoot++)
+            {
+                SpawnPlant(anchor, plants, random, ref kelpMaterial, shoot > 0 ? 0.52f : 0.25f);
+            }
         }
-        int configuredMinimum = climateProfile != null ? climateProfile.minimumFoliagePerPlateau : 12;
-        int minimum = Mathf.Min(tabletop.Count, Mathf.Max(0, configuredMinimum));
-        while (foliageCount++ < minimum) SpawnPlant(tabletop[random.Next(tabletop.Count)], plants, random, ref kelpMaterial);
+
+        // 2. Non-buildable rocky ledge coral & tube-sponge reef colonies.
+        List<Cell> coralPool = coralHabitatCells.Count > 0 ? coralHabitatCells : kelpPool;
+        int coralClusters = Mathf.Clamp(Mathf.RoundToInt(coralPool.Count * 0.09f), 8, 26);
+        for (int i = 0; i < coralClusters; i++)
+        {
+            Cell reefCell = coralPool[random.Next(coralPool.Count)];
+            SpawnReefCoralCluster(reefCell, corals, random, ref coralWarmMaterial, ref coralTealMaterial);
+        }
+
+        // 3. Swimming deep-sea fish above tabletop basins.
+        List<Cell> swimPool = wildlifeHabitatCells.Count > 0 ? wildlifeHabitatCells : allPlateauCells;
         int wildlifeCount = climateProfile != null ? climateProfile.wildlifePerPlateau : 5;
         for (int i = 0; i < Mathf.Max(0, wildlifeCount); i++)
-            SpawnWildlife(tabletop[random.Next(tabletop.Count)], wildlife, random, ref fishMaterial);
+        {
+            SpawnWildlife(swimPool[random.Next(swimPool.Count)], wildlife, random, ref fishMaterial, ref fishMesh);
+        }
     }
 
-    private void SpawnPlant(Cell cell, Transform parent, System.Random random, ref Material material)
+    private static PlateauSampleData SamplePlateauData(TerrainSampleCache cache, float localX, float localZ)
+    {
+        if (cache == null || cache.PlateauData == null) return default;
+        int sampleX = Mathf.Clamp(Mathf.RoundToInt(localX / cache.Step), 0, cache.Resolution - 1);
+        int sampleZ = Mathf.Clamp(Mathf.RoundToInt(localZ / cache.Step), 0, cache.Resolution - 1);
+        return cache.PlateauData[cache.GetIndex(sampleX, sampleZ)];
+    }
+
+    private void SpawnPlant(Cell cell, Transform parent, System.Random random, ref Material material, float jitterRadius = 0.38f)
     {
         GameObject prefab = Pick(climateProfile != null ? climateProfile.underwaterFoliagePrefabs : null, random);
         Vector2 scaleRange = climateProfile != null ? climateProfile.underwaterFoliageScale : new Vector2(0.7f, 1.35f);
         float scale = RandomRange(random, scaleRange);
-        Vector3 position = CellWorldPosition(cell, random, 0.02f);
+        Vector3 position = CellWorldPosition(cell, random, 0.02f, jitterRadius);
         if (prefab != null)
         {
             Transform instance = Instantiate(prefab, position, RandomYaw(random), parent).transform;
@@ -405,7 +476,40 @@ public class IslandFoliagePlacer : MonoBehaviour
         kelp.GetComponent<Renderer>().sharedMaterial = material;
     }
 
-    private void SpawnWildlife(Cell cell, Transform parent, System.Random random, ref Material material)
+    private void SpawnReefCoralCluster(
+        Cell cell,
+        Transform parent,
+        System.Random random,
+        ref Material warmMaterial,
+        ref Material tealMaterial)
+    {
+        bool isTealVariant = Next(random) < 0.45f;
+        Material targetMat;
+        if (isTealVariant)
+        {
+            if (tealMaterial == null) tealMaterial = CreateMaterial("Plateau Biolum Coral", new Color(0.14f, 0.56f, 0.52f));
+            targetMat = tealMaterial;
+        }
+        else
+        {
+            if (warmMaterial == null) warmMaterial = CreateMaterial("Plateau Tube Sponge", new Color(0.72f, 0.34f, 0.24f));
+            targetMat = warmMaterial;
+        }
+
+        Vector3 position = CellWorldPosition(cell, random, -0.02f, 0.42f);
+        GameObject coral = new GameObject(isTealVariant ? "Sea Fan Cluster" : "Tube Sponge Cluster", typeof(MeshFilter), typeof(MeshRenderer));
+        coral.transform.SetParent(parent, true);
+        coral.transform.SetPositionAndRotation(position, RandomYaw(random));
+        float scale = Mathf.Lerp(0.65f, 1.30f, Next(random));
+        coral.transform.localScale = Vector3.one * scale;
+
+        Mesh mesh = BuildTubeSpongeOrFanMesh(random.Next(), isTealVariant);
+        generatedMeshes.Add(mesh);
+        coral.GetComponent<MeshFilter>().sharedMesh = mesh;
+        coral.GetComponent<Renderer>().sharedMaterial = targetMat;
+    }
+
+    private void SpawnWildlife(Cell cell, Transform parent, System.Random random, ref Material material, ref Mesh fishMesh)
     {
         GameObject prefab = Pick(climateProfile != null ? climateProfile.underwaterWildlifePrefabs : null, random);
         Vector2 scaleRange = climateProfile != null ? climateProfile.underwaterWildlifeScale : new Vector2(0.55f, 1.1f);
@@ -419,15 +523,128 @@ public class IslandFoliagePlacer : MonoBehaviour
             instance.localScale *= scale;
             return;
         }
-        if (material == null) material = CreateMaterial("Procedural Fish", new Color(0.22f, 0.64f, 0.72f));
-        GameObject fish = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        fish.name = "Decorative Fish";
+        if (material == null) material = CreateMaterial("Procedural Fish", new Color(0.24f, 0.68f, 0.78f));
+        if (fishMesh == null)
+        {
+            fishMesh = BuildFishMesh();
+            generatedMeshes.Add(fishMesh);
+        }
+
+        GameObject fish = new GameObject("Decorative Fish", typeof(MeshFilter), typeof(MeshRenderer));
         fish.transform.SetParent(parent, true);
         fish.transform.SetPositionAndRotation(position, RandomYaw(random));
-        fish.transform.localScale = new Vector3(0.42f, 0.16f, 0.18f) * scale;
+        fish.transform.localScale = Vector3.one * scale;
+        fish.GetComponent<MeshFilter>().sharedMesh = fishMesh;
         fish.GetComponent<Renderer>().sharedMaterial = material;
-        RemoveCollider(fish);
         fish.AddComponent<PlateauWildlifeSwimmer>().Configure(0.35f + Next(random) * 0.35f, 0.7f + Next(random) * 0.8f, Next(random) * Mathf.PI * 2f);
+    }
+
+    private static Mesh BuildTubeSpongeOrFanMesh(int seed, bool isFan)
+    {
+        List<Vector3> verts = new List<Vector3>();
+        List<int> tris = new List<int>();
+        System.Random rng = new System.Random(seed);
+
+        int count = isFan ? 4 : 5;
+        for (int i = 0; i < count; i++)
+        {
+            float angle = i * Mathf.PI * 2f / count + Next(rng) * 0.6f;
+            float offsetR = Mathf.Lerp(0.03f, 0.14f, Next(rng));
+            Vector3 basePos = new Vector3(Mathf.Cos(angle) * offsetR, 0f, Mathf.Sin(angle) * offsetR);
+            float height = Mathf.Lerp(isFan ? 0.24f : 0.18f, isFan ? 0.52f : 0.44f, Next(rng));
+            float tiltX = Mathf.Cos(angle) * Mathf.Lerp(0.04f, 0.14f, Next(rng));
+            float tiltZ = Mathf.Sin(angle) * Mathf.Lerp(0.04f, 0.14f, Next(rng));
+
+            if (isFan)
+            {
+                // Flared sea-fan paddle frond
+                float fanW = Mathf.Lerp(0.12f, 0.24f, Next(rng));
+                Vector3 right = new Vector3(-Mathf.Sin(angle), 0f, Mathf.Cos(angle));
+                Vector3 up = new Vector3(tiltX, height, tiltZ);
+                int b = verts.Count;
+                verts.Add(basePos - right * (fanW * 0.14f));
+                verts.Add(basePos + right * (fanW * 0.14f));
+                verts.Add(basePos + up * 0.6f - right * (fanW * 0.52f));
+                verts.Add(basePos + up * 0.6f + right * (fanW * 0.52f));
+                verts.Add(basePos + up - right * (fanW * 0.34f));
+                verts.Add(basePos + up + right * (fanW * 0.34f));
+
+                int[] quadPairs = { 0, 2, 3, 0, 3, 1, 2, 4, 5, 2, 5, 3 };
+                for (int q = 0; q < quadPairs.Length; q++) tris.Add(b + quadPairs[q]);
+                // Backface for two-sided underwater fan reading
+                for (int q = 0; q < quadPairs.Length; q += 3)
+                {
+                    tris.Add(b + quadPairs[q]);
+                    tris.Add(b + quadPairs[q + 2]);
+                    tris.Add(b + quadPairs[q + 1]);
+                }
+            }
+            else
+            {
+                // Flared 5-sided sponge tube
+                const int sides = 5;
+                float rBot = Mathf.Lerp(0.035f, 0.055f, Next(rng));
+                float rTop = rBot * Mathf.Lerp(1.35f, 1.85f, Next(rng));
+                int b = verts.Count;
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = s * Mathf.PI * 2f / sides;
+                    verts.Add(basePos + new Vector3(Mathf.Cos(a) * rBot, -0.02f, Mathf.Sin(a) * rBot));
+                }
+                Vector3 crown = basePos + new Vector3(tiltX, height, tiltZ);
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = s * Mathf.PI * 2f / sides;
+                    verts.Add(crown + new Vector3(Mathf.Cos(a) * rTop, 0f, Mathf.Sin(a) * rTop));
+                }
+                for (int s = 0; s < sides; s++)
+                {
+                    int next = (s + 1) % sides;
+                    tris.Add(b + s); tris.Add(b + sides + s); tris.Add(b + sides + next);
+                    tris.Add(b + s); tris.Add(b + sides + next); tris.Add(b + next);
+                }
+            }
+        }
+
+        Mesh mesh = new Mesh { name = isFan ? "Generated Sea Fan" : "Generated Tube Sponge" };
+        mesh.SetVertices(verts);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    private static Mesh BuildFishMesh()
+    {
+        // Streamlined fusiform diamond body along local +X with forked tail at -X and dorsal fin.
+        Vector3[] verts =
+        {
+            new Vector3(0.24f, 0.0f, 0.0f),    // 0 nose
+            new Vector3(0.04f, 0.07f, 0.0f),   // 1 top spine
+            new Vector3(0.04f, -0.06f, 0.0f),  // 2 belly
+            new Vector3(0.04f, 0.0f, 0.055f),  // 3 right flank
+            new Vector3(0.04f, 0.0f, -0.055f), // 4 left flank
+            new Vector3(-0.14f, 0.0f, 0.0f),   // 5 tail peduncle
+            new Vector3(-0.26f, 0.075f, 0.0f), // 6 upper tail fork
+            new Vector3(-0.26f, -0.075f, 0.0f),// 7 lower tail fork
+            new Vector3(-0.02f, 0.12f, 0.0f),  // 8 dorsal peak
+        };
+        int[] tris =
+        {
+            // Right front & rear body
+            0, 1, 3,  0, 3, 2,  1, 5, 3,  3, 5, 2,
+            // Left front & rear body
+            0, 4, 1,  0, 2, 4,  1, 4, 5,  4, 2, 5,
+            // Tail fin & dorsal fin (double-sided thin fins)
+            5, 6, 7,  5, 7, 6,
+            1, 8, 5,  1, 5, 8,
+        };
+        Mesh mesh = new Mesh { name = "Generated Plateau Fish" };
+        mesh.vertices = verts;
+        mesh.triangles = tris;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
     }
 
     private Transform CreateGroup(string name)
@@ -517,11 +734,11 @@ public class IslandFoliagePlacer : MonoBehaviour
         return mesh;
     }
 
-    private Vector3 CellWorldPosition(Cell cell, System.Random random, float height)
+    private Vector3 CellWorldPosition(Cell cell, System.Random random, float height, float jitter = 0.38f)
     {
         Vector3 local = cell.localCenter;
-        local.x += Mathf.Lerp(-0.38f, 0.38f, Next(random));
-        local.z += Mathf.Lerp(-0.38f, 0.38f, Next(random));
+        local.x += Mathf.Lerp(-jitter, jitter, Next(random));
+        local.z += Mathf.Lerp(-jitter, jitter, Next(random));
         local.y = cell.height + height;
         return transform.TransformPoint(local);
     }

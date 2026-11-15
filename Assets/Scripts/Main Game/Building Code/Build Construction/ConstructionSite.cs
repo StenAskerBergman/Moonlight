@@ -1,9 +1,9 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Simulation controller for buildings in the UnderConstruction phase.
-/// Drives progress from 0.0 to 1.0 and toggles scaffolding / foundation visibility.
+/// Drives progress from 0.0 to 1.0, coordinates the ground-up construction reveal shader,
+/// and commissions finished buildings (verifying road/anchor readiness) into Active or Paused.
 /// </summary>
 public class ConstructionSite : MonoBehaviour
 {
@@ -16,6 +16,7 @@ public class ConstructionSite : MonoBehaviour
     [SerializeField] private GameObject scaffoldingObject;
 
     private BuildingSimulation _simulation;
+    private BuildingConstructionRevealDriver _revealDriver;
     private float _elapsedTime;
     private bool _isBuilding;
 
@@ -28,6 +29,12 @@ public class ConstructionSite : MonoBehaviour
         if (_simulation == null)
         {
             _simulation = gameObject.AddComponent<BuildingSimulation>();
+        }
+
+        _revealDriver = GetComponent<BuildingConstructionRevealDriver>();
+        if (_revealDriver == null)
+        {
+            _revealDriver = gameObject.AddComponent<BuildingConstructionRevealDriver>();
         }
     }
 
@@ -44,9 +51,10 @@ public class ConstructionSite : MonoBehaviour
         _isBuilding = true;
         _elapsedTime = 0f;
         _simulation.SetState(BuildingEnums.BuildingState.UnderConstruction);
-        _simulation.SetConstructionProgress(0f);
+        _simulation.SetConstructionProgress(0f, autoActivate: false);
 
         SetScaffoldingActive(true);
+        _revealDriver?.BeginReveal();
     }
 
     private void Update()
@@ -55,7 +63,8 @@ public class ConstructionSite : MonoBehaviour
 
         _elapsedTime += Time.deltaTime;
         float progress = buildDurationSeconds > 0f ? Mathf.Clamp01(_elapsedTime / buildDurationSeconds) : 1f;
-        _simulation.SetConstructionProgress(progress);
+        _simulation.SetConstructionProgress(progress, autoActivate: false);
+        _revealDriver?.SetProgress(progress);
 
         if (progress >= 1f)
         {
@@ -66,16 +75,45 @@ public class ConstructionSite : MonoBehaviour
     public void FinishConstruction()
     {
         _isBuilding = false;
-        _simulation.SetConstructionProgress(1f);
+        _simulation.SetConstructionProgress(1f, autoActivate: false);
+        _revealDriver?.EndReveal();
         SetScaffoldingActive(false);
+
+        GetComponent<PlayerOwnershipVisual>()?.Refresh();
+        CommissionBuilding();
+        GetComponent<Building>()?.RefreshOutlineRenderers();
+    }
+
+    private void CommissionBuilding()
+    {
+        if (GetComponent<BuildingStatusBadge>() == null)
+        {
+            gameObject.AddComponent<BuildingStatusBadge>();
+        }
+
+        BuildingCondition condition = GetComponent<BuildingCondition>();
+        if (condition == null)
+        {
+            condition = gameObject.AddComponent<BuildingCondition>();
+        }
+
+        if (condition.EvaluateOperationalConditions(out BuildingEnums.BuildingShutdownReason failureReason))
+        {
+            _simulation.SetShutdownReason(BuildingEnums.BuildingShutdownReason.None);
+            _simulation.SetState(BuildingEnums.BuildingState.Active);
+            _simulation.SetEfficiency(1f);
+        }
+        else
+        {
+            _simulation.SetShutdownReason(failureReason);
+            _simulation.SetState(BuildingEnums.BuildingState.Paused);
+            _simulation.SetEfficiency(0f);
+        }
     }
 
     private void SetScaffoldingActive(bool active)
     {
         if (foundationObject != null) foundationObject.SetActive(active);
-        else if (active) AssetFallback.LogMissingDeliverable("GameObject", "foundationObject", this);
-
         if (scaffoldingObject != null) scaffoldingObject.SetActive(active);
-        else if (active) AssetFallback.LogMissingDeliverable("GameObject", "scaffoldingObject", this);
     }
 }

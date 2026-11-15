@@ -122,4 +122,49 @@ public class BuildingProperties : MonoBehaviour
         currentIsland = island;
         gridSystem = detectedGridSystem;
     }
+
+    /// <summary>
+    /// Computes the integer grid footprint (in cells) accounting for 90-degree Y rotations.
+    /// </summary>
+    public static Vector2Int ResolveFootprint(BuildingProperties properties, BuildingData data, Quaternion rotation)
+    {
+        Vector3 size = ResolveSize(properties, data);
+        int width = Mathf.Max(1, Mathf.RoundToInt(size.x));
+        int length = Mathf.Max(1, Mathf.RoundToInt(size.z));
+
+        int quarterTurns = Mathf.RoundToInt(rotation.eulerAngles.y / 90f);
+        if ((quarterTurns & 1) != 0)
+        {
+            return new Vector2Int(length, width);
+        }
+
+        return new Vector2Int(width, length);
+    }
+
+    /// <summary>
+    /// Resolves this placed building's island grid, footprint origin cell, and rotated cell dimensions.
+    /// </summary>
+    public bool TryGetPlacementCells(out GridSystem grid, out Vector3Int origin, out Vector2Int footprint)
+    {
+        grid = gridSystem;
+        if (grid == null)
+        {
+            Island island = currentIsland != null ? currentIsland : GetComponentInParent<Island>();
+            if (island != null)
+            {
+                grid = island.GetComponent<GridSystem>();
+            }
+        }
+
+        if (grid == null)
+        {
+            origin = Vector3Int.zero;
+            footprint = Vector2Int.one;
+            return false;
+        }
+
+        footprint = ResolveFootprint(this, buildingData, transform.rotation);
+        origin = grid.GetFootprintOrigin(transform.position, footprint);
+        return true;
+    }
 }
