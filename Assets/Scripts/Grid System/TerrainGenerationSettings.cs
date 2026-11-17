@@ -162,7 +162,7 @@ public sealed class RiverCorridorSettings
 [Serializable]
 public sealed class CoastalProfileSettings
 {
-    private const int CurrentDataVersion = 4;
+    private const int CurrentDataVersion = 5;
 
     [SerializeField, HideInInspector] private int dataVersion;
 
@@ -208,13 +208,13 @@ public sealed class CoastalProfileSettings
              "it, so a backshore steeper than this disqualifies its own beach.")]
     [Range(0.2f, 1.5f)] public float maxBackshoreGradient = 0.55f;
 
-    [Tooltip("Peak VERTEX displacement of the ocean surface, in world units. Set this ONLY if the " +
-             "ocean shader actually moves geometry - a beach shorter than the swash would be fully " +
-             "flooded at crest and fully dry at trough. Ocean Shader Graph does NOT displace: its " +
-             "Position, Normal and Tangent vertex blocks have no incoming connections, and its " +
-             "'Water Lerp' (0.45) and 'Wave' (0.1) properties are unconnected. The surface is flat, " +
-             "so this is 0.")]
-    [Range(0f, 2f)] public float waveAmplitude = 0f;
+    [Tooltip("Peak vertical displacement of the ocean surface AT THE WATERLINE, in world units - " +
+             "documentation of the contract, not read by generation. The visible ocean is " +
+             "Moonlight/Shore Ocean (OceanSurfaceBuilder): its shore waves shrink to 0.2 x 0.625 x " +
+             "shoreWaveHeight at the waterline (~0.03), which must stay below waterlineFreeboard so " +
+             "the geometric waterline does not crawl. The wash up the beach is the swash drawn on " +
+             "the sand (OceanSurfaceSettings.swashRunupHeight), clamped below beachCrestFreeboard.")]
+    [Range(0f, 2f)] public float waveAmplitude = 0.03f;
     [Tooltip("Steepest the dry beach may be. Real sand sits well under this; it also has to stay " +
              "below the 0.45 slope the Beach classifier rejects at.")]
     [Range(0.05f, 0.6f)] public float maxBeachGradient = 0.30f;
@@ -265,7 +265,10 @@ public sealed class CoastalProfileSettings
 
     public void Validate()
     {
-        if (dataVersion < CurrentDataVersion)
+        // Gated on < 1, not < CurrentDataVersion: this block rewinds dataVersion to 1, so gating it
+        // on the current version would replay every later migration - overwriting tuned beach
+        // widths - each time a new version is added.
+        if (dataVersion < 1)
         {
             // This block did not exist before the coastal pass, so Unity wrote its first-generation
             // field initializers straight into every prefab the moment it deserialized them. Later
@@ -335,6 +338,18 @@ public sealed class CoastalProfileSettings
             beachCrestFreeboard = 0.40f;
             beachWidth = 2.2f;
             dataVersion = 4;
+        }
+
+        if (dataVersion < 5)
+        {
+            // v4's reading of the graph was wrong too: 'Wave' (0.1) IS connected - through a
+            // redirect node into VertexDescription.Position - so the old surface heaved +/-0.1 as
+            // one rigid 4-vertex sheet, and 'Water Lerp' blends normal maps (it never was a height).
+            // That sheet is retired. The shore ocean holds the waterline to ~0.03 and puts the
+            // visible wash on the sand instead, so the v4 beach (crest 0.40, waterline 0.05) is
+            // kept unchanged; only the documented amplitude is corrected.
+            waveAmplitude = 0.03f;
+            dataVersion = CurrentDataVersion;
         }
 
         maxBackshoreGradient = Mathf.Clamp(maxBackshoreGradient, 0.2f, 1.5f);
