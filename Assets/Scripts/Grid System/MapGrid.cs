@@ -1612,9 +1612,17 @@ public class MapGrid : MonoBehaviour
         if (oreMaterial.HasProperty("_Smoothness")) oreMaterial.SetFloat("_Smoothness", 0.64f);
         TrackGeneratedVisualResource(oreMaterial);
 
-        Material plumeMaterial = LoadVentParticleMaterial("VFX/VentMineralPlume", new Color(0.62f, 0.78f, 0.84f, 0.72f), false);
+        // The ocean is a transparent material at the same queue as the vent particles, so the
+        // plume used to sort on top of it. The underwater particle shader renders just before the
+        // ocean (so the near-opaque surface covers it from above) and clips at the water level.
+        float waterSurfaceHeight = ResolveWaterSurfaceHeight();
+        Material plumeMaterial = CreateUnderwaterParticleMaterial(
+            LoadVentParticleMaterial("VFX/VentMineralPlume", new Color(0.62f, 0.78f, 0.84f, 0.72f), false),
+            waterSurfaceHeight);
         Material coreGlowMaterial = null;
-        Material bubbleMaterial = LoadVentParticleMaterial("VFX/VentRisingBubbles", new Color(0.85f, 0.96f, 1.00f, 0.72f), false);
+        Material bubbleMaterial = CreateUnderwaterParticleMaterial(
+            LoadVentParticleMaterial("VFX/VentRisingBubbles", new Color(0.85f, 0.96f, 1.00f, 0.72f), false),
+            waterSurfaceHeight);
 
         foreach (Vector2Int spot in ventSpots)
         {
@@ -1695,6 +1703,66 @@ public class MapGrid : MonoBehaviour
         if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
         mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         mat.renderQueue = 3000;
+        TrackGeneratedVisualResource(mat);
+        return mat;
+    }
+
+    private const string UnderwaterParticleShaderResource = "VFX/UnderwaterVentParticle";
+    private const string UnderwaterParticleShaderName = "Moonlight/Underwater Vent Particle";
+
+    /// <summary>World-space Y of the visible ocean surface, as used by the plateau and vent shaders.</summary>
+    private float ResolveWaterSurfaceHeight()
+    {
+        return TerrainSource != null && TerrainSource.Settings != null
+            ? TerrainSource.Settings.AuthoritativeWaterSurfaceHeight
+            : generationSettings.waterHeight;
+    }
+
+    /// <summary>
+    /// Re-skins a vent particle material with the water-masking particle shader, keeping its
+    /// texture and colour. Falls back to the source material if the shader is unavailable.
+    /// </summary>
+    private Material CreateUnderwaterParticleMaterial(Material source, float waterSurfaceHeight)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        Shader shader = Resources.Load<Shader>(UnderwaterParticleShaderResource);
+        if (shader == null)
+        {
+            shader = Shader.Find(UnderwaterParticleShaderName);
+        }
+        if (shader == null || !shader.isSupported)
+        {
+            Debug.LogWarning(
+                $"MapGrid: underwater particle shader '{UnderwaterParticleShaderName}' is missing or unsupported; " +
+                $"vent particles will not be masked by the water surface.", this);
+            return source;
+        }
+
+        Material mat = new Material(shader)
+        {
+            name = source.name + " (Underwater)"
+        };
+
+        bool hasBaseMap = source.HasProperty("_BaseMap");
+        Texture texture = hasBaseMap ? source.GetTexture("_BaseMap") : source.mainTexture;
+        if (texture != null)
+        {
+            mat.SetTexture("_BaseMap", texture);
+        }
+        if (hasBaseMap)
+        {
+            mat.SetTextureScale("_BaseMap", source.GetTextureScale("_BaseMap"));
+            mat.SetTextureOffset("_BaseMap", source.GetTextureOffset("_BaseMap"));
+        }
+
+        Color baseColor = source.HasProperty("_BaseColor") ? source.GetColor("_BaseColor") : source.color;
+        mat.SetColor("_BaseColor", baseColor);
+        mat.SetFloat("_WaterLevel", waterSurfaceHeight);
+
         TrackGeneratedVisualResource(mat);
         return mat;
     }
@@ -2290,10 +2358,7 @@ public class MapGrid : MonoBehaviour
         properties.SetFloat(PlateauSmoothnessProperty,
             role == PlateauMaterialRole.Surface ? surfaceWetness : rockWetness);
         properties.SetFloat(PlateauWorldSeedProperty, activeGenerationSeed * 0.0137f);
-        float resolvedWaterLevel = TerrainSource != null && TerrainSource.Settings != null
-            ? TerrainSource.Settings.AuthoritativeWaterSurfaceHeight
-            : generationSettings.waterHeight;
-        properties.SetFloat(PlateauWaterLevelProperty, resolvedWaterLevel);
+        properties.SetFloat(PlateauWaterLevelProperty, ResolveWaterSurfaceHeight());
 
         if (terrainMaterial != null)
         {
