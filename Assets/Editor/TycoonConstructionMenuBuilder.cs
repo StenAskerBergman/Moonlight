@@ -337,8 +337,13 @@ public static class TycoonConstructionMenuBuilder
             var prodUI = prodT.GetComponent<ProductionSectionUI>();
             if (prodUI == null) prodUI = prodT.gameObject.AddComponent<ProductionSectionUI>();
 
-            // Ensure ProductionTierPageIntegration
-            var pageIntegration = pageT.GetComponent<ProductionTierPageIntegration>();
+            // Ensure single ProductionTierPageIntegration (strip accidental duplicates)
+            ProductionTierPageIntegration[] existingIntegrations = pageT.GetComponents<ProductionTierPageIntegration>();
+            ProductionTierPageIntegration pageIntegration = existingIntegrations.Length > 0 ? existingIntegrations[0] : null;
+            for (int dup = 1; dup < existingIntegrations.Length; dup++)
+            {
+                UnityEngine.Object.DestroyImmediate(existingIntegrations[dup], true);
+            }
             if (pageIntegration == null)
             {
                 pageIntegration = pageT.gameObject.AddComponent<ProductionTierPageIntegration>();
@@ -470,6 +475,56 @@ public static class TycoonConstructionMenuBuilder
             }
         }
 
+        // Ensure all tier buttons (including T6A cosmetics/ornaments) lay out evenly across the bar
+        HorizontalLayoutGroup hlg = tierManagerT.GetComponent<HorizontalLayoutGroup>();
+        if (hlg != null)
+        {
+            hlg.enabled = true;
+            hlg.padding = new RectOffset(4, 4, 2, 2);
+            hlg.spacing = 2f;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = true;
+            hlg.childForceExpandHeight = true;
+            EditorUtility.SetDirty(hlg);
+        }
+
+        RectTransform mgrRect = (RectTransform)tierManagerT;
+        if (tierManagerT.gameObject.activeInHierarchy)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(mgrRect);
+        }
+        else
+        {
+            // LayoutRebuilder skips inactive hierarchies; compute identical HLG rects directly so Edit Mode / prefabs never show overlapped slots.
+            var layoutChildren = new List<RectTransform>();
+            for (int i = 0; i < tierManagerT.childCount; i++)
+            {
+                RectTransform crt = tierManagerT.GetChild(i) as RectTransform;
+                if (crt == null || !crt.gameObject.activeSelf) continue;
+                LayoutElement le = crt.GetComponent<LayoutElement>();
+                if (le != null && le.ignoreLayout) continue;
+                layoutChildren.Add(crt);
+            }
+            if (layoutChildren.Count > 0)
+            {
+                float padL = 4f, padR = 4f, padT = 2f, padB = 2f, gap = 2f;
+                float totalW = Mathf.Max(480f, mgrRect.rect.width > 1f ? mgrRect.rect.width : mgrRect.sizeDelta.x);
+                float totalH = Mathf.Max(100f, mgrRect.rect.height > 1f ? mgrRect.rect.height : mgrRect.sizeDelta.y);
+                float itemW = (totalW - padL - padR - gap * (layoutChildren.Count - 1)) / layoutChildren.Count;
+                float itemH = totalH - padT - padB;
+                for (int i = 0; i < layoutChildren.Count; i++)
+                {
+                    RectTransform crt = layoutChildren[i];
+                    crt.anchorMin = new Vector2(0f, 1f);
+                    crt.anchorMax = new Vector2(0f, 1f);
+                    crt.pivot = new Vector2(0.5f, 0.5f);
+                    crt.sizeDelta = new Vector2(itemW, itemH);
+                    crt.anchoredPosition = new Vector2(padL + itemW * 0.5f + i * (itemW + gap), -(padT + itemH * 0.5f));
+                }
+            }
+        }
         EditorUtility.SetDirty(tierManagerT.gameObject);
         Debug.Log("[TycoonConstructionMenuBuilder] Configured portrait shelf on Tier Button Manager.");
     }

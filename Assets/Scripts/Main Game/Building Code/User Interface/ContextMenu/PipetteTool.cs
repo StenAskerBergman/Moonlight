@@ -74,7 +74,10 @@ public class PipetteTool : MonoBehaviour
         if (cam == null) return;
 
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, 500f))
+        int mask = buildingLayer.value;
+        int waterLayer = LayerMask.NameToLayer("Water");
+        if (waterLayer >= 0) mask &= ~(1 << waterLayer);
+        if (Physics.Raycast(ray, out RaycastHit hit, 500f, mask, QueryTriggerInteraction.Ignore))
         {
             GameObject target = hit.collider.gameObject;
 

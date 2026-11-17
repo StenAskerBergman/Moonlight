@@ -155,7 +155,8 @@ public class TerrainMeshBuilder
             }
         });
 
-        var (triangles, uvs) = GetOrCreateTopology(quadsPerAxis);
+        var (_, uvs) = GetOrCreateTopology(quadsPerAxis);
+        int[] triangles = BuildAdaptiveTriangles(heights, quadsPerAxis, verticesPerAxis);
 
         Mesh mesh = new Mesh { name = $"Fractional Terrain x{visualSamplesPerCell}" };
         if (vertices.Length > ushort.MaxValue) mesh.indexFormat = IndexFormat.UInt32;
@@ -177,6 +178,51 @@ public class TerrainMeshBuilder
         }
         mesh.RecalculateBounds();
         return mesh;
+    }
+
+    // Split each quad along the diagonal with the smaller height difference so steep
+    // diagonal cliffs/rims align along contours instead of forming sawtooth steps.
+    private static int[] BuildAdaptiveTriangles(float[] heights, int quadsPerAxis, int verticesPerAxis)
+    {
+        int[] triangles = new int[quadsPerAxis * quadsPerAxis * 6];
+        int triangleIndex = 0;
+
+        for (int z = 0; z < quadsPerAxis; z++)
+        {
+            int row = z * verticesPerAxis;
+            int nextRow = row + verticesPerAxis;
+            for (int x = 0; x < quadsPerAxis; x++)
+            {
+                int bottomLeft = row + x;
+                int bottomRight = bottomLeft + 1;
+                int topLeft = nextRow + x;
+                int topRight = topLeft + 1;
+
+                float diagA = Mathf.Abs(heights[topRight] - heights[bottomLeft]);
+                float diagB = Mathf.Abs(heights[topLeft] - heights[bottomRight]);
+
+                if (diagB < diagA)
+                {
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = bottomLeft;
+                }
+                else
+                {
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomRight;
+                    triangles[triangleIndex++] = bottomLeft;
+                }
+            }
+        }
+
+        return triangles;
     }
 }
 

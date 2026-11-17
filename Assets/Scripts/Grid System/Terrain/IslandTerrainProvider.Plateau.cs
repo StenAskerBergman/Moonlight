@@ -577,6 +577,10 @@ public sealed partial class IslandTerrainProvider
             float stepBias = Mathf.Lerp(0.32f, 0.72f, ridgedGeology);
             float steppedT = (strataIndex + Mathf.Pow(strataFrac, stepBias)) / strataCount;
             float steepDrop = Mathf.Lerp(Mathf.Pow(t, 0.46f), Mathf.Pow(steppedT, 0.56f), 0.55f);
+            // Ease the initial cliff lip over the first ~14% of the escarpment width so the
+            // plateau rim has a natural rounded shoulder instead of an infinite-slope crease.
+            float shoulderEase = SmootherStep01(Mathf.Clamp01(t / 0.14f));
+            steepDrop *= Mathf.Lerp(0.35f, 1f, shoulderEase);
 
             profileHeight = Mathf.Lerp(settings.underwaterPlateauHeight, upperBottomHeight, steepDrop);
             float fractureEnvelope = Mathf.Sin(t * Mathf.PI);

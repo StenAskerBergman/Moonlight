@@ -91,26 +91,29 @@ public class InfluenceManager : MonoBehaviour
     {
         if (properties == null) return false;
 
-        BuildingData data = properties.buildingData;
-        if (data != null)
-        {
-            if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString()) return true;
-
-            if (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag =>
-                    tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) ||
-                    tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase)))
-            {
-                return true;
-            }
-
-            if (NameLooksLikeHarbor(data.buildingName)) return true;
-        }
+        if (IsHarborBuilding(properties.buildingData)) return true;
 
         if (NameLooksLikeHarbor(properties.buildingName)) return true;
 
         InfluenceZone zone = properties.GetComponent<InfluenceZone>();
         return zone != null && (zone.ZoneType == RequirementEnums.RequirementSubTypeZone.DepotZone
                              || zone.ZoneType == RequirementEnums.RequirementSubTypeZone.TradeZone);
+    }
+
+    public static bool IsHarborBuilding(BuildingData data)
+    {
+        if (data == null) return false;
+
+        if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString()) return true;
+
+        if (data.buildingTags != null && System.Array.Exists(data.buildingTags, tag =>
+                tag.Equals("Warehouse", System.StringComparison.OrdinalIgnoreCase) ||
+                tag.Equals("Harbor", System.StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return NameLooksLikeHarbor(data.buildingName);
     }
 
     private static bool NameLooksLikeHarbor(string name)
@@ -122,7 +125,12 @@ public class InfluenceManager : MonoBehaviour
             || name.IndexOf("Depot", System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    public static Unit GetNearestPlayerBoat(Vector3 targetPosition, float maxRange = BoatFoundingRange)
+    public static bool IsSubmersibleUnit(Unit unit)
+    {
+        return unit != null && unit.moveType == MoveType.Submersible;
+    }
+
+    public static Unit GetNearestPlayerBoat(Vector3 targetPosition, float maxRange = BoatFoundingRange, bool? requireSubmersible = null)
     {
         if (UnitSelections.Instance == null) return null;
 
@@ -134,7 +142,7 @@ public class InfluenceManager : MonoBehaviour
         {
             foreach (Unit unit in UnitSelections.Instance.unitsSelected)
             {
-                if (unit != null && IsBoatUnit(unit))
+                if (unit != null && IsBoatUnit(unit) && (!requireSubmersible.HasValue || IsSubmersibleUnit(unit) == requireSubmersible.Value))
                 {
                     Vector3 unitFlat = unit.transform.position;
                     unitFlat.y = 0f;
@@ -154,7 +162,7 @@ public class InfluenceManager : MonoBehaviour
         {
             foreach (Unit unit in UnitSelections.Instance.unitList)
             {
-                if (unit != null && IsBoatUnit(unit))
+                if (unit != null && IsBoatUnit(unit) && (!requireSubmersible.HasValue || IsSubmersibleUnit(unit) == requireSubmersible.Value))
                 {
                     Vector3 unitFlat = unit.transform.position;
                     unitFlat.y = 0f;
@@ -194,15 +202,30 @@ public class InfluenceManager : MonoBehaviour
         activeZones.RemoveAll(z => z == null);
         foundingBoat = null;
 
-        // First warehouse on an unsettled island: any valid Beach cell on the island within boat range
+        // First warehouse on an unsettled island or underwater plateau:
+        // - Surface vessels settle legal coastal/quay cells on islands.
+        // - Submarines (MoveType.Submersible) settle buildable seabed plateau cells (Anno 2070 Deep Ocean).
         if (!HasWarehouse)
         {
             if (gridSystem == null) return false;
             Cell cell = gridSystem.GetCellAtWorldPosition(worldPosition);
-            if (cell == null || !QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType)) return false;
+            if (cell == null || cell.isBlocked || cell.isOccupied) return false;
 
-            if (requestingBoat == null) foundingBoat = GetNearestPlayerBoat(worldPosition);
-            else if (IsBoatUnit(requestingBoat))
+            bool isPlateauCell = cell.currentTerrainType == Cell.TerrainType.Plateau;
+            if (isPlateauCell)
+            {
+                if (!cell.IsSlopeSuitableForBuilding) return false;
+            }
+            else if (!QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType))
+            {
+                return false;
+            }
+
+            if (requestingBoat == null)
+            {
+                foundingBoat = GetNearestPlayerBoat(worldPosition, BoatFoundingRange, requireSubmersible: isPlateauCell);
+            }
+            else if (IsBoatUnit(requestingBoat) && IsSubmersibleUnit(requestingBoat) == isPlateauCell)
             {
                 Vector3 offset = requestingBoat.transform.position - worldPosition;
                 offset.y = 0f;

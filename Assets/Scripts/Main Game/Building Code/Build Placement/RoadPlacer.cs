@@ -102,8 +102,7 @@ public class RoadPlacer : MonoBehaviour
                 && BridgePlacementRules.TryGetBridgeAxis(ActiveGridSystem, targetCell, maxSpan, out bridgeAxisMask);
         }
 
-        return targetCell.currentTerrainType == Cell.TerrainType.Land
-            || targetCell.currentTerrainType == Cell.TerrainType.Beach;
+        return BridgePlacementRules.IsRoadTerrain(targetCell);
     }
 
     public bool PlaceRoad(Cell targetCell)

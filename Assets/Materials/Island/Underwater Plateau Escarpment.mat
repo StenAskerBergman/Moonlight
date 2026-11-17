@@ -27,28 +27,96 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Control:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassAlbedo:
+        m_Texture: {fileID: 2800000, guid: ff192f889d87474f885ba8ad7149b35f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassNormal:
+        m_Texture: {fileID: 2800000, guid: ddc17ef6220e4d4fab589bc574ac76a7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PlacementMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RegionMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RockAlbedo:
+        m_Texture: {fileID: 2800000, guid: 18214e9d6af6248559d501391856f1c7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RockNormal:
+        m_Texture: {fileID: 2800000, guid: e08c295755c0885479ad19f518286ff2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SandAlbedo:
+        m_Texture: {fileID: 2800000, guid: bfd675cc0db1d4656b75dc6d6ba91142, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SandNormal:
+        m_Texture: {fileID: 2800000, guid: bc8d60675c534aa09cb026bdb5b41768, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SeabedAlbedo:
+        m_Texture: {fileID: 2800000, guid: b251f3ad447148df8ecfd62b80693b69, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SeabedNormal:
+        m_Texture: {fileID: 2800000, guid: 3bb8cf7fd7e14d4e919c6caf20553599, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SurfaceTint:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AlgaeStrength: 0.34
+    - _CausticScale: 0.17
+    - _CausticSpeed: 0.55
+    - _CausticStrength: 0.42
     - _CrackStrength: 0.68
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DebugView: 0
     - _GeneratedColorBlend: 0
+    - _GrassTiling: 0.25
+    - _MacroStrength: 0.25
+    - _MacroTiling: 0.02
     - _NormalStrength: 0.32
     - _RippleScale: 3.2
     - _RippleStrength: 0
+    - _RockNormalScale: 1
     - _RockScale: 0.72
+    - _RockTiling: 0.18
+    - _SandNormalScale: 1
+    - _SandTiling: 0.5
+    - _SeabedNormalScale: 1
+    - _SeabedSmoothness: 0.45
+    - _SeabedTiling: 0.3
     - _SedimentStrength: 0.24
     - _Smoothness: 0.48
     - _StrataScale: 0.42
     - _StrataStrength: 0.72
     - _Surface: 0
+    - _TextureDetailStrength: 0.72
+    - _UseSurfaceTint: 0
+    - _WaterLevel: -1
     - _WorldSeed: 0
     m_Colors:
     - _AlgaeColor: {r: 0.12, g: 0.31, b: 0.27, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _PlacementGridParams: {r: 100, g: 1, b: 0, a: 0}
+    - _PlacementOverlayState: {r: 0, g: 0, b: 0, a: 1}
     - _RockDarkColor: {r: 0.06, g: 0.11, b: 0.15, a: 1}
     - _RockLightColor: {r: 0.42, g: 0.54, b: 0.58, a: 1}
     - _RockMidColor: {r: 0.19, g: 0.29, b: 0.34, a: 1}
+    - _SeabedTint: {r: 1, g: 1, b: 1, a: 1}
     - _SedimentColor: {r: 0.38, g: 0.48, b: 0.51, a: 1}
   m_BuildTextureStacks: []

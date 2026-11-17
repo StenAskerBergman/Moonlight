@@ -50,17 +50,17 @@ namespace Moonlight.Rendering
         [Tooltip("Dark ocean void / black at abyssal depths.")]
         [SerializeField] private Color abyssalColor = new Color(0.002f, 0.035f, 0.055f, 1f);
         [Tooltip("Wavelength absorption coefficients (RGB). Higher value = faster decay. Defaults approximate real seawater: red absorbs ~8x faster than blue, green ~2.5x faster.")]
-        [SerializeField] private Vector4 absorptionCoefficients = new Vector4(0.16f, 0.05f, 0.02f, 0f);
-        [Range(0.001f, 0.2f), SerializeField] private float fogDensity = 0.022f;
-        [Min(0.5f), SerializeField] private float deepDepthThreshold = 9.5f;
-        [Min(1f), SerializeField] private float abyssDepthThreshold = 19f;
+        [SerializeField] private Vector4 absorptionCoefficients = new Vector4(0.11f, 0.032f, 0.012f, 0f);
+        [Range(0.001f, 0.2f), SerializeField] private float fogDensity = 0.0115f;
+        [Min(0.5f), SerializeField] private float deepDepthThreshold = 24f;
+        [Min(1f), SerializeField] private float abyssDepthThreshold = 44f;
         [Range(0f, 2f), SerializeField] private float sunScatteringIntensity = 0.65f;
-        [Range(0.01f, 0.5f), SerializeField] private float sunDepthExtinction = 0.07f;
+        [Range(0.005f, 0.5f), SerializeField] private float sunDepthExtinction = 0.024f;
 
         [Header("Lower Apron Fade")]
         [SerializeField] private bool enableLowerApronFade = true;
-        [Min(0f), SerializeField] private float lowerApronFadeStart = 12f;
-        [Min(0.1f), SerializeField] private float lowerApronFadeEnd = 26f;
+        [Min(0f), SerializeField] private float lowerApronFadeStart = 36f;
+        [Min(0.1f), SerializeField] private float lowerApronFadeEnd = 52f;
         [Range(0f, 1f), SerializeField] private float lowerApronFadeStrength = 0.92f;
 
         [Header("Caustics")]
@@ -68,7 +68,7 @@ namespace Moonlight.Rendering
         [Range(0f, 2f), SerializeField] private float causticsStrength = 0.65f;
         [Range(0.05f, 2f), SerializeField] private float causticsScale = 0.35f;
         [Range(0.05f, 2f), SerializeField] private float causticsSpeed = 0.4f;
-        [Min(1f), SerializeField] private float causticsFadeDepth = 18f;
+        [Min(1f), SerializeField] private float causticsFadeDepth = 38f;
 
         [Header("Marine Snow & Particles")]
         [SerializeField] private bool enableMarineSnow = true;
@@ -96,6 +96,13 @@ namespace Moonlight.Rendering
         [SerializeField] private Color underwaterColor = new Color(0.28f, 0.72f, 0.78f, 0.22f);
         [Range(0f, 0.08f), SerializeField] private float distortionStrength = 0.014f;
         [Range(0.005f, 0.25f), SerializeField] private float surfaceEdgeWidth = 0.07f;
+
+        [Header("Surface Horizon Fog")]
+        [Tooltip("Smoothly fades the distant ocean into the sky horizon above water so the world reads as infinite, then disables cleanly when submerged.")]
+        [SerializeField] private bool enableSurfaceHorizonFog = true;
+        [SerializeField] private Color surfaceHorizonFogColor = new Color(0.71f, 0.80f, 0.88f, 1f);
+        [Min(50f), SerializeField] private float surfaceFogStart = 230f;
+        [Min(100f), SerializeField] private float surfaceFogEnd = 920f;
 
         [Header("Pre-Crossing Timing")]
         [Tooltip("Anticipates transition before camera height crosses the water surface.")]
@@ -180,6 +187,8 @@ namespace Moonlight.Rendering
             TransitionCover = 0f;
             isTransitioning = false;
             phaseTimer = 0f;
+            UnderwaterTransitionState.TransitionProgress = isUnderwater ? 1f : 0f;
+            UnderwaterTransitionState.TransitionAmount = isUnderwater ? 1f : 0f;
 
             SubscribeToTrackedUnit();
             SwitchHudState(isUnderwater);
@@ -244,6 +253,8 @@ namespace Moonlight.Rendering
                         currentPhase = TransitionPhase.Underwater;
                         TransitionCover = 0f;
                         isTransitioning = false;
+                        UnderwaterTransitionState.TransitionProgress = 1f;
+                        UnderwaterTransitionState.TransitionAmount = 1f;
                     }
                     break;
                 }
@@ -287,8 +298,16 @@ namespace Moonlight.Rendering
                     break;
                 }
 
-                case TransitionPhase.Surfaced:
                 case TransitionPhase.Underwater:
+                {
+                    TransitionCover = 0f;
+                    isTransitioning = false;
+                    UnderwaterTransitionState.TransitionProgress = 1f;
+                    UnderwaterTransitionState.TransitionAmount = 1f;
+                    break;
+                }
+
+                case TransitionPhase.Surfaced:
                 default:
                 {
                     TransitionCover = 0f;
@@ -604,18 +623,23 @@ namespace Moonlight.Rendering
                 Destroy(generatedSurfaceSound);
         }
 
-        public void Configure(Camera camera, float surfaceHeight)
+        public void Configure(Camera camera, float surfaceHeight, Transform oceanSurface = null)
         {
             targetCamera = camera;
-            waterSurface = null;
+            waterSurface = oceanSurface != null && oceanSurface.gameObject.activeInHierarchy
+                ? oceanSurface
+                : null;
             waterSurfaceRenderer = null;
             waterHeight = surfaceHeight;
+            ResolveWaterSurfaceRenderer();
             cameraSubmerged = targetCamera != null && targetCamera.transform.position.y < SurfaceHeight;
             isUnderwater = cameraSubmerged || unitSubmerged;
             currentPhase = isUnderwater ? TransitionPhase.Underwater : TransitionPhase.Surfaced;
             TransitionCover = 0f;
             isTransitioning = false;
             phaseTimer = 0f;
+            UnderwaterTransitionState.TransitionProgress = isUnderwater ? 1f : 0f;
+            UnderwaterTransitionState.TransitionAmount = isUnderwater ? 1f : 0f;
             SwitchHudState(isUnderwater);
             ApplyState();
         }
@@ -867,6 +891,19 @@ namespace Moonlight.Rendering
 
             UnderwaterTransitionState.DropletIntensity = enableSurfaceDroplets ? dropletIntensity : 0f;
             UnderwaterTransitionState.DropletFallSpeed = dropletFallSpeed;
+
+            if (enableSurfaceHorizonFog)
+            {
+                bool useSurfaceFog = !isUnderwater && UnderwaterTransitionState.TransitionAmount < 0.85f;
+                RenderSettings.fog = useSurfaceFog;
+                if (useSurfaceFog)
+                {
+                    RenderSettings.fogMode = FogMode.Linear;
+                    RenderSettings.fogColor = surfaceHorizonFogColor;
+                    RenderSettings.fogStartDistance = surfaceFogStart;
+                    RenderSettings.fogEndDistance = Mathf.Max(surfaceFogStart + 50f, surfaceFogEnd);
+                }
+            }
         }
     }
 
@@ -886,22 +923,22 @@ namespace Moonlight.Rendering
         internal static Color ShallowWaterColor = new Color(0.12f, 0.72f, 0.78f, 1f);
         internal static Color DeepWaterColor = new Color(0.025f, 0.22f, 0.29f, 1f);
         internal static Color AbyssalColor = new Color(0.002f, 0.035f, 0.055f, 1f);
-        internal static Vector4 AbsorptionCoefficients = new Vector4(0.24f, 0.065f, 0.02f, 0f);
-        internal static float FogDensity = 0.022f;
-        internal static float DeepDepthThreshold = 9.5f;
-        internal static float AbyssDepthThreshold = 19f;
+        internal static Vector4 AbsorptionCoefficients = new Vector4(0.11f, 0.032f, 0.012f, 0f);
+        internal static float FogDensity = 0.0115f;
+        internal static float DeepDepthThreshold = 24f;
+        internal static float AbyssDepthThreshold = 44f;
         internal static float SunScatteringIntensity = 0.65f;
-        internal static float SunDepthExtinction = 0.07f;
+        internal static float SunDepthExtinction = 0.024f;
 
-        internal static float LowerApronFadeStart = 12f;
-        internal static float LowerApronFadeEnd = 26f;
+        internal static float LowerApronFadeStart = 36f;
+        internal static float LowerApronFadeEnd = 52f;
         internal static float LowerApronFadeStrength = 0.92f;
 
         internal static bool EnableCaustics = true;
         internal static float CausticsStrength = 0.65f;
         internal static float CausticsScale = 0.35f;
         internal static float CausticsSpeed = 0.4f;
-        internal static float CausticsFadeDepth = 18f;
+        internal static float CausticsFadeDepth = 38f;
 
         internal static bool EnableMarineSnow = true;
         internal static float MarineSnowIntensity = 0.45f;

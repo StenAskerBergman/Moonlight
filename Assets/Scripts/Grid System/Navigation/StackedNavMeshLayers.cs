@@ -89,7 +89,7 @@ public class StackedNavMeshLayers : MonoBehaviour
     private NavBand[] bands =
     {
         new NavBand { label = "Sub - Deep",      agentTypeName = NavAgentTypes.Submarine, height = -30f, area = NavAreas.DeepSea,      clearance = BandClearance.DeepWaterOnly },
-        new NavBand { label = "Air - Apron",     agentTypeName = NavAgentTypes.Aircraft,  height =   0f, area = NavAreas.Walkable,     clearance = BandClearance.None, source = BandSource.World, worldLayers = (1 << 4) | (1 << 6) },
+        new NavBand { label = "Air - Apron",     agentTypeName = NavAgentTypes.Aircraft,  height =   0f, area = NavAreas.Walkable,     clearance = BandClearance.None, source = BandSource.World, worldLayers = (1 << 4) | (1 << 6), worldThickness = 60f },
         new NavBand { label = "Air - Low",       agentTypeName = NavAgentTypes.Aircraft,  height =  25f, area = NavAreas.LowAltitude,  clearance = BandClearance.AboveMountains },
         new NavBand { label = "Air - Mid",       agentTypeName = NavAgentTypes.Aircraft,  height =  50f, area = NavAreas.MidAltitude,  clearance = BandClearance.None },
         new NavBand { label = "Air - High",      agentTypeName = NavAgentTypes.Aircraft,  height =  75f, area = NavAreas.HighAltitude, clearance = BandClearance.None },
@@ -110,6 +110,11 @@ public class StackedNavMeshLayers : MonoBehaviour
              "wasted precision over a 1000x1000 quad - this is the difference between " +
              "a bake measured in seconds and one measured in minutes.")]
     [SerializeField] private float bandVoxelSize = 1f;
+
+    [Tooltip("Voxel size for World bands. These follow the terrain so they need more " +
+             "precision than the flat proxies, but the agent default (radius / 3, about " +
+             "0.17) over the whole map is what froze play-mode entry for minutes.")]
+    [SerializeField] private float worldVoxelSize = 0.5f;
 
     [Tooltip("Log each band's surface and carve count.")]
     [SerializeField] private bool logBands = false;
@@ -208,10 +213,10 @@ public class StackedNavMeshLayers : MonoBehaviour
         surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
         surface.defaultArea = band.area;
 
-        // Flat proxies do not need sub-decimetre voxels over a 1000x1000 quad; world
-        // bands follow terrain and do, so leave their voxel size alone.
-        surface.overrideVoxelSize = proxy;
-        if (proxy) surface.voxelSize = bandVoxelSize;
+        // Flat proxies need almost no precision over a 1000x1000 quad. World bands
+        // follow the terrain and get finer voxels, but still not the agent default.
+        surface.overrideVoxelSize = true;
+        surface.voxelSize = proxy ? bandVoxelSize : worldVoxelSize;
 
         band.surface = surface;
 

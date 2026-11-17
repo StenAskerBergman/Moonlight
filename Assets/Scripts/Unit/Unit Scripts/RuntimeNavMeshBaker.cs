@@ -110,7 +110,11 @@ public class RuntimeNavMeshBaker : MonoBehaviour
         // Let every other Start() run first so generated islands exist.
         yield return null;
 
-        BakeAll();
+        // Async, not BakeAll(): a full synchronous bake of every layer blocks the
+        // main thread for minutes on a 1000x1000 map, which freezes play-mode entry
+        // outright. Listeners already wait on OnNavMeshBaked, so nothing needs the
+        // NavMesh to exist on the first frame.
+        yield return BakeAllAsync();
     }
 
     /// <summary>
@@ -170,16 +174,35 @@ public class RuntimeNavMeshBaker : MonoBehaviour
     /// </summary>
     public IEnumerator BakeAsync(BakePhase phase)
     {
+        yield return BakeAsyncCounted(phase, null);
+    }
+
+    private IEnumerator BakeAsyncCounted(BakePhase phase, int[] bakedCount)
+    {
         RunPrerequisites(phase);
 
-        bool any = false;
-        foreach (NavMeshSurface surface in SurfacesFor(phase))
+        // Snapshot first: SurfacesFor is a lazy scene query, and this loop yields
+        // across frames, so the scene could change under a live enumeration.
+        List<NavMeshSurface> phaseSurfaces = new List<NavMeshSurface>(SurfacesFor(phase));
+
+        int baked = 0;
+        foreach (NavMeshSurface surface in phaseSurfaces)
         {
-            any = true;
+            if (surface == null) continue;
+
+            float started = Time.realtimeSinceStartup;
+            EnsureNavMeshData(surface);
             yield return surface.UpdateNavMesh(surface.navMeshData);
+
+            baked++;
+            Debug.Log($"<color=green>RuntimeNavMeshBaker:</color> baked '{surface.name}' " +
+                      $"(phase {phase}, agentTypeID {surface.agentTypeID}) in " +
+                      $"{Time.realtimeSinceStartup - started:0.0}s.");
         }
 
-        if (any)
+        if (bakedCount != null) bakedCount[0] += baked;
+
+        if (baked > 0)
         {
             RunPostBake(phase);
             OnPhaseBaked?.Invoke(phase);
@@ -191,13 +214,40 @@ public class RuntimeNavMeshBaker : MonoBehaviour
     {
         carveDirty = true;
 
+        int[] baked = { 0 };
         foreach (BakePhase phase in PhaseOrder)
         {
-            yield return BakeAsync(phase);
+            yield return BakeAsyncCounted(phase, baked);
+        }
+
+        if (baked[0] == 0)
+        {
+            Debug.LogError("RuntimeNavMeshBaker: found no NavMeshSurface to bake.");
+            yield break;
         }
 
         IsBaked = true;
         OnNavMeshBaked?.Invoke();
+    }
+
+    /// <summary>
+    /// UpdateNavMesh can only update existing data, so a surface's first async bake
+    /// needs an empty NavMeshData registered with the navigation system. The data is
+    /// placed at the surface's transform, matching what BuildNavMesh does, so bands
+    /// at -30 or +50 still bake around their own height rather than around y = 0.
+    /// </summary>
+    private static void EnsureNavMeshData(NavMeshSurface surface)
+    {
+        if (surface.navMeshData != null) return;
+
+        surface.navMeshData = new NavMeshData(surface.agentTypeID)
+        {
+            name = surface.gameObject.name,
+            position = surface.transform.position,
+            rotation = surface.transform.rotation,
+        };
+
+        if (surface.isActiveAndEnabled) surface.AddData();
     }
 
     /// <summary>
@@ -255,7 +305,9 @@ public class RuntimeNavMeshBaker : MonoBehaviour
     {
         foreach (NavMeshSurface surface in AllSurfaces())
         {
-            if (surface == null) continue;
+            // A disabled surface is a switched-off surface - baking it anyway would
+            // spend the bake time and then register NavMesh nothing should use.
+            if (surface == null || !surface.isActiveAndEnabled) continue;
             if (PhaseOf(surface) == phase) yield return surface;
         }
     }

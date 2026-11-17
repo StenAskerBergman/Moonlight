@@ -377,7 +377,9 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
 
                 float distanceToSurface = abs(uv.y - (surfaceLine + wave));
                 float edge = 1.0 - smoothstep(0.0, max(_EdgeWidth, 0.001), distanceToSurface);
-                float distortion = (_UnderwaterAmount * 0.35 + edge) * _DistortionStrength;
+                float vignetteDist = length((uv - 0.5) * float2(1.15, 1.0));
+                float distortionVignette = smoothstep(0.28, 0.72, vignetteDist);
+                float distortion = (_UnderwaterAmount * 0.35 * distortionVignette + edge) * _DistortionStrength;
                 float2 warpedUv = uv;
                 warpedUv.x += sin(uv.y * 42.0 + time * 3.2) * distortion;
                 warpedUv.y += cos(uv.x * 35.0 - time * 2.4) * distortion * 0.45;
@@ -478,13 +480,13 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     // strongly attenuating on slopes and completely vanishing on vertical cliff faces.
                     float slopeFactor = smoothstep(0.45, 0.8, saturate(worldNormal.y));
 
-                    // Softened depth curve so submerged plateaus (e.g. -8..10m depth) catch clear sunlight caustics
-                    // while attenuating cleanly toward abyssal trenches.
+                    // Softened depth curve so deep buildable plateaus (-28m) still catch subtle sunlight caustics
+                    // while attenuating cleanly toward abyssal trenches (-45m+).
                     float depthBelowWater = max(0.0, _WaterLevel - positionWS.y);
-                    float effectiveFadeDepth = max(_CausticsFadeDepth * 1.85, 16.0);
+                    float effectiveFadeDepth = max(_CausticsFadeDepth * 1.4, 36.0);
                     float depthFade = pow(saturate(1.0 - depthBelowWater / effectiveFadeDepth), 1.35);
-                    depthFade *= exp(-depthBelowWater * 0.075);
-                    depthFade *= exp(-waterDistance * _FogDensity * 0.85);
+                    depthFade *= exp(-depthBelowWater * 0.024);
+                    depthFade *= exp(-waterDistance * _FogDensity * 0.75);
 
                     float causticVal = CalculateCaustics(positionWS.xz, time);
 
@@ -512,7 +514,7 @@ Shader "Hidden/Moonlight/UnderwaterTransition"
                     float3 backgroundAtmosphere = lerp(_AbyssalColor.rgb, _DeepWaterColor.rgb, saturate(verticalGaze * 0.5 + 0.5));
                     if (verticalGaze > 0.0)
                     {
-                        backgroundAtmosphere = lerp(backgroundAtmosphere, _ShallowWaterColor.rgb, pow(verticalGaze, 1.5) * sunLightAtten);
+                        backgroundAtmosphere = lerp(backgroundAtmosphere, _ShallowWaterColor.rgb, pow(max(verticalGaze, 0.0), 1.5) * sunLightAtten);
                     }
                     underwaterView = backgroundAtmosphere + marineSnow;
                 }

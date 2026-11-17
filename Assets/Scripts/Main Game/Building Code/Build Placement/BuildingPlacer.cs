@@ -187,7 +187,8 @@ public class BuildingPlacer : MonoBehaviour
 
         if (buildingProperties != null
             && buildingProperties.buildingData != null
-            && buildingProperties.buildingData.requiresQuayFoundation)
+            && buildingProperties.buildingData.requiresQuayFoundation
+            && !PlacementRules.IsPlateauCellAt(placementGrid, buildingInstance.transform.position))
         {
             QuaySystem quay = QuaySystem.GetOrCreate(placementGrid);
             Vector3 quayPosition = buildingInstance.transform.position;

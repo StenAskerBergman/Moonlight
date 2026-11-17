@@ -188,10 +188,10 @@ public sealed class CoastalProfileSettings
              "is ~18 units, and compressed into the few units the noise field happened to take, it " +
              "renders as a vertical wall that dwarfs the beach. Spread over a real slope the same " +
              "drop reads as a seabed.")]
-    [Range(2f, 40f)] public float continentalSlopeWidth = 16f;
+    [Range(2f, 40f)] public float continentalSlopeWidth = 22f;
     [Tooltip("Shape of that descent. 1 = straight; above 1 starts gently and steepens with " +
              "distance offshore, which is the profile the reference material shows.")]
-    [Range(1f, 3f)] public float continentalSlopeExponent = 1.8f;
+    [Range(1f, 3f)] public float continentalSlopeExponent = 1.65f;
 
     [Header("Elevations (freeboard relative to the ocean surface)")]
     [Tooltip("Dry sand at the back of the beach, above the water surface.")]
@@ -383,7 +383,7 @@ public sealed class DomainWarpSettings
 [Serializable]
 public sealed class StandalonePlateauSettings
 {
-    private const int CurrentDataVersion = 8;
+    private const int CurrentDataVersion = 9;
 
     [SerializeField, HideInInspector] private int dataVersion;
 
@@ -401,10 +401,10 @@ public sealed class StandalonePlateauSettings
 
     [Header("Rock perimeter profile")]
     [Min(0.5f)] public float rockyRimWidth = 3.0f;
-    [Min(0.5f)] public float upperEscarpmentWidth = 1.8f;
-    [Min(1f)] public float lowerApronWidth = 5.5f;
-    [Min(2f)] public float cliffDropDepth = 8.0f;
-    [Min(0f)] public float lowerApronDrop = 2.0f;
+    [Min(0.5f)] public float upperEscarpmentWidth = 2.8f;
+    [Min(1f)] public float lowerApronWidth = 7.0f;
+    [Min(2f)] public float cliffDropDepth = 13.0f;
+    [Min(0f)] public float lowerApronDrop = 4.0f;
     [Range(0f, 5f)] public float rimOutcropHeight = 1.35f;
     [Range(0f, 8f)] public float occasionalSpireHeight = 4.8f;
     [Range(0, 8)] public int perimeterSpireCount = 3;
@@ -433,7 +433,7 @@ public sealed class StandalonePlateauSettings
 
     [Header("Submergence")]
     [Tooltip("Minimum vertical distance from the authoritative water surface to the plateau tabletop.")]
-    [Min(2f)] public float tabletopDepthBelowWater = 6.0f;
+    [Min(2f)] public float tabletopDepthBelowWater = 27.0f;
     [Tooltip("Minimum water above the highest generated rim formation.")]
     [Min(0.5f)] public float minimumFormationClearance = 2.5f;
 
@@ -454,7 +454,7 @@ public sealed class StandalonePlateauSettings
 
     public void Validate()
     {
-        if (dataVersion < CurrentDataVersion)
+        if (dataVersion < 8)
         {
             // Existing scene entries were created before the plateau catalogue grew
             // authored rim formations. Unity deserializes newly-added numeric fields
@@ -465,11 +465,11 @@ public sealed class StandalonePlateauSettings
             tabletopRelief = tabletopRelief <= 0f ? 0.06f : tabletopRelief;
             rockyRimWidth = rockyRimWidth <= 0f ? 3f : Mathf.Min(rockyRimWidth, 3f);
             upperEscarpmentWidth = upperEscarpmentWidth <= 0f
-                ? 1.8f
-                : Mathf.Min(upperEscarpmentWidth, 1.8f);
+                ? 2.8f
+                : Mathf.Min(upperEscarpmentWidth, 2.8f);
             lowerApronWidth = lowerApronWidth <= 0f
-                ? 5.5f
-                : Mathf.Min(lowerApronWidth, 5.5f);
+                ? 7.0f
+                : Mathf.Min(lowerApronWidth, 7.0f);
             rimOutcropHeight = rimOutcropHeight <= 0f ? 1.35f : rimOutcropHeight;
             occasionalSpireHeight = occasionalSpireHeight <= 0f ? 4.8f : occasionalSpireHeight;
             perimeterSpireCount = perimeterSpireCount <= 0 ? 3 : perimeterSpireCount;
@@ -494,13 +494,25 @@ public sealed class StandalonePlateauSettings
             sandOpeningTopWidth = sandOpeningTopWidth <= 0f
                 ? 4.5f
                 : Mathf.Min(sandOpeningTopWidth, 4.5f);
-            tabletopDepthBelowWater = tabletopDepthBelowWater < 2f ? 6f : tabletopDepthBelowWater;
+            tabletopDepthBelowWater = tabletopDepthBelowWater < 2f ? 27.0f : tabletopDepthBelowWater;
             // Version 6 briefly shipped with 0.75m as the generated default. That
             // technically submerged a spire but left it plainly visible through the
             // surface; migrate that exact former default to the deep-sea clearance.
             minimumFormationClearance = minimumFormationClearance <= 0.7501f
                 ? 2.5f
                 : minimumFormationClearance;
+        }
+
+        if (dataVersion < 9)
+        {
+            // Version 8 placed plateaus only ~6m below the water surface, giving the
+            // camera too little vertical room to match surface island planning scale.
+            // Upgrade the former shallow defaults to match deep submarine height (-30m).
+            if (tabletopDepthBelowWater < 20f) tabletopDepthBelowWater = 27.0f;
+            if (cliffDropDepth <= 8.5f) cliffDropDepth = 13.0f;
+            if (lowerApronDrop <= 2.5f) lowerApronDrop = 4.0f;
+            if (upperEscarpmentWidth <= 1.85f) upperEscarpmentWidth = 2.8f;
+            if (lowerApronWidth <= 5.6f) lowerApronWidth = 7.0f;
             dataVersion = CurrentDataVersion;
         }
 
