@@ -149,7 +149,12 @@ namespace Moonlight.Rendering
                 material.SetFloat(DropletIntensity, UnderwaterTransitionState.DropletIntensity);
                 material.SetFloat(DropletFallSpeed, UnderwaterTransitionState.DropletFallSpeed);
 
-                Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(renderingData.cameraData.GetProjectionMatrix(), false);
+                // The shader rebuilds world positions with ComputeWorldSpacePosition, which expects
+                // the render-texture Y-flip to be baked into the matrix. This camera renders into an
+                // intermediate texture, so a hard-coded "not flipped" matrix mirrors the reconstruction
+                // vertically: world-anchored caustics, fog and debris then slide as the camera turns.
+                // URP's own matrix asks the pipeline whether the current target is flipped.
+                Matrix4x4 gpuProj = renderingData.cameraData.GetGPUProjectionMatrixNoJitter();
                 Matrix4x4 viewProj = gpuProj * renderingData.cameraData.GetViewMatrix();
                 material.SetMatrix(InverseViewProjection, viewProj.inverse);
 
