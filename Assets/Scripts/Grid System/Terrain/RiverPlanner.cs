@@ -420,17 +420,21 @@ public static class RiverPlanner
         float depth = c.Rivers.lakeDepth;
         for (; radius >= c.Rivers.minLakeRadius * 0.999f; radius *= 0.82f)
         {
+            // The landform's shoreline wanders up to 1.2x the radius, so the containing rim is
+            // sampled outside that, on two rings, never inside the water it has to hold.
             float rim = float.PositiveInfinity;
+            for (int ring = 0; ring < 2 && !float.IsNegativeInfinity(rim); ring++)
             for (int a = 0; a < 20; a++)
             {
-                float angle = a / 20f * Mathf.PI * 2f;
-                Vector2 q = centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (radius * 1.15f);
+                float angle = (a + ring * 0.5f) / 20f * Mathf.PI * 2f;
+                Vector2 q = centre + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (radius * (ring == 0 ? 1.22f : 1.4f));
                 if (q.x < 1f || q.y < 1f || q.x > c.Ground.Size - 1f || q.y > c.Ground.Size - 1f) { rim = float.NegativeInfinity; break; }
                 rim = Mathf.Min(rim, c.Ground.Height(q));
             }
             // Same level SolveCourse gives the first station, so the outlet leaves the lake flush.
             float water = Mathf.Min(c.Ground.Height(centre) - 0.4f, rim - 0.12f);
-            if (water < c.Sea + 0.6f) continue;
+            // The bowl must stay above the sea plane, or validation rejects the whole course.
+            if (water < c.Sea + depth + 0.3f) continue;
             if (!LakeFitsBudget(c.Ground, centre, radius, water, depth, c.MaximumCut * 0.9f)) continue;
             if (!LakeClearOfNetwork(centre, radius, network)) return;
             draft.HasLake = true;

@@ -12,19 +12,23 @@ using UnityEngine;
 /// </summary>
 public sealed class FeatureReservationMap
 {
-    private readonly List<RiverPlan> riverPlans = new List<RiverPlan>();
-    public IReadOnlyList<RiverPlan> RiverPlans => riverPlans;
+    private static readonly RiverPlan[] NoRivers = new RiverPlan[0];
 
-    public void SetRiverPlan(RiverPlan plan)
-    {
-        riverPlans.Clear();
-        if (plan != null) riverPlans.Add(plan);
-    }
+    /// <summary>The island's whole river network (all courses, shared outlets, one landform), or null.</summary>
+    public RiverNetwork RiverNetwork { get; private set; }
 
+    /// <summary>Every course of the network: trunks and tributaries.</summary>
+    public IReadOnlyList<RiverPlan> RiverPlans => RiverNetwork != null ? RiverNetwork.Courses : NoRivers;
+
+    public void SetRiverNetwork(RiverNetwork network) => RiverNetwork = network;
+
+    /// <summary>
+    /// Samples the merged network field. Courses were stamped into one landform, so there is a
+    /// single answer at a confluence rather than whichever course happened to be listed first.
+    /// </summary>
     public bool TrySampleRiver(Vector2 point, out RiverSurfaceSample sample)
     {
-        foreach (RiverPlan plan in riverPlans)
-            if (plan.TrySample(point, out sample)) return true;
+        if (RiverNetwork != null) return RiverNetwork.TrySample(point, out sample);
         sample = default;
         return false;
     }

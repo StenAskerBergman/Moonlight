@@ -13,22 +13,25 @@ public class RiverArea : IFeature
 
     public void GenerateRiver(Cell[,] grid, FeatureReservationMap reservations, System.Random rng, Vector2 offset = default)
     {
-        if (grid == null || reservations == null) return;
-        foreach (RiverPlan plan in reservations.RiverPlans)
-        {
-            for (int z = 0; z < grid.GetLength(1); z++) for (int x = 0; x < grid.GetLength(0); x++)
-            {
-                Cell cell = grid[x, z];
-                Vector2 centre = new Vector2(x + 0.5f, z + 0.5f) - offset;
-                if (!plan.TrySample(centre, out RiverSurfaceSample sample) || !sample.IsWater) continue;
-                cell.ChangeTerrainType(sample.Classify(cell.currentTerrainType));
-                Cell.RiverStatus status = sample.Distance < 1.4f ? Cell.RiverStatus.RiverSource
-                    : Mathf.Abs(sample.Distance - plan.Mouth.Distance) < 0.9f ? Cell.RiverStatus.RiverMouth
-                    : Cell.RiverStatus.River;
-                cell.SetRiverData(status, Direction(sample.Direction));
-            }
+        if (grid == null || reservations == null || reservations.RiverNetwork == null) return;
+        RiverNetwork network = reservations.RiverNetwork;
 
-            int sources = PlaceBankSlot(grid, plan, plan.Source, 0f, 3f, ResourceNodeType.RiverSource, offset) ? 1 : 0;
+        // One pass over the merged field. Each wet cell belongs to the course that owns it, so a
+        // confluence is classified once instead of once per overlapping course.
+        for (int z = 0; z < grid.GetLength(1); z++) for (int x = 0; x < grid.GetLength(0); x++)
+        {
+            Cell cell = grid[x, z];
+            Vector2 centre = new Vector2(x + 0.5f, z + 0.5f) - offset;
+            if (!network.TrySample(centre, out RiverSurfaceSample sample) || !sample.IsWater) continue;
+            cell.ChangeTerrainType(sample.Classify(cell.currentTerrainType));
+            cell.SetRiverData(Status(network, sample), Direction(sample.Direction));
+        }
+
+        foreach (RiverPlan plan in network.Courses)
+        {
+            ResourceNodeType sourceType = ResourceNodeType.RiverSource;
+            int sources = PlaceBankSlot(grid, plan, plan.Source, plan.StartDistance,
+                plan.StartDistance + (plan.HasSourceLake ? plan.SourceLake.Radius + 3f : 3f), sourceType, offset) ? 1 : 0;
             int waterfalls = 0;
             foreach (RiverWaterfall fall in plan.Waterfalls)
             {
@@ -40,7 +43,7 @@ public class RiverArea : IFeature
 
             // Place ordinary riverbank access sparsely, on actual dry, buildable bank ground.
             int banks = 0;
-            for (float at = 6f; at < plan.Mouth.Distance - 3f; at += 7f)
+            for (float at = plan.StartDistance + 6f; at < plan.TerminalDistance - 3f; at += 7f)
             {
                 foreach (RiverSection section in plan.Sections)
                 {
@@ -50,9 +53,23 @@ public class RiverArea : IFeature
                     break;
                 }
             }
-            int mouths = PlaceMouthSlot(grid, plan, offset) ? 1 : 0;
-            Debug.Log($"[RiverPlan slots] source={sources}, waterfall={waterfalls}/{plan.Waterfalls.Count}, banks={banks}, mouth={mouths}. Missing slots mean no valid placement cell.");
+            // Only the trunk crosses the shoreline; tributaries share its outlet.
+            int mouths = !plan.IsTributary && PlaceMouthSlot(grid, plan, offset) ? 1 : 0;
+            Debug.Log($"[RiverPlan slots] course {plan.Index} ({(plan.IsTributary ? $"tributary of {plan.Parent}" : "trunk")}): " +
+                $"source={sources}, waterfall={waterfalls}/{plan.Waterfalls.Count}, banks={banks}, mouth={mouths}. " +
+                "Missing slots mean no valid placement cell.");
         }
+    }
+
+    private static Cell.RiverStatus Status(RiverNetwork network, RiverSurfaceSample sample)
+    {
+        if (sample.Course < 0 || sample.Course >= network.Courses.Count) return Cell.RiverStatus.River;
+        RiverPlan course = network.Courses[sample.Course];
+        if (sample.Kind == RiverReachKind.Lake) return Cell.RiverStatus.LakeSource;
+        if (sample.Distance < course.StartDistance + 1.4f) return Cell.RiverStatus.RiverSource;
+        if (!course.IsTributary && Mathf.Abs(sample.Distance - course.Mouth.Distance) < 0.9f)
+            return Cell.RiverStatus.RiverMouth;
+        return Cell.RiverStatus.River;
     }
 
     private static bool PlaceBankSlot(Cell[,] grid, RiverPlan plan, Vector2 anchor, float from, float to, ResourceNodeType type, Vector2 offset)
@@ -66,7 +83,7 @@ public class RiverArea : IFeature
             if (cell.isDeposit || !cell.IsBuildableSurface || cell.occupyingBuilding != null) continue;
             Vector2 p = new Vector2(x + 0.5f, z + 0.5f) - offset;
             if (!plan.TrySample(p, out RiverSurfaceSample sample) || sample.IsWater || sample.Influence < 0.5f
-                || sample.Distance < from || sample.Distance > to) continue;
+                || sample.Course != plan.Index || sample.Distance < from || sample.Distance > to) continue;
             bool nextToChannel = false;
             for (int d = 0; d < 4; d++)
             {

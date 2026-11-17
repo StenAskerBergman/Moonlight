@@ -1,4 +1,4 @@
-// tldr: Island-wide drainage map. A priority-flood from the ocean gives every land cell one downstream
+﻿// tldr: Island-wide drainage map. A priority-flood from the ocean gives every land cell one downstream
 // neighbour, the coast cell it pours out at, its flow length to the sea and how much ground drains through it.
 
 using System.Collections.Generic;
@@ -65,7 +65,7 @@ internal sealed class RiverDrainageField
     /// <summary>Rain-weighted contributing area. High ground catches more (orographic weighting).</summary>
     public float[] Accumulation { get; }
 
-    public RiverDrainageField(RiverGround ground, float sea, float flatland, int seed)
+    public RiverDrainageField(RiverGround ground, float seaLevel, float flatland, int seed)
     {
         int n = Size = ground.Size;
         int count = n * n;
@@ -73,29 +73,32 @@ internal sealed class RiverDrainageField
         Receiver = new int[count]; Outlet = new int[count];
         FlowLength = new float[count]; Accumulation = new float[count];
         var visited = new bool[count];
+        var sea = new bool[count];
 
         for (int z = 0; z < n; z++)
         for (int x = 0; x < n; x++)
         {
             int i = z * n + x;
             var p = new Vector2(x, z);
-            float h = ground.Height(p);
+            float h = ground.Height(p), shore = ground.Shore(p);
             Height[i] = h; Filled[i] = h;
             Receiver[i] = None; Outlet[i] = None;
             // Same admissibility the single-river search used: interior, above water, inland of the shoreline.
             Land[i] = x >= 2 && z >= 2 && x < n - 2 && z < n - 2
-                && ground.Shore(p) >= -0.05f && h >= sea + 0.015f;
+                && shore >= -0.05f && h >= seaLevel + 0.015f;
+            sea[i] = shore < -0.05f || h < seaLevel;
         }
 
         var open = new MinHeap();
+        // Only the real sea may receive water. A low inland cell or the chunk border is not an outlet.
         for (int z = 2; z < n - 2; z++)
         for (int x = 2; x < n - 2; x++)
         {
             int i = z * n + x;
-            if (Land[i] || !HasLandNeighbour(x, z)) continue;
+            if (Land[i] || !sea[i] || !HasLandNeighbour(x, z)) continue;
             visited[i] = true;
-            Filled[i] = sea;
-            open.Push(i, sea);
+            Filled[i] = seaLevel;
+            open.Push(i, seaLevel);
         }
 
         var order = new List<int>(count);

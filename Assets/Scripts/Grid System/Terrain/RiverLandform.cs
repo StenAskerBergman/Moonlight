@@ -1,5 +1,6 @@
-﻿// tldr: Turns a river's centreline stations into a two-dimensional FIELD - bed, banks, water surface, rock and
-// flow - that terrain can be sampled against and a water mesh built from.
+﻿// tldr: Turns every course of the river network (centreline stations, plunge basins, source lakes) into ONE
+// two-dimensional FIELD - bed, banks, water surface, rock, flow and owning course - that terrain is sampled
+// against and the water mesh is built from.
 
 using System;
 using System.Collections.Generic;
