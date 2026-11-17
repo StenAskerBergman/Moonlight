@@ -17,7 +17,7 @@ internal sealed class RiverLandform
     {
         public readonly float[] Influence, WeightedTarget, WaterHeight, Distance, WetDistance;
         public readonly float[] Rock, Gravel, DirectionX, DirectionY, Foam, Edge, AcrossCoordinate, OceanBlend;
-        public readonly float[] Ownership;
+        public readonly float[] Ownership, SegmentWeightSum;
         public readonly RiverReachKind[] Kind;
 
         public Buffers(int count)
@@ -26,7 +26,8 @@ internal sealed class RiverLandform
             Distance = new float[count]; WetDistance = new float[count]; Rock = new float[count];
             Gravel = new float[count]; DirectionX = new float[count]; DirectionY = new float[count];
             Foam = new float[count]; Edge = new float[count]; AcrossCoordinate = new float[count];
-            OceanBlend = new float[count]; Ownership = new float[count]; Kind = new RiverReachKind[count];
+            OceanBlend = new float[count]; Ownership = new float[count]; SegmentWeightSum = new float[count];
+            Kind = new RiverReachKind[count];
         }
 
         public void Reset()
@@ -37,6 +38,7 @@ internal sealed class RiverLandform
             Array.Clear(DirectionX, 0, DirectionX.Length); Array.Clear(DirectionY, 0, DirectionY.Length);
             Array.Clear(Foam, 0, Foam.Length); Array.Clear(Edge, 0, Edge.Length);
             Array.Clear(AcrossCoordinate, 0, AcrossCoordinate.Length); Array.Clear(OceanBlend, 0, OceanBlend.Length);
+            Array.Clear(SegmentWeightSum, 0, SegmentWeightSum.Length);
             Array.Clear(Kind, 0, Kind.Length);
             Array.Fill(WetDistance, -1000f);
             Array.Fill(Ownership, float.PositiveInfinity);
@@ -79,11 +81,13 @@ internal sealed class RiverLandform
         directionX = buffers.DirectionX; directionY = buffers.DirectionY; foam = buffers.Foam; edge = buffers.Edge;
         acrossCoordinate = buffers.AcrossCoordinate; oceanBlend = buffers.OceanBlend; kind = buffers.Kind;
         float[] ownership = buffers.Ownership;
+        float[] segmentWeightSum = buffers.SegmentWeightSum;
 
         // Valley first. The station list supplies grade and reach constraints, while the field
         // boundary is resolved in world space against slope, rock and coherent erosion noise.
         for (int i = 0; i < sections.Count - 1; i++)
-            StampValleySegment(terrain, ownership, i, maximumCut, maximumFill, seed);
+            StampValleySegment(terrain, ownership, segmentWeightSum, i, maximumCut, maximumFill, seed);
+        NormalizeValleySegments(segmentWeightSum);
 
         // Pools are terrain basins with an impact end and a constrained outlet. They replace the
         // centreline stamp inside their footprint rather than scaling the river strip sideways.
@@ -126,7 +130,7 @@ internal sealed class RiverLandform
         return true;
     }
 
-    private void StampValleySegment(TerrainSampleCache terrain, float[] ownership, int sectionIndex,
+    private void StampValleySegment(TerrainSampleCache terrain, float[] ownership, float[] segmentWeightSum, int sectionIndex,
         float maximumCut, float maximumFill, int seed)
     {
         RiverSection a = sections[sectionIndex];
@@ -173,20 +177,27 @@ internal sealed class RiverLandform
             if (rockConstraint > 0.35f)
                 channelVariation *= Mathf.Lerp(1f, 0.72f, rockConstraint * Mathf.Max(0f, macro));
             float wetWidth = Mathf.Max(0.025f, authoredWaterWidth * channelVariation);
-            float valleyVariation = 1f + macro * 0.16f;
+            float valleyVariation = Mathf.Max(0.25f, 1f + macro * 0.16f);
             float outer = wetWidth + bank.Extent * valleyVariation;
-            if (across > outer) continue;
+            if (across >= outer) continue;
 
-            // Choose the closest finite hydraulic segment. Extent affects the landform,
-            // not which station supplies its water elevation.
+            float feather = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((outer - across) / Mathf.Max(0.15f, outer * 0.25f)));
+            if (feather <= 0.0001f) continue;
+            float denom = 0.08f + across;
+            float segW = feather / (denom * denom * denom * denom);
+
+            // Track closest finite hydraulic segment for discrete reach kind while blending fields continuously.
+            RiverReachKind reachKind = along < 0.5f ? a.Kind : b.Kind;
             float score = (p - centre).sqrMagnitude;
-            if (score >= ownership[index]) continue;
-            ownership[index] = score;
+            if (score < ownership[index])
+            {
+                ownership[index] = score;
+                kind[index] = reachKind;
+            }
 
             float longitudinalDistance = Mathf.Lerp(a.Distance, b.Distance, along);
             float water = Mathf.Lerp(a.WaterHeight, b.WaterHeight, along);
             float bed = Mathf.Lerp(a.BedHeight, b.BedHeight, along);
-            RiverReachKind reachKind = along < 0.5f ? a.Kind : b.Kind;
             float original = terrain.Heights[index];
             float signedWet = wetWidth - across;
             float target;
@@ -207,7 +218,7 @@ internal sealed class RiverLandform
             }
             else
             {
-                float bankDistance = across - wetWidth;
+                float bankDistance = (across - wetWidth) / valleyVariation;
                 ResolveNaturalBank(original, water, bank, bankDistance, macro, rockConstraint,
                     out target, out weight, out rockWeight, out gravelWeight);
             }
@@ -219,10 +230,54 @@ internal sealed class RiverLandform
             // WetSignal adds the bounds depth alone cannot express below the shoreline.
             float finished = Mathf.Lerp(original, target, weight);
             float ocean = Mathf.Lerp(a.OceanBlend, b.OceanBlend, along);
-            Write(index, target, weight, water, longitudinalDistance,
+            Accumulate(index, segW, segmentWeightSum, target, weight, water, longitudinalDistance,
                 WetSignal(water - finished, across, wetWidth, bank, reachKind, ocean), rockWeight,
-                gravelWeight, flow, reachKind, Mathf.Lerp(a.Foam, b.Foam, along), ocean, wetWidth,
+                gravelWeight, flow, Mathf.Lerp(a.Foam, b.Foam, along), ocean, wetWidth,
                 Mathf.Clamp01(0.5f + signed / (2f * Mathf.Max(0.025f, wetWidth))));
+        }
+    }
+
+    private void Accumulate(int index, float segW, float[] segmentWeightSum, float target, float weight, float water,
+        float atDistance, float signedWet, float rockWeight, float gravelWeight, Vector2 flow, float foamWeight,
+        float ocean, float wetWidth, float across)
+    {
+        if (segmentWeightSum[index] <= 0f) wetDistance[index] = 0f;
+        segmentWeightSum[index] += segW;
+        influence[index] += segW * weight;
+        weightedTarget[index] += segW * (target * weight);
+        waterHeight[index] += segW * water;
+        distance[index] += segW * atDistance;
+        wetDistance[index] += segW * signedWet;
+        rock[index] += segW * rockWeight;
+        gravel[index] += segW * gravelWeight;
+        directionX[index] += segW * flow.x;
+        directionY[index] += segW * flow.y;
+        foam[index] += segW * foamWeight;
+        edge[index] += segW * (signedWet >= 0f ? 1f - Mathf.Clamp01(signedWet / Mathf.Max(0.025f, wetWidth)) : 0f);
+        acrossCoordinate[index] += segW * across;
+        oceanBlend[index] += segW * ocean;
+    }
+
+    private void NormalizeValleySegments(float[] segmentWeightSum)
+    {
+        for (int i = 0; i < segmentWeightSum.Length; i++)
+        {
+            float w = segmentWeightSum[i];
+            if (w <= 0f) continue;
+            float inv = 1f / w;
+            influence[i] *= inv;
+            weightedTarget[i] *= inv;
+            waterHeight[i] *= inv;
+            distance[i] *= inv;
+            wetDistance[i] *= inv;
+            rock[i] *= inv;
+            gravel[i] *= inv;
+            directionX[i] *= inv;
+            directionY[i] *= inv;
+            foam[i] *= inv;
+            edge[i] *= inv;
+            acrossCoordinate[i] *= inv;
+            oceanBlend[i] *= inv;
         }
     }
 
@@ -271,7 +326,8 @@ internal sealed class RiverLandform
                 + terrain.MountainBoosts[index] * 0.18f);
             // Resistant terrain constrains the basin before the water contour is extracted.
             wetWidth *= Mathf.Lerp(1f, 0.78f, rockConstraint * basin);
-            float outer = wetWidth + bank.Extent * (1f + macro * 0.13f);
+            float basinBankVariation = Mathf.Max(0.25f, 1f + macro * 0.13f);
+            float outer = wetWidth + bank.Extent * basinBankVariation;
             if (across > outer) continue;
 
             float score = -1f + across / Mathf.Max(0.05f, outer) * 0.5f;
@@ -298,7 +354,7 @@ internal sealed class RiverLandform
             }
             else
             {
-                ResolveNaturalBank(original, water, bank, across - wetWidth, macro, rockConstraint,
+                ResolveNaturalBank(original, water, bank, (across - wetWidth) / basinBankVariation, macro, rockConstraint,
                     out target, out weight, out rockWeight, out gravelWeight);
             }
 
@@ -309,14 +365,16 @@ internal sealed class RiverLandform
                 * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((length - alongWorld) / 1.2f));
             float oldWeight = influence[index];
             float oldTarget = original * (1f - oldWeight) + weightedTarget[index];
-            float finished = Mathf.Lerp(oldTarget, Mathf.Lerp(original, target, weight), join);
-            weight = Mathf.Lerp(oldWeight, weight, join);
-            float blendedWater = Mathf.Lerp(waterHeight[index], water, join);
+            float basinBlend = weight * join;
+            float finished = Mathf.Lerp(oldTarget, target, basinBlend);
+            weight = Mathf.Lerp(oldWeight, 1f, basinBlend);
+            float blendedWater = Mathf.Lerp(waterHeight[index], water, basinBlend);
+            float attrBlend = oldWeight > 0.0001f ? basinBlend : join;
             target = weight > 0.0001f ? (finished - original * (1f - weight)) / weight : original;
-            Write(index, target, weight, blendedWater, Mathf.Lerp(distance[index], Mathf.Lerp(toe.Distance, outlet.Distance, u), join),
+            Write(index, target, weight, blendedWater, Mathf.Lerp(distance[index], Mathf.Lerp(toe.Distance, outlet.Distance, u), attrBlend),
                 WetSignal(blendedWater - finished, across, wetWidth, bank, RiverReachKind.PlungePool, 0f),
-                Mathf.Lerp(rock[index], rockWeight, join),
-                Mathf.Lerp(gravel[index], gravelWeight, join), axis, RiverReachKind.PlungePool,
+                Mathf.Lerp(rock[index], rockWeight, attrBlend),
+                Mathf.Lerp(gravel[index], gravelWeight, attrBlend), axis, RiverReachKind.PlungePool,
                 Mathf.Lerp(0.04f, 0.88f, impact), 0f, wetWidth,
                 Mathf.Clamp01(0.5f + signed / (2f * Mathf.Max(0.025f, wetWidth))));
         }
@@ -357,7 +415,7 @@ internal sealed class RiverLandform
         else
         {
             float u = (d - wallEnd) / Mathf.Max(0.01f, bank.BlendWidth);
-            target = original;
+            target = Mathf.Max(water + 0.16f, original);
             weight = 1f - Mathf.SmoothStep(0f, 1f, u);
             rockWeight = Mathf.Max(bank.RockWeight * (1f - u), rockConstraint * 0.55f);
             gravelWeight = 0.12f * (1f - u);

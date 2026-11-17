@@ -498,7 +498,9 @@ public class BuildingPreview : MonoBehaviour
                         case SnapMode.Grid:
                             newPos = gridSystem.SnapFootprintToGrid(hit.point, GetFootprint());
 
-                            if (buildingData != null && buildingData.requiresQuayFoundation)
+                            if (buildingData != null
+                                && buildingData.requiresQuayFoundation
+                                && !PlacementRules.IsPlateauCellAt(gridSystem, newPos))
                             {
                                 newPos.y = QuaySystem.GetOrCreate(gridSystem).TopElevationWorld;
                             }
@@ -524,7 +526,10 @@ public class BuildingPreview : MonoBehaviour
 
     private void UpdateQuayFoundationPreview()
     {
-        bool wantsQuay = buildingData != null && buildingData.requiresQuayFoundation && gridSystem != null;
+        bool wantsQuay = buildingData != null
+            && buildingData.requiresQuayFoundation
+            && gridSystem != null
+            && !PlacementRules.IsPlateauCellAt(gridSystem, transform.position);
 
         if (!wantsQuay)
         {

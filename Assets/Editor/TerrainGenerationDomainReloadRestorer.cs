@@ -18,7 +18,16 @@ public static class TerrainGenerationDomainReloadRestorer
     static TerrainGenerationDomainReloadRestorer()
     {
         EditorSceneManager.sceneOpened += OnSceneOpened;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         // ScheduleRestore();
+    }
+
+    private static void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.EnteredEditMode)
+        {
+            ScheduleRestore();
+        }
     }
 
     // [DidReloadScripts]

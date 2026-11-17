@@ -72,11 +72,20 @@ public class SelectionOutlineTarget : MonoBehaviour
 
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
         {
-            if (renderer == null)
+            if (renderer == null || IsSelectionIndicatorRenderer(renderer))
                 continue;
 
             renderers.Add(new OutlineRenderer(renderer, GetSubMeshCount(renderer)));
         }
+    }
+
+    private static bool IsSelectionIndicatorRenderer(Renderer renderer)
+    {
+        if (renderer is LineRenderer)
+            return true;
+
+        string goName = renderer.gameObject.name;
+        return goName == "Selected" || goName == "Selection Ring" || goName == "Selection";
     }
 
     private static int GetSubMeshCount(Renderer renderer)

@@ -35,7 +35,7 @@ public static class ShorelineDistanceField
     private const float Unreached = 1e20f;
 
     /// <summary>Forward+backward sweep pairs. See the propagation note below.</summary>
-    private const int PropagationSweeps = 2;
+    private const int PropagationSweeps = 5;
 
     /// <summary>
     /// Fills <paramref name="signedDistance"/> with world-unit distance to the shoreline,
@@ -206,6 +206,12 @@ public static class ShorelineDistanceField
             }
         }
 
+        // Smooth single-sample Laplacian curvature spikes on the medial axis without blurring signedDistance.
+        int smoothRadius = Mathf.Max(1, Mathf.RoundToInt(1.2f / Mathf.Max(0.0001f, step)));
+        float[] scratch = new float[curvature.Length];
+        SmoothCurvatureSeparable(curvature, scratch, resolution, smoothRadius);
+        SmoothCurvatureSeparable(curvature, scratch, resolution, smoothRadius);
+
         // Re-base against this island's own coastline, so 0 means "an ordinary stretch of THIS
         // coast" rather than "straight".
         //
@@ -232,6 +238,40 @@ public static class ShorelineDistanceField
         for (int i = 0; i < curvature.Length; i++)
         {
             curvature[i] -= baseline;
+        }
+    }
+
+    private static void SmoothCurvatureSeparable(
+        float[] curvature,
+        float[] scratch,
+        int resolution,
+        int radius)
+    {
+        for (int z = 0; z < resolution; z++)
+        {
+            int row = z * resolution;
+            for (int x = 0; x < resolution; x++)
+            {
+                int x0 = Mathf.Max(0, x - radius);
+                int x1 = Mathf.Min(resolution - 1, x + radius);
+                float sum = 0f;
+                for (int xi = x0; xi <= x1; xi++) sum += curvature[row + xi];
+                scratch[row + x] = sum / (x1 - x0 + 1);
+            }
+        }
+
+        for (int z = 0; z < resolution; z++)
+        {
+            int z0 = Mathf.Max(0, z - radius);
+            int z1 = Mathf.Min(resolution - 1, z + radius);
+            float invCount = 1f / (z1 - z0 + 1);
+            int row = z * resolution;
+            for (int x = 0; x < resolution; x++)
+            {
+                float sum = 0f;
+                for (int zi = z0; zi <= z1; zi++) sum += scratch[zi * resolution + x];
+                curvature[row + x] = sum * invCount;
+            }
         }
     }
 

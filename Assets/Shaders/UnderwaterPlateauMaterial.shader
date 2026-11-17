@@ -22,11 +22,15 @@ Shader "Custom/UnderwaterPlateauMaterial"
         _SandNormalScale ("Sand Normal Scale", Range(0, 3)) = 0.85
         _SeabedAlbedo ("Seabed Albedo", 2D) = "white" {}
         _SeabedNormal ("Seabed Normal", 2D) = "bump" {}
+        _SeabedTint ("Seabed Tint", Color) = (1, 1, 1, 1)
         _SeabedTiling ("Seabed Tiling", Float) = 0.30
         _SeabedNormalScale ("Seabed Normal Scale", Range(0, 3)) = 1.0
+        _SeabedSmoothness ("Seabed Smoothness", Range(0, 1)) = 0.45
         _GrassAlbedo ("Grass Albedo", 2D) = "white" {}
         _GrassNormal ("Grass Normal", 2D) = "bump" {}
         _GrassTiling ("Grass Tiling", Float) = 0.25
+        _MacroTiling ("Macro Variation Tiling", Float) = 0.02
+        _MacroStrength ("Macro Variation Strength", Range(0, 1)) = 0.25
         _TextureDetailStrength ("Texture Detail Blend", Range(0, 1)) = 0.72
         _WaterLevel ("Water Level", Float) = -1.0
 
@@ -130,10 +134,11 @@ Shader "Custom/UnderwaterPlateauMaterial"
             half4 _RockLightColor;
             half4 _SedimentColor;
             half4 _AlgaeColor;
+            half4 _SeabedTint;
             half _GeneratedColorBlend;
             half _TextureDetailStrength;
-            float _RockTiling, _SandTiling, _SeabedTiling, _GrassTiling;
-            half _RockNormalScale, _SandNormalScale, _SeabedNormalScale;
+            float _RockTiling, _SandTiling, _SeabedTiling, _GrassTiling, _MacroTiling;
+            half _RockNormalScale, _SandNormalScale, _SeabedNormalScale, _SeabedSmoothness, _MacroStrength;
             float _WaterLevel;
             half _RockScale;
             half _StrataScale;
@@ -208,7 +213,9 @@ Shader "Custom/UnderwaterPlateauMaterial"
             OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);
             OUTPUT_SH(output.normalWS, output.vertexSH);
             output.vertexLighting = VertexLighting(positionInputs.positionWS, output.normalWS);
-            output.shadowCoord = GetShadowCoord(positionInputs);
+            #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                output.shadowCoord = GetShadowCoord(positionInputs);
+            #endif
             output.fogFactor = ComputeFogFactor(positionInputs.positionCS.z);
             return output;
         }
@@ -334,7 +341,9 @@ Shader "Custom/UnderwaterPlateauMaterial"
             float rippleMask = pow(upward, 3.2) * _RippleStrength;
 
             float sandLuma = dot(sandTex, float3(0.299, 0.587, 0.114));
-            half3 sandBaseTint = generatedSample * _BaseColor.rgb;
+            float hasControl = step(1e-4, dot(rawControl, 1.0));
+            half3 fallbackSand = lerp(_RockMidColor.rgb * 1.15h, _SedimentColor.rgb, 0.65h);
+            half3 sandBaseTint = lerp(fallbackSand, generatedSample * _BaseColor.rgb, (half)hasControl);
             half3 marineSand = sandBaseTint * lerp(1.0, (half)(0.70 + sandLuma * 0.62), _TextureDetailStrength);
             marineSand *= 1.0 + (half)(ripple * rippleMask * 0.16);
 
@@ -358,11 +367,32 @@ Shader "Custom/UnderwaterPlateauMaterial"
             half3 plateauGround = lerp(marineSand, rock, (half)rockShare);
             float3 plateauGroundNormal = normalize(lerp(sandTiledNormalWS, rockTiledNormalWS, rockShare));
 
-            // Seamless border match against neighbouring Ocean/Abyss chunks using _SeabedAlbedo.
-            float macro = SAMPLE_TEXTURE2D_GRAD(_GrassAlbedo, sampler_GrassAlbedo, wpos * 0.02, positionDx.xz * 0.02, positionDy.xz * 0.02).g;
-            half3 borderSeabed = (half3)seabedAlbedo * (half)(0.75 + macro * 0.5);
+            // Seamless border match against neighbouring Ocean/Abyss chunks using _SeabedAlbedo, _SeabedTint & _SurfaceTint.
+            half3 surfaceTint = (half3)SAMPLE_TEXTURE2D(_SurfaceTint, sampler_Control,
+                input.uv * _SurfaceTint_ST.xy + _SurfaceTint_ST.zw).rgb;
+            float macro = SAMPLE_TEXTURE2D_GRAD(_GrassAlbedo, sampler_GrassAlbedo, wpos * max(0.001, _MacroTiling), positionDx.xz * max(0.001, _MacroTiling), positionDy.xz * max(0.001, _MacroTiling)).g;
+            half macroMod = (half)lerp(1.0, 0.6 + macro * 0.8, _MacroStrength);
+            half3 seabedBase = (half3)seabedAlbedo * (half3)_SeabedTint.rgb;
+            UNITY_BRANCH if (_UseSurfaceTint > 0.5)
+            {
+                seabedBase *= surfaceTint;
+            }
+            half3 borderSeabed = seabedBase * macroMod;
             plateauGround = lerp(plateauGround, borderSeabed, (half)abyssFade);
             plateauGroundNormal = normalize(lerp(plateauGroundNormal, seabedNormalWS, abyssFade));
+
+            // Adjacent Island spillover skirts crossing onto a Plateau chunk's outer margin use Terrain Splat's rock/sand tint.
+            float edgeDist = min(min(input.uv.x, 1.0 - input.uv.x), min(input.uv.y, 1.0 - input.uv.y));
+            float islandHeightSignal = smoothstep(_WaterLevel - 24.5, _WaterLevel - 18.0, input.positionWS.y);
+            float islandSpillMask = saturate(max(1.0 - smoothstep(0.11, 0.21, edgeDist), islandHeightSignal) * (1.0 - abyssFade) * isTerrainSurface);
+            if (islandSpillMask > 0.001)
+            {
+                half3 islandRock = (half3)tiledRockAlbedo * (half3)(_UseSurfaceTint > 0.5 ? surfaceTint : half3(1, 1, 1)) * macroMod;
+                half3 islandSand = (half3)sandTex * (half3)(_UseSurfaceTint > 0.5 ? surfaceTint : half3(1, 1, 1)) * macroMod;
+                half3 islandSkirt = lerp(islandSand, islandRock, (half)rockShare);
+                plateauGround = lerp(plateauGround, islandSkirt, (half)islandSpillMask);
+                plateauGroundNormal = normalize(lerp(plateauGroundNormal, rockTiledNormalWS, islandSpillMask));
+            }
 
             // Handle any adjacent Island corner extending above water on a shared world chunk.
             float aboveWaterIsland = saturate(rawGrass * 4.0) * smoothstep(_WaterLevel - 1.2, _WaterLevel + 0.2, input.positionWS.y);
@@ -370,7 +400,6 @@ Shader "Custom/UnderwaterPlateauMaterial"
             {
                 float grassTile = max(0.02, _GrassTiling);
                 float3 grassTex = SAMPLE_TEXTURE2D_GRAD(_GrassAlbedo, sampler_GrassAlbedo, wpos * grassTile, positionDx.xz * grassTile, positionDy.xz * grassTile).rgb;
-                half3 surfaceTint = (half3)SAMPLE_TEXTURE2D(_SurfaceTint, sampler_Control, input.uv * _SurfaceTint_ST.xy + _SurfaceTint_ST.zw).rgb;
                 half3 islandApprox = lerp((half3)grassTex * surfaceTint, generatedSample * _BaseColor.rgb, 0.45h);
                 plateauGround = lerp(plateauGround, islandApprox, (half)aboveWaterIsland);
             }
@@ -378,9 +407,10 @@ Shader "Custom/UnderwaterPlateauMaterial"
             half3 albedo = lerp(rock, plateauGround, (half)(_GeneratedColorBlend * isTerrainSurface));
             float3 baseDetailNormalWS = normalize(lerp(rockTiledNormalWS, plateauGroundNormal, isTerrainSurface));
 
-            // Subtle submerged animated sunlight caustic shimmer on tabletop/ledges below water surface.
+            // Subtle submerged animated sunlight caustic shimmer on tabletop/ledges below water surface,
+            // smoothly attenuated toward _SeabedAlbedo border so Terrain Splat seams match seamlessly.
             float depthBelowWater = max(0.0, _WaterLevel - input.positionWS.y);
-            float causticFade = saturate(depthBelowWater * 1.2) * exp(-depthBelowWater * 0.065) * upward * (1.0 - aboveWaterIsland);
+            float causticFade = saturate(depthBelowWater * 1.2) * exp(-depthBelowWater * 0.022) * upward * (1.0 - aboveWaterIsland) * (1.0 - abyssFade) * (1.0 - islandSpillMask);
             float causticPattern = SampleSurfaceCaustics(wpos, _Time.y);
             albedo += half3(0.14, 0.34, 0.42) * (half)(causticPattern * causticFade * _CausticStrength * 0.28);
 
@@ -410,7 +440,7 @@ Shader "Custom/UnderwaterPlateauMaterial"
             surface = (SurfaceData)0;
             surface.albedo = albedo;
             surface.emission = placementEmission;
-            surface.smoothness = _Smoothness;
+            surface.smoothness = lerp(_Smoothness, _SeabedSmoothness, (half)saturate(abyssFade * isTerrainSurface));
             surface.normalTS = half3(0, 0, 1);
             surface.occlusion = 1;
             surface.alpha = 1;
@@ -430,7 +460,13 @@ Shader "Custom/UnderwaterPlateauMaterial"
             inputData.positionWS = input.positionWS;
             inputData.normalWS = normalWS;
             inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-            inputData.shadowCoord = input.shadowCoord;
+            #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                inputData.shadowCoord = input.shadowCoord;
+            #elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
+                inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);
+            #else
+                inputData.shadowCoord = float4(0, 0, 0, 0);
+            #endif
             inputData.fogCoord = input.fogFactor;
             inputData.vertexLighting = input.vertexLighting;
             inputData.bakedGI = SAMPLE_GI(input.lightmapUV, input.vertexSH, normalWS);

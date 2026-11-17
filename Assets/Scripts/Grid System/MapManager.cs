@@ -1015,6 +1015,8 @@ public class MapManager : MonoBehaviour
 
         ValidateGeneratedChunkSeparation();
         ReportTerrainMeasurements();
+        EnsureInfiniteHorizon(activePattern);
+        GetComponent<GameBorder>()?.FitToGeneratedMap();
 
         LastGenerationFailedChunks = failedChunkCount;
         if (failedChunkCount > 0)
@@ -1054,6 +1056,210 @@ public class MapManager : MonoBehaviour
         waterScale.x = Mathf.Max(waterScale.x, requiredWidth / meshSize.x);
         waterScale.z = Mathf.Max(waterScale.z, requiredWidth / meshSize.z);
         waterObject.transform.localScale = waterScale;
+    }
+
+    private const string GeneratedHorizonRootName = "Generated Infinite Horizon";
+    private const float InfiniteHorizonOuterRadius = 3600f;
+    private readonly List<UnityEngine.Object> generatedHorizonResources = new List<UnityEngine.Object>();
+
+    private void ReleaseHorizonResources()
+    {
+        for (int i = 0; i < generatedHorizonResources.Count; i++)
+        {
+            UnityEngine.Object obj = generatedHorizonResources[i];
+            if (obj == null) continue;
+            if (Application.isPlaying) Destroy(obj);
+            else DestroyImmediate(obj);
+        }
+        generatedHorizonResources.Clear();
+    }
+
+    private void EnsureInfiniteHorizon(PatternData activePattern)
+    {
+        if (generatedMapRoot == null) return;
+
+        Transform existing = generatedMapRoot.Find(GeneratedHorizonRootName);
+        if (existing != null)
+        {
+            if (Application.isPlaying) Destroy(existing.gameObject);
+            else DestroyImmediate(existing.gameObject);
+        }
+        ReleaseHorizonResources();
+
+        MapGrid[] chunks = generatedMapRoot.GetComponentsInChildren<MapGrid>(true);
+        if (chunks.Length == 0) return;
+
+        Bounds mapBounds = default;
+        bool hasMapBounds = false;
+        Material terrainSplatMaterial = null;
+        ClimateProfile climate = null;
+        float abyssY = float.NaN;
+
+        for (int i = 0; i < chunks.Length; i++)
+        {
+            MapGrid g = chunks[i];
+            if (g == null) continue;
+            MeshRenderer mr = g.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                if (!hasMapBounds) { mapBounds = mr.bounds; hasMapBounds = true; }
+                else mapBounds.Encapsulate(mr.bounds);
+
+                if (terrainSplatMaterial == null && mr.sharedMaterial != null
+                    && mr.sharedMaterial.shader != null
+                    && mr.sharedMaterial.shader.name == "Moonlight/Terrain Splat (Normal Mapped)")
+                {
+                    terrainSplatMaterial = mr.sharedMaterial;
+                }
+            }
+
+            if (terrainSplatMaterial == null && g.terrainMaterial != null)
+                terrainSplatMaterial = g.terrainMaterial;
+            if (climate == null && g.climateProfile != null)
+                climate = g.climateProfile;
+            if (float.IsNaN(abyssY) && g.TerrainSource != null && g.TerrainSource.Settings != null)
+                abyssY = g.TerrainSource.Settings.abyssHeight;
+        }
+
+        if (!hasMapBounds) return;
+        if (float.IsNaN(abyssY)) abyssY = mapBounds.min.y;
+
+        GameObject horizonRoot = new GameObject(GeneratedHorizonRootName);
+        horizonRoot.transform.SetParent(generatedMapRoot, false);
+
+        // 1. Extended ocean water frame surrounding Ocean Cube cleanly out to +-3600m (no center overlap).
+        if (waterObject != null && waterObject.activeInHierarchy)
+        {
+            Renderer waterRenderer = waterObject.GetComponent<Renderer>();
+            if (waterRenderer != null && waterRenderer.sharedMaterial != null)
+            {
+                Bounds wb = waterRenderer.bounds;
+                float waterSurfaceY = wb.max.y;
+                float outer = InfiniteHorizonOuterRadius;
+                Mesh waterFrame = BuildHollowFrameMesh(
+                    "Infinite Ocean Horizon Mesh",
+                    wb.min.x, wb.max.x, wb.min.z, wb.max.z,
+                    outer,
+                    waterSurfaceY,
+                    new Vector2(wb.center.x, wb.center.z),
+                    new Vector2(Mathf.Max(1f, wb.size.x), Mathf.Max(1f, wb.size.z)));
+                generatedHorizonResources.Add(waterFrame);
+
+                GameObject oceanSkirt = new GameObject("Infinite Ocean Horizon", typeof(MeshFilter), typeof(MeshRenderer));
+                oceanSkirt.layer = waterObject.layer;
+                oceanSkirt.transform.SetParent(horizonRoot.transform, false);
+                oceanSkirt.GetComponent<MeshFilter>().sharedMesh = waterFrame;
+                MeshRenderer skirtRenderer = oceanSkirt.GetComponent<MeshRenderer>();
+                skirtRenderer.sharedMaterial = waterRenderer.sharedMaterial;
+                skirtRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                skirtRenderer.receiveShadows = waterRenderer.receiveShadows;
+            }
+        }
+
+        // 2. Extended abyssal seafloor frame matching Terrain Splat seabed seamlessly out to +-3600m.
+        if (terrainSplatMaterial != null)
+        {
+            Mesh abyssFrame = BuildHollowFrameMesh(
+                "Infinite Abyss Floor Mesh",
+                mapBounds.min.x, mapBounds.max.x, mapBounds.min.z, mapBounds.max.z,
+                InfiniteHorizonOuterRadius,
+                abyssY,
+                Vector2.zero,
+                new Vector2(ChunkWorldSize, ChunkWorldSize));
+            generatedHorizonResources.Add(abyssFrame);
+
+            GameObject abyssSkirt = new GameObject("Infinite Abyss Floor", typeof(MeshFilter), typeof(MeshRenderer));
+            abyssSkirt.layer = chunks[0].gameObject.layer;
+            abyssSkirt.transform.SetParent(horizonRoot.transform, false);
+            abyssSkirt.GetComponent<MeshFilter>().sharedMesh = abyssFrame;
+            MeshRenderer abyssRenderer = abyssSkirt.GetComponent<MeshRenderer>();
+            abyssRenderer.sharedMaterial = terrainSplatMaterial;
+            abyssRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            abyssRenderer.receiveShadows = true;
+
+            Color sand1 = climate != null ? climate.sandColor1 : new Color(0.75f, 0.75f, 0.7f);
+            Color sand2 = climate != null ? climate.sandColor2 : new Color(0.7f, 0.7f, 0.65f);
+            Color rock1 = climate != null ? climate.rockColor1 : new Color(0.45f, 0.45f, 0.45f);
+            Color rock2 = climate != null ? climate.rockColor2 : new Color(0.35f, 0.35f, 0.35f);
+            Color abyssSilt = Color.Lerp(((sand1 + sand2) * 0.5f) * 0.72f, ((rock1 + rock2) * 0.5f) * 0.65f, 0.45f);
+            abyssSilt.a = 0f;
+
+            Texture2D tintTex = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+            {
+                name = "Infinite Abyss Surface Tint",
+                wrapMode = TextureWrapMode.Clamp
+            };
+            tintTex.SetPixel(0, 0, abyssSilt);
+            tintTex.Apply(false, true);
+            generatedHorizonResources.Add(tintTex);
+
+            MaterialPropertyBlock block = new MaterialPropertyBlock();
+            block.SetTexture("_Control", Texture2D.blackTexture);
+            block.SetTexture("_SurfaceTint", tintTex);
+            block.SetFloat("_UseSurfaceTint", 1f);
+            abyssRenderer.SetPropertyBlock(block);
+        }
+    }
+
+    private static Mesh BuildHollowFrameMesh(
+        string meshName,
+        float innerMinX,
+        float innerMaxX,
+        float innerMinZ,
+        float innerMaxZ,
+        float outerRadius,
+        float y,
+        Vector2 uvCenter,
+        Vector2 uvScale)
+    {
+        float oMinX = Mathf.Min(-outerRadius, innerMinX - 10f);
+        float oMaxX = Mathf.Max(outerRadius, innerMaxX + 10f);
+        float oMinZ = Mathf.Min(-outerRadius, innerMinZ - 10f);
+        float oMaxZ = Mathf.Max(outerRadius, innerMaxZ + 10f);
+
+        Vector3[] verts = new Vector3[16];
+        Vector3[] normals = new Vector3[16];
+        Vector2[] uvs = new Vector2[16];
+        int[] tris = new int[24];
+
+        void AddQuad(int q, float x0, float x1, float z0, float z1)
+        {
+            int v = q * 4;
+            verts[v + 0] = new Vector3(x0, y, z0);
+            verts[v + 1] = new Vector3(x1, y, z0);
+            verts[v + 2] = new Vector3(x1, y, z1);
+            verts[v + 3] = new Vector3(x0, y, z1);
+
+            for (int k = 0; k < 4; k++)
+            {
+                normals[v + k] = Vector3.up;
+                uvs[v + k] = new Vector2(
+                    (verts[v + k].x - uvCenter.x) / uvScale.x + 0.5f,
+                    (verts[v + k].z - uvCenter.y) / uvScale.y + 0.5f);
+            }
+
+            int t = q * 6;
+            tris[t + 0] = v + 0;
+            tris[t + 1] = v + 2;
+            tris[t + 2] = v + 1;
+            tris[t + 3] = v + 0;
+            tris[t + 4] = v + 3;
+            tris[t + 5] = v + 2;
+        }
+
+        // North, South, West, East strips leaving exact inner hole uncovered
+        AddQuad(0, oMinX, oMaxX, innerMaxZ, oMaxZ);
+        AddQuad(1, oMinX, oMaxX, oMinZ, innerMinZ);
+        AddQuad(2, oMinX, innerMinX, innerMinZ, innerMaxZ);
+        AddQuad(3, innerMaxX, oMaxX, innerMinZ, innerMaxZ);
+
+        Mesh mesh = new Mesh { name = meshName };
+        mesh.vertices = verts;
+        mesh.normals = normals;
+        mesh.uv = uvs;
+        mesh.triangles = tris;
+        mesh.RecalculateBounds();
+        return mesh;
     }
 
     /// <summary>
@@ -1148,6 +1354,7 @@ public class MapManager : MonoBehaviour
                 mapGrid.ReleaseGeneratedVisualResources();
             }
 
+            ReleaseHorizonResources();
             if (Application.isPlaying) Destroy(rootObject);
             else DestroyImmediate(rootObject);
         }
@@ -1196,6 +1403,9 @@ public class MapManager : MonoBehaviour
         {
             generatedChunk.RestoreGeneratedStateAfterDomainReload();
         }
+
+        EnsureInfiniteHorizon(SelectedPatternData);
+        GetComponent<GameBorder>()?.FitToGeneratedMap();
     }
     
     #endregion
@@ -1296,6 +1506,15 @@ public class MapManager : MonoBehaviour
     }
 
 
+    private struct SlotPlacementInfo
+    {
+        public int Slot;
+        public GridType.Type Kind;
+        public GameObject Prefab;
+        public IslandGenerationOverrides Overrides;
+        public Rect Bounds;
+    }
+
     private WorldTerrainField BuildWorldTerrainField(PatternData pattern)
     {
         var result = new WorldTerrainField();
@@ -1304,26 +1523,38 @@ public class MapManager : MonoBehaviour
         float sea = ResolveOceanSurfaceHeight(pattern);
         int dominantSlot = -1;
         float closestToCentre = float.PositiveInfinity;
+        var activeSlots = new List<SlotPlacementInfo>();
         for (int row = 0; row < count; row++) for (int column = 0; column < count; column++)
         {
             int slot = count == 1 ? 1 : row * count + column + 1;
-            if (!pattern.TryResolveSlot(slot, row, column, out var kind, out _, out _) || kind != GridType.Type.Island) continue;
-            Vector2 centre = new Vector2(row * LatticeSlotSpacing - offset + ChunkWorldSize * 0.5f,
-                column * LatticeSlotSpacing - offset + ChunkWorldSize * 0.5f);
+            if (!pattern.TryResolveSlot(slot, row, column, out var kind, out var prefab, out var overrides)) continue;
+            var bounds = new Rect(row * LatticeSlotSpacing - offset, column * LatticeSlotSpacing - offset, ChunkWorldSize, ChunkWorldSize);
+            activeSlots.Add(new SlotPlacementInfo
+            {
+                Slot = slot,
+                Kind = kind,
+                Prefab = prefab,
+                Overrides = overrides,
+                Bounds = bounds
+            });
+            if (kind != GridType.Type.Island) continue;
+            Vector2 centre = bounds.center;
             if (centre.sqrMagnitude >= closestToCentre) continue;
             closestToCentre = centre.sqrMagnitude; dominantSlot = slot;
         }
-        for (int row = 0; row < count; row++)
-        for (int column = 0; column < count; column++)
+        float worldMin = -offset;
+        float worldMax = (count - 1) * LatticeSlotSpacing - offset + ChunkWorldSize;
+        for (int s = 0; s < activeSlots.Count; s++)
         {
-            int slot = count == 1 ? 1 : row * count + column + 1;
-            if (!pattern.TryResolveSlot(slot, row, column, out var kind, out var prefab, out var overrides)) continue;
-            var template = prefab != null ? prefab.GetComponent<MapGrid>() : null;
+            SlotPlacementInfo entry = activeSlots[s];
+            int slot = entry.Slot;
+            GridType.Type kind = entry.Kind;
+            var template = entry.Prefab != null ? entry.Prefab.GetComponent<MapGrid>() : null;
             if (template == null) throw new InvalidOperationException($"Slot {slot} has no MapGrid prefab.");
             var authored = template.worldSettings != null ? template.worldSettings.Template : template.generationSettings;
-            var settings = template.CreateLandformSettings(overrides, pattern.plateauSettings, sea);
+            var settings = template.CreateLandformSettings(entry.Overrides, pattern.plateauSettings, sea);
             int seed = unchecked(settings.seed * 397 ^ slot);
-            Vector2 origin = new Vector2(row * LatticeSlotSpacing - offset, column * LatticeSlotSpacing - offset);
+            Vector2 origin = entry.Bounds.min;
             int shapeSize = template.size;
             int padding = 0;
             if (kind == GridType.Type.Island)
@@ -1331,18 +1562,22 @@ public class MapManager : MonoBehaviour
                 var random = new System.Random(seed);
                 if (count > 1)
                 {
+                    Rect safeBounds = ComputeSafeIslandDomain(entry.Bounds, activeSlots, worldMin, worldMax, worldMin, worldMax);
                     // Landform extents and positions belong to the world, independently of tile storage.
                     float extent = slot != dominantSlot ? Mathf.Lerp(settings.secondaryLandformScale.x, settings.secondaryLandformScale.y, (float)random.NextDouble()) : settings.dominantLandformScale;
                     shapeSize = Mathf.RoundToInt(template.size * extent);
+                    int maxAllowedSize = Mathf.FloorToInt(Mathf.Min(safeBounds.width, safeBounds.height));
+                    if (maxAllowedSize > 0) shapeSize = Mathf.Min(shapeSize, maxAllowedSize);
                     origin += Vector2.one * ((template.size - shapeSize) * 0.5f);
                     origin += new Vector2(Mathf.Round((float)(random.NextDouble() - 0.5) * template.size * Mathf.Clamp(settings.landformPositionJitter, 0f, 0.5f) * 2f),
                         Mathf.Round((float)(random.NextDouble() - 0.5) * template.size * Mathf.Clamp(settings.landformPositionJitter, 0f, 0.5f) * 2f));
                     // Preserve one common sample lattice even for odd landform sizes.
                     origin.x = Mathf.Round(origin.x + offset) - offset;
                     origin.y = Mathf.Round(origin.y + offset) - offset;
-                    float maximumOrigin = (count - 1) * LatticeSlotSpacing - offset + ChunkWorldSize - shapeSize;
-                    origin.x = Mathf.Clamp(origin.x, -offset, maximumOrigin);
-                    origin.y = Mathf.Clamp(origin.y, -offset, maximumOrigin);
+                    float maxOriginX = Mathf.Max(safeBounds.xMin, safeBounds.xMax - shapeSize);
+                    float maxOriginZ = Mathf.Max(safeBounds.yMin, safeBounds.yMax - shapeSize);
+                    origin.x = Mathf.Clamp(origin.x, safeBounds.xMin, maxOriginX);
+                    origin.y = Mathf.Clamp(origin.y, safeBounds.yMin, maxOriginZ);
                 }
                 var coast = settings.coastalProfile;
                 padding = Mathf.CeilToInt(coast.surfWidth + coast.shelfWidth + coast.continentalSlopeWidth
@@ -1358,6 +1593,83 @@ public class MapManager : MonoBehaviour
                 + $"ridge threshold authored/resolved {authored?.coastalProfile.headlandRidgeThreshold}/{settings.coastalProfile.headlandRidgeThreshold}");
         }
         return result;
+    }
+
+    private static Rect ComputeSafeIslandDomain(
+        Rect chunkBounds,
+        List<SlotPlacementInfo> activeSlots,
+        float worldMinX,
+        float worldMaxX,
+        float worldMinZ,
+        float worldMaxZ)
+    {
+        var blockers = new List<Rect>();
+        for (int i = 0; i < activeSlots.Count; i++)
+        {
+            if (activeSlots[i].Kind != GridType.Type.Island) blockers.Add(activeSlots[i].Bounds);
+        }
+
+        Vector2 centre = chunkBounds.center;
+        blockers.Sort((a, b) => (a.center - centre).sqrMagnitude.CompareTo((b.center - centre).sqrMagnitude));
+
+        float sMinX = worldMinX;
+        float sMaxX = worldMaxX;
+        float sMinZ = worldMinZ;
+        float sMaxZ = worldMaxZ;
+
+        for (int i = 0; i < blockers.Count; i++)
+        {
+            Rect b = blockers[i];
+            if (b.xMax <= sMinX + 0.001f || b.xMin >= sMaxX - 0.001f
+                || b.yMax <= sMinZ + 0.001f || b.yMin >= sMaxZ - 0.001f)
+            {
+                continue;
+            }
+
+            float bestMinDim = -1f;
+            float bestArea = -1f;
+            float nextMinX = sMinX, nextMaxX = sMaxX, nextMinZ = sMinZ, nextMaxZ = sMaxZ;
+
+            void EvaluateTrim(float cMinX, float cMaxX, float cMinZ, float cMaxZ)
+            {
+                float w = cMaxX - cMinX;
+                float h = cMaxZ - cMinZ;
+                if (w < chunkBounds.width - 0.001f || h < chunkBounds.height - 0.001f) return;
+                float minDim = Mathf.Min(w, h);
+                float area = w * h;
+                if (minDim > bestMinDim + 0.001f
+                    || (Mathf.Abs(minDim - bestMinDim) <= 0.001f && area > bestArea))
+                {
+                    bestMinDim = minDim;
+                    bestArea = area;
+                    nextMinX = cMinX;
+                    nextMaxX = cMaxX;
+                    nextMinZ = cMinZ;
+                    nextMaxZ = cMaxZ;
+                }
+            }
+
+            if (b.xMax <= chunkBounds.xMin + 0.001f) EvaluateTrim(Mathf.Max(sMinX, b.xMax), sMaxX, sMinZ, sMaxZ);
+            if (b.xMin >= chunkBounds.xMax - 0.001f) EvaluateTrim(sMinX, Mathf.Min(sMaxX, b.xMin), sMinZ, sMaxZ);
+            if (b.yMax <= chunkBounds.yMin + 0.001f) EvaluateTrim(sMinX, sMaxX, Mathf.Max(sMinZ, b.yMax), sMaxZ);
+            if (b.yMin >= chunkBounds.yMax - 0.001f) EvaluateTrim(sMinX, sMaxX, sMinZ, Mathf.Min(sMaxZ, b.yMin));
+
+            if (bestMinDim > 0f)
+            {
+                sMinX = nextMinX;
+                sMaxX = nextMaxX;
+                sMinZ = nextMinZ;
+                sMaxZ = nextMaxZ;
+            }
+        }
+
+        // Guard against floating-point edge overlap on inclusive rect lookups.
+        sMinX = Mathf.Min(sMinX, chunkBounds.xMin);
+        sMaxX = Mathf.Max(sMaxX, chunkBounds.xMax);
+        sMinZ = Mathf.Min(sMinZ, chunkBounds.yMin);
+        sMaxZ = Mathf.Max(sMaxZ, chunkBounds.yMax);
+
+        return Rect.MinMaxRect(sMinX, sMinZ, sMaxX, sMaxZ);
     }
 
     public void AddIsland(IslandData data, int row = 0, int column = 0)

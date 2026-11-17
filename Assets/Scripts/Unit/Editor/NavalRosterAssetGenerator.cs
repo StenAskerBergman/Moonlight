@@ -610,6 +610,11 @@ public static class NavalRosterAssetGenerator
                 sel.transform.localPosition = new Vector3(0, -0.5f, 0);
                 sel.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 sel.transform.localScale = new Vector3(3, 3, 1);
+                Material markerMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/GameWorld/SelectionMarker.mat");
+                if (markerMat != null)
+                {
+                    sel.GetComponent<MeshRenderer>().sharedMaterial = markerMat;
+                }
                 sel.SetActive(false);
                 Object.DestroyImmediate(sel.GetComponent<Collider>());
             }

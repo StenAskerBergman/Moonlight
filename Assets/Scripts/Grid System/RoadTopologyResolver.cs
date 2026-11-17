@@ -299,10 +299,12 @@ public static class BridgePlacementRules
         return false;
     }
 
-    private static bool IsRoadTerrain(Cell cell)
+    public static bool IsRoadTerrain(Cell cell)
     {
         return cell != null
             && (cell.currentTerrainType == Cell.TerrainType.Land
-                || cell.currentTerrainType == Cell.TerrainType.Beach);
+                || cell.currentTerrainType == Cell.TerrainType.Beach
+                || cell.currentTerrainType == Cell.TerrainType.Plain
+                || cell.IsBuildableUnderwaterPlateau);
     }
 }

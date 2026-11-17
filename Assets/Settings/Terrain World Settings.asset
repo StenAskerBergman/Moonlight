@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Terrain World Settings
   m_EditorClassIdentifier: 
   template:
-    mainlandShapeDataVersion: 1
     landformPositionJitter: 0.475
     dominantLandformScale: 1.65
     secondaryLandformScale: {x: 0.9, y: 1.25}
+    mainlandShapeDataVersion: 1
     seed: 1337
     domainWarp:
       enabled: 1
@@ -26,7 +26,7 @@ MonoBehaviour:
       persistence: 0.5
       lacunarity: 2
     standalonePlateau:
-      dataVersion: 0
+      dataVersion: 9
       shapeMode: 0
       tabletopRadius: 0.56
       elongation: 1.32
@@ -38,10 +38,10 @@ MonoBehaviour:
       boundaryNotchCount: 2
       boundaryNotchDepth: 0.075
       rockyRimWidth: 3
-      upperEscarpmentWidth: 1.8
-      lowerApronWidth: 5.5
-      cliffDropDepth: 8
-      lowerApronDrop: 2
+      upperEscarpmentWidth: 2.8
+      lowerApronWidth: 7
+      cliffDropDepth: 13
+      lowerApronDrop: 4
       rimOutcropHeight: 1.35
       occasionalSpireHeight: 4.8
       perimeterSpireCount: 3
@@ -61,7 +61,7 @@ MonoBehaviour:
       sandOpeningTopWidth: 4.5
       sandOpeningWidthMultiplier: 2
       sandDescentLengthMultiplier: 1.55
-      tabletopDepthBelowWater: 6
+      tabletopDepthBelowWater: 27
       minimumFormationClearance: 2.5
     noiseLayers:
     - name: Island mass
@@ -105,7 +105,7 @@ MonoBehaviour:
     cliffUpper: 0.82
     mountainUpper: 0.88
     coastalMountains:
-      dataVersion: 2
+      dataVersion: 9
       enabled: 1
       minRidges: 3
       maxRidges: 5
@@ -135,14 +135,14 @@ MonoBehaviour:
       lakeDepth: 0.65
       minimumRiverLength: 18
     coastalProfile:
-      dataVersion: 0
+      dataVersion: 9
       backshoreWidth: 1.8
       beachWidth: 2.2
       surfWidth: 2.5
       shelfWidth: 5
       deepHandoffWidth: 6
-      continentalSlopeWidth: 16
-      continentalSlopeExponent: 1.8
+      continentalSlopeWidth: 22
+      continentalSlopeExponent: 1.65
       beachCrestFreeboard: 0.4
       waterlineFreeboard: 0.05
       surfDepth: 0.45
@@ -160,6 +160,13 @@ MonoBehaviour:
       headlandShelfExtension: 3
       headlandShelfNarrowing: 0.3
       minimumBeachWidth: 0.1
+    region:
+      enabled: 0
+      coverage: 0.3
+      directionDegrees: 45
+      transitionWidth: 3.5
+      boundaryWander: 6
+      boundaryWanderScale: 32
     abyssDepthBelowWater: 0
     landLadderVersion: 0
     mainlandFreeboard: 1.25

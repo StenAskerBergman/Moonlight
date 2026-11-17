@@ -158,7 +158,9 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             OUTPUT_SH(n.normalWS, o.vertexSH);
             o.vertexLighting = VertexLighting(p.positionWS, n.normalWS);
             o.fogCoord = ComputeFogFactor(p.positionCS.z);
-            o.shadowCoord = GetShadowCoord(p);
+            #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                o.shadowCoord = GetShadowCoord(p);
+            #endif
             return o;
         }
 
@@ -334,7 +336,13 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
             inputData.positionWS = input.positionWS;
             inputData.normalWS = shadedNormalWS;
             inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-            inputData.shadowCoord = input.shadowCoord;
+            #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                inputData.shadowCoord = input.shadowCoord;
+            #elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
+                inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);
+            #else
+                inputData.shadowCoord = float4(0, 0, 0, 0);
+            #endif
             inputData.fogCoord = input.fogCoord;
             inputData.vertexLighting = input.vertexLighting;
             inputData.bakedGI = SAMPLE_GI(input.lightmapUV, input.vertexSH, shadedNormalWS);

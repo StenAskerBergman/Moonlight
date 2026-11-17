@@ -128,11 +128,32 @@ public static class PlacementRules
             return false;
         }
 
+        bool isPlateau = cell.currentTerrainType == Cell.TerrainType.Plateau;
+        bool isHarbor = InfluenceManager.IsHarborBuilding(data);
+
         // Fail closed on water. Terrain legality used to be checked only inside the
         // "data != null" block below, so a building whose BuildingData was never assigned
         // had no terrain rule at all and could be dropped straight into the sea. A
         // building that wants to sit on water has to say so via its buildingType.
-        if (data != null && data.requiresQuayFoundation)
+        if (isPlateau)
+        {
+            if (isHarbor)
+            {
+                if (!cell.IsSlopeSuitableForBuilding)
+                {
+                    verdict = PlacementVerdict.WrongTerrain;
+                    return false;
+                }
+            }
+            else if (data != null && (data.requiresQuayFoundation
+                || data.buildingType == BuildingEnums.BuildingType.OnShore.ToString()
+                || data.buildingType == BuildingEnums.BuildingType.OffShore.ToString()))
+            {
+                verdict = PlacementVerdict.WrongTerrain;
+                return false;
+            }
+        }
+        else if (data != null && data.requiresQuayFoundation)
         {
             if (!QuaySystem.IsLegalQuayTerrain(cell.currentTerrainType))
             {
@@ -146,7 +167,7 @@ public static class PlacementRules
             return false;
         }
 
-        if (data != null)
+        if (data != null && !(isPlateau && isHarbor))
         {
             if (data.buildingType == BuildingEnums.BuildingType.OnShore.ToString())
             {
@@ -286,5 +307,12 @@ public static class PlacementRules
         }
 
         return influenceManager;
+    }
+
+    public static bool IsPlateauCellAt(GridSystem gridSystem, Vector3 worldPosition)
+    {
+        if (gridSystem == null) return false;
+        Cell cell = gridSystem.GetCellAtWorldPosition(worldPosition);
+        return cell != null && cell.currentTerrainType == Cell.TerrainType.Plateau;
     }
 }
