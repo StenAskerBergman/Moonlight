@@ -81,6 +81,7 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
         #include "Placement/PlacementOverlayCommon.hlsl"
+        #include "Water/OceanShoreCommon.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             float4 _Control_ST, _BaseMap_ST, _SurfaceTint_ST, _RegionMask_ST;
@@ -296,6 +297,23 @@ Shader "Moonlight/Terrain Splat (Normal Mapped)"
                     wpos * _MacroTiling, positionDx.xz * _MacroTiling, positionDy.xz * _MacroTiling).g;
                 albedo *= lerp(1.0, 0.6 + macro * 0.8, _MacroStrength);
             }
+
+            // The beach side of the ocean seam. Ground the swash has just run over is dark and
+            // glossy; the swash itself leaves a lace of foam at its leading edge. Timing comes
+            // from OceanShoreCommon, the same function the ocean's breakers use, so the wash
+            // arrives as each breaker reaches this stretch of coast. Without this the sand
+            // stayed bone-dry right up to a hard line of opaque water.
+            float swashWetness, swashFoam;
+            OceanTerrainSwash(input.positionWS, swashWetness, swashFoam);
+            UNITY_BRANCH if (swashWetness + swashFoam > 0)
+            {
+                albedo *= lerp(1.0, 0.58, swashWetness);
+                smoothness = lerp(smoothness, 0.82, swashWetness * (1.0 - snowCoverage));
+                shadedNormalWS = normalize(lerp(shadedNormalWS, normalWS, swashWetness * 0.6));
+                albedo = lerp(albedo, float3(0.88, 0.92, 0.93), swashFoam);
+                smoothness = lerp(smoothness, 0.35, swashFoam);
+            }
+
             half3 placementEmission = 0;
             float aboveWaterMask = step(_PlacementGridParams.z - 0.03, input.placementData.z);
             float4 overlayState = float4(_PlacementOverlayState.x * aboveWaterMask, _PlacementOverlayState.yzw);

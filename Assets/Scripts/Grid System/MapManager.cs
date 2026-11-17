@@ -568,6 +568,10 @@ public class MapManager : MonoBehaviour
 
     public GameObject landTilePrefab => ActiveChunkPrefab;
     [SerializeField] private GameObject waterObject; // Assuming that waterObject is a reference to the water game object
+    [Tooltip("The visible ocean: a tessellated surface whose waves roll in toward every island's " +
+             "coast, built over the water object after each generation. The water object keeps " +
+             "its collider and stays the sea-level datum but stops drawing.")]
+    [SerializeField] private OceanSurfaceSettings oceanSurface = new OceanSurfaceSettings();
     [FormerlySerializedAs("islandConfig")]
     [SerializeField, HideInInspector] private IslandConfiguration legacyIslandConfiguration;
 
@@ -1086,8 +1090,13 @@ public class MapManager : MonoBehaviour
         }
         ReleaseHorizonResources();
 
+        Renderer oceanDatumRenderer = waterObject != null ? waterObject.GetComponent<Renderer>() : null;
         MapGrid[] chunks = generatedMapRoot.GetComponentsInChildren<MapGrid>(true);
-        if (chunks.Length == 0) return;
+        if (chunks.Length == 0)
+        {
+            OceanSurfaceBuilder.Disable(oceanDatumRenderer);
+            return;
+        }
 
         Bounds mapBounds = default;
         bool hasMapBounds = false;
@@ -1121,17 +1130,36 @@ public class MapManager : MonoBehaviour
                 abyssY = g.TerrainSource.Settings.abyssHeight;
         }
 
-        if (!hasMapBounds) return;
+        if (!hasMapBounds)
+        {
+            OceanSurfaceBuilder.Disable(oceanDatumRenderer);
+            return;
+        }
         if (float.IsNaN(abyssY)) abyssY = mapBounds.min.y;
 
         GameObject horizonRoot = new GameObject(GeneratedHorizonRootName);
         horizonRoot.transform.SetParent(generatedMapRoot, false);
 
+        // 0. The visible ocean over the water cube's footprint: tessellated, wave-displaced and
+        //    aware of every coast. Returns null (cube keeps rendering) if disabled/unavailable.
+        Material shoreOceanMaterial = null;
+        if (waterObject != null && waterObject.activeInHierarchy && oceanDatumRenderer != null)
+        {
+            shoreOceanMaterial = OceanSurfaceBuilder.Build(
+                horizonRoot.transform, oceanDatumRenderer, chunks, oceanSurface, generatedHorizonResources);
+        }
+        else
+        {
+            OceanSurfaceBuilder.Disable(oceanDatumRenderer);
+        }
+
         // 1. Extended ocean water frame surrounding Ocean Cube cleanly out to +-3600m (no center overlap).
+        //    With the shore ocean it shares that material; all wave motion fades to zero at the
+        //    cube's edge, so the flat frame meets the displaced surface without a crack.
         if (waterObject != null && waterObject.activeInHierarchy)
         {
-            Renderer waterRenderer = waterObject.GetComponent<Renderer>();
-            if (waterRenderer != null && waterRenderer.sharedMaterial != null)
+            Renderer waterRenderer = oceanDatumRenderer;
+            if (waterRenderer != null && (shoreOceanMaterial != null || waterRenderer.sharedMaterial != null))
             {
                 Bounds wb = waterRenderer.bounds;
                 float waterSurfaceY = wb.max.y;
@@ -1150,7 +1178,7 @@ public class MapManager : MonoBehaviour
                 oceanSkirt.transform.SetParent(horizonRoot.transform, false);
                 oceanSkirt.GetComponent<MeshFilter>().sharedMesh = waterFrame;
                 MeshRenderer skirtRenderer = oceanSkirt.GetComponent<MeshRenderer>();
-                skirtRenderer.sharedMaterial = waterRenderer.sharedMaterial;
+                skirtRenderer.sharedMaterial = shoreOceanMaterial != null ? shoreOceanMaterial : waterRenderer.sharedMaterial;
                 skirtRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 skirtRenderer.receiveShadows = waterRenderer.receiveShadows;
             }
@@ -1358,6 +1386,7 @@ public class MapManager : MonoBehaviour
             if (Application.isPlaying) Destroy(rootObject);
             else DestroyImmediate(rootObject);
         }
+        OceanSurfaceBuilder.Disable(waterObject != null ? waterObject.GetComponent<Renderer>() : null);
 
         islands ??= new List<Island>();
         islands.Clear();
