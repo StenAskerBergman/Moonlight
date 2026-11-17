@@ -1,12 +1,15 @@
-﻿// tldr: One accepted river course: its ordered hydraulic stations, waterfalls and mouth, plus sampling access
-// to the resolved landform field.
+﻿// tldr: One accepted river course - its ordered hydraulic stations, waterfalls, how it ends (a shared ocean
+// outlet or a confluence with a parent course) and an optional source lake. Sampling goes through the network.
 
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>A reach is a connected part of the course, not a second path or footprint.</summary>
-public enum RiverReachKind : byte { Headwater, Gorge, Waterfall, PlungePool, Lowland, Estuary }
+/// <summary>
+/// A reach is a connected part of the course, not a second path or footprint. Lake is never
+/// assigned to a station: it is the kind the landform gives cells inside a source-lake basin.
+/// </summary>
+public enum RiverReachKind : byte { Headwater, Gorge, Waterfall, PlungePool, Lowland, Estuary, Lake }
 
 public readonly struct RiverBankProfile
 {
@@ -26,6 +29,8 @@ public readonly struct RiverBankProfile
 /// <summary>
 /// A hydraulic station along the course. Stations describe longitudinal constraints; they are
 /// not lofted into terrain. RiverLandform turns the complete set into one two-dimensional field.
+/// Distance is measured in the network's flow coordinate: a tributary's distances are offset so
+/// that its last station carries the same value as the parent station it joins.
 /// </summary>
 public readonly struct RiverSection
 {
@@ -53,6 +58,11 @@ public readonly struct RiverSection
         Foam = foam;
         OceanBlend = oceanBlend;
     }
+
+    /// <summary>The same station moved along the flow coordinate.</summary>
+    public RiverSection WithDistance(float distance)
+        => new RiverSection(Centre, Lateral, distance, WaterHeight, BedHeight, LeftWaterWidth,
+            RightWaterWidth, LeftBank, RightBank, Kind, Foam, OceanBlend);
 }
 
 public readonly struct RiverReach
@@ -96,6 +106,63 @@ public readonly struct RiverMouth
     }
 }
 
+/// <summary>Where a tributary hands its water to a parent course.</summary>
+public readonly struct RiverConfluence
+{
+    /// <summary>Index of the parent course in RiverNetwork.Courses.</summary>
+    public readonly int ParentCourse;
+    /// <summary>Parent station the tributary ends on.</summary>
+    public readonly int ParentSection;
+    public readonly Vector2 Centre;
+    public readonly float Distance, WaterHeight;
+
+    public RiverConfluence(int parentCourse, int parentSection, RiverSection station)
+    {
+        ParentCourse = parentCourse;
+        ParentSection = parentSection;
+        Centre = station.Centre;
+        Distance = station.Distance;
+        WaterHeight = station.WaterHeight;
+    }
+}
+
+/// <summary>A closed basin the course drains out of instead of starting at a rock spring.</summary>
+public readonly struct RiverSourceLake
+{
+    public readonly Vector2 Centre;
+    public readonly float Radius, WaterHeight, Depth;
+    public RiverSourceLake(Vector2 centre, float radius, float waterHeight, float depth)
+    {
+        Centre = centre;
+        Radius = radius;
+        WaterHeight = waterHeight;
+        Depth = depth;
+    }
+}
+
+/// <summary>
+/// The shared "pour out of the island". Exactly one trunk course crosses the shoreline here and
+/// owns the estuary geometry; every tributary that joins that trunk, directly or through another
+/// tributary, leaves the island through the same outlet instead of cutting a mouth of its own.
+/// </summary>
+public sealed class RiverOutlet
+{
+    public int Index { get; }
+    public RiverMouth Mouth { get; }
+    /// <summary>Course index of the trunk that carries the estuary.</summary>
+    public int TrunkCourse { get; }
+    /// <summary>Every course draining through this outlet, trunk first.</summary>
+    public IReadOnlyList<int> Courses { get; }
+
+    internal RiverOutlet(int index, RiverMouth mouth, int trunkCourse, IList<int> courses)
+    {
+        Index = index;
+        Mouth = mouth;
+        TrunkCourse = trunkCourse;
+        Courses = Array.AsReadOnly(new List<int>(courses).ToArray());
+    }
+}
+
 /// <summary>Meaning and elevation sampled from the authoritative two-dimensional landform.</summary>
 public readonly struct RiverSurfaceSample
 {
@@ -103,9 +170,11 @@ public readonly struct RiverSurfaceSample
     public readonly float TargetHeight, Influence, WaterHeight, Distance, RockWeight, GravelWeight;
     public readonly Vector2 Direction;
     public readonly RiverReachKind Kind;
+    /// <summary>Course that owns this point (nearest centreline), or -1.</summary>
+    public readonly int Course;
 
     public RiverSurfaceSample(bool wet, float weightedTarget, float influence, float water, float distance,
-        float rock, float gravel, Vector2 direction, RiverReachKind kind)
+        float rock, float gravel, Vector2 direction, RiverReachKind kind, int course = -1)
     {
         IsDefined = true;
         IsWater = wet;
@@ -117,6 +186,7 @@ public readonly struct RiverSurfaceSample
         GravelWeight = gravel;
         Direction = direction;
         Kind = kind;
+        Course = course;
     }
 
     public float Apply(float originalHeight)
@@ -128,7 +198,8 @@ public readonly struct RiverSurfaceSample
     public Cell.TerrainType Classify(Cell.TerrainType underlying)
     {
         if (IsWater)
-            return Kind == RiverReachKind.Waterfall ? Cell.TerrainType.WaterFall : Cell.TerrainType.River;
+            return Kind == RiverReachKind.Waterfall ? Cell.TerrainType.WaterFall
+                : Kind == RiverReachKind.Lake ? Cell.TerrainType.Lake : Cell.TerrainType.River;
         if (Influence < 0.25f) return underlying;
         if (Kind == RiverReachKind.Estuary && underlying != Cell.TerrainType.Beach
             && underlying != Cell.TerrainType.Land && underlying != Cell.TerrainType.Cliff)
@@ -138,41 +209,53 @@ public readonly struct RiverSurfaceSample
 }
 
 /// <summary>
-/// Immutable connected river landscape. The public interface deliberately exposes only the
-/// resolved feature. Internally RiverLandform owns the irregular 2D valley, channel, pool and
-/// estuary field; ordered stations are retained as hydraulic/geological metadata.
+/// One course of the river network: a trunk that ends at a shared RiverOutlet, or a tributary
+/// that ends on a parent course. The resolved landscape is owned by the network, because
+/// confluences only exist in a field that every course was stamped into together.
 /// </summary>
 public sealed class RiverPlan
 {
+    public int Index { get; }
     public IReadOnlyList<RiverSection> Sections { get; }
     public IReadOnlyList<RiverReach> Reaches { get; }
     public IReadOnlyList<RiverWaterfall> Waterfalls { get; }
-    public RiverMouth Mouth { get; }
+    /// <summary>Parent course index, or -1 for a trunk.</summary>
+    public int Parent { get; }
+    public bool IsTributary => Parent >= 0;
+    /// <summary>Valid only for tributaries.</summary>
+    public RiverConfluence Confluence { get; }
+    /// <summary>The outlet this course ultimately drains through. Set by the network.</summary>
+    public RiverOutlet Outlet { get; internal set; }
+    /// <summary>The shoreline crossing of this course's outlet (the trunk's mouth for tributaries).</summary>
+    public RiverMouth Mouth => Outlet != null ? Outlet.Mouth : default;
+    public bool HasSourceLake { get; }
+    public RiverSourceLake SourceLake { get; }
     public Vector2 Source => Sections[0].Centre;
-    public float Length => Sections[Sections.Count - 1].Distance;
+    public float StartDistance => Sections[0].Distance;
+    /// <summary>Flow-coordinate distance at which this course stops being its own channel.</summary>
+    public float TerminalDistance { get; }
+    public float Length => Sections[Sections.Count - 1].Distance - Sections[0].Distance;
     public float MaximumExcavation { get; }
     public float MaximumLandformFill { get; }
+    public RiverNetwork Network { get; internal set; }
 
-    private readonly RiverLandform landform;
-
-    public RiverPlan(TerrainSampleCache terrain, IList<RiverSection> sections, IList<RiverWaterfall> falls,
-        int mouthSection, float maximumExcavation, float maximumFill, int seed)
-        : this(terrain, sections, falls, mouthSection, maximumExcavation, maximumFill, seed, null) { }
-
-    internal RiverPlan(TerrainSampleCache terrain, IList<RiverSection> sections, IList<RiverWaterfall> falls,
-        int mouthSection, float maximumExcavation, float maximumFill, int seed, RiverLandform.Buffers buffers)
+    internal RiverPlan(int index, IList<RiverSection> sections, IList<RiverWaterfall> falls, int parent,
+        RiverConfluence confluence, float terminalDistance, bool hasLake, RiverSourceLake lake,
+        float maximumExcavation, float maximumFill)
     {
-        if (terrain == null) throw new ArgumentNullException(nameof(terrain));
         if (sections == null || sections.Count < 3)
             throw new ArgumentException("A river needs a connected course.", nameof(sections));
 
+        Index = index;
         Sections = Array.AsReadOnly(new List<RiverSection>(sections).ToArray());
         Waterfalls = Array.AsReadOnly(new List<RiverWaterfall>(falls).ToArray());
+        Parent = parent;
+        Confluence = confluence;
+        TerminalDistance = terminalDistance;
+        HasSourceLake = hasLake;
+        SourceLake = lake;
         MaximumExcavation = maximumExcavation;
         MaximumLandformFill = maximumFill;
-        int mouth = Mathf.Clamp(mouthSection, 1, sections.Count - 2);
-        Mouth = new RiverMouth(sections[mouth],
-            (sections[mouth + 1].Centre - sections[mouth - 1].Centre).normalized);
 
         var reaches = new List<RiverReach>();
         int first = 0;
@@ -183,7 +266,42 @@ public sealed class RiverPlan
             first = i;
         }
         Reaches = reaches.AsReadOnly();
-        landform = new RiverLandform(terrain, Sections, Waterfalls, maximumExcavation, maximumFill, seed, buffers);
+    }
+
+    /// <summary>Samples the network field. The sample's Course tells which course owns the point.</summary>
+    public bool TrySample(Vector2 position, out RiverSurfaceSample result)
+    {
+        if (Network != null) return Network.TrySample(position, out result);
+        result = default;
+        return false;
+    }
+}
+
+/// <summary>
+/// Immutable connected river landscape for a whole island: every course, the outlets they
+/// share, and the single resolved landform they were stamped into.
+/// </summary>
+public sealed class RiverNetwork
+{
+    public IReadOnlyList<RiverPlan> Courses { get; }
+    public IReadOnlyList<RiverOutlet> Outlets { get; }
+    public float MaximumExcavation { get; }
+    public float MaximumLandformFill { get; }
+
+    private readonly RiverLandform landform;
+
+    internal RiverNetwork(IList<RiverPlan> courses, IList<RiverOutlet> outlets, RiverLandform landform,
+        float maximumExcavation, float maximumFill)
+    {
+        Courses = Array.AsReadOnly(new List<RiverPlan>(courses).ToArray());
+        Outlets = Array.AsReadOnly(new List<RiverOutlet>(outlets).ToArray());
+        this.landform = landform;
+        MaximumExcavation = maximumExcavation;
+        MaximumLandformFill = maximumFill;
+        foreach (RiverPlan course in Courses) course.Network = this;
+        foreach (RiverOutlet outlet in Outlets)
+        foreach (int course in outlet.Courses)
+            Courses[course].Outlet = outlet;
     }
 
     public bool TrySample(Vector2 position, out RiverSurfaceSample result)

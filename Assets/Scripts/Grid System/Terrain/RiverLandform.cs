@@ -19,6 +19,7 @@ internal sealed class RiverLandform
         public readonly float[] Rock, Gravel, DirectionX, DirectionY, Foam, Edge, AcrossCoordinate, OceanBlend;
         public readonly float[] Ownership, SegmentWeightSum;
         public readonly RiverReachKind[] Kind;
+        public readonly short[] CourseId;
 
         public Buffers(int count)
         {
@@ -28,6 +29,7 @@ internal sealed class RiverLandform
             Foam = new float[count]; Edge = new float[count]; AcrossCoordinate = new float[count];
             OceanBlend = new float[count]; Ownership = new float[count]; SegmentWeightSum = new float[count];
             Kind = new RiverReachKind[count];
+            CourseId = new short[count];
         }
 
         public void Reset()
@@ -42,13 +44,32 @@ internal sealed class RiverLandform
             Array.Clear(Kind, 0, Kind.Length);
             Array.Fill(WetDistance, -1000f);
             Array.Fill(Ownership, float.PositiveInfinity);
+            Array.Fill(CourseId, (short)-1);
+        }
+    }
+
+    /// <summary>The landform's view of one course: hydraulic stations, drops and optional source lake.</summary>
+    internal readonly struct Course
+    {
+        public readonly IReadOnlyList<RiverSection> Sections;
+        public readonly IReadOnlyList<RiverWaterfall> Waterfalls;
+        public readonly bool HasLake;
+        public readonly RiverSourceLake Lake;
+
+        public Course(IReadOnlyList<RiverSection> sections, IReadOnlyList<RiverWaterfall> waterfalls,
+            bool hasLake, RiverSourceLake lake)
+        {
+            Sections = sections;
+            Waterfalls = waterfalls;
+            HasLake = hasLake;
+            Lake = lake;
         }
     }
 
     private readonly int resolution;
     private readonly float step;
-    private readonly IReadOnlyList<RiverSection> sections;
-    private readonly IReadOnlyList<RiverWaterfall> waterfalls;
+    private readonly IReadOnlyList<Course> courses;
+    private readonly short[] courseId;
 
     private readonly float[] influence;
     private readonly float[] weightedTarget;
@@ -65,14 +86,18 @@ internal sealed class RiverLandform
     private readonly float[] oceanBlend;
     private readonly RiverReachKind[] kind;
 
-    public RiverLandform(TerrainSampleCache terrain, IReadOnlyList<RiverSection> sections,
-        IReadOnlyList<RiverWaterfall> waterfalls, float maximumCut, float maximumFill, int seed,
-        Buffers buffers = null)
+    /// <summary>
+    /// Stamps every course of a network into ONE field. Valley segments of all courses accumulate
+    /// into the same weighted sums before normalisation, which is what turns a confluence into a
+    /// single blended channel instead of two overlapping stamps where one arbitrarily wins.
+    /// The buffers are owned by this landform from here on; never pass them to another one.
+    /// </summary>
+    public RiverLandform(TerrainSampleCache terrain, IReadOnlyList<Course> courses, float maximumCut,
+        float maximumFill, int seed, Buffers buffers = null)
     {
         resolution = terrain.Resolution;
         step = terrain.Step;
-        this.sections = sections;
-        this.waterfalls = waterfalls;
+        this.courses = courses;
         int count = resolution * resolution;
         buffers = buffers != null && buffers.Influence.Length == count ? buffers : new Buffers(count);
         buffers.Reset();
@@ -80,19 +105,32 @@ internal sealed class RiverLandform
         distance = buffers.Distance; wetDistance = buffers.WetDistance; rock = buffers.Rock; gravel = buffers.Gravel;
         directionX = buffers.DirectionX; directionY = buffers.DirectionY; foam = buffers.Foam; edge = buffers.Edge;
         acrossCoordinate = buffers.AcrossCoordinate; oceanBlend = buffers.OceanBlend; kind = buffers.Kind;
+        courseId = buffers.CourseId;
         float[] ownership = buffers.Ownership;
         float[] segmentWeightSum = buffers.SegmentWeightSum;
 
         // Valley first. The station list supplies grade and reach constraints, while the field
         // boundary is resolved in world space against slope, rock and coherent erosion noise.
-        for (int i = 0; i < sections.Count - 1; i++)
-            StampValleySegment(terrain, ownership, segmentWeightSum, i, maximumCut, maximumFill, seed);
+        for (int c = 0; c < courses.Count; c++)
+        {
+            IReadOnlyList<RiverSection> sections = courses[c].Sections;
+            for (int i = 0; i < sections.Count - 1; i++)
+                StampValleySegment(terrain, ownership, segmentWeightSum, sections, (short)c, i,
+                    maximumCut, maximumFill, seed);
+        }
         NormalizeValleySegments(segmentWeightSum);
 
         // Pools are terrain basins with an impact end and a constrained outlet. They replace the
         // centreline stamp inside their footprint rather than scaling the river strip sideways.
-        foreach (RiverWaterfall fall in waterfalls)
-            StampPlungeBasin(terrain, ownership, fall, maximumCut, maximumFill, seed);
+        for (int c = 0; c < courses.Count; c++)
+        foreach (RiverWaterfall fall in courses[c].Waterfalls)
+            StampPlungeBasin(terrain, ownership, courses[c].Sections, (short)c, fall, maximumCut, maximumFill, seed);
+
+        // Source lakes last: a lake is a closed basin the headwater drains out of, so it must own
+        // its own footprint, but it yields to the outlet channel already cut through its rim.
+        for (int c = 0; c < courses.Count; c++)
+            if (courses[c].HasLake)
+                StampSourceLake(terrain, courses[c], (short)c, maximumCut, maximumFill, seed);
     }
 
     public bool TrySample(Vector2 point, out RiverSurfaceSample result)
@@ -126,11 +164,13 @@ internal sealed class RiverLandform
             Bilinear(rock, x0, z0, x1, z1, tx, tz),
             Bilinear(gravel, x0, z0, x1, z1, tx, tz),
             flow,
-            kind[nearest]);
+            kind[nearest],
+            courseId[nearest]);
         return true;
     }
 
-    private void StampValleySegment(TerrainSampleCache terrain, float[] ownership, float[] segmentWeightSum, int sectionIndex,
+    private void StampValleySegment(TerrainSampleCache terrain, float[] ownership, float[] segmentWeightSum,
+        IReadOnlyList<RiverSection> sections, short course, int sectionIndex,
         float maximumCut, float maximumFill, int seed)
     {
         RiverSection a = sections[sectionIndex];
@@ -193,6 +233,7 @@ internal sealed class RiverLandform
             {
                 ownership[index] = score;
                 kind[index] = reachKind;
+                courseId[index] = course;
             }
 
             float longitudinalDistance = Mathf.Lerp(a.Distance, b.Distance, along);
@@ -281,8 +322,8 @@ internal sealed class RiverLandform
         }
     }
 
-    private void StampPlungeBasin(TerrainSampleCache terrain, float[] ownership, RiverWaterfall fall,
-        float maximumCut, float maximumFill, int seed)
+    private void StampPlungeBasin(TerrainSampleCache terrain, float[] ownership, IReadOnlyList<RiverSection> sections,
+        short course, RiverWaterfall fall, float maximumCut, float maximumFill, int seed)
     {
         RiverSection toe = sections[fall.ToeSection];
         RiverSection outlet = sections[fall.PoolEndSection];
@@ -376,7 +417,90 @@ internal sealed class RiverLandform
                 Mathf.Lerp(rock[index], rockWeight, attrBlend),
                 Mathf.Lerp(gravel[index], gravelWeight, attrBlend), axis, RiverReachKind.PlungePool,
                 Mathf.Lerp(0.04f, 0.88f, impact), 0f, wetWidth,
-                Mathf.Clamp01(0.5f + signed / (2f * Mathf.Max(0.025f, wetWidth))));
+                Mathf.Clamp01(0.5f + signed / (2f * Mathf.Max(0.025f, wetWidth))), course);
+        }
+    }
+
+    /// <summary>
+    /// A closed basin around the source. The shoreline is an irregular contour around the planned
+    /// radius; inside it the bed is a bowl below the lake level, outside it the ordinary natural
+    /// bank profile rises back to the original ground. Where the outlet channel already cuts the
+    /// rim, the bank yields to it, otherwise the lake would dam its own river.
+    /// </summary>
+    private void StampSourceLake(TerrainSampleCache terrain, Course course, short courseIndex,
+        float maximumCut, float maximumFill, int seed)
+    {
+        RiverSourceLake lake = course.Lake;
+        float water = lake.WaterHeight;
+        // Lake banks are lowland-like: a shallow shelf, a short bench and a broad wall back to grade.
+        var bank = new RiverBankProfile(0.55f, 0.7f, 1.6f, 1.3f, water + 0.3f, 0.3f);
+        float extent = lake.Radius * 1.25f + bank.Extent + step * 2f;
+        int minX = Mathf.Max(0, Mathf.FloorToInt((lake.Centre.x - extent) / step));
+        int maxX = Mathf.Min(resolution - 1, Mathf.CeilToInt((lake.Centre.x + extent) / step));
+        int minZ = Mathf.Max(0, Mathf.FloorToInt((lake.Centre.y - extent) / step));
+        int maxZ = Mathf.Min(resolution - 1, Mathf.CeilToInt((lake.Centre.y + extent) / step));
+        RiverSection first = course.Sections[0];
+        Vector2 outflow = course.Sections.Count > 1
+            ? (course.Sections[1].Centre - first.Centre).normalized : Vector2.right;
+
+        for (int z = minZ; z <= maxZ; z++)
+        for (int x = minX; x <= maxX; x++)
+        {
+            Vector2 p = new Vector2(x * step, z * step);
+            Vector2 offset = p - lake.Centre;
+            float d = offset.magnitude;
+            Vector2 dir = d > 0.0001f ? offset / d : Vector2.right;
+            // Irregular shoreline: coherent noise sampled on the unit circle keeps the contour
+            // closed and smooth while breaking the perfect disc.
+            float shoreNoise = ErosionNoise(lake.Centre + dir * 3.1f, seed + 2203);
+            float shore = lake.Radius * (1f + shoreNoise * 0.2f);
+            float outer = shore + bank.Extent;
+            if (d >= outer) continue;
+
+            int index = z * resolution + x;
+            float original = terrain.Heights[index];
+            float macro = ErosionNoise(p, seed + 1409);
+            float rockConstraint = Mathf.Clamp01(terrain.Slopes[index] * 0.85f
+                + terrain.MountainBoosts[index] * 0.18f);
+            float signedWet = shore - d;
+            float target, weight, rockWeight, gravelWeight;
+            if (signedWet >= 0f)
+            {
+                float cross = d / Mathf.Max(0.05f, shore);
+                target = water - 0.06f - lake.Depth * (1f - cross * cross);
+                weight = 1f;
+                rockWeight = Mathf.Max(0.12f, rockConstraint * 0.5f);
+                gravelWeight = Mathf.Lerp(0.3f, 0.85f, cross);
+            }
+            else
+            {
+                ResolveNaturalBank(original, water, bank, -signedWet, macro, rockConstraint,
+                    out target, out weight, out rockWeight, out gravelWeight);
+            }
+            target = Mathf.Clamp(target, original - maximumCut, original + maximumFill);
+
+            float oldWeight = influence[index];
+            float existingWet = oldWeight > 0f ? wetDistance[index] : -1000f;
+            // The bank must not refill the outlet channel the valley stamp already cut through it.
+            float yield = signedWet >= 0f ? 0f : Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((existingWet + 0.35f) / 0.5f));
+            float blend = weight * (1f - yield);
+            if (blend <= 0.0001f) continue;
+            float oldTarget = original * (1f - oldWeight) + weightedTarget[index];
+            float finished = Mathf.Lerp(oldTarget, target, blend);
+            float newWeight = Mathf.Lerp(oldWeight, 1f, blend);
+            float blendedWater = oldWeight > 0.0001f ? Mathf.Lerp(waterHeight[index], water, blend) : water;
+            float resolvedTarget = newWeight > 0.0001f ? (finished - original * (1f - newWeight)) / newWeight : original;
+            float lakeWet = Mathf.Min(blendedWater - finished, signedWet + bank.ShallowWidth * 0.6f);
+            float wet = Mathf.Max(existingWet, lakeWet);
+            bool lakeOwns = signedWet >= 0f || existingWet < 0f;
+            Write(index, resolvedTarget, newWeight, blendedWater,
+                lakeOwns ? first.Distance : distance[index], wet,
+                Mathf.Lerp(rock[index], rockWeight, blend), Mathf.Lerp(gravel[index], gravelWeight, blend),
+                lakeOwns ? outflow : new Vector2(directionX[index], directionY[index]),
+                lakeOwns ? RiverReachKind.Lake : kind[index], lakeOwns ? 0.02f : foam[index], 0f,
+                Mathf.Max(0.05f, shore), Mathf.Clamp01(0.5f + Vector2.Dot(offset, new Vector2(-outflow.y, outflow.x))
+                    / (2f * Mathf.Max(0.05f, shore))),
+                lakeOwns ? courseIndex : courseId[index]);
         }
     }
 
@@ -443,8 +567,9 @@ internal sealed class RiverLandform
 
     private void Write(int index, float target, float weight, float water, float atDistance,
         float signedWet, float rockWeight, float gravelWeight, Vector2 flow,
-        RiverReachKind reachKind, float foamWeight, float ocean, float wetWidth, float across)
+        RiverReachKind reachKind, float foamWeight, float ocean, float wetWidth, float across, short course)
     {
+        courseId[index] = course;
         influence[index] = weight;
         weightedTarget[index] = target * weight;
         waterHeight[index] = water;
@@ -506,8 +631,9 @@ internal sealed class RiverLandform
             AppendClippedTriangle(tl, tr, bl, sharedGridVertices, positions, uv, colors, indices);
             AppendClippedTriangle(tr, br, bl, sharedGridVertices, positions, uv, colors, indices);
         }
-        foreach (RiverWaterfall fall in waterfalls)
-            AppendWaterfallCurtain(fall, positions, uv, colors, indices);
+        foreach (Course course in courses)
+        foreach (RiverWaterfall fall in course.Waterfalls)
+            AppendWaterfallCurtain(course.Sections, fall, positions, uv, colors, indices);
     }
 
     private void AppendClippedTriangle(int ia, int ib, int ic, Dictionary<int, int> sharedGridVertices,
@@ -587,8 +713,8 @@ internal sealed class RiverLandform
         colors.Add(new Color(v.Foam, v.Edge, 0f, 1f - v.Ocean));
     }
 
-    private void AppendWaterfallCurtain(RiverWaterfall fall, List<Vector3> positions,
-        List<Vector2> uv, List<Color> colors, List<int> indices)
+    private static void AppendWaterfallCurtain(IReadOnlyList<RiverSection> sections, RiverWaterfall fall,
+        List<Vector3> positions, List<Vector2> uv, List<Color> colors, List<int> indices)
     {
         RiverSection crest = sections[fall.CrestSection];
         RiverSection toe = sections[fall.ToeSection];
