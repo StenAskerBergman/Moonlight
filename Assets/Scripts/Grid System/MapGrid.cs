@@ -63,6 +63,7 @@ public class MapGrid : MonoBehaviour
     private static readonly int PlateauSmoothnessProperty = Shader.PropertyToID("_Smoothness");
     private static readonly int PlateauWorldSeedProperty = Shader.PropertyToID("_WorldSeed");
     private static readonly int PlateauWaterLevelProperty = Shader.PropertyToID("_WaterLevel");
+    private static readonly int PlateauSeabedTintProperty = Shader.PropertyToID("_SeabedTint");
     private static readonly int[] PlateauSharedTextureProperties =
     {
         Shader.PropertyToID("_RockAlbedo"),
@@ -82,7 +83,10 @@ public class MapGrid : MonoBehaviour
         Shader.PropertyToID("_SandNormalScale"),
         Shader.PropertyToID("_SeabedTiling"),
         Shader.PropertyToID("_SeabedNormalScale"),
+        Shader.PropertyToID("_SeabedSmoothness"),
         Shader.PropertyToID("_GrassTiling"),
+        Shader.PropertyToID("_MacroTiling"),
+        Shader.PropertyToID("_MacroStrength"),
     };
     private const string GeneratedPlateauGeometryRootName = "Generated Plateau Geometry";
     private const string GeneratedInlandWaterRootName = "Generated Inland Water";
@@ -1596,11 +1600,6 @@ public class MapGrid : MonoBehaviour
         };
         if (ventMaterial.HasProperty("_BaseColor")) ventMaterial.SetColor("_BaseColor", new Color(0.14f, 0.17f, 0.19f, 1f));
         if (ventMaterial.HasProperty("_Smoothness")) ventMaterial.SetFloat("_Smoothness", 0.35f);
-        if (ventMaterial.HasProperty("_EmissionColor"))
-        {
-            ventMaterial.EnableKeyword("_EMISSION");
-            ventMaterial.SetColor("_EmissionColor", new Color(0.32f, 0.12f, 0.04f, 1f));
-        }
         TrackGeneratedVisualResource(ventMaterial);
 
         Material oreMaterial = new Material(litShader)
@@ -1613,7 +1612,9 @@ public class MapGrid : MonoBehaviour
         if (oreMaterial.HasProperty("_Smoothness")) oreMaterial.SetFloat("_Smoothness", 0.64f);
         TrackGeneratedVisualResource(oreMaterial);
 
-        Material plumeMaterial = CreateVentPlumeMaterial();
+        Material plumeMaterial = LoadVentParticleMaterial("VFX/VentMineralPlume", new Color(0.62f, 0.78f, 0.84f, 0.72f), false);
+        Material coreGlowMaterial = null;
+        Material bubbleMaterial = LoadVentParticleMaterial("VFX/VentRisingBubbles", new Color(0.85f, 0.96f, 1.00f, 0.72f), false);
 
         foreach (Vector2Int spot in ventSpots)
         {
@@ -1630,7 +1631,7 @@ public class MapGrid : MonoBehaviour
             vent.GetComponent<MeshFilter>().sharedMesh = chimneyMesh;
             vent.GetComponent<MeshRenderer>().sharedMaterial = ventMaterial;
 
-            AttachHydrothermalPlume(vent.transform, plumeMaterial);
+            AttachHydrothermalPlume(vent.transform, plumeMaterial, coreGlowMaterial, bubbleMaterial);
         }
 
         foreach (Vector2Int spot in oreSpots)
@@ -1650,23 +1651,28 @@ public class MapGrid : MonoBehaviour
         }
     }
 
-    private Material CreateVentPlumeMaterial()
+    private Material LoadVentParticleMaterial(string resourcePath, Color fallbackTint, bool additive)
     {
-        Texture2D tex = new Texture2D(16, 16, TextureFormat.RGBA32, false)
+        Material assetMat = Resources.Load<Material>(resourcePath);
+        if (assetMat != null)
         {
-            name = "Generated Vent Plume Texture",
+            return assetMat;
+        }
+
+        Texture2D tex = new Texture2D(32, 32, TextureFormat.RGBA32, false)
+        {
+            name = "Fallback Vent Particle Texture",
             wrapMode = TextureWrapMode.Clamp
         };
-        for (int y = 0; y < 16; y++)
+        for (int y = 0; y < 32; y++)
         {
-            for (int x = 0; x < 16; x++)
+            for (int x = 0; x < 32; x++)
             {
-                float dx = (x + 0.5f) / 16f * 2f - 1f;
-                float dy = (y + 0.5f) / 16f * 2f - 1f;
+                float dx = (x + 0.5f) / 32f * 2f - 1f;
+                float dy = (y + 0.5f) / 32f * 2f - 1f;
                 float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                float alpha = Mathf.Clamp01(1f - dist);
-                alpha *= alpha;
-                tex.SetPixel(x, y, new Color(0.55f, 0.72f, 0.78f, alpha));
+                float alpha = Mathf.Pow(Mathf.Clamp01(1f - dist), 2f);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
         }
         tex.Apply(false, true);
@@ -1677,51 +1683,211 @@ public class MapGrid : MonoBehaviour
             ?? Shader.Find("Sprites/Default");
         Material mat = new Material(particleShader)
         {
-            name = "Generated Vent Plume Material"
+            name = "Fallback Vent Plume Material"
         };
         if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
         if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
-        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", new Color(0.45f, 0.65f, 0.74f, 0.48f));
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", fallbackTint);
         if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+        if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", additive ? 2f : 0f);
+        if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)(additive ? UnityEngine.Rendering.BlendMode.One : UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
         if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         mat.renderQueue = 3000;
         TrackGeneratedVisualResource(mat);
         return mat;
     }
 
-    private static void AttachHydrothermalPlume(Transform parent, Material plumeMaterial)
+    private static void AttachHydrothermalPlume(
+        Transform parent,
+        Material plumeMaterial,
+        Material coreGlowMaterial,
+        Material bubbleMaterial)
     {
+        int layer = parent.gameObject.layer;
+
+        // 1. Dark-mineral buoyant smoke stack using 4x4 animated sprite sheet
         GameObject plumeObj = new GameObject("Thermal Plume");
-        plumeObj.layer = parent.gameObject.layer;
+        plumeObj.layer = layer;
         plumeObj.transform.SetParent(parent, false);
-        plumeObj.transform.localPosition = new Vector3(0f, 0.68f, 0f);
+        plumeObj.transform.localPosition = new Vector3(0f, 0.70f, 0f);
 
-        ParticleSystem ps = plumeObj.AddComponent<ParticleSystem>();
-        var main = ps.main;
-        main.duration = 2.5f;
+        ParticleSystem plumePs = plumeObj.AddComponent<ParticleSystem>();
+        var main = plumePs.main;
+        main.duration = 4.0f;
         main.loop = true;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(1.4f, 2.4f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(0.45f, 0.85f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.14f, 0.34f);
-        main.startColor = new Color(0.50f, 0.72f, 0.80f, 0.42f);
-        main.simulationSpace = ParticleSystemSimulationSpace.Local;
-        main.gravityModifier = -0.08f;
-        main.maxParticles = 24;
+        main.prewarm = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(2.4f, 3.8f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.75f, 1.25f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.45f, 0.78f);
+        main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        main.startColor = new ParticleSystem.MinMaxGradient(
+            new Color(0.62f, 0.78f, 0.86f, 0.90f),
+            new Color(0.82f, 0.92f, 0.96f, 0.78f));
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.gravityModifier = -0.06f;
+        main.maxParticles = 42;
 
-        var emission = ps.emission;
-        emission.rateOverTime = 7f;
+        var emission = plumePs.emission;
+        emission.rateOverTime = 12f;
 
-        var shape = ps.shape;
+        var shape = plumePs.shape;
         shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 12f;
-        shape.radius = 0.08f;
+        shape.angle = 13f;
+        shape.radius = 0.10f;
 
-        var sizeOverLifetime = ps.sizeOverLifetime;
+        var sheet = plumePs.textureSheetAnimation;
+        Texture plumeTex = plumeMaterial != null
+            ? (plumeMaterial.HasProperty("_BaseMap") ? plumeMaterial.GetTexture("_BaseMap") : plumeMaterial.mainTexture)
+            : null;
+        if (plumeTex != null && plumeTex.width >= 512)
+        {
+            sheet.enabled = true;
+            sheet.numTilesX = 4;
+            sheet.numTilesY = 4;
+            sheet.animation = ParticleSystemAnimationType.WholeSheet;
+            sheet.startFrame = new ParticleSystem.MinMaxCurve(0f, 15f / 16f);
+            sheet.cycleCount = 1;
+        }
+
+        var sizeOverLifetime = plumePs.sizeOverLifetime;
         sizeOverLifetime.enabled = true;
-        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.4f, 1f, 1.5f));
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
+            new Keyframe(0f, 0.45f),
+            new Keyframe(0.35f, 1.15f),
+            new Keyframe(1f, 2.25f)));
 
-        var renderer = ps.GetComponent<ParticleSystemRenderer>();
-        renderer.sharedMaterial = plumeMaterial;
+        var colorOverLifetime = plumePs.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient plumeGrad = new Gradient();
+        plumeGrad.SetKeys(
+            new[]
+            {
+                new GradientColorKey(new Color(0.88f, 0.94f, 0.98f), 0f),
+                new GradientColorKey(new Color(0.62f, 0.78f, 0.86f), 0.55f),
+                new GradientColorKey(new Color(0.38f, 0.58f, 0.68f), 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(0f, 0f),
+                new GradientAlphaKey(0.95f, 0.12f),
+                new GradientAlphaKey(0.68f, 0.62f),
+                new GradientAlphaKey(0f, 1f)
+            });
+        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(plumeGrad);
+
+        var rotOverLifetime = plumePs.rotationOverLifetime;
+        rotOverLifetime.enabled = true;
+        rotOverLifetime.z = new ParticleSystem.MinMaxCurve(-0.45f, 0.45f);
+
+        var noise = plumePs.noise;
+        noise.enabled = true;
+        noise.strength = 0.16f;
+        noise.frequency = 0.55f;
+        noise.scrollSpeed = 0.25f;
+        noise.damping = true;
+
+        var plumeRenderer = plumePs.GetComponent<ParticleSystemRenderer>();
+        plumeRenderer.sharedMaterial = plumeMaterial;
+        plumeRenderer.sortMode = ParticleSystemSortMode.Distance;
+
+        // 2. Subtle geothermal orifice glow
+        if (coreGlowMaterial != null)
+        {
+            GameObject glowObj = new GameObject("Thermal Core Glow");
+            glowObj.layer = layer;
+            glowObj.transform.SetParent(parent, false);
+            glowObj.transform.localPosition = new Vector3(0f, 0.78f, 0f);
+
+            ParticleSystem glowPs = glowObj.AddComponent<ParticleSystem>();
+            var gMain = glowPs.main;
+            gMain.duration = 2.0f;
+            gMain.loop = true;
+            gMain.prewarm = true;
+            gMain.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.3f);
+            gMain.startSpeed = new ParticleSystem.MinMaxCurve(0.28f, 0.52f);
+            gMain.startSize = new ParticleSystem.MinMaxCurve(0.44f, 0.70f);
+            gMain.startColor = new Color(1.0f, 0.68f, 0.32f, 0.82f);
+            gMain.simulationSpace = ParticleSystemSimulationSpace.Local;
+            gMain.maxParticles = 16;
+
+            var gEmission = glowPs.emission;
+            gEmission.rateOverTime = 7f;
+
+            var gShape = glowPs.shape;
+            gShape.shapeType = ParticleSystemShapeType.Cone;
+            gShape.angle = 7f;
+            gShape.radius = 0.05f;
+
+            var gColor = glowPs.colorOverLifetime;
+            gColor.enabled = true;
+            Gradient glowGrad = new Gradient();
+            glowGrad.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(new Color(1.0f, 0.72f, 0.35f), 0f),
+                    new GradientColorKey(new Color(0.85f, 0.32f, 0.14f), 0.7f),
+                    new GradientColorKey(new Color(0.22f, 0.42f, 0.55f), 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.85f, 0.2f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            gColor.color = new ParticleSystem.MinMaxGradient(glowGrad);
+
+            var gRenderer = glowPs.GetComponent<ParticleSystemRenderer>();
+            gRenderer.sharedMaterial = coreGlowMaterial;
+        }
+
+        // 3. Fine rising hydrothermal gas bubbles
+        if (bubbleMaterial != null)
+        {
+            GameObject bubbleObj = new GameObject("Rising Bubbles");
+            bubbleObj.layer = layer;
+            bubbleObj.transform.SetParent(parent, false);
+            bubbleObj.transform.localPosition = new Vector3(0f, 0.72f, 0f);
+
+            ParticleSystem bubblePs = bubbleObj.AddComponent<ParticleSystem>();
+            var bMain = bubblePs.main;
+            bMain.duration = 3.0f;
+            bMain.loop = true;
+            bMain.prewarm = true;
+            bMain.startLifetime = new ParticleSystem.MinMaxCurve(1.8f, 3.0f);
+            bMain.startSpeed = new ParticleSystem.MinMaxCurve(1.05f, 1.75f);
+            bMain.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.17f);
+            bMain.startColor = new Color(0.90f, 0.98f, 1.0f, 0.95f);
+            bMain.simulationSpace = ParticleSystemSimulationSpace.World;
+            bMain.gravityModifier = -0.16f;
+            bMain.maxParticles = 44;
+
+            var bEmission = bubblePs.emission;
+            bEmission.rateOverTime = 14f;
+
+            var bShape = bubblePs.shape;
+            bShape.shapeType = ParticleSystemShapeType.Cone;
+            bShape.angle = 9f;
+            bShape.radius = 0.06f;
+
+            var bNoise = bubblePs.noise;
+            bNoise.enabled = true;
+            bNoise.strength = 0.22f;
+            bNoise.frequency = 1.6f;
+            bNoise.scrollSpeed = 0.6f;
+
+            var bColor = bubblePs.colorOverLifetime;
+            bColor.enabled = true;
+            Gradient bGrad = new Gradient();
+            bGrad.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(0.75f, 0.94f, 1.0f), 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.95f, 0.1f), new GradientAlphaKey(0f, 1f) });
+            bColor.color = new ParticleSystem.MinMaxGradient(bGrad);
+
+            var bRenderer = bubblePs.GetComponent<ParticleSystemRenderer>();
+            bRenderer.sharedMaterial = bubbleMaterial;
+        }
     }
 
     private static Mesh BuildHydrothermalVentMesh(int seed)
@@ -2125,7 +2291,7 @@ public class MapGrid : MonoBehaviour
             role == PlateauMaterialRole.Surface ? surfaceWetness : rockWetness);
         properties.SetFloat(PlateauWorldSeedProperty, activeGenerationSeed * 0.0137f);
         float resolvedWaterLevel = TerrainSource != null && TerrainSource.Settings != null
-            ? TerrainSource.Settings.waterHeight
+            ? TerrainSource.Settings.AuthoritativeWaterSurfaceHeight
             : generationSettings.waterHeight;
         properties.SetFloat(PlateauWaterLevelProperty, resolvedWaterLevel);
 
@@ -2144,6 +2310,11 @@ public class MapGrid : MonoBehaviour
                 {
                     properties.SetFloat(floatProp, terrainMaterial.GetFloat(floatProp));
                 }
+            }
+
+            if (terrainMaterial.HasProperty(PlateauSeabedTintProperty))
+            {
+                properties.SetColor(PlateauSeabedTintProperty, terrainMaterial.GetColor(PlateauSeabedTintProperty));
             }
         }
 

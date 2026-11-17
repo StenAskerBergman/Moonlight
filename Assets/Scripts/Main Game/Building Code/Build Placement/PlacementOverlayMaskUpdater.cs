@@ -361,7 +361,7 @@ public sealed class PlacementOverlayMaskUpdater : MonoBehaviour
                     if (useBoatReach)
                     {
                         bool inBoatRadius = inTerritory;
-                        cellValid = inBoatRadius && IsHarborSiteCellUsable(cell, data);
+                        cellValid = inBoatRadius && IsHarborSiteCellUsable(cell, data, foundingBoat);
                     }
                     else
                     {
@@ -435,9 +435,14 @@ public sealed class PlacementOverlayMaskUpdater : MonoBehaviour
         return false;
     }
 
-    private static bool IsHarborSiteCellUsable(Cell cell, BuildingData data)
+    private static bool IsHarborSiteCellUsable(Cell cell, BuildingData data, Unit foundingBoat)
     {
         if (cell == null || cell.isBlocked || cell.isOccupied || cell.isDeposit) return false;
+
+        if (InfluenceManager.IsSubmersibleUnit(foundingBoat))
+        {
+            return cell.currentTerrainType == Cell.TerrainType.Plateau && cell.IsSlopeSuitableForBuilding;
+        }
 
         if (data != null && data.requiresQuayFoundation)
         {
@@ -490,7 +495,8 @@ public sealed class PlacementOverlayMaskUpdater : MonoBehaviour
             terrainRenderer.SetPropertyBlock(block);
         }
 
-        SyncCoastalSheet(enabled, waterY, mask, state, gridParams);
+        bool showSurfaceWaterSheet = enabled && (mapGrid == null || mapGrid.currentGridType == GridType.Type.Island);
+        SyncCoastalSheet(showSurfaceWaterSheet, waterY, mask, state, gridParams);
     }
 
     private void SyncCoastalSheet(bool enabled, float waterY, Texture mask, Vector4 state, Vector4 gridParams)

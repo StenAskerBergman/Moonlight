@@ -5,21 +5,58 @@ using UnityEngine;
 public class GameBorder : MonoBehaviour
 {
     public bool ShowRange = true;
-    public Vector2 _range = new Vector2(100, 100); // Map Border for the Camera
+    [Tooltip("Automatically derive camera pan bounds and world center from the generated map chunks.")]
+    public bool autoFitToGeneratedMap = true;
+    [Tooltip("Extra pan margin beyond the generated map edge so outer islands and plateaus can be centered cleanly.")]
+    [Min(0f)] public float margin = 20f;
+    public Vector2 _range = new Vector2(200, 200); // Map Border for the Camera
     public Vector3 worldCenter = new Vector3(0, 0, 0);
     public float xOff, yOff, zOff;
 
     private void Awake()
     {
+        if (autoFitToGeneratedMap && FitToGeneratedMap())
+            return;
+
         MapManager mapManager = GetComponent<MapManager>();
+        if (mapManager != null)
+        {
+            if (xOff == 0) xOff = mapManager.xOffset;
+            if (yOff == 0) yOff = 0;
+            if (zOff == 0) zOff = mapManager.zOffset;
+            worldCenter = new Vector3(transform.position.x - xOff / 2, worldCenter.y, transform.position.z + zOff / 2);
+        }
+    }
 
-        // Apply the offset if they haven't been set explicitly
-        if (xOff == 0) xOff = mapManager.xOffset;
-        if (yOff == 0) yOff = 0; // Assume yOff is not used as there's no yOffset in your example
-        if (zOff == 0) zOff = mapManager.zOffset;
+    public bool FitToGeneratedMap()
+    {
+        MapGrid[] grids = GetComponentsInChildren<MapGrid>(true);
+        if (grids == null || grids.Length == 0)
+            grids = FindObjectsOfType<MapGrid>();
 
-        // Adjust the world center based on the transform and offsets
-        worldCenter = new Vector3(transform.position.x - xOff / 2, worldCenter.y, transform.position.z + zOff / 2);
+        Bounds mapBounds = default;
+        bool hasBounds = false;
+        for (int i = 0; i < grids.Length; i++)
+        {
+            if (grids[i] == null) continue;
+            MeshRenderer mr = grids[i].GetComponent<MeshRenderer>();
+            if (mr == null) continue;
+            if (!hasBounds)
+            {
+                mapBounds = mr.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                mapBounds.Encapsulate(mr.bounds);
+            }
+        }
+
+        if (!hasBounds) return false;
+
+        worldCenter = new Vector3(mapBounds.center.x, 0f, mapBounds.center.z);
+        _range = new Vector2(mapBounds.extents.x + margin, mapBounds.extents.z + margin);
+        return true;
     }
 
     private void OnDrawGizmos()

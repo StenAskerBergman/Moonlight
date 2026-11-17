@@ -114,6 +114,9 @@ public sealed class PlacementDepositBeacons : MonoBehaviour
         int n = grid.gridSize;
         QuaySystem quay = QuaySystem.GetOrCreate(grid);
         float waterWorldY = quay != null ? grid.transform.TransformPoint(new Vector3(0f, quay.WaterSurfaceLocal, 0f)).y : 0f;
+        MapGrid mapGrid = grid.GetComponent<MapGrid>();
+        bool clampToWaterSurface = (mapGrid == null || mapGrid.currentGridType != GridType.Type.Plateau)
+            && (nodeType == ResourceNodeType.CoastalFishery || nodeType == ResourceNodeType.LakeMouth);
 
         for (int z = 0; z < n; z++)
         {
@@ -159,7 +162,7 @@ public sealed class PlacementDepositBeacons : MonoBehaviour
                 if (count == 0) continue;
 
                 Vector3 center = accum / count;
-                center.y = Mathf.Max(maxHeight, waterWorldY) + 0.14f;
+                center.y = (clampToWaterSurface ? Mathf.Max(maxHeight, waterWorldY) : maxHeight) + 0.14f;
                 float span = Mathf.Max(maxX - minX + 1, maxZ - minZ + 1) * grid.cellSize;
 
                 clusters.Add(new DepositCluster

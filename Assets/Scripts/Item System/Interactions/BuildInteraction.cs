@@ -225,7 +225,10 @@ public class BuildInteraction : MonoBehaviour, IBuildable
                     }
                     else
                     {
-                        canPlaceHere = cell.currentTerrainType == Cell.TerrainType.Beach;
+                        bool isSubmarine = InfluenceManager.IsSubmersibleUnit(foundingUnit);
+                        canPlaceHere = isSubmarine
+                            ? (cell.currentTerrainType == Cell.TerrainType.Plateau && cell.IsSlopeSuitableForBuilding)
+                            : (cell.currentTerrainType == Cell.TerrainType.Beach);
                     }
 
                     if (canPlaceHere && dist < minDistance)
