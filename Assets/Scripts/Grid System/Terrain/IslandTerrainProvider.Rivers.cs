@@ -14,30 +14,34 @@ public sealed partial class IslandTerrainProvider
     private void FinalizeRiverLandscape(TerrainSampleCache cache)
     {
         if (gridType != GridType.Type.Island || featureReservations == null) return;
-        featureReservations.SetRiverPlan(null);
+        featureReservations.SetRiverNetwork(null);
         if (!settings.riverCorridors.enabled || settings.riverCorridors.maxRivers == 0) return;
 
-        RiverPlan plan = RiverPlanner.Build(cache, settings, chunkSeed, out string report);
+        RiverNetwork network = RiverPlanner.BuildNetwork(cache, settings, chunkSeed, out string report);
         RiverGenerationReport = report;
-        if (plan == null)
+        if (network == null)
         {
             Debug.LogWarning($"[RiverPlan seed {chunkSeed}] {report}");
             return;
         }
-        featureReservations.SetRiverPlan(plan);
-        Debug.Log($"[RiverPlan seed {chunkSeed}] {report}");
+        featureReservations.SetRiverNetwork(network);
+        if (network.Courses.Count < settings.riverCorridors.minRivers)
+            Debug.LogWarning($"[RiverPlan seed {chunkSeed}] {report}");
+        else
+            Debug.Log($"[RiverPlan seed {chunkSeed}] {report}");
         int r = cache.Resolution; float step = cache.Step;
         System.Threading.Tasks.Parallel.For(0, r, z =>
         {
             for (int x = 0; x < r; x++)
             {
                 int index = z * r + x;
-                if (!plan.TrySample(new Vector2(x * step, z * step), out RiverSurfaceSample sample)) continue;
+                if (!network.TrySample(new Vector2(x * step, z * step), out RiverSurfaceSample sample)) continue;
                 float original = cache.Heights[index];
                 cache.Heights[index] = sample.Apply(original);
                 cache.RiverCarveDepths[index] = Mathf.Max(0f, original - cache.Heights[index]);
                 cache.TerrainTypes[index] = sample.Classify(cache.TerrainTypes[index]);
-                if (cache.Attribution != null) cache.Attribution.DominantRiverIds[index] = 0;
+                cache.LakeMasks[index] = sample.IsWater && sample.Kind == RiverReachKind.Lake;
+                if (cache.Attribution != null) cache.Attribution.DominantRiverIds[index] = (short)sample.Course;
             }
         });
 
